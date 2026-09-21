@@ -28,7 +28,7 @@ class ClassSchedule {
   bool isEffectiveOn(DateTime date) {
     final dateFormat = DateFormat('yyyy-MM-dd');
     final queryDateStr = dateFormat.format(date);
-    
+
     if (queryDateStr.compareTo(hieuLucTu) < 0) return false;
     if (hieuLucDen == null) return true;
     return queryDateStr.compareTo(hieuLucDen!) <= 0;

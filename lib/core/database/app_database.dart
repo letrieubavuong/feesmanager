@@ -259,9 +259,15 @@ class AppDatabase {
     ''');
 
     await db.execute('CREATE INDEX idx_lich_hoc_lop ON lich_hoc(id_lop)');
-    await db.execute('CREATE INDEX idx_phan_ca_hoc_sinh_hs ON phan_ca_hoc_sinh(id_hoc_sinh)');
-    await db.execute('CREATE INDEX idx_phan_ca_hoc_sinh_lop ON phan_ca_hoc_sinh(id_lop)');
-    await db.execute('CREATE INDEX idx_phan_ca_hoc_sinh_lich ON phan_ca_hoc_sinh(id_lich_hoc)');
+    await db.execute(
+      'CREATE INDEX idx_phan_ca_hoc_sinh_hs ON phan_ca_hoc_sinh(id_hoc_sinh)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_phan_ca_hoc_sinh_lop ON phan_ca_hoc_sinh(id_lop)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_phan_ca_hoc_sinh_lich ON phan_ca_hoc_sinh(id_lich_hoc)',
+    );
   }
 
   Future<void> _migrateV4ToV5(Database db) async {
@@ -303,12 +309,20 @@ class AppDatabase {
 
         // 3. Drop old and rename
         await txn.execute('DROP TABLE phan_ca_hoc_sinh');
-        await txn.execute('ALTER TABLE phan_ca_hoc_sinh_new RENAME TO phan_ca_hoc_sinh');
+        await txn.execute(
+          'ALTER TABLE phan_ca_hoc_sinh_new RENAME TO phan_ca_hoc_sinh',
+        );
 
         // 4. Recreate indexes
-        await txn.execute('CREATE INDEX idx_phan_ca_hoc_sinh_hs ON phan_ca_hoc_sinh(id_hoc_sinh)');
-        await txn.execute('CREATE INDEX idx_phan_ca_hoc_sinh_lop ON phan_ca_hoc_sinh(id_lop)');
-        await txn.execute('CREATE INDEX idx_phan_ca_hoc_sinh_lich ON phan_ca_hoc_sinh(id_lich_hoc)');
+        await txn.execute(
+          'CREATE INDEX idx_phan_ca_hoc_sinh_hs ON phan_ca_hoc_sinh(id_hoc_sinh)',
+        );
+        await txn.execute(
+          'CREATE INDEX idx_phan_ca_hoc_sinh_lop ON phan_ca_hoc_sinh(id_lop)',
+        );
+        await txn.execute(
+          'CREATE INDEX idx_phan_ca_hoc_sinh_lich ON phan_ca_hoc_sinh(id_lich_hoc)',
+        );
       });
     } finally {
       await db.execute('PRAGMA foreign_keys = ON');

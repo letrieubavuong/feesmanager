@@ -28,7 +28,10 @@ class AssignmentRepository {
       whereArgs: [studentId],
       orderBy: 'tu_ngay DESC',
     );
-    return List.generate(maps.length, (i) => StudentShiftAssignment.fromMap(maps[i]));
+    return List.generate(
+      maps.length,
+      (i) => StudentShiftAssignment.fromMap(maps[i]),
+    );
   }
 
   Future<List<StudentShiftAssignment>> getByClass(int classId) async {
@@ -38,7 +41,10 @@ class AssignmentRepository {
       whereArgs: [classId],
       orderBy: 'tu_ngay DESC',
     );
-    return List.generate(maps.length, (i) => StudentShiftAssignment.fromMap(maps[i]));
+    return List.generate(
+      maps.length,
+      (i) => StudentShiftAssignment.fromMap(maps[i]),
+    );
   }
 
   Future<List<StudentShiftAssignment>> getBySchedule(int scheduleId) async {
@@ -48,17 +54,27 @@ class AssignmentRepository {
       whereArgs: [scheduleId],
       orderBy: 'tu_ngay DESC',
     );
-    return List.generate(maps.length, (i) => StudentShiftAssignment.fromMap(maps[i]));
+    return List.generate(
+      maps.length,
+      (i) => StudentShiftAssignment.fromMap(maps[i]),
+    );
   }
 
-  Future<List<StudentShiftAssignment>> getActiveByStudent(int studentId, String dateStr) async {
+  Future<List<StudentShiftAssignment>> getActiveByStudent(
+    int studentId,
+    String dateStr,
+  ) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'phan_ca_hoc_sinh',
-      where: 'id_hoc_sinh = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+      where:
+          'id_hoc_sinh = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
       whereArgs: [studentId, dateStr, dateStr],
       orderBy: 'tu_ngay DESC',
     );
-    return List.generate(maps.length, (i) => StudentShiftAssignment.fromMap(maps[i]));
+    return List.generate(
+      maps.length,
+      (i) => StudentShiftAssignment.fromMap(maps[i]),
+    );
   }
 
   Future<StudentShiftAssignment?> getById(int id) async {

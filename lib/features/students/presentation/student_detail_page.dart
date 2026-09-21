@@ -208,7 +208,9 @@ class StudentDetailPage extends ConsumerWidget {
         leading: const Icon(Icons.calendar_today),
         title: Consumer(
           builder: (context, ref, _) {
-            final scheduleAsync = ref.watch(scheduleDetailProvider(a.idLichHoc));
+            final scheduleAsync = ref.watch(
+              scheduleDetailProvider(a.idLichHoc),
+            );
             return scheduleAsync.when(
               data: (s) => Text(
                 '${DateFormatter.formatVietnameseWeekday(s?.thuTrongTuan ?? 0)}: ${s?.gioBatDau} - ${s?.gioKetThuc}',

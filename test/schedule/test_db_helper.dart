@@ -2,8 +2,11 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class TestDbHelper {
   static Future<Database> createLatest() async {
-    final db = await openDatabase(inMemoryDatabasePath, version: 5, onCreate: (db, version) async {
-      await db.execute('''
+    final db = await openDatabase(
+      inMemoryDatabasePath,
+      version: 5,
+      onCreate: (db, version) async {
+        await db.execute('''
         CREATE TABLE hoc_sinh (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           ho_ten TEXT NOT NULL,
@@ -27,7 +30,7 @@ class TestDbHelper {
         )
       ''');
 
-      await db.execute('''
+        await db.execute('''
         CREATE TABLE lop (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           ten_lop TEXT NOT NULL,
@@ -41,7 +44,7 @@ class TestDbHelper {
         )
       ''');
 
-      await db.execute('''
+        await db.execute('''
         CREATE TABLE tham_gia_lop (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           id_hoc_sinh INTEGER NOT NULL,
@@ -61,7 +64,7 @@ class TestDbHelper {
         )
       ''');
 
-      await db.execute('''
+        await db.execute('''
         CREATE TABLE lich_hoc (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           id_lop INTEGER NOT NULL,
@@ -80,7 +83,7 @@ class TestDbHelper {
         )
       ''');
 
-      await db.execute('''
+        await db.execute('''
         CREATE TABLE phan_ca_hoc_sinh (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           id_hoc_sinh INTEGER NOT NULL,
@@ -99,9 +102,11 @@ class TestDbHelper {
           CHECK (den_ngay IS NULL OR den_ngay >= tu_ngay)
         )
       ''');
-    }, onConfigure: (db) async {
-       await db.execute('PRAGMA foreign_keys = ON');
-    });
+      },
+      onConfigure: (db) async {
+        await db.execute('PRAGMA foreign_keys = ON');
+      },
+    );
     return db;
   }
 }

@@ -110,7 +110,10 @@ class ScheduleDomainService {
   }) async {
     if (date != null) {
       final dateFormat = DateFormat('yyyy-MM-dd');
-      return _scheduleRepo.getEffectiveByClass(classId, dateFormat.format(date));
+      return _scheduleRepo.getEffectiveByClass(
+        classId,
+        dateFormat.format(date),
+      );
     }
     return _scheduleRepo.getByClass(classId);
   }
@@ -203,6 +206,17 @@ class ScheduleDomainService {
       throw Exception('Ngày kết thúc không được trước ngày bắt đầu');
     }
 
+    if (existing.denNgay != null) {
+      if (endStr == existing.denNgay) return; // Idempotent
+      if (endStr.compareTo(existing.denNgay!) > 0) {
+        throw Exception(
+          'Không thể kéo dài phân ca đã kết thúc ($endStr > ${existing.denNgay})',
+        );
+      }
+      // Note: Truncating an already closed assignment might be allowed in correction flows,
+      // but here we follow the strict rule: closeAssignment handles open ones.
+    }
+
     // Boundary check against membership
     final memberships = await _membershipService.getMembershipHistory(
       existing.idHocSinh,
@@ -244,7 +258,8 @@ class ScheduleDomainService {
     final oldAssignment = await _assignmentRepo.getById(oldAssignmentId);
     if (oldAssignment == null) throw Exception('Không tìm thấy phân ca cũ');
 
-    if (oldAssignment.idHocSinh != studentId || oldAssignment.idLop != classId) {
+    if (oldAssignment.idHocSinh != studentId ||
+        oldAssignment.idLop != classId) {
       throw Exception('Thông tin phân ca cũ không khớp với học sinh/lớp');
     }
 
@@ -260,9 +275,13 @@ class ScheduleDomainService {
       );
     }
 
+    // OLD ASSIGNMENT HARDENING: Must be active on day immediately before effectiveDate
+    // Effectively: old.tuNgay <= yesterdayStr AND (old.denNgay == null OR old.denNgay >= yesterdayStr)
     if (oldAssignment.denNgay != null &&
-        startStr.compareTo(oldAssignment.denNgay!) > 0) {
-      throw Exception('Không thể thay đổi phân ca đã kết thúc trong quá khứ');
+        yesterdayStr.compareTo(oldAssignment.denNgay!) > 0) {
+      throw Exception(
+        'Không thể đổi ca từ phân ca đã kết thúc trước ngày $startStr',
+      );
     }
 
     final schedule = await _scheduleRepo.getById(newScheduleId);
@@ -429,7 +448,9 @@ class AssignmentConflictResult {
 }
 
 @Riverpod(keepAlive: true)
-Future<ScheduleDomainService> classScheduleService(ClassScheduleServiceRef ref) async {
+Future<ScheduleDomainService> classScheduleService(
+  ClassScheduleServiceRef ref,
+) async {
   final scheduleRepo = await ref.watch(scheduleRepositoryProvider.future);
   final assignmentRepo = await ref.watch(assignmentRepositoryProvider.future);
   final membershipService = await ref.watch(membershipServiceProvider.future);

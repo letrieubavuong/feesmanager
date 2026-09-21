@@ -35,8 +35,43 @@ class ClassAssignmentController extends _$ClassAssignmentController {
       ref.invalidateSelf();
       await future;
     } else {
-      state = AsyncValue.error(result.conflictReason ?? 'Unknown conflict', StackTrace.current);
+      state = AsyncValue.error(
+        result.conflictReason ?? 'Unknown conflict',
+        StackTrace.current,
+      );
     }
     return result;
+  }
+
+  Future<void> close({
+    required int assignmentId,
+    required DateTime endDate,
+  }) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final service = await ref.read(classScheduleServiceProvider.future);
+      await service.closeAssignment(assignmentId, endDate);
+      return service.getAssignmentsForClass(classId);
+    });
+  }
+
+  Future<void> changeShift({
+    required int studentId,
+    required int oldAssignmentId,
+    required int newScheduleId,
+    required DateTime effectiveDate,
+  }) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final service = await ref.read(classScheduleServiceProvider.future);
+      await service.changeRecurringShift(
+        studentId: studentId,
+        classId: classId,
+        oldAssignmentId: oldAssignmentId,
+        newScheduleId: newScheduleId,
+        effectiveDate: effectiveDate,
+      );
+      return service.getAssignmentsForClass(classId);
+    });
   }
 }

@@ -29,15 +29,17 @@
 
 ## Phase 3: Schedule + Student Shift Assignment - COMPLETE
 - [x] Database Migration (v1 -> v5) with duplicate assignment protection.
-- [x] Strict boundary enforcement (Assignments must stay within Membership and Schedule intervals).
+- [x] Strict boundary enforcement (Membership & Schedule intervals).
 - [x] Advanced future conflict detection (interval overlap algorithm).
-- [x] Atomic shift changes (close old, open new in one transaction).
-- [x] Presentation hardening (no direct repository calls from UI).
-- [x] Candidate filtering (only show active members for assignment).
-- [x] DatePicker integration for all date inputs.
+- [x] Atomic shift changes (transacted close old, open new).
+- [x] Presentation hardening (no direct repository calls).
 - [x] Standardized Vietnamese weekday formatting.
 - [x] GitHub Actions CI workflow implemented.
-- [x] Quality Gate: 34 tests passing.
+- [x] Comprehensive Tests:
+    - `test/schedule/schedule_service_test.dart`
+    - `test/schedule/assignment_service_test.dart`
+    - `test/repository/real_migration_test.dart`
+- [x] Quality Gate: 41 tests passing.
 
 ## Phase 4: Session + Attendance - NOT STARTED
 

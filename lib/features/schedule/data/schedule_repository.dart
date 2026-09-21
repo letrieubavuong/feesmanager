@@ -39,10 +39,14 @@ class ScheduleRepository {
     return List.generate(maps.length, (i) => ClassSchedule.fromMap(maps[i]));
   }
 
-  Future<List<ClassSchedule>> getEffectiveByClass(int classId, String dateStr) async {
+  Future<List<ClassSchedule>> getEffectiveByClass(
+    int classId,
+    String dateStr,
+  ) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'lich_hoc',
-      where: 'id_lop = ? AND hieu_luc_tu <= ? AND (hieu_luc_den IS NULL OR hieu_luc_den >= ?)',
+      where:
+          'id_lop = ? AND hieu_luc_tu <= ? AND (hieu_luc_den IS NULL OR hieu_luc_den >= ?)',
       whereArgs: [classId, dateStr, dateStr],
       orderBy: 'thu_trong_tuan ASC, gio_bat_dau ASC',
     );

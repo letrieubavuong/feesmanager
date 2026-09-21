@@ -27,20 +27,29 @@ class ScheduleTab extends ConsumerWidget {
               final isActive = s.isEffectiveOn(DateTime.now());
               return ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: isActive ? Colors.blue.shade100 : Colors.grey.shade200,
-                  child: Text(s.thuTrongTuan == 7 ? 'CN' : 'T${s.thuTrongTuan + 1}'),
+                  backgroundColor: isActive
+                      ? Colors.blue.shade100
+                      : Colors.grey.shade200,
+                  child: Text(
+                    s.thuTrongTuan == 7 ? 'CN' : 'T${s.thuTrongTuan + 1}',
+                  ),
                 ),
                 title: Text(
                   '${DateFormatter.formatVietnameseWeekday(s.thuTrongTuan)}: ${s.gioBatDau} - ${s.gioKetThuc}',
-                  style: TextStyle(fontWeight: isActive ? FontWeight.bold : null),
+                  style: TextStyle(
+                    fontWeight: isActive ? FontWeight.bold : null,
+                  ),
                 ),
-                subtitle: Text('Hiệu lực: ${DateFormatter.formatShortDate(s.hieuLucTu)}${s.hieuLucDen != null ? ' đến ${DateFormatter.formatShortDate(s.hieuLucDen)}' : ''}'),
-                trailing: isActive 
-                  ? IconButton(
-                      icon: const Icon(Icons.event_busy),
-                      onPressed: () => _showCloseScheduleDialog(context, ref, s),
-                    )
-                  : const Icon(Icons.history, size: 16),
+                subtitle: Text(
+                  'Hiệu lực: ${DateFormatter.formatShortDate(s.hieuLucTu)}${s.hieuLucDen != null ? ' đến ${DateFormatter.formatShortDate(s.hieuLucDen)}' : ''}',
+                ),
+                trailing: isActive
+                    ? IconButton(
+                        icon: const Icon(Icons.event_busy),
+                        onPressed: () =>
+                            _showCloseScheduleDialog(context, ref, s),
+                      )
+                    : const Icon(Icons.history, size: 16),
               );
             },
           );
@@ -57,13 +66,17 @@ class ScheduleTab extends ConsumerWidget {
   }
 
   void _showAddScheduleDialog(BuildContext context, WidgetRef ref) {
-     showDialog(
+    showDialog(
       context: context,
       builder: (context) => ScheduleFormDialog(classId: classId),
     );
   }
 
-  void _showCloseScheduleDialog(BuildContext context, WidgetRef ref, ClassSchedule schedule) {
+  void _showCloseScheduleDialog(
+    BuildContext context,
+    WidgetRef ref,
+    ClassSchedule schedule,
+  ) {
     DateTime _endDate = DateTime.now();
 
     showDialog(
@@ -80,10 +93,10 @@ class ScheduleTab extends ConsumerWidget {
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
                   final picked = await showDatePicker(
-                    context: context, 
-                    initialDate: _endDate, 
-                    firstDate: DateTime(2020), 
-                    lastDate: DateTime(2100)
+                    context: context,
+                    initialDate: _endDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
                   );
                   if (picked != null) setDialogState(() => _endDate = picked);
                 },
@@ -91,18 +104,26 @@ class ScheduleTab extends ConsumerWidget {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy'),
+            ),
             TextButton(
               onPressed: () async {
                 try {
-                  final success = await ref.read(classScheduleControllerProvider(classId).notifier).close(
-                    schedule.id!, 
-                    _endDate
-                  );
+                  final success = await ref
+                      .read(classScheduleControllerProvider(classId).notifier)
+                      .close(schedule.id!, _endDate);
                   if (success && context.mounted) Navigator.pop(context);
                 } catch (e) {
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          e.toString().replaceAll('Exception: ', ''),
+                        ),
+                      ),
+                    );
                   }
                 }
               },
@@ -141,7 +162,12 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
               value: _thu,
               decoration: const InputDecoration(labelText: 'Thứ'),
               items: List.generate(7, (i) => i + 1)
-                  .map((t) => DropdownMenuItem(value: t, child: Text('Thứ ${t == 7 ? 'Chủ Nhật' : t + 1}')))
+                  .map(
+                    (t) => DropdownMenuItem(
+                      value: t,
+                      child: Text('Thứ ${t == 7 ? 'Chủ Nhật' : t + 1}'),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) => setState(() => _thu = v!),
             ),
@@ -150,7 +176,10 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
               title: const Text('Giờ bắt đầu'),
               subtitle: Text(_start.format(context)),
               onTap: () async {
-                final picked = await showTimePicker(context: context, initialTime: _start);
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime: _start,
+                );
                 if (picked != null) setState(() => _start = picked);
               },
             ),
@@ -158,7 +187,10 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
               title: const Text('Giờ kết thúc'),
               subtitle: Text(_end.format(context)),
               onTap: () async {
-                final picked = await showTimePicker(context: context, initialTime: _end);
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime: _end,
+                );
                 if (picked != null) setState(() => _end = picked);
               },
             ),
@@ -167,10 +199,10 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
               subtitle: Text(DateFormat('dd/MM/yyyy').format(_effectiveFrom)),
               onTap: () async {
                 final picked = await showDatePicker(
-                  context: context, 
-                  initialDate: _effectiveFrom, 
-                  firstDate: DateTime(2020), 
-                  lastDate: DateTime(2100)
+                  context: context,
+                  initialDate: _effectiveFrom,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2100),
                 );
                 if (picked != null) setState(() => _effectiveFrom = picked);
               },
@@ -179,11 +211,16 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
-        Consumer(builder: (context, ref, _) => ElevatedButton(
-          onPressed: () => _submit(ref),
-          child: const Text('Lưu'),
-        )),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Hủy'),
+        ),
+        Consumer(
+          builder: (context, ref, _) => ElevatedButton(
+            onPressed: () => _submit(ref),
+            child: const Text('Lưu'),
+          ),
+        ),
       ],
     );
   }
@@ -192,14 +229,18 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
     final schedule = ClassSchedule(
       idLop: widget.classId,
       thuTrongTuan: _thu,
-      gioBatDau: '${_start.hour.toString().padLeft(2, '0')}:${_start.minute.toString().padLeft(2, '0')}',
-      gioKetThuc: '${_end.hour.toString().padLeft(2, '0')}:${_end.minute.toString().padLeft(2, '0')}',
+      gioBatDau:
+          '${_start.hour.toString().padLeft(2, '0')}:${_start.minute.toString().padLeft(2, '0')}',
+      gioKetThuc:
+          '${_end.hour.toString().padLeft(2, '0')}:${_end.minute.toString().padLeft(2, '0')}',
       hieuLucTu: DateFormat('yyyy-MM-dd').format(_effectiveFrom),
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
 
-    final success = await ref.read(classScheduleControllerProvider(widget.classId).notifier).create(schedule);
+    final success = await ref
+        .read(classScheduleControllerProvider(widget.classId).notifier)
+        .create(schedule);
     if (success && mounted) Navigator.pop(context);
   }
 }
