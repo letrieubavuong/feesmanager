@@ -70,68 +70,84 @@ void main() {
       );
     });
 
-    test('Single shift class includes all active students (same weekday only)',
-        () async {
-      await db.insert('lop',
-          {'id': 1, 'ten_lop': 'C1', 'created_at': now, 'updated_at': now});
+    test(
+      'Single shift class includes all active students (same weekday only)',
+      () async {
+        await db.insert('lop', {
+          'id': 1,
+          'ten_lop': 'C1',
+          'created_at': now,
+          'updated_at': now,
+        });
 
-      // Two schedules but on DIFFERENT weekdays
-      await db.insert('lich_hoc', {
-        'id': 1,
-        'id_lop': 1,
-        'thu_trong_tuan': 1, // Mon
-        'gio_bat_dau': '17:30',
-        'gio_ket_thuc': '19:00',
-        'hieu_luc_tu': '2026-01-01',
-        'created_at': now,
-        'updated_at': now
-      });
-      await db.insert('lich_hoc', {
-        'id': 2,
-        'id_lop': 1,
-        'thu_trong_tuan': 3, // Wed
-        'gio_bat_dau': '17:30',
-        'gio_ket_thuc': '19:00',
-        'hieu_luc_tu': '2026-01-01',
-        'created_at': now,
-        'updated_at': now
-      });
+        // Two schedules but on DIFFERENT weekdays
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 1,
+          'thu_trong_tuan': 1, // Mon
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': now,
+          'updated_at': now,
+        });
+        await db.insert('lich_hoc', {
+          'id': 2,
+          'id_lop': 1,
+          'thu_trong_tuan': 3, // Wed
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': now,
+          'updated_at': now,
+        });
 
-      await db.insert('hoc_sinh',
-          {'id': 1, 'ho_ten': 'An', 'created_at': now, 'updated_at': now});
-      await db.insert('tham_gia_lop', {
-        'id': 1,
-        'id_hoc_sinh': 1,
-        'id_lop': 1,
-        'tu_ngay': '2026-01-01',
-        'created_at': now,
-        'updated_at': now
-      });
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'An',
+          'created_at': now,
+          'updated_at': now,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 1,
+          'id_hoc_sinh': 1,
+          'id_lop': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': now,
+          'updated_at': now,
+        });
 
-      // Session on Monday 2026-09-07
-      await db.insert('buoi_hoc', {
-        'id': 10,
-        'id_lop': 1,
-        'id_lich_hoc': 1,
-        'ngay': '2026-09-07',
-        'gio_bat_dau': '17:30',
-        'gio_ket_thuc': '19:00',
-        'loai': 'CHINH',
-        'created_at': now,
-        'updated_at': now
-      });
+        // Session on Monday 2026-09-07
+        await db.insert('buoi_hoc', {
+          'id': 10,
+          'id_lop': 1,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-07',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'created_at': now,
+          'updated_at': now,
+        });
 
-      final result = await rosterService.getRosterForSession(10);
-      // It's considered single-shift for Monday because only 1 schedule on Mon.
-      expect(result.participants.length, 1);
-      expect(result.participants.first.student.hoTen, 'An');
-      expect(result.participants.first.source,
-          RosterInclusionSource.SINGLE_SHIFT_MEMBERSHIP);
-    });
+        final result = await rosterService.getRosterForSession(10);
+        // It's considered single-shift for Monday because only 1 schedule on Mon.
+        expect(result.participants.length, 1);
+        expect(result.participants.first.student.hoTen, 'An');
+        expect(
+          result.participants.first.source,
+          RosterInclusionSource.SINGLE_SHIFT_MEMBERSHIP,
+        );
+      },
+    );
 
     test('Multi-shift split logic (same weekday)', () async {
-      await db.insert('lop',
-          {'id': 1, 'ten_lop': 'Multi', 'created_at': now, 'updated_at': now});
+      await db.insert('lop', {
+        'id': 1,
+        'ten_lop': 'Multi',
+        'created_at': now,
+        'updated_at': now,
+      });
       // Shift 1: Mon 17:30
       await db.insert('lich_hoc', {
         'id': 1,
@@ -141,7 +157,7 @@ void main() {
         'gio_ket_thuc': '19:00',
         'hieu_luc_tu': '2026-01-01',
         'created_at': now,
-        'updated_at': now
+        'updated_at': now,
       });
       // Shift 2: Mon 19:00
       await db.insert('lich_hoc', {
@@ -152,15 +168,27 @@ void main() {
         'gio_ket_thuc': '20:30',
         'hieu_luc_tu': '2026-01-01',
         'created_at': now,
-        'updated_at': now
+        'updated_at': now,
       });
 
-      await db.insert('hoc_sinh',
-          {'id': 1, 'ho_ten': 'An', 'created_at': now, 'updated_at': now});
-      await db.insert('hoc_sinh',
-          {'id': 2, 'ho_ten': 'Binh', 'created_at': now, 'updated_at': now});
-      await db.insert('hoc_sinh',
-          {'id': 3, 'ho_ten': 'Cuong', 'created_at': now, 'updated_at': now});
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'An',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('hoc_sinh', {
+        'id': 2,
+        'ho_ten': 'Binh',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('hoc_sinh', {
+        'id': 3,
+        'ho_ten': 'Cuong',
+        'created_at': now,
+        'updated_at': now,
+      });
 
       await db.insert('tham_gia_lop', {
         'id': 1,
@@ -168,7 +196,7 @@ void main() {
         'id_lop': 1,
         'tu_ngay': '2026-01-01',
         'created_at': now,
-        'updated_at': now
+        'updated_at': now,
       });
       await db.insert('tham_gia_lop', {
         'id': 2,
@@ -176,7 +204,7 @@ void main() {
         'id_lop': 1,
         'tu_ngay': '2026-01-01',
         'created_at': now,
-        'updated_at': now
+        'updated_at': now,
       });
       await db.insert('tham_gia_lop', {
         'id': 3,
@@ -184,7 +212,7 @@ void main() {
         'id_lop': 1,
         'tu_ngay': '2026-01-01',
         'created_at': now,
-        'updated_at': now
+        'updated_at': now,
       });
 
       // Assignments
@@ -195,7 +223,7 @@ void main() {
         'id_lich_hoc': 1,
         'tu_ngay': '2026-01-01',
         'created_at': now,
-        'updated_at': now
+        'updated_at': now,
       }); // An -> 17:30
       await db.insert('phan_ca_hoc_sinh', {
         'id': 2,
@@ -204,7 +232,7 @@ void main() {
         'id_lich_hoc': 2,
         'tu_ngay': '2026-01-01',
         'created_at': now,
-        'updated_at': now
+        'updated_at': now,
       }); // Binh -> 19:00
 
       // Session 1: Mon 17:30
@@ -217,7 +245,7 @@ void main() {
         'gio_ket_thuc': '19:00',
         'loai': 'CHINH',
         'created_at': now,
-        'updated_at': now
+        'updated_at': now,
       });
 
       final result = await rosterService.getRosterForSession(1);
@@ -227,10 +255,18 @@ void main() {
     });
 
     test('Fail closed on session schedule class mismatch', () async {
-      await db.insert('lop',
-          {'id': 1, 'ten_lop': 'A', 'created_at': now, 'updated_at': now});
-      await db.insert('lop',
-          {'id': 2, 'ten_lop': 'B', 'created_at': now, 'updated_at': now});
+      await db.insert('lop', {
+        'id': 1,
+        'ten_lop': 'A',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('lop', {
+        'id': 2,
+        'ten_lop': 'B',
+        'created_at': now,
+        'updated_at': now,
+      });
 
       await db.insert('lich_hoc', {
         'id': 1,
@@ -240,7 +276,7 @@ void main() {
         'gio_ket_thuc': '19:00',
         'hieu_luc_tu': '2026-01-01',
         'created_at': now,
-        'updated_at': now
+        'updated_at': now,
       });
 
       // Session for A linked to schedule of B
@@ -253,61 +289,70 @@ void main() {
         'gio_ket_thuc': '19:00',
         'loai': 'CHINH',
         'created_at': now,
-        'updated_at': now
+        'updated_at': now,
       });
 
       final result = await rosterService.getRosterForSession(100);
       expect(result.isOperationallyValid, isFalse);
-      expect(result.issues.any((i) => i.code == RosterIssueCode.SESSION_SCHEDULE_CLASS_MISMATCH), isTrue);
+      expect(
+        result.issues.any(
+          (i) => i.code == RosterIssueCode.SESSION_SCHEDULE_CLASS_MISMATCH,
+        ),
+        isTrue,
+      );
       expect(result.participants, isEmpty);
     });
 
     test('Fail closed on schedule weekday mismatch', () async {
-      await db.insert('lop', {'id': 1, 'ten_lop': 'C', 'created_at': now, 'updated_at': now});
+      await db.insert('lop', {
+        'id': 1,
+        'ten_lop': 'C',
+        'created_at': now,
+        'updated_at': now,
+      });
       // Schedule is Wednesday (3)
-      await db.insert('lich_hoc', {'id': 1, 'id_lop': 1, 'thu_trong_tuan': 3, 'gio_bat_dau': '17:30', 'gio_ket_thuc': '19:00', 'hieu_luc_tu': '2026-01-01', 'created_at': now, 'updated_at': now});
-      
+      await db.insert('lich_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'thu_trong_tuan': 3,
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+
       // Session is Monday (Sept 7)
-      await db.insert('buoi_hoc', {'id': 1, 'id_lop': 1, 'id_lich_hoc': 1, 'ngay': '2026-09-07', 'gio_bat_dau': '17:30', 'gio_ket_thuc': '19:00', 'loai': 'CHINH', 'created_at': now, 'updated_at': now});
+      await db.insert('buoi_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'id_lich_hoc': 1,
+        'ngay': '2026-09-07',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'created_at': now,
+        'updated_at': now,
+      });
 
       final result = await rosterService.getRosterForSession(1);
       expect(result.isOperationallyValid, isFalse);
-      expect(result.issues.any((i) => i.code == RosterIssueCode.SESSION_SCHEDULE_NOT_EFFECTIVE), isTrue);
+      expect(
+        result.issues.any(
+          (i) => i.code == RosterIssueCode.SESSION_SCHEDULE_NOT_EFFECTIVE,
+        ),
+        isTrue,
+      );
       expect(result.participants, isEmpty);
     });
 
     test('Membership boundary test', () async {
-      await db.insert('lop', {'id': 1, 'ten_lop': 'C', 'created_at': now, 'updated_at': now});
-      await db.insert('lich_hoc', {'id': 1, 'id_lop': 1, 'thu_trong_tuan': 1, 'gio_bat_dau': '17:30', 'gio_ket_thuc': '19:00', 'hieu_luc_tu': '2026-01-01', 'created_at': now, 'updated_at': now});
-      
-      // Session on 2026-09-07 (Mon)
-      await db.insert('buoi_hoc', {'id': 1, 'id_lop': 1, 'id_lich_hoc': 1, 'ngay': '2026-09-07', 'gio_bat_dau': '17:30', 'gio_ket_thuc': '19:00', 'loai': 'CHINH', 'created_at': now, 'updated_at': now});
-
-      // S1: join on session date -> INCLUDED
-      await db.insert('hoc_sinh', {'id': 1, 'ho_ten': 'S1', 'created_at': now, 'updated_at': now});
-      await db.insert('tham_gia_lop', {'id': 1, 'id_hoc_sinh': 1, 'id_lop': 1, 'tu_ngay': '2026-09-07', 'created_at': now, 'updated_at': now});
-
-      // S2: end on session date -> INCLUDED
-      await db.insert('hoc_sinh', {'id': 2, 'ho_ten': 'S2', 'created_at': now, 'updated_at': now});
-      await db.insert('tham_gia_lop', {'id': 2, 'id_hoc_sinh': 2, 'id_lop': 1, 'tu_ngay': '2026-09-01', 'den_ngay': '2026-09-07', 'created_at': now, 'updated_at': now});
-
-      // S3: join after -> EXCLUDED
-      await db.insert('hoc_sinh', {'id': 3, 'ho_ten': 'S3', 'created_at': now, 'updated_at': now});
-      await db.insert('tham_gia_lop', {'id': 3, 'id_hoc_sinh': 3, 'id_lop': 1, 'tu_ngay': '2026-09-08', 'created_at': now, 'updated_at': now});
-
-      // S4: end before -> EXCLUDED
-      await db.insert('hoc_sinh', {'id': 4, 'ho_ten': 'S4', 'created_at': now, 'updated_at': now});
-      await db.insert('tham_gia_lop', {'id': 4, 'id_hoc_sinh': 4, 'id_lop': 1, 'tu_ngay': '2026-09-01', 'den_ngay': '2026-09-06', 'created_at': now, 'updated_at': now});
-
-      final result = await rosterService.getRosterForSession(1);
-      expect(result.participants.length, 2);
-      expect(result.participants.any((m) => m.student.hoTen == 'S1'), isTrue);
-      expect(result.participants.any((m) => m.student.hoTen == 'S2'), isTrue);
-    });
-
-    test('Historical roster preserves archived students', () async {
-      await db.insert('lop',
-          {'id': 1, 'ten_lop': 'C', 'created_at': now, 'updated_at': now});
+      await db.insert('lop', {
+        'id': 1,
+        'ten_lop': 'C',
+        'created_at': now,
+        'updated_at': now,
+      });
       await db.insert('lich_hoc', {
         'id': 1,
         'id_lop': 1,
@@ -316,7 +361,110 @@ void main() {
         'gio_ket_thuc': '19:00',
         'hieu_luc_tu': '2026-01-01',
         'created_at': now,
-        'updated_at': now
+        'updated_at': now,
+      });
+
+      // Session on 2026-09-07 (Mon)
+      await db.insert('buoi_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'id_lich_hoc': 1,
+        'ngay': '2026-09-07',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      // S1: join on session date -> INCLUDED
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 1,
+        'id_hoc_sinh': 1,
+        'id_lop': 1,
+        'tu_ngay': '2026-09-07',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      // S2: end on session date -> INCLUDED
+      await db.insert('hoc_sinh', {
+        'id': 2,
+        'ho_ten': 'S2',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 2,
+        'id_hoc_sinh': 2,
+        'id_lop': 1,
+        'tu_ngay': '2026-09-01',
+        'den_ngay': '2026-09-07',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      // S3: join after -> EXCLUDED
+      await db.insert('hoc_sinh', {
+        'id': 3,
+        'ho_ten': 'S3',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 3,
+        'id_hoc_sinh': 3,
+        'id_lop': 1,
+        'tu_ngay': '2026-09-08',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      // S4: end before -> EXCLUDED
+      await db.insert('hoc_sinh', {
+        'id': 4,
+        'ho_ten': 'S4',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 4,
+        'id_hoc_sinh': 4,
+        'id_lop': 1,
+        'tu_ngay': '2026-09-01',
+        'den_ngay': '2026-09-06',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      final result = await rosterService.getRosterForSession(1);
+      expect(result.participants.length, 2);
+      expect(result.participants.any((m) => m.student.hoTen == 'S1'), isTrue);
+      expect(result.participants.any((m) => m.student.hoTen == 'S2'), isTrue);
+    });
+
+    test('Historical roster preserves archived students', () async {
+      await db.insert('lop', {
+        'id': 1,
+        'ten_lop': 'C',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('lich_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
       });
       await db.insert('buoi_hoc', {
         'id': 10,
@@ -327,7 +475,7 @@ void main() {
         'gio_ket_thuc': '19:00',
         'loai': 'CHINH',
         'created_at': now,
-        'updated_at': now
+        'updated_at': now,
       });
 
       // S1 was active in May
@@ -336,7 +484,7 @@ void main() {
         'ho_ten': 'Old Student',
         'da_luu_tru': 1,
         'created_at': now,
-        'updated_at': now
+        'updated_at': now,
       });
       await db.insert('tham_gia_lop', {
         'id': 1,
@@ -345,7 +493,7 @@ void main() {
         'tu_ngay': '2026-01-01',
         'den_ngay': '2026-06-01',
         'created_at': now,
-        'updated_at': now
+        'updated_at': now,
       });
 
       final result = await rosterService.getRosterForSession(10);
@@ -354,17 +502,77 @@ void main() {
     });
 
     test('Deterministic ordering by name then ID', () async {
-      await db.insert('lop', {'id': 1, 'ten_lop': 'C', 'created_at': now, 'updated_at': now});
-      await db.insert('lich_hoc', {'id': 1, 'id_lop': 1, 'thu_trong_tuan': 1, 'gio_bat_dau': '17:30', 'gio_ket_thuc': '19:00', 'hieu_luc_tu': '2026-01-01', 'created_at': now, 'updated_at': now});
-      await db.insert('buoi_hoc', {'id': 1, 'id_lop': 1, 'id_lich_hoc': 1, 'ngay': '2026-09-07', 'gio_bat_dau': '17:30', 'gio_ket_thuc': '19:00', 'loai': 'CHINH', 'created_at': now, 'updated_at': now});
+      await db.insert('lop', {
+        'id': 1,
+        'ten_lop': 'C',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('lich_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('buoi_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'id_lich_hoc': 1,
+        'ngay': '2026-09-07',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'created_at': now,
+        'updated_at': now,
+      });
 
-      await db.insert('hoc_sinh', {'id': 50, 'ho_ten': 'B', 'created_at': now, 'updated_at': now});
-      await db.insert('hoc_sinh', {'id': 10, 'ho_ten': 'A', 'created_at': now, 'updated_at': now});
-      await db.insert('hoc_sinh', {'id': 20, 'ho_ten': 'A', 'created_at': now, 'updated_at': now});
+      await db.insert('hoc_sinh', {
+        'id': 50,
+        'ho_ten': 'B',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('hoc_sinh', {
+        'id': 10,
+        'ho_ten': 'A',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('hoc_sinh', {
+        'id': 20,
+        'ho_ten': 'A',
+        'created_at': now,
+        'updated_at': now,
+      });
 
-      await db.insert('tham_gia_lop', {'id': 1, 'id_hoc_sinh': 50, 'id_lop': 1, 'tu_ngay': '2026-01-01', 'created_at': now, 'updated_at': now});
-      await db.insert('tham_gia_lop', {'id': 2, 'id_hoc_sinh': 10, 'id_lop': 1, 'tu_ngay': '2026-01-01', 'created_at': now, 'updated_at': now});
-      await db.insert('tham_gia_lop', {'id': 3, 'id_hoc_sinh': 20, 'id_lop': 1, 'tu_ngay': '2026-01-01', 'created_at': now, 'updated_at': now});
+      await db.insert('tham_gia_lop', {
+        'id': 1,
+        'id_hoc_sinh': 50,
+        'id_lop': 1,
+        'tu_ngay': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 2,
+        'id_hoc_sinh': 10,
+        'id_lop': 1,
+        'tu_ngay': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 3,
+        'id_hoc_sinh': 20,
+        'id_lop': 1,
+        'tu_ngay': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
 
       final result = await rosterService.getRosterForSession(1);
       expect(result.participants[0].student.hoTen, 'A');
@@ -403,12 +611,22 @@ void main() {
         'updated_at': now,
       });
 
-      final before = await db.rawQuery('SELECT count(*) as cnt FROM buoi_hoc');
-      await rosterService.getRosterForSession(1);
-      await rosterService.getRosterForSession(1);
-      final after = await db.rawQuery('SELECT count(*) as cnt FROM buoi_hoc');
+      // Capture state before
+      final beforeBuoiHoc = await db.query('buoi_hoc');
+      final beforeThamGia = await db.query('tham_gia_lop');
+      final beforePhanCa = await db.query('phan_ca_hoc_sinh');
+      final beforeLichHoc = await db.query('lich_hoc');
+      final beforeHocSinh = await db.query('hoc_sinh');
 
-      expect(before, after);
+      await rosterService.getRosterForSession(1);
+      await rosterService.getRosterForSession(1);
+
+      // Verify state after
+      expect(await db.query('buoi_hoc'), beforeBuoiHoc);
+      expect(await db.query('tham_gia_lop'), beforeThamGia);
+      expect(await db.query('phan_ca_hoc_sinh'), beforePhanCa);
+      expect(await db.query('lich_hoc'), beforeLichHoc);
+      expect(await db.query('hoc_sinh'), beforeHocSinh);
     });
 
     test('HOC_BU returns empty participants with adjustment requirement',

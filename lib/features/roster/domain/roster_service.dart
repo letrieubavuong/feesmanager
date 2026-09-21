@@ -51,8 +51,9 @@ class RosterService {
         ),
       );
     } else {
-      final schedule =
-          await _scheduleService.getScheduleById(session.idLichHoc!);
+      final schedule = await _scheduleService.getScheduleById(
+        session.idLichHoc!,
+      );
       final sessionDate = DateTime.parse(session.ngay);
 
       if (schedule == null) {
@@ -73,7 +74,8 @@ class RosterService {
         issues.add(
           const RosterIssue(
             code: RosterIssueCode.SESSION_SCHEDULE_NOT_EFFECTIVE,
-            message: 'Thứ trong tuần của lịch gốc không khớp với ngày buổi học.',
+            message:
+                'Thứ trong tuần của lịch gốc không khớp với ngày buổi học.',
           ),
         );
       } else if (session.ngay.compareTo(schedule.hieuLucTu) < 0 ||
@@ -89,7 +91,9 @@ class RosterService {
     }
 
     // Fail closed on blocking integrity issues
-    if (issues.any((i) => i.code != RosterIssueCode.UNASSIGNED_IN_MULTI_SHIFT)) {
+    if (issues.any(
+      (i) => i.code != RosterIssueCode.UNASSIGNED_IN_MULTI_SHIFT,
+    )) {
       return RosterResult(
         session: session,
         participants: [],
@@ -179,14 +183,32 @@ class RosterService {
           final a = activeAssignments.first;
 
           // Harden Assignment Integrity
-          final aSchedule =
-              await _scheduleService.getScheduleById(a.idLichHoc);
+          final aSchedule = await _scheduleService.getScheduleById(a.idLichHoc);
+          bool isAssignmentValid = true;
+
+          // 1. Basic Schedule Integrity
           if (aSchedule == null ||
               aSchedule.idLop != session.idLop ||
               aSchedule.thuTrongTuan != referenceDate.weekday ||
               session.ngay.compareTo(aSchedule.hieuLucTu) < 0 ||
               (aSchedule.hieuLucDen != null &&
                   session.ngay.compareTo(aSchedule.hieuLucDen!) > 0)) {
+            isAssignmentValid = false;
+          }
+
+          // 2. Membership Interval Alignment
+          // a.tu_ngay >= m.tu_ngay
+          if (isAssignmentValid && a.tuNgay.compareTo(m.tuNgay) < 0) {
+            isAssignmentValid = false;
+          }
+          // if m.den_ngay != null => a.den_ngay != null AND a.den_ngay <= m.den_ngay
+          if (isAssignmentValid && m.denNgay != null) {
+            if (a.denNgay == null || a.denNgay!.compareTo(m.denNgay!) > 0) {
+              isAssignmentValid = false;
+            }
+          }
+
+          if (!isAssignmentValid) {
             issues.add(
               RosterIssue(
                 code: RosterIssueCode.INVALID_ASSIGNMENT,

@@ -1,43 +1,37 @@
-# Phase 5 Walkthrough: Canonical Session Roster
+# Phase 5 Walkthrough: Canonical Session Roster Hardening
 
-I have implemented the canonical roster engine, which is the sole source of truth for determining which students belong to a specific class session.
+I have completed the hardening and final verification for the Canonical Session Roster implementation. The engine is now resilient against data corruption and correctly handles complex scheduling scenarios.
 
 ## Key Accomplishments
 
-### 1. Robust Roster Engine
-The `RosterService.getRosterForSession(sessionId)` implements a sophisticated algorithm to resolve student lists based on historical data:
-- **Membership Resolution**: Correctly identifies students active on the session date, respecting join/leave boundaries and pause/resume intervals.
-- **Smart Shift Logic**: Automatically handles classes with a single shift (including all students) and those with multiple shifts (requiring explicit schedule assignments).
-- **Integrity Checks**: Detects and reports data anomalies like unassigned students in multi-shift classes or multiple active assignments for a single student.
+### 1. Corrected Multi-Shift Detection
+The logic for identifying "Multi-shift" mode has been refined to be weekday-aware. A class is only considered in multi-shift mode for a specific session if it has two or more effective schedules on the **same day of the week** as that session. This prevents false positives where a class has multiple weekly sessions but only one on the current day.
 
-### 2. Historical Data Preservation
-The system ensures that "what happened in the past, stays in the past":
-- **Archive Awareness**: Students or classes that are currently archived still appear correctly in historical session rosters if they were active at that time.
-- **Pure Reads**: The roster calculation is entirely on-the-fly and read-only, ensuring no accidental database mutations occur during viewing.
+### 2. "Fail-Closed" Integrity Protection
+To prevent incorrect attendance or billing in later phases, the roster engine now fails closed when session integrity is compromised:
+- **Blocking Issues**: If a `CHINH` session lacks a valid schedule link, belongs to the wrong class, or uses an expired/incorrect weekday schedule, the roster returns zero participants and marks the result as operationally invalid.
+- **Assignment Validation**: Every student assignment in a multi-shift class is validated against its source schedule. Invalid assignments (e.g., pointing to a schedule on a different weekday) are reported as `INVALID_ASSIGNMENT` rather than silently ignored.
 
-### 3. Integrated Roster UI
-A dedicated, read-only roster view has been added:
-- **Navigation**: Accessible directly from the "Buổi học" tab by tapping any session.
-- **Clear Visualization**: Displays session details, participant list with inclusion sources, and clear warnings for any integrity issues or unassigned members.
-- **Future-Ready**: Includes explicit messaging for `HOC_BU` and `PHAT_SINH` sessions, indicating that participants will be determined via adjustments in later phases.
+### 3. Deterministic and Pure Logic
+- **Stable Ordering**: Roster participants and unassigned lists are now sorted by name, with student ID as a tie-breaker, ensuring a consistent UI experience.
+- **No Side Effects**: Roster resolution remains a pure read operation with zero database mutations, confirmed by exhaustive test cases.
 
-### 4. Quality & Verification
-- **100% Pass Rate**: Added 10 new tests, bringing the total to **98 passing tests**.
-- **Static Analysis**: Verified with `flutter analyze`, resulting in zero issues.
-- **Idempotency & Purity**: Domain tests specifically verify that multiple roster loads do not change database state.
+### 4. Expanded Test Coverage
+Added a new specialized test suite `integrity_corrupted_data_test.dart` to simulate and verify handling of database-level corruption and edge cases.
+- **Total Tests**: Increased from 98 to **104 tests passing**.
+- **Static Analysis**: Remained clean with zero issues.
 
 ## Verification Summary
 
 ### Automated Tests
-Ran the full suite of unit, repository, and widget tests.
-- **Total Tests**: 98
+Ran the complete suite covering Phases 0 through 5.
+- **Total Tests**: 104
 - **Pass Rate**: 100%
 
 ### Static Analysis
 `flutter analyze` returned 0 issues.
 
 ### CI/CD
-All changes pushed to `main`.
-**Commit SHA**: `d9287682e85055b854378f85f9565576a086085a`
+All changes pushed to `main` (Commit: `ce2fa143cb4bc786659d9a94df5a043328d155bf`).
 
 **PHASE 5 READY FOR ACCEPTANCE**
