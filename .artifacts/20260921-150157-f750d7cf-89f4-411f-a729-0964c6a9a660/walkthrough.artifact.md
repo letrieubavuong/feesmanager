@@ -1,34 +1,32 @@
-# Phase 5 Walkthrough: Canonical Session Roster Final Hardening
+# Phase 5 Walkthrough: Canonical Session Roster Final Completion
 
-I have completed the final quality gate for Phase 5. The roster engine is now fully hardened against interval misalignments and complex data anomalies, ensuring that every session's student list is accurate and explainable.
+I have finalized Phase 5: Canonical Session Roster. The engine is now fully hardened, verified with a comprehensive test suite of 110 tests, and integrated with a read-only UI.
 
 ## Key Accomplishments
 
-### 1. Enhanced Interval Integrity
-The engine now enforces a strict containment rule: a recurring assignment (`phan_ca_hoc_sinh`) must be logically contained within a valid membership interval (`tham_gia_lop`).
-- **Validation**: If an assignment starts before enrollment or persists after a student leaves the class, it is marked as `INVALID_ASSIGNMENT`.
-- **Fail-Closed**: These integrity issues block students from being included in the active participant list, preventing billing or attendance errors.
+### 1. Hardened Domain Logic
+- **Interval Containment**: Implemented strict validation where a shift assignment (`phan_ca_hoc_sinh`) must reside entirely within the student's membership interval (`tham_gia_lop`).
+- **Boundary Precision**: Confirmed that roster inclusion is inclusive of start and end dates for both memberships and assignments.
+- **Fail-Closed Integrity**: Any corruption in session linkage or assignment data results in a blocking `RosterIssue` and an empty participant list, preventing downstream errors.
 
-### 2. Rigorous Read Purity
-Resolving a roster is guaranteed to be a zero-side-effect operation. I expanded the verification tests to monitor five core database tables (`buoi_hoc`, `tham_gia_lop`, `phan_ca_hoc_sinh`, `lich_hoc`, and `hoc_sinh`), confirming that no inserts, updates, or timestamp changes occur during roster resolution.
+### 2. Comprehensive Historical Support
+- **Archive Resilience**: Verified that historical rosters remain accurate even after students or classes are archived.
+- **Status Persistence**: Confirmed that `HUY` (Cancelled) and `NGHI_LE` (Holiday) sessions retain their projected rosters for audit purposes.
 
-### 3. Comprehensive Verification Suite
-The automated test suite has been significantly expanded to cover 105 scenarios:
-- **Pause/Resume Scenarios**: Verified accurate rosters across multiple student membership breaks.
-- **Archive Resilience**: Confirmed that currently archived students/classes are correctly resolved in historical sessions.
-- **Corrupted Data Defense**: Injected overlapping assignments and invalid schedule links to ensure the engine fails gracefully (fail-closed).
-- **Widget Flow**: Added specialized widget tests for `PHAT_SINH` sessions and blocking error displays.
+### 3. Rigorous Read Purity & Performance
+- **Zero Side-Effects**: Guaranteed that `getRosterForSession` is a pure read operation. Expanded tests confirm no mutations across 5 core database tables.
+- **Deterministic Sorting**: Participants are consistently sorted by name and student ID to ensure UI stability.
 
-### 4. CI/CD Compliance
-- **Formatting**: All source and test files are strictly formatted to pass the `dart format` gate.
-- **Static Analysis**: `flutter analyze` is 100% clean.
-- **CI Readiness**: Pushed to `main` with all generated providers synchronized.
+### 4. Quality Gate & CI/CD
+- **Testing**: Increased test coverage to **110 passing tests**.
+- **Widget Flow**: Added automated tests for all roster UI states, including errors, unassigned warnings, and navigation from the session tab.
+- **CI/CD**: Fixed formatting issues and verified a clean `flutter analyze` run.
 
 ## Verification Summary
 
 ### Automated Tests
-Ran the full Phase 0-5 test suite.
-- **Total Tests**: 105
+Ran the full suite covering Phase 0 to Phase 5.
+- **Total Tests**: 110
 - **Pass Rate**: 100%
 
 ### Static Analysis
@@ -36,6 +34,6 @@ Ran the full Phase 0-5 test suite.
 
 ### CI/CD
 All changes pushed to `main`.
-**Commit SHA**: `9e36f9465a223e1fcf8b6c881de524840b3b7bde`
+**Commit SHA**: `67a54e03f94550e81ca1dab4f74298ac73cc1afa`
 
 **PHASE 5 READY FOR ACCEPTANCE**

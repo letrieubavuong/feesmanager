@@ -612,6 +612,320 @@ void main() {
     );
 
     test(
+      'HOC_BU returns empty participants with adjustment requirement',
+      () async {
+        await db.insert('lop', {
+          'id': 1,
+          'ten_lop': 'C',
+          'created_at': now,
+          'updated_at': now,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 50,
+          'id_lop': 1,
+          'id_lich_hoc': null,
+          'ngay': '2026-09-10',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '10:00',
+          'loai': 'HOC_BU',
+          'created_at': now,
+          'updated_at': now,
+        });
+
+        final result = await rosterService.getRosterForSession(50);
+        expect(result.participants, isEmpty);
+        expect(result.unassignedMembers, isEmpty);
+        expect(result.requiresOneOffAdjustments, isTrue);
+      },
+    );
+
+    test('Assignment boundary inclusive: tu_ngay == session.ngay', () async {
+      await db.insert('lop', {
+        'id': 1,
+        'ten_lop': 'Multi',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('lich_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('lich_hoc', {
+        'id': 2,
+        'id_lop': 1,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '19:00',
+        'gio_ket_thuc': '20:30',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 1,
+        'id_hoc_sinh': 1,
+        'id_lop': 1,
+        'tu_ngay': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      // Assignment starts exactly on session date
+      await db.insert('phan_ca_hoc_sinh', {
+        'id': 1,
+        'id_hoc_sinh': 1,
+        'id_lop': 1,
+        'id_lich_hoc': 1,
+        'tu_ngay': '2026-09-07',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      // Session 07/09 (Mon)
+      await db.insert('buoi_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'id_lich_hoc': 1,
+        'ngay': '2026-09-07',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      final result = await rosterService.getRosterForSession(1);
+      expect(result.participants.length, 1);
+    });
+
+    test('Assignment boundary inclusive: den_ngay == session.ngay', () async {
+      await db.insert('lop', {
+        'id': 1,
+        'ten_lop': 'Multi',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('lich_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('lich_hoc', {
+        'id': 2,
+        'id_lop': 1,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '19:00',
+        'gio_ket_thuc': '20:30',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 1,
+        'id_hoc_sinh': 1,
+        'id_lop': 1,
+        'tu_ngay': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      // Assignment ends exactly on session date
+      await db.insert('phan_ca_hoc_sinh', {
+        'id': 1,
+        'id_hoc_sinh': 1,
+        'id_lop': 1,
+        'id_lich_hoc': 1,
+        'tu_ngay': '2026-09-01',
+        'den_ngay': '2026-09-07',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      // Session 07/09 (Mon)
+      await db.insert('buoi_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'id_lich_hoc': 1,
+        'ngay': '2026-09-07',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      final result = await rosterService.getRosterForSession(1);
+      expect(result.participants.length, 1);
+    });
+
+    test('Assignment inactive: session.ngay < assignment.tu_ngay', () async {
+      await db.insert('lop', {
+        'id': 1,
+        'ten_lop': 'Multi',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('lich_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('lich_hoc', {
+        'id': 2,
+        'id_lop': 1,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '19:00',
+        'gio_ket_thuc': '20:30',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 1,
+        'id_hoc_sinh': 1,
+        'id_lop': 1,
+        'tu_ngay': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      // Assignment starts AFTER session date
+      await db.insert('phan_ca_hoc_sinh', {
+        'id': 1,
+        'id_hoc_sinh': 1,
+        'id_lop': 1,
+        'id_lich_hoc': 1,
+        'tu_ngay': '2026-09-14',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      // Session 07/09 (Mon)
+      await db.insert('buoi_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'id_lich_hoc': 1,
+        'ngay': '2026-09-07',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      final result = await rosterService.getRosterForSession(1);
+      expect(result.participants.length, 0);
+    });
+
+    test('Assignment inactive: session.ngay > assignment.den_ngay', () async {
+      await db.insert('lop', {
+        'id': 1,
+        'ten_lop': 'Multi',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('lich_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('lich_hoc', {
+        'id': 2,
+        'id_lop': 1,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '19:00',
+        'gio_ket_thuc': '20:30',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 1,
+        'id_hoc_sinh': 1,
+        'id_lop': 1,
+        'tu_ngay': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      // Assignment ends BEFORE session date
+      await db.insert('phan_ca_hoc_sinh', {
+        'id': 1,
+        'id_hoc_sinh': 1,
+        'id_lop': 1,
+        'id_lich_hoc': 1,
+        'tu_ngay': '2026-09-01',
+        'den_ngay': '2026-09-06',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      // Session 07/09 (Mon)
+      await db.insert('buoi_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'id_lich_hoc': 1,
+        'ngay': '2026-09-07',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      final result = await rosterService.getRosterForSession(1);
+      expect(result.participants.length, 0);
+    });
+
+    test(
       'Read purity: getRosterForSession does not mutate any core table',
       () async {
         await db.insert('lop', {

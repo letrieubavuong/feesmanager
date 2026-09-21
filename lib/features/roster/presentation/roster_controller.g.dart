@@ -39,21 +39,15 @@ class SessionRosterFamily extends Family<AsyncValue<RosterResult>> {
   const SessionRosterFamily();
 
   /// See also [sessionRoster].
-  SessionRosterProvider call(
-    int sessionId,
-  ) {
-    return SessionRosterProvider(
-      sessionId,
-    );
+  SessionRosterProvider call(int sessionId) {
+    return SessionRosterProvider(sessionId);
   }
 
   @override
   SessionRosterProvider getProviderOverride(
     covariant SessionRosterProvider provider,
   ) {
-    return call(
-      provider.sessionId,
-    );
+    return call(provider.sessionId);
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -74,24 +68,19 @@ class SessionRosterFamily extends Family<AsyncValue<RosterResult>> {
 /// See also [sessionRoster].
 class SessionRosterProvider extends AutoDisposeFutureProvider<RosterResult> {
   /// See also [sessionRoster].
-  SessionRosterProvider(
-    int sessionId,
-  ) : this._internal(
-          (ref) => sessionRoster(
-            ref as SessionRosterRef,
-            sessionId,
-          ),
-          from: sessionRosterProvider,
-          name: r'sessionRosterProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$sessionRosterHash,
-          dependencies: SessionRosterFamily._dependencies,
-          allTransitiveDependencies:
-              SessionRosterFamily._allTransitiveDependencies,
-          sessionId: sessionId,
-        );
+  SessionRosterProvider(int sessionId)
+    : this._internal(
+        (ref) => sessionRoster(ref as SessionRosterRef, sessionId),
+        from: sessionRosterProvider,
+        name: r'sessionRosterProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$sessionRosterHash,
+        dependencies: SessionRosterFamily._dependencies,
+        allTransitiveDependencies:
+            SessionRosterFamily._allTransitiveDependencies,
+        sessionId: sessionId,
+      );
 
   SessionRosterProvider._internal(
     super._createNotifier, {
@@ -155,5 +144,6 @@ class _SessionRosterProviderElement
   @override
   int get sessionId => (origin as SessionRosterProvider).sessionId;
 }
+
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

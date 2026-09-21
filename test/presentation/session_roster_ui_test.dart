@@ -123,6 +123,29 @@ void main() {
     expect(find.textContaining('cần điều chỉnh buổi học'), findsOneWidget);
   });
 
+  testWidgets('SessionRosterView shows HOC_BU message', (tester) async {
+    final hocBuSession = testSession.copyWith(loai: SessionType.HOC_BU);
+    final rosterResult = RosterResult(
+      session: hocBuSession,
+      participants: [],
+      unassignedMembers: [],
+      issues: [],
+      requiresOneOffAdjustments: true,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sessionRosterProvider(1).overrideWith((ref) async => rosterResult),
+        ],
+        child: const MaterialApp(home: SessionRosterView(sessionId: 1)),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.textContaining('cần điều chỉnh buổi học'), findsOneWidget);
+  });
+
   testWidgets('SessionRosterView shows blocking integrity issue', (
     tester,
   ) async {
