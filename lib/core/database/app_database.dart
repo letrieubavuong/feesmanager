@@ -2,10 +2,13 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class AppDatabase {
-  static const String _dbName = 'tuition_next.db';
-  static const int _dbVersion = 2;
+  static const String _defaultDbName = 'tuition_next.db';
+  static const int _dbVersion = 3;
 
+  final String dbName;
   Database? _database;
+
+  AppDatabase({this.dbName = _defaultDbName});
 
   Future<Database> get database async {
     _database ??= await _initDatabase();
@@ -13,8 +16,7 @@ class AppDatabase {
   }
 
   Future<Database> _initDatabase() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, _dbName);
+    final path = isAbsolute(dbName) ? dbName : join(await getDatabasesPath(), dbName);
 
     return await openDatabase(
       path,
@@ -22,6 +24,10 @@ class AppDatabase {
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
+      onOpen: (db) async {
+        // Essential for complex migrations that swap tables
+        await db.execute('PRAGMA foreign_keys = ON');
+      },
     );
   }
 
@@ -34,11 +40,17 @@ class AppDatabase {
     if (version >= 2) {
       await _migrateV1ToV2(db);
     }
+    if (version >= 3) {
+      await _migrateV2ToV3(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await _migrateV1ToV2(db);
+    }
+    if (oldVersion < 3) {
+      await _migrateV2ToV3(db);
     }
   }
 
@@ -114,5 +126,61 @@ class AppDatabase {
     await db.execute('CREATE INDEX idx_lop_da_luu_tru ON lop(da_luu_tru)');
     await db.execute('CREATE INDEX idx_tham_gia_lop_hoc_sinh ON tham_gia_lop(id_hoc_sinh)');
     await db.execute('CREATE INDEX idx_tham_gia_lop_lop ON tham_gia_lop(id_lop)');
+  }
+
+  Future<void> _migrateV2ToV3(Database db) async {
+    // PRAGMA foreign_keys = OFF must be outside transaction to work in some SQLite versions/drivers
+    await db.execute('PRAGMA foreign_keys = OFF');
+    try {
+      await db.transaction((txn) async {
+        // 1. Create new table with constraints
+      await txn.execute('''
+        CREATE TABLE tham_gia_lop_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          id_hoc_sinh INTEGER NOT NULL,
+          id_lop INTEGER NOT NULL,
+          tu_ngay TEXT NOT NULL,
+          den_ngay TEXT NULL,
+          ly_do_ket_thuc TEXT NULL,
+          mien_giam_phan_tram INTEGER NOT NULL DEFAULT 0,
+          ghi_chu TEXT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          UNIQUE(id_hoc_sinh, id_lop, tu_ngay),
+          CHECK (den_ngay IS NULL OR den_ngay >= tu_ngay),
+          CHECK (mien_giam_phan_tram BETWEEN 0 AND 100)
+        )
+      ''');
+
+      // 2. Copy data
+      await txn.execute('''
+        INSERT INTO tham_gia_lop_new (
+          id, id_hoc_sinh, id_lop, tu_ngay, den_ngay, 
+          ly_do_ket_thuc, mien_giam_phan_tram, ghi_chu, 
+          created_at, updated_at
+        )
+        SELECT 
+          id, id_hoc_sinh, id_lop, tu_ngay, den_ngay, 
+          ly_do_ket_thuc, mien_giam_phan_tram, ghi_chu, 
+          created_at, updated_at
+        FROM tham_gia_lop
+      ''');
+
+      // 3. Drop old table and rename
+      await txn.execute('DROP TABLE tham_gia_lop');
+      await txn.execute('ALTER TABLE tham_gia_lop_new RENAME TO tham_gia_lop');
+
+      // 4. Recreate indexes
+      await txn.execute('''
+        CREATE UNIQUE INDEX idx_tham_gia_lop_open_interval 
+        ON tham_gia_lop(id_hoc_sinh, id_lop) 
+        WHERE den_ngay IS NULL
+      ''');
+      await txn.execute('CREATE INDEX idx_tham_gia_lop_hoc_sinh ON tham_gia_lop(id_hoc_sinh)');
+      await txn.execute('CREATE INDEX idx_tham_gia_lop_lop ON tham_gia_lop(id_lop)');
+    });
+    } finally {
+      await db.execute('PRAGMA foreign_keys = ON');
+    }
   }
 }

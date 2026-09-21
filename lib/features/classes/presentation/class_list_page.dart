@@ -15,6 +15,7 @@ class ClassListPage extends ConsumerStatefulWidget {
 
 class _ClassListPageState extends ConsumerState<ClassListPage> {
   final _searchController = TextEditingController();
+  bool _showArchived = false;
 
   @override
   void dispose() {
@@ -29,6 +30,20 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Lớp học'),
+        actions: [
+          PopupMenuButton<bool>(
+            initialValue: _showArchived,
+            onSelected: (value) {
+              setState(() => _showArchived = value);
+              ref.read(classListControllerProvider.notifier).toggleIncludeArchived(value);
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: false, child: Text('Đang hoạt động')),
+              const PopupMenuItem(value: true, child: Text('Đã lưu trữ')),
+            ],
+            icon: const Icon(Icons.filter_list),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
@@ -57,7 +72,9 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
       body: classListAsync.when(
         data: (classes) {
           if (classes.isEmpty) {
-            return const Center(child: Text('Không tìm thấy lớp học nào.'));
+            return Center(
+              child: Text(_showArchived ? 'Không có lớp học nào đã lưu trữ.' : 'Không tìm thấy lớp học nào.'),
+            );
           }
           return RefreshIndicator(
             onRefresh: () => ref.read(classListControllerProvider.notifier).refresh(),
@@ -95,7 +112,14 @@ class ClassListTile extends ConsumerWidget {
     final sizeAsync = ref.watch(classSizeProvider(cls.id!));
 
     return ListTile(
-      title: Text(cls.tenLop, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(
+        cls.tenLop, 
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          decoration: cls.daLuuTru ? TextDecoration.lineThrough : null,
+          color: cls.daLuuTru ? Colors.grey : null,
+        ),
+      ),
       subtitle: Text(
         '${cls.khoi != null ? 'Khối ${cls.khoi}' : ''} ${cls.monHoc != null ? '• ${cls.monHoc}' : ''}',
       ),

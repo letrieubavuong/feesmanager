@@ -24,16 +24,22 @@ class MembershipService {
     int mienGiam = 0,
     String? ghiChu,
   }) async {
-    final open = await _repository.getOpenMembership(studentId, classId);
-    if (open != null) {
-      throw Exception('Học sinh đã có membership đang hoạt động trong lớp này');
+    if (mienGiam < 0 || mienGiam > 100) {
+      throw Exception('Miễn giảm phải từ 0 đến 100%');
     }
 
     final dateFormat = DateFormat('yyyy-MM-dd');
+    final joinDateStr = dateFormat.format(joinDate);
+
+    final isOverlap = await _repository.hasOverlappingMembership(studentId, classId, joinDateStr, null);
+    if (isOverlap) {
+      throw Exception('Khoảng thời gian này đã có membership khác của học sinh trong lớp');
+    }
+
     final membership = ClassMembership(
       idHocSinh: studentId,
       idLop: classId,
-      tuNgay: dateFormat.format(joinDate),
+      tuNgay: joinDateStr,
       mienGiamPhanTram: mienGiam,
       ghiChu: ghiChu,
       createdAt: DateTime.now(),
@@ -61,6 +67,9 @@ class MembershipService {
       throw Exception('Ngày kết thúc không được trước ngày bắt đầu (${open.tuNgay})');
     }
 
+    // Since we are closing an open interval, we don't need to check overlap for the rest of history 
+    // because it was already checked when the interval was opened.
+
     final updated = open.copyWith(
       denNgay: endDateStr,
       lyDoKetThuc: reason,
@@ -68,6 +77,11 @@ class MembershipService {
     );
 
     await _repository.update(updated);
+  }
+
+  Future<ClassMembership?> getActiveMembership(int studentId, int classId, DateTime date) {
+    final dateFormat = DateFormat('yyyy-MM-dd');
+    return _repository.getActiveMembership(studentId, classId, dateFormat.format(date));
   }
 
   Future<List<ClassMembership>> getMembershipHistory(int studentId, {int? classId}) async {

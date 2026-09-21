@@ -6,23 +6,43 @@ part 'class_controller.g.dart';
 
 @riverpod
 class ClassListController extends _$ClassListController {
+  bool _includeArchived = false;
+  String _query = '';
+
   @override
   FutureOr<List<ClassEntity>> build() async {
     final service = await ref.watch(classServiceProvider.future);
-    return service.getClasses();
+    if (_query.isNotEmpty) {
+      return service.searchClasses(_query, includeArchived: _includeArchived);
+    }
+    return service.getClasses(includeArchived: _includeArchived);
   }
 
   Future<void> search(String query) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final service = await ref.read(classServiceProvider.future);
-      return service.searchClasses(query);
-    });
+    _query = query;
+    ref.invalidateSelf();
+  }
+
+  void toggleIncludeArchived(bool value) {
+    _includeArchived = value;
+    ref.invalidateSelf();
   }
 
   Future<void> refresh() async {
     ref.invalidateSelf();
     await future;
+  }
+
+  Future<void> restore(int id) async {
+    final service = await ref.read(classServiceProvider.future);
+    await service.restoreClass(id);
+    await refresh();
+  }
+
+  Future<void> archive(int id) async {
+    final service = await ref.read(classServiceProvider.future);
+    await service.archiveClass(id);
+    await refresh();
   }
 }
 

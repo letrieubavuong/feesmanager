@@ -74,6 +74,46 @@ class MembershipRepository {
     return ClassMembership.fromMap(maps.first);
   }
 
+  Future<ClassMembership?> getActiveMembership(int studentId, int classId, String dateStr) async {
+    final List<Map<String, dynamic>> maps = await _db.query(
+      'tham_gia_lop',
+      where: 'id_hoc_sinh = ? AND id_lop = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+      whereArgs: [studentId, classId, dateStr, dateStr],
+    );
+
+    if (maps.isEmpty) return null;
+    return ClassMembership.fromMap(maps.first);
+  }
+
+  Future<bool> hasOverlappingMembership(int studentId, int classId, String start, String? end, {int? excludeId}) async {
+    String whereClause = 'id_hoc_sinh = ? AND id_lop = ?';
+    List<dynamic> whereArgs = [studentId, classId];
+    
+    if (excludeId != null) {
+      whereClause += ' AND id != ?';
+      whereArgs.add(excludeId);
+    }
+
+    final List<Map<String, dynamic>> existing = await _db.query(
+      'tham_gia_lop',
+      where: whereClause,
+      whereArgs: whereArgs,
+    );
+
+    for (final map in existing) {
+      final eStart = map['tu_ngay'] as String;
+      final eEnd = map['den_ngay'] as String?;
+
+      bool overlap = true;
+      if (eEnd != null && start.compareTo(eEnd) > 0) overlap = false;
+      if (end != null && eStart.compareTo(end) > 0) overlap = false;
+
+      if (overlap) return true;
+    }
+
+    return false;
+  }
+
   Future<int> getClassSize(int classId, String dateStr) async {
     final result = await _db.rawQuery(
       'SELECT COUNT(*) as count FROM tham_gia_lop WHERE id_lop = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',

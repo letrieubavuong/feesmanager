@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/database/database_provider.dart';
+import '../../memberships/domain/membership_service.dart';
 import '../data/class_repository.dart';
 import 'class.dart';
 
@@ -13,8 +14,9 @@ Future<ClassRepository> classRepository(ClassRepositoryRef ref) async {
 
 class ClassService {
   final ClassRepository _repository;
+  final MembershipService _membershipService;
 
-  ClassService(this._repository);
+  ClassService(this._repository, this._membershipService);
 
   Future<List<ClassEntity>> getClasses({bool includeArchived = false}) {
     return _repository.getAll(includeArchived: includeArchived);
@@ -44,9 +46,11 @@ class ClassService {
     }
   }
 
+  Future<int> getActiveMemberCount(int id) {
+    return _membershipService.getClassSize(id);
+  }
+
   Future<void> archiveClass(int id) async {
-    // Phase 2: We should check for active memberships here if we want to be strict,
-    // but the requirement for archiveClass says we should warn in UI.
     await _repository.setArchiveStatus(id, true);
   }
 
@@ -62,5 +66,6 @@ class ClassService {
 @Riverpod(keepAlive: true)
 Future<ClassService> classService(ClassServiceRef ref) async {
   final repo = await ref.watch(classRepositoryProvider.future);
-  return ClassService(repo);
+  final membershipService = await ref.watch(membershipServiceProvider.future);
+  return ClassService(repo, membershipService);
 }

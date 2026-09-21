@@ -16,7 +16,7 @@ class AddStudentToClassDialog extends ConsumerStatefulWidget {
 
 class _AddStudentToClassDialogState extends ConsumerState<AddStudentToClassDialog> {
   Student? _selectedStudent;
-  final _joinDateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(DateTime.now()));
+  DateTime _joinDate = DateTime.now();
   final _mienGiamController = TextEditingController(text: '0');
   final _ghiChuController = TextEditingController();
 
@@ -41,9 +41,19 @@ class _AddStudentToClassDialogState extends ConsumerState<AddStudentToClassDialo
               error: (e, _) => Text('Lỗi tải HS: $e'),
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: _joinDateController,
-              decoration: const InputDecoration(labelText: 'Ngày bắt đầu (YYYY-MM-DD)', border: OutlineInputBorder()),
+            ListTile(
+              title: const Text('Ngày bắt đầu'),
+              subtitle: Text(DateFormat('dd/MM/yyyy').format(_joinDate)),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _joinDate,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) setState(() => _joinDate = picked);
+              },
             ),
             const SizedBox(height: 16),
             TextField(
@@ -76,7 +86,7 @@ class _AddStudentToClassDialogState extends ConsumerState<AddStudentToClassDialo
       await service.enrollStudent(
         studentId: _selectedStudent!.id!,
         classId: widget.classId,
-        joinDate: DateTime.parse(_joinDateController.text),
+        joinDate: _joinDate,
         mienGiam: int.tryParse(_mienGiamController.text) ?? 0,
         ghiChu: _ghiChuController.text,
       );
@@ -84,7 +94,7 @@ class _AddStudentToClassDialogState extends ConsumerState<AddStudentToClassDialo
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
       }
     }
   }

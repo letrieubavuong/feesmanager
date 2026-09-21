@@ -118,11 +118,24 @@ class StudentDetailPage extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: ListTile(
         title: classAsync.when(
-          data: (c) => Text(c?.tenLop ?? 'Unknown Class', style: const TextStyle(fontWeight: FontWeight.bold)),
+          data: (c) => Text(
+            c?.tenLop ?? 'Unknown Class', 
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              decoration: c?.daLuuTru == true ? TextDecoration.lineThrough : null,
+            )
+          ),
           loading: () => const Text('Loading...'),
           error: (_, __) => const Text('Error'),
         ),
-        subtitle: Text('Từ: ${m.tuNgay}${m.denNgay != null ? ' - Đến: ${m.denNgay}' : ''}'),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Từ: ${m.tuNgay}${m.denNgay != null ? ' - Đến: ${m.denNgay}' : ''}'),
+            if (m.lyDoKetThuc != null)
+              Text('Lý do nghỉ: ${m.lyDoKetThuc}', style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12)),
+          ],
+        ),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
