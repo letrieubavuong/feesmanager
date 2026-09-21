@@ -1,0 +1,187 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../domain/student.dart';
+import '../domain/student_service.dart';
+import 'student_form_page.dart';
+import 'student_controller.dart';
+
+part 'student_detail_page.g.dart';
+
+class StudentDetailPage extends ConsumerWidget {
+  final int studentId;
+  const StudentDetailPage({super.key, required this.studentId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final studentAsync = ref.watch(studentDetailProvider(studentId));
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Chi tiết học sinh'),
+        actions: [
+          studentAsync.when(
+            data: (student) => student == null
+                ? const SizedBox.shrink()
+                : IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => StudentFormPage(student: student),
+                        ),
+                      );
+                    },
+                  ),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.archive_outlined),
+            onPressed: () => _confirmArchive(context, ref),
+          ),
+        ],
+      ),
+      body: studentAsync.when(
+        data: (student) {
+          if (student == null) return const Center(child: Text('Không tìm thấy học sinh'));
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context, student),
+                const SizedBox(height: 24),
+                _buildSectionTitle(context, 'Thông tin cá nhân'),
+                _buildInfoTile(Icons.cake, 'Ngày sinh', student.ngaySinh ?? 'Chưa cập nhật'),
+                _buildInfoTile(Icons.location_on, 'Địa chỉ', student.diaChi ?? 'Chưa cập nhật'),
+                _buildInfoTile(Icons.facebook, 'Facebook', student.facebook ?? 'Chưa cập nhật'),
+                const SizedBox(height: 16),
+                _buildSectionTitle(context, 'Liên hệ'),
+                _buildInfoTile(Icons.person, 'Phụ huynh', student.tenPhuHuynh ?? 'Chưa cập nhật'),
+                _buildInfoTile(Icons.phone, 'SĐT Phụ huynh', student.sdtPhuHuynh ?? 'Chưa cập nhật'),
+                _buildInfoTile(Icons.phone_android, 'SĐT Học sinh', student.sdtHocSinh ?? 'Chưa cập nhật'),
+                _buildInfoTile(Icons.email, 'Email', student.email ?? 'Chưa cập nhật'),
+                const SizedBox(height: 16),
+                _buildSectionTitle(context, 'Khác'),
+                _buildInfoTile(Icons.note, 'Ghi chú', student.ghiChu ?? 'Không có ghi chú'),
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 16),
+                _buildPlaceholderSection(context, 'Lớp đang học'),
+                _buildPlaceholderSection(context, 'Lịch sử điểm danh'),
+                _buildPlaceholderSection(context, 'Học phí & Thanh toán'),
+              ],
+            ),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Lỗi: $e')),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, student) {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 40,
+          child: Text(
+            student.hoTen[0].toUpperCase(),
+            style: const TextStyle(fontSize: 32),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                student.hoTen,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                '${student.khoi != null ? 'Khối ${student.khoi}' : 'Chưa cập nhật khối'} • ${student.truongDangHoc ?? 'Chưa cập nhật trường'}',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildInfoTile(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.grey),
+          const SizedBox(width: 12),
+          Text('$label: ', style: const TextStyle(color: Colors.grey)),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlaceholderSection(BuildContext context, String title) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(
+              'Chức năng sẽ được triển khai ở phase tiếp theo.',
+              style: TextStyle(color: Theme.of(context).disabledColor, fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmArchive(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Lưu trữ học sinh'),
+        content: const Text('Bạn có chắc chắn muốn lưu trữ học sinh này?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+          TextButton(
+            onPressed: () async {
+              await ref.read(studentListControllerProvider.notifier).archive(studentId);
+              if (context.mounted) {
+                Navigator.pop(context); // Close dialog
+                Navigator.pop(context); // Go back to list
+              }
+            },
+            child: const Text('Lưu trữ'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Additional Provider for Detail
+@riverpod
+Future<Student?> studentDetail(StudentDetailRef ref, int id) async {
+  final service = await ref.watch(studentServiceProvider.future);
+  return service.getStudentById(id);
+}
