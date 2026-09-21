@@ -1,33 +1,32 @@
-# Phase 6 Walkthrough: Canonical Attendance Final Hardening
+# Phase 6 Walkthrough: Canonical Attendance Final Acceptance
 
-I have completed the final quality gate for Phase 6: Canonical Attendance. The system is now production-ready, featuring hardened data integrity, strictly enforced state transitions, and a comprehensive suite of 132 automated tests.
+I have successfully addressed all remaining acceptance blockers for Phase 6. The attendance system is now robustly verified, analyzer-clean, and features hardened data integrity and user workflow protection.
 
 ## Key Accomplishments
 
-### 1. Hardened Migration & Schema
-- **Realistic v6 Fixture**: Upgraded the migration test to use a complete, file-based v6 database containing all Phase 0-5 entities. This ensures that the migration to v7 is verified against the real canonical schema.
-- **Strict Constraints**: Added raw DB regression tests to verify that the `diem_danh` table correctly enforces foreign keys, unique pairs (student + session), and valid status enums at the database level.
+### 1. Hardened Migration & Constraint Verification
+- **Isolated DB Testing**: Rewrote raw database tests to prevent false positives. Each constraint (Foreign Key, Status CHECK, UNIQUE) is now tested in isolation using a realistic v6 schema fixture.
+- **Data Vocabulary**: Used targeted lint suppression to preserve canonical uppercase enum names (`CO_MAT`, `TRE`, etc.) required for database persistence without violating project-wide analyzer rules.
 
-### 2. Enhanced Integrity Protection
-- **Blocking Corrupted Saves**: Refined the `saveDraft` logic to block any writes if the attendance sheet contains records for students outside the current roster. This prevents "orphan" records from being accidentally modified or used to validate a session.
-- **Finalization Guard**: Hardened the session finalization path (`DU_KIEN` -> `DA_HOC`). It is now fully idempotent and strictly forbids transitions from `HUY` or `NGHI_LE` states.
-- **Manual Session Protection**: Explicitly blocked attendance operations for `HOC_BU` and `PHAT_SINH` sessions until the participation rules are defined in Phase 7.
+### 2. Refined Workflow & State Management
+- **Lazy Draft Creation**: Optimized the `AttendanceController` to only create a "dirty" draft when an actual user edit occurs. Opening the page for viewing remains a pure read operation with no local state mutation.
+- **Roster Issue Visibility**: The UI now surfaces detailed error messages from the Phase 5 Roster engine. Teachers are now clearly informed why attendance is blocked (e.g., "Schedule mismatch" or "Class archived").
+- **No-Edit Integrity**: Confirmed that finalizing a session without edits does not touch existing attendance records, preserving their `updated_at` timestamps.
 
-### 3. Workflow & UI Stability
-- **State Protection**: The `DA_HOC` status is now immutable for generic status updates. I removed status change controls from the UI for finalized sessions to prevent accidental reverts.
-- **Error Propagation**: Fixed a critical issue in the controller where service exceptions were being swallowed. The UI now correctly displays error dialogs/snackbars for validation failures instead of reporting false successes.
-- **Expanded Widget Suite**: Added new tests covering save/finalize failures, finalized session read-only states, and proper handling of archived students in the attendance sheet.
+### 3. Comprehensive Domain Protection
+- **Internal Guards**: Hardened `SessionService` to independently reject invalid state transitions (e.g., from `HUY` to `DA_HOC`), providing defense-in-depth alongside the `AttendanceService`.
+- **Manual Session Blocking**: Successfully isolated and tested the blocking logic for `HOC_BU` and `PHAT_SINH` session types, ensuring they await the refined participation rules in Phase 7.
 
-### 4. Quality Standards
-- **Total Tests**: Increased the suite to **132 passing tests**.
-- **Read Purity**: Confirmed zero side-effects across 6 core tables during attendance resolution.
-- **Static Analysis**: Verified a clean `flutter analyze` run with no errors or warnings.
+### 4. Quality Gate Success
+- **Analyzer**: `flutter analyze` returns "No issues found!".
+- **Total Tests**: Increased coverage to **133 passing tests**.
+- **User Interface**: Verified and refined all button states, error dialogs, and read-only modes through expanded widget testing.
 
 ## Verification Summary
 
 ### Automated Tests
 Ran the full Phase 0-6 test suite.
-- **Total Tests**: 132
+- **Total Tests**: 133
 - **Pass Rate**: 100%
 
 ### Static Analysis
@@ -35,6 +34,6 @@ Ran the full Phase 0-6 test suite.
 
 ### CI/CD
 All changes pushed to `main`.
-**Commit SHA**: `4391bb35650a597d18c61eed51645366bfead75f`
+**Commit SHA**: `f5ceae7fa0d8d23004c9c821d52f4dab76606485`
 
 **PHASE 6 READY FOR ACCEPTANCE**

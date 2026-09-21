@@ -159,6 +159,106 @@ void main() {
       );
     });
 
+    test('Status update for session ALREADY DA_HOC is rejected', () async {
+      final classId = await classRepo.create(
+        ClassEntity(
+          id: 1,
+          tenLop: 'Class 1',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+      final session = ClassSession(
+        idLop: classId,
+        ngay: '2026-09-10',
+        gioBatDau: '08:00',
+        gioKetThuc: '09:00',
+        loai: SessionType.CHINH,
+        trangThai: SessionStatus.DA_HOC,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await sessionRepo.create(session);
+      final created = (await sessionRepo.getByClass(classId)).first;
+
+      expect(
+        () => service.updateStatus(created.id!, SessionStatus.DU_KIEN),
+        throwsA(predicate((e) => e.toString().contains('đã hoàn tất'))),
+      );
+      expect(
+        () => service.updateStatus(created.id!, SessionStatus.HUY),
+        throwsA(predicate((e) => e.toString().contains('đã hoàn tất'))),
+      );
+      expect(
+        () => service.updateStatus(created.id!, SessionStatus.NGHI_LE),
+        throwsA(predicate((e) => e.toString().contains('đã hoàn tất'))),
+      );
+    });
+
+    test('markTaughtFromAttendance behavior', () async {
+      final classId = await classRepo.create(
+        ClassEntity(
+          id: 1,
+          tenLop: 'Class 1',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      // 1. DU_KIEN CHINH -> Allowed
+      final session1 = ClassSession(
+        idLop: classId,
+        ngay: '2026-09-10',
+        gioBatDau: '08:00',
+        gioKetThuc: '09:00',
+        loai: SessionType.CHINH,
+        trangThai: SessionStatus.DU_KIEN,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      final id1 = await sessionRepo.create(session1);
+      await service.markTaughtFromAttendance(id1);
+      expect((await sessionRepo.getById(id1))!.trangThai, SessionStatus.DA_HOC);
+
+      // 2. Already DA_HOC -> Safe No-op
+      await service.markTaughtFromAttendance(id1);
+      expect((await sessionRepo.getById(id1))!.trangThai, SessionStatus.DA_HOC);
+
+      // 3. HUY / NGHI_LE -> Rejected
+      final sessionHuy = ClassSession(
+        idLop: classId,
+        ngay: '2026-09-11',
+        gioBatDau: '08:00',
+        gioKetThuc: '09:00',
+        loai: SessionType.CHINH,
+        trangThai: SessionStatus.HUY,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      final idHuy = await sessionRepo.create(sessionHuy);
+      expect(
+        () => service.markTaughtFromAttendance(idHuy),
+        throwsA(isA<Exception>()),
+      );
+
+      // 4. HOC_BU / PHAT_SINH -> Rejected in Phase 6
+      final sessionHB = ClassSession(
+        idLop: classId,
+        ngay: '2026-09-12',
+        gioBatDau: '08:00',
+        gioKetThuc: '09:00',
+        loai: SessionType.HOC_BU,
+        trangThai: SessionStatus.DU_KIEN,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      final idHB = await sessionRepo.create(sessionHB);
+      expect(
+        () => service.markTaughtFromAttendance(idHB),
+        throwsA(isA<Exception>()),
+      );
+    });
+
     test('Status transitions: DU_KIEN <-> HUY / NGHI_LE', () async {
       final classId = await classRepo.create(
         ClassEntity(

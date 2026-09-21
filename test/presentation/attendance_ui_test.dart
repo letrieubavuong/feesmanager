@@ -10,6 +10,8 @@ import 'package:tuition2027/features/sessions/domain/class_session.dart';
 import 'package:tuition2027/features/students/domain/student.dart';
 import 'package:tuition2027/features/memberships/domain/membership.dart';
 import 'package:tuition2027/features/roster/domain/roster_member.dart';
+import 'package:tuition2027/features/sessions/presentation/session_tab.dart';
+import 'package:tuition2027/features/sessions/presentation/session_controller.dart';
 
 void main() {
   final now = DateTime.now();
@@ -77,6 +79,9 @@ void main() {
     expect(find.text('Test Student'), findsOneWidget);
     expect(find.text('Chưa điểm danh'), findsAtLeast(1));
 
+    // Verify NO HOC_BU ChoiceChip
+    expect(find.widgetWithText(ChoiceChip, 'Học bù'), findsNothing);
+
     // Mark as CO_MAT (using ChoiceChip)
     await tester.tap(find.text('Có mặt'));
     await tester.pumpAndSettle();
@@ -88,7 +93,7 @@ void main() {
     expect(choiceChip.selected, isTrue);
   });
 
-  testWidgets('AttendancePage bulk Mark All Present', (tester) async {
+  testWidgets('AttendancePage bulk Mark All Present and Undo', (tester) async {
     final sheet = AttendanceSheet(
       session: testSession,
       members: [
@@ -117,16 +122,29 @@ void main() {
     await tester.tap(find.text('Có mặt hết'));
     await tester.pumpAndSettle();
 
-    final choiceChip = tester.widget<ChoiceChip>(
+    var choiceChip = tester.widget<ChoiceChip>(
       find.ancestor(of: find.text('Có mặt'), matching: find.byType(ChoiceChip)),
     );
     expect(choiceChip.selected, isTrue);
+
+    // Undo
+    await tester.tap(find.byIcon(Icons.undo));
+    await tester.pumpAndSettle();
+
+    choiceChip = tester.widget<ChoiceChip>(
+      find.ancestor(of: find.text('Có mặt'), matching: find.byType(ChoiceChip)),
+    );
+    expect(choiceChip.selected, isFalse);
   });
 
-  testWidgets('AttendancePage blocks editing for HUY session', (tester) async {
-    final huySession = testSession.copyWith(trangThai: SessionStatus.HUY);
+  testWidgets('AttendancePage blocks editing for HUY and NGHI_LE sessions', (
+    tester,
+  ) async {
+    final nghiLeSession = testSession.copyWith(
+      trangThai: SessionStatus.NGHI_LE,
+    );
     final sheet = AttendanceSheet(
-      session: huySession,
+      session: nghiLeSession,
       members: [
         AttendanceSheetMember(
           rosterMember: testRosterMember,
@@ -151,6 +169,34 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Không thể chỉnh sửa'), findsOneWidget);
+    expect(find.byType(ChoiceChip), findsNothing);
+  });
+
+  testWidgets('AttendancePage blocks editing for HOC_BU / PHAT_SINH sessions', (
+    tester,
+  ) async {
+    final hbSession = testSession.copyWith(loai: SessionType.HOC_BU);
+    final sheet = AttendanceSheet(
+      session: hbSession,
+      members: [],
+      issues: [],
+      isRosterValid: true,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          attendanceControllerProvider(
+            1,
+          ).overrideWith(() => MockAttendanceController(sheet)),
+        ],
+        child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Phase 7'), findsOneWidget);
     expect(find.byType(ChoiceChip), findsNothing);
   });
 
@@ -235,6 +281,28 @@ void main() {
     // Static status text visible
     expect(find.textContaining('Trạng thái: Có mặt'), findsOneWidget);
   });
+
+  testWidgets('SessionTab popup menu for DA_HOC session is absent', (
+    tester,
+  ) async {
+    final daHocSession = testSession.copyWith(trangThai: SessionStatus.DA_HOC);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          classSessionControllerProvider(
+            1,
+          ).overrideWith(() => MockSessionController([daHocSession])),
+        ],
+        child: const MaterialApp(home: SessionTab(classId: 1)),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // PopupMenuButton should NOT be rendered for DA_HOC session
+    expect(find.byType(PopupMenuButton<SessionStatus>), findsNothing);
+  });
 }
 
 class MockAttendanceController extends AttendanceController {
@@ -254,4 +322,12 @@ class MockAttendanceController extends AttendanceController {
     }
     return super.save();
   }
+}
+
+class MockSessionController extends ClassSessionController {
+  final List<ClassSession> data;
+  MockSessionController(this.data);
+
+  @override
+  FutureOr<List<ClassSession>> build(int classId) => data;
 }

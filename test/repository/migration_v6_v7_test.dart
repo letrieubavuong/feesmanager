@@ -202,12 +202,38 @@ void main() {
 
       expect(await dbV7.getVersion(), 7);
 
+      // Assert ALL rows survive
       final hs = await dbV7.query('hoc_sinh', where: 'id = 11');
       expect(hs.first['ho_ten'], 'Student 11');
 
+      final cls = await dbV7.query('lop', where: 'id = 21');
+      expect(cls.first['ten_lop'], 'Class 21');
+
+      final tgl = await dbV7.query('tham_gia_lop', where: 'id = 31');
+      expect(tgl.first['id_hoc_sinh'], 11);
+      expect(tgl.first['id_lop'], 21);
+      expect(tgl.first['tu_ngay'], '2026-09-01');
+
+      final lh = await dbV7.query('lich_hoc', where: 'id = 41');
+      expect(lh.first['id_lop'], 21);
+      expect(lh.first['thu_trong_tuan'], 1);
+      expect(lh.first['gio_bat_dau'], '17:30');
+      expect(lh.first['gio_ket_thuc'], '19:00');
+      expect(lh.first['hieu_luc_tu'], '2026-09-01');
+
+      final pc = await dbV7.query('phan_ca_hoc_sinh', where: 'id = 51');
+      expect(pc.first['id_hoc_sinh'], 11);
+      expect(pc.first['id_lop'], 21);
+      expect(pc.first['id_lich_hoc'], 41);
+      expect(pc.first['tu_ngay'], '2026-09-01');
+
       final buoi = await dbV7.query('buoi_hoc', where: 'id = 61');
-      expect(buoi.first['ngay'], '2026-09-21');
+      expect(buoi.first['id_lop'], 21);
       expect(buoi.first['id_lich_hoc'], 41);
+      expect(buoi.first['ngay'], '2026-09-21');
+      expect(buoi.first['gio_bat_dau'], '17:30');
+      expect(buoi.first['gio_ket_thuc'], '19:00');
+      expect(buoi.first['loai'], 'CHINH');
 
       final fkList = await dbV7.rawQuery("PRAGMA foreign_key_list(diem_danh)");
       final fks = fkList
@@ -288,28 +314,27 @@ void main() {
         expect(row.first['trang_thai'], validStatuses[i]);
       }
 
-      await db.execute(
-        "INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at) VALUES (2, 'H2', 'now', 'now')",
-      );
-      expect(
-        () => db.execute('''
-        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
-        VALUES (1, 2, 1, 'ABC', 'now', 'now')
-      '''),
-        throwsA(isA<DatabaseException>()),
-      );
+      // Explicitly reject invalid statuses
+      final invalidStatuses = ['ABC', 'PRESENT', 'CHUA_DIEM_DANH'];
+      for (int i = 0; i < invalidStatuses.length; i++) {
+        final sId = i + 50;
+        await db.execute(
+          "INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at) VALUES (?, 'Inv', 'now', 'now')",
+          [sId],
+        );
+        expect(
+          () => db.execute(
+            '''
+            INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
+            VALUES (1, ?, 1, ?, 'now', 'now')
+          ''',
+            [sId, invalidStatuses[i]],
+          ),
+          throwsA(isA<DatabaseException>()),
+        );
+      }
 
-      await db.execute(
-        "INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at) VALUES (3, 'H3', 'now', 'now')",
-      );
-      expect(
-        () => db.execute('''
-        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
-        VALUES (1, 3, 1, 'CHUA_DIEM_DANH', 'now', 'now')
-      '''),
-        throwsA(isA<DatabaseException>()),
-      );
-
+      // Unique constraint
       expect(
         () => db.execute('''
         INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, loai_tham_gia, created_at, updated_at)
@@ -318,6 +343,7 @@ void main() {
         throwsA(isA<DatabaseException>()),
       );
 
+      // Foreign Keys
       expect(
         () => db.execute('''
         INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, loai_tham_gia, created_at, updated_at)
@@ -358,6 +384,7 @@ void main() {
         VALUES (1, 4, 1, NULL, 'CO_MAT', 'CHINH', 'now', 'now')
       ''');
 
+      // Participation types
       final validTypes = ['CHINH', 'DOI_CA', 'HOC_BU'];
       for (int i = 0; i < validTypes.length; i++) {
         final sId = i + 100;
@@ -374,16 +401,24 @@ void main() {
         );
       }
 
-      await db.execute(
-        "INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at) VALUES (5, 'H5', 'now', 'now')",
-      );
-      expect(
-        () => db.execute('''
-        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, loai_tham_gia, created_at, updated_at)
-        VALUES (1, 5, 1, 'CO_MAT', 'ABC', 'now', 'now')
-      '''),
-        throwsA(isA<DatabaseException>()),
-      );
+      final invalidTypes = ['ABC', 'PHAT_SINH'];
+      for (int i = 0; i < invalidTypes.length; i++) {
+        final sId = i + 200;
+        await db.execute(
+          "INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at) VALUES (?, 'H', 'now', 'now')",
+          [sId],
+        );
+        expect(
+          () => db.execute(
+            '''
+            INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, loai_tham_gia, created_at, updated_at)
+            VALUES (1, ?, 1, 'CO_MAT', ?, 'now', 'now')
+          ''',
+            [sId, invalidTypes[i]],
+          ),
+          throwsA(isA<DatabaseException>()),
+        );
+      }
 
       await db.close();
       await deleteDatabase(tempDbReg);
