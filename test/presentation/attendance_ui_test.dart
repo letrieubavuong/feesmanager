@@ -138,7 +138,39 @@ void main() {
     expect(choiceChip.selected, isFalse);
   });
 
-  testWidgets('AttendancePage blocks editing for HUY and NGHI_LE sessions', (
+  testWidgets('AttendancePage blocks editing for HUY session', (tester) async {
+    final huySession = testSession.copyWith(trangThai: SessionStatus.HUY);
+    final sheet = AttendanceSheet(
+      session: huySession,
+      members: [
+        AttendanceSheetMember(
+          rosterMember: testRosterMember,
+          state: AttendanceState.CHUA_DIEM_DANH,
+        ),
+      ],
+      issues: [],
+      isRosterValid: true,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          attendanceControllerProvider(
+            1,
+          ).overrideWith(() => MockAttendanceController(sheet)),
+        ],
+        child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('HUY'), findsOneWidget);
+    expect(find.textContaining('Không thể chỉnh sửa'), findsOneWidget);
+    expect(find.byType(ChoiceChip), findsNothing);
+  });
+
+  testWidgets('AttendancePage blocks editing for NGHI_LE session', (
     tester,
   ) async {
     final nghiLeSession = testSession.copyWith(
@@ -169,16 +201,45 @@ void main() {
 
     await tester.pumpAndSettle();
 
+    expect(find.textContaining('NGHI_LE'), findsOneWidget);
     expect(find.textContaining('Không thể chỉnh sửa'), findsOneWidget);
     expect(find.byType(ChoiceChip), findsNothing);
   });
 
-  testWidgets('AttendancePage blocks editing for HOC_BU / PHAT_SINH sessions', (
+  testWidgets('AttendancePage blocks editing for HOC_BU session', (
     tester,
   ) async {
     final hbSession = testSession.copyWith(loai: SessionType.HOC_BU);
     final sheet = AttendanceSheet(
       session: hbSession,
+      members: [],
+      issues: [],
+      isRosterValid: true,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          attendanceControllerProvider(
+            1,
+          ).overrideWith(() => MockAttendanceController(sheet)),
+        ],
+        child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Phase 7'), findsOneWidget);
+    expect(find.byType(ChoiceChip), findsNothing);
+  });
+
+  testWidgets('AttendancePage blocks editing for PHAT_SINH session', (
+    tester,
+  ) async {
+    final psSession = testSession.copyWith(loai: SessionType.PHAT_SINH);
+    final sheet = AttendanceSheet(
+      session: psSession,
       members: [],
       issues: [],
       isRosterValid: true,
@@ -367,41 +428,59 @@ void main() {
     },
   );
 
-  testWidgets('AttendancePage shows incomplete warning dialog on finalize', (
-    tester,
-  ) async {
-    final sheet = AttendanceSheet(
-      session: testSession,
-      members: [
-        AttendanceSheetMember(
-          rosterMember: testRosterMember,
-          state: AttendanceState.CHUA_DIEM_DANH,
-        ),
-      ],
-      issues: [],
-      isRosterValid: true,
-    );
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          attendanceControllerProvider(
-            1,
-          ).overrideWith(() => MockAttendanceController(sheet)),
+  testWidgets(
+    'AttendancePage incomplete warning dialog cancel and override paths',
+    (tester) async {
+      final sheet = AttendanceSheet(
+        session: testSession,
+        members: [
+          AttendanceSheetMember(
+            rosterMember: testRosterMember,
+            state: AttendanceState.CHUA_DIEM_DANH,
+          ),
         ],
-        child: const MaterialApp(home: AttendancePage(sessionId: 1)),
-      ),
-    );
+        issues: [],
+        isRosterValid: true,
+      );
 
-    await tester.pumpAndSettle();
+      final controller = MockAttendanceController(sheet);
 
-    // Tap Finalize button
-    await tester.tap(find.text('Hoàn tất'));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            attendanceControllerProvider(1).overrideWith(() => controller),
+          ],
+          child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+        ),
+      );
 
-    // Dialog appears
-    expect(find.text('Chưa điểm danh hết'), findsOneWidget);
-  });
+      await tester.pumpAndSettle();
+
+      // Tap Finalize button
+      await tester.tap(find.text('Hoàn tất'));
+      await tester.pumpAndSettle();
+
+      // Dialog appears
+      expect(find.text('Chưa điểm danh hết'), findsOneWidget);
+
+      // Cancel path
+      await tester.tap(find.text('Hủy'));
+      await tester.pumpAndSettle();
+
+      expect(controller.finalizeCalls, 0);
+
+      // Tap Finalize button again
+      await tester.tap(find.text('Hoàn tất'));
+      await tester.pumpAndSettle();
+
+      // Override path
+      await tester.tap(find.text('Vẫn hoàn tất'));
+      await tester.pumpAndSettle();
+
+      expect(controller.finalizeCalls, 1);
+      expect(controller.lastAllowIncomplete, isTrue);
+    },
+  );
 
   testWidgets('AttendancePage shows error dialog on finalize failure', (
     tester,
@@ -474,6 +553,8 @@ class MockAttendanceController extends AttendanceController {
   final AttendanceSheet initialSheet;
   final bool failSave;
   final bool failFinalize;
+  int finalizeCalls = 0;
+  bool? lastAllowIncomplete;
 
   MockAttendanceController(
     this.initialSheet, {
@@ -495,6 +576,8 @@ class MockAttendanceController extends AttendanceController {
 
   @override
   Future<void> finalize({bool allowIncomplete = false}) async {
+    finalizeCalls++;
+    lastAllowIncomplete = allowIncomplete;
     if (failFinalize) {
       state = AsyncError(Exception('Finalize failed'), StackTrace.current);
       throw Exception('Finalize failed');

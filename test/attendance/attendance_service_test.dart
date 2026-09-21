@@ -313,6 +313,46 @@ void main() {
     });
 
     test(
+      'finalizeSessionAttendance blocks HOC_BU and PHAT_SINH sessions',
+      () async {
+        await db.insert('lop', {
+          'id': 1,
+          'ten_lop': 'C1',
+          'created_at': now,
+          'updated_at': now,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 1,
+          'id_lop': 1,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'HOC_BU',
+          'created_at': now,
+          'updated_at': now,
+        });
+
+        expect(
+          () => attendanceService.finalizeSessionAttendance(1),
+          throwsA(predicate((e) => e.toString().contains('Phase 7'))),
+        );
+
+        var session = (await db.query('buoi_hoc', where: 'id = 1')).first;
+        expect(session['trang_thai'], 'DU_KIEN');
+
+        await db.update('buoi_hoc', {'loai': 'PHAT_SINH'}, where: 'id = 1');
+        expect(
+          () => attendanceService.finalizeSessionAttendance(1),
+          throwsA(predicate((e) => e.toString().contains('Phase 7'))),
+        );
+
+        session = (await db.query('buoi_hoc', where: 'id = 1')).first;
+        expect(session['trang_thai'], 'DU_KIEN');
+        expect(await db.query('diem_danh'), isEmpty);
+      },
+    );
+
+    test(
       'finalizeSessionAttendance changes session status to DA_HOC',
       () async {
         await db.insert('lop', {

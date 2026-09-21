@@ -224,7 +224,7 @@ void main() {
       await service.markTaughtFromAttendance(id1);
       expect((await sessionRepo.getById(id1))!.trangThai, SessionStatus.DA_HOC);
 
-      // 3. HUY / NGHI_LE -> Rejected
+      // 3. HUY -> Rejected
       final sessionHuy = ClassSession(
         idLop: classId,
         ngay: '2026-09-11',
@@ -241,10 +241,27 @@ void main() {
         throwsA(isA<Exception>()),
       );
 
-      // 4. HOC_BU / PHAT_SINH -> Rejected in Phase 6
-      final sessionHB = ClassSession(
+      // 4. NGHI_LE -> Rejected
+      final sessionNghiLe = ClassSession(
         idLop: classId,
         ngay: '2026-09-12',
+        gioBatDau: '08:00',
+        gioKetThuc: '09:00',
+        loai: SessionType.CHINH,
+        trangThai: SessionStatus.NGHI_LE,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      final idNghiLe = await sessionRepo.create(sessionNghiLe);
+      expect(
+        () => service.markTaughtFromAttendance(idNghiLe),
+        throwsA(isA<Exception>()),
+      );
+
+      // 5. HOC_BU -> Rejected in Phase 6
+      final sessionHB = ClassSession(
+        idLop: classId,
+        ngay: '2026-09-13',
         gioBatDau: '08:00',
         gioKetThuc: '09:00',
         loai: SessionType.HOC_BU,
@@ -255,6 +272,23 @@ void main() {
       final idHB = await sessionRepo.create(sessionHB);
       expect(
         () => service.markTaughtFromAttendance(idHB),
+        throwsA(isA<Exception>()),
+      );
+
+      // 6. PHAT_SINH -> Rejected in Phase 6
+      final sessionPS = ClassSession(
+        idLop: classId,
+        ngay: '2026-09-14',
+        gioBatDau: '08:00',
+        gioKetThuc: '09:00',
+        loai: SessionType.PHAT_SINH,
+        trangThai: SessionStatus.DU_KIEN,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      final idPS = await sessionRepo.create(sessionPS);
+      expect(
+        () => service.markTaughtFromAttendance(idPS),
         throwsA(isA<Exception>()),
       );
     });

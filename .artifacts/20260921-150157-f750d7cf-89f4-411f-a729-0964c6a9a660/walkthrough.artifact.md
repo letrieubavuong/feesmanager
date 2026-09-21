@@ -1,33 +1,30 @@
-# Phase 6 Walkthrough: Canonical Attendance Final Acceptance & Regression Coverage
+# Phase 6 Walkthrough: Canonical Attendance Final Closure
 
-I have completed the final regression coverage and documentation update for Phase 6: Canonical Attendance. The implementation is 100% verified, fully documented, and ready for acceptance.
+I have completed all final regression gaps and documentation updates for Phase 6: Canonical Attendance. The system is 100% verified, clean of analyzer issues, and ready for acceptance.
 
 ## Key Accomplishments
 
-### 1. Migration Data Preservation
-- **Comprehensive Verification**: Updated `migration_v6_v7_test.dart` to assert that every single entity across the canonical chain (`hoc_sinh`, `lop`, `tham_gia_lop`, `lich_hoc`, `phan_ca_hoc_sinh`, `buoi_hoc`) is preserved with exact IDs and values after migrating to Database Version 7.
-- **Foreign Key Validation**: Confirmed zero FK violations with `PRAGMA foreign_key_check`.
+### 1. Incomplete Finalization & Override Semantics
+- **Default Rejection**: Verified that `finalizeSessionAttendance` with `allowIncomplete: false` rejects finalization if any student remains `CHUA_DIEM_DANH`, keeping the session in `DU_KIEN`.
+- **Explicit Override**: Verified that calling `finalizeSessionAttendance` with `allowIncomplete: true` sets the session status to `DA_HOC` without auto-generating `CO_MAT` records for missing students.
+- **Idempotency**: Confirmed that subsequent calls to finalize an already `DA_HOC` session act as a safe no-op with zero side-effects or timestamp churn.
 
-### 2. Isolated Constraint & Vocabulary Regression
-- **Persisted Statuses**: Verified that `CO_MAT`, `TRE`, `NGHI_CO_PHEP`, `NGHI_KHONG_PHEP`, and `HOC_BU` insert and round-trip successfully.
-- **Strict DB Rejections**: Proved that `ABC`, `PRESENT`, and `CHUA_DIEM_DANH` are rejected by SQLite `CHECK` constraints.
-- **Participation Types**: Confirmed acceptance of `CHINH`, `DOI_CA`, `HOC_BU` and rejection of `ABC` and `PHAT_SINH`.
+### 2. No-Edit Timestamp & Draft Integrity
+- **Timestamp Preservation**: Proved that finalizing an already marked session without new edits preserves the `updated_at` and `created_at` timestamps of all existing `diem_danh` rows.
+- **Dirty Draft Regression**: Verified that `hasDirtyDraft` remains `false` on page load, turns `true` upon user edit, and resets to `false` after save or undo.
 
-### 3. Session State & Finalization Protection
-- **Session Service Protection**: Verified that `markTaughtFromAttendance` allows transition for `DU_KIEN CHINH` sessions and acts as a safe no-op for already `DA_HOC` sessions, while rejecting `HUY`, `NGHI_LE`, `HOC_BU`, and `PHAT_SINH`.
-- **Immutable DA_HOC**: Verified that generic `updateStatus` calls cannot revert a `DA_HOC` session back to `DU_KIEN`, `HUY`, or `NGHI_LE`.
-- **No-Edit Finalize**: Confirmed that finalizing an already-marked session without making new edits does not trigger unnecessary updates, preserving the `updated_at` timestamps of attendance records.
+### 3. Direct Session Transition Guards
+- **NGHI_LE & PHAT_SINH Rejections**: Added direct tests in `SessionService` to verify that `markTaughtFromAttendance` rejects `NGHI_LE` sessions and `PHAT_SINH` sessions in Phase 6.
 
-### 4. UI & Widget Regression
-- **UI Locking**: Verified that `SessionTab` hides status change menus for `DA_HOC` sessions.
-- **No Phase 7 Leakage**: Confirmed that `ChoiceChip` for `Hoc Bu` is never present in normal `CHINH` attendance screens.
-- **Full Coverage**: Added widget tests for `NGHI_LE` read-only mode, incomplete finalize dialogs, and undo/bulk actions.
+### 4. Comprehensive Widget Testing
+- **Error UI Dialogs**: Verified that save/finalize failures display error dialogs and never trigger false-success snackbars.
+- **Invalid Roster & Outside Roster Displays**: Confirmed that roster errors and orphan attendance warnings are rendered with details and block interactive controls.
 
 ## Verification Summary
 
 ### Automated Tests
 Ran the full test suite.
-- **Total Tests**: 137
+- **Total Tests**: 142
 - **Pass Rate**: 100%
 
 ### Static Analysis
@@ -35,6 +32,6 @@ Ran the full test suite.
 
 ### CI/CD
 All changes pushed to `main`.
-**Commit SHA**: `27df67f142eab820a75cb1014158d03cb67b1038`
+**Commit SHA**: `c78ba7524598c61e9c634a6e3644f298001dc14c`
 
 **PHASE 6 READY FOR ACCEPTANCE**
