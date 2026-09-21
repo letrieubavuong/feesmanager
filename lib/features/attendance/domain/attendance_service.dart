@@ -176,6 +176,14 @@ class AttendanceService {
           );
         }
 
+        if (source == RosterInclusionSource.HOC_BU &&
+            (newState == AttendanceState.CO_MAT ||
+                newState == AttendanceState.TRE)) {
+          throw Exception(
+            'Học sinh học bù không thể đánh dấu Có mặt hoặc Trễ. Vui lòng chọn Học bù hoặc Nghỉ.',
+          );
+        }
+
         toUpsert.add(
           AttendanceRecord(
             idBuoiHoc: sessionId,

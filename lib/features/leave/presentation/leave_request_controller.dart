@@ -14,11 +14,13 @@ class LeaveRequestController extends _$LeaveRequestController {
 
   Future<void> createLeaveRequest(LeaveRequest request) async {
     final service = await ref.read(leaveRequestServiceProvider.future);
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
+    try {
       await service.createLeaveRequest(request);
-      return service.getByClass(request.idLop);
-    });
+      state = AsyncData(await service.getByClass(request.idLop));
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
   }
 
   Future<void> approve(int requestId) async {
@@ -26,11 +28,13 @@ class LeaveRequestController extends _$LeaveRequestController {
     final req = await service.getById(requestId);
     if (req == null) return;
 
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
+    try {
       await service.updateStatus(requestId, LeaveRequestStatus.DA_DUYET);
-      return service.getByClass(req.idLop);
-    });
+      state = AsyncData(await service.getByClass(req.idLop));
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
   }
 
   Future<void> reject(int requestId) async {
@@ -38,10 +42,12 @@ class LeaveRequestController extends _$LeaveRequestController {
     final req = await service.getById(requestId);
     if (req == null) return;
 
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
+    try {
       await service.updateStatus(requestId, LeaveRequestStatus.TU_CHOI);
-      return service.getByClass(req.idLop);
-    });
+      state = AsyncData(await service.getByClass(req.idLop));
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
   }
 }

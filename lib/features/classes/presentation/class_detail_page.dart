@@ -14,6 +14,7 @@ import '../../students/presentation/student_detail_page.dart';
 import '../../schedule/presentation/schedule_tab.dart';
 import '../../schedule/presentation/assignment_tab.dart';
 import '../../sessions/presentation/session_tab.dart';
+import '../../leave/presentation/leave_request_page.dart';
 
 class ClassDetailPage extends ConsumerStatefulWidget {
   final int classId;
@@ -50,6 +51,16 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => ClassFormPage(cls: cls),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.event_note),
+                        tooltip: 'Đơn nghỉ học',
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                LeaveRequestPage(classId: widget.classId),
                           ),
                         ),
                       ),

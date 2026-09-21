@@ -217,11 +217,11 @@ void main() {
         updatedAt: DateTime.now(),
       );
       final id1 = await sessionRepo.create(session1);
-      await service.markTaughtFromAttendance(id1);
+      await service.markTaughtFromAttendance(id1, oneOffRosterResolved: true);
       expect((await sessionRepo.getById(id1))!.trangThai, SessionStatus.DA_HOC);
 
       // 2. Already DA_HOC -> Safe No-op
-      await service.markTaughtFromAttendance(id1);
+      await service.markTaughtFromAttendance(id1, oneOffRosterResolved: true);
       expect((await sessionRepo.getById(id1))!.trangThai, SessionStatus.DA_HOC);
 
       // 3. HUY -> Rejected
@@ -237,7 +237,8 @@ void main() {
       );
       final idHuy = await sessionRepo.create(sessionHuy);
       expect(
-        () => service.markTaughtFromAttendance(idHuy),
+        () =>
+            service.markTaughtFromAttendance(idHuy, oneOffRosterResolved: true),
         throwsA(isA<Exception>()),
       );
 
@@ -254,7 +255,10 @@ void main() {
       );
       final idNghiLe = await sessionRepo.create(sessionNghiLe);
       expect(
-        () => service.markTaughtFromAttendance(idNghiLe),
+        () => service.markTaughtFromAttendance(
+          idNghiLe,
+          oneOffRosterResolved: true,
+        ),
         throwsA(isA<Exception>()),
       );
 

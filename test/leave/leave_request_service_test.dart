@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:tuition2027/core/database/app_database.dart';
 import 'package:tuition2027/features/attendance/domain/attendance_service.dart';
 import 'package:tuition2027/features/attendance/data/attendance_repository.dart';
 import 'package:tuition2027/features/attendance/domain/attendance_state.dart';

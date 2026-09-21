@@ -7,7 +7,7 @@ part of 'leave_request_controller.dart';
 // **************************************************************************
 
 String _$leaveRequestControllerHash() =>
-    r'f83c4a6cb1c6c3d1eef1225b688c7f6d3201fb9c';
+    r'7c42a02779201633ccd3b69a7320f90520bad4b0';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -34,9 +34,7 @@ abstract class _$LeaveRequestController
     extends BuildlessAutoDisposeAsyncNotifier<List<LeaveRequest>> {
   late final int classId;
 
-  FutureOr<List<LeaveRequest>> build(
-    int classId,
-  );
+  FutureOr<List<LeaveRequest>> build(int classId);
 }
 
 /// See also [LeaveRequestController].
@@ -50,21 +48,15 @@ class LeaveRequestControllerFamily
   const LeaveRequestControllerFamily();
 
   /// See also [LeaveRequestController].
-  LeaveRequestControllerProvider call(
-    int classId,
-  ) {
-    return LeaveRequestControllerProvider(
-      classId,
-    );
+  LeaveRequestControllerProvider call(int classId) {
+    return LeaveRequestControllerProvider(classId);
   }
 
   @override
   LeaveRequestControllerProvider getProviderOverride(
     covariant LeaveRequestControllerProvider provider,
   ) {
-    return call(
-      provider.classId,
-    );
+    return call(provider.classId);
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -84,24 +76,25 @@ class LeaveRequestControllerFamily
 
 /// See also [LeaveRequestController].
 class LeaveRequestControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<LeaveRequestController,
-        List<LeaveRequest>> {
+    extends
+        AutoDisposeAsyncNotifierProviderImpl<
+          LeaveRequestController,
+          List<LeaveRequest>
+        > {
   /// See also [LeaveRequestController].
-  LeaveRequestControllerProvider(
-    int classId,
-  ) : this._internal(
-          () => LeaveRequestController()..classId = classId,
-          from: leaveRequestControllerProvider,
-          name: r'leaveRequestControllerProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$leaveRequestControllerHash,
-          dependencies: LeaveRequestControllerFamily._dependencies,
-          allTransitiveDependencies:
-              LeaveRequestControllerFamily._allTransitiveDependencies,
-          classId: classId,
-        );
+  LeaveRequestControllerProvider(int classId)
+    : this._internal(
+        () => LeaveRequestController()..classId = classId,
+        from: leaveRequestControllerProvider,
+        name: r'leaveRequestControllerProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$leaveRequestControllerHash,
+        dependencies: LeaveRequestControllerFamily._dependencies,
+        allTransitiveDependencies:
+            LeaveRequestControllerFamily._allTransitiveDependencies,
+        classId: classId,
+      );
 
   LeaveRequestControllerProvider._internal(
     super._createNotifier, {
@@ -119,9 +112,7 @@ class LeaveRequestControllerProvider
   FutureOr<List<LeaveRequest>> runNotifierBuild(
     covariant LeaveRequestController notifier,
   ) {
-    return notifier.build(
-      classId,
-    );
+    return notifier.build(classId);
   }
 
   @override
@@ -141,8 +132,11 @@ class LeaveRequestControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<LeaveRequestController,
-      List<LeaveRequest>> createElement() {
+  AutoDisposeAsyncNotifierProviderElement<
+    LeaveRequestController,
+    List<LeaveRequest>
+  >
+  createElement() {
     return _LeaveRequestControllerProviderElement(this);
   }
 
@@ -167,12 +161,17 @@ mixin LeaveRequestControllerRef
 }
 
 class _LeaveRequestControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<LeaveRequestController,
-        List<LeaveRequest>> with LeaveRequestControllerRef {
+    extends
+        AutoDisposeAsyncNotifierProviderElement<
+          LeaveRequestController,
+          List<LeaveRequest>
+        >
+    with LeaveRequestControllerRef {
   _LeaveRequestControllerProviderElement(super.provider);
 
   @override
   int get classId => (origin as LeaveRequestControllerProvider).classId;
 }
+
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

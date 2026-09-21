@@ -19,16 +19,18 @@ class SessionAdjustmentController extends _$SessionAdjustmentController {
     String? reason,
   }) async {
     final service = await ref.read(sessionAdjustmentServiceProvider.future);
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
+    try {
       await service.createDoiCa(
         studentId: studentId,
         originalSessionId: originalSessionId,
         targetSessionId: targetSessionId,
         reason: reason,
       );
-      return service.getByTargetSession(targetSessionId);
-    });
+      state = AsyncData(await service.getByTargetSession(targetSessionId));
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
   }
 
   Future<void> createHocBu({
@@ -38,16 +40,18 @@ class SessionAdjustmentController extends _$SessionAdjustmentController {
     String? reason,
   }) async {
     final service = await ref.read(sessionAdjustmentServiceProvider.future);
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
+    try {
       await service.createHocBu(
         studentId: studentId,
         originalSessionId: originalSessionId,
         targetSessionId: targetSessionId,
         reason: reason,
       );
-      return service.getByTargetSession(targetSessionId);
-    });
+      state = AsyncData(await service.getByTargetSession(targetSessionId));
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
   }
 
   Future<void> createPhatSinh({
@@ -57,24 +61,28 @@ class SessionAdjustmentController extends _$SessionAdjustmentController {
     String? reason,
   }) async {
     final service = await ref.read(sessionAdjustmentServiceProvider.future);
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
+    try {
       await service.createPhatSinh(
         studentId: studentId,
         originalClassId: originalClassId,
         targetSessionId: targetSessionId,
         reason: reason,
       );
-      return service.getByTargetSession(targetSessionId);
-    });
+      state = AsyncData(await service.getByTargetSession(targetSessionId));
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
   }
 
   Future<void> removeAdjustment(int adjustmentId, int sessionId) async {
     final service = await ref.read(sessionAdjustmentServiceProvider.future);
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
+    try {
       await service.removeAdjustment(adjustmentId);
-      return service.getByTargetSession(sessionId);
-    });
+      state = AsyncData(await service.getByTargetSession(sessionId));
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
   }
 }

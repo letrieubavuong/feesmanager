@@ -7,7 +7,7 @@ part of 'session_adjustment_controller.dart';
 // **************************************************************************
 
 String _$sessionAdjustmentControllerHash() =>
-    r'305064133daab5a5a1fb346c8470a189e665d1b4';
+    r'3c66bb3f35034a734c511aa4df36e053f32878f2';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -34,9 +34,7 @@ abstract class _$SessionAdjustmentController
     extends BuildlessAutoDisposeAsyncNotifier<List<SessionAdjustment>> {
   late final int sessionId;
 
-  FutureOr<List<SessionAdjustment>> build(
-    int sessionId,
-  );
+  FutureOr<List<SessionAdjustment>> build(int sessionId);
 }
 
 /// See also [SessionAdjustmentController].
@@ -50,21 +48,15 @@ class SessionAdjustmentControllerFamily
   const SessionAdjustmentControllerFamily();
 
   /// See also [SessionAdjustmentController].
-  SessionAdjustmentControllerProvider call(
-    int sessionId,
-  ) {
-    return SessionAdjustmentControllerProvider(
-      sessionId,
-    );
+  SessionAdjustmentControllerProvider call(int sessionId) {
+    return SessionAdjustmentControllerProvider(sessionId);
   }
 
   @override
   SessionAdjustmentControllerProvider getProviderOverride(
     covariant SessionAdjustmentControllerProvider provider,
   ) {
-    return call(
-      provider.sessionId,
-    );
+    return call(provider.sessionId);
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -84,24 +76,25 @@ class SessionAdjustmentControllerFamily
 
 /// See also [SessionAdjustmentController].
 class SessionAdjustmentControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<SessionAdjustmentController,
-        List<SessionAdjustment>> {
+    extends
+        AutoDisposeAsyncNotifierProviderImpl<
+          SessionAdjustmentController,
+          List<SessionAdjustment>
+        > {
   /// See also [SessionAdjustmentController].
-  SessionAdjustmentControllerProvider(
-    int sessionId,
-  ) : this._internal(
-          () => SessionAdjustmentController()..sessionId = sessionId,
-          from: sessionAdjustmentControllerProvider,
-          name: r'sessionAdjustmentControllerProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$sessionAdjustmentControllerHash,
-          dependencies: SessionAdjustmentControllerFamily._dependencies,
-          allTransitiveDependencies:
-              SessionAdjustmentControllerFamily._allTransitiveDependencies,
-          sessionId: sessionId,
-        );
+  SessionAdjustmentControllerProvider(int sessionId)
+    : this._internal(
+        () => SessionAdjustmentController()..sessionId = sessionId,
+        from: sessionAdjustmentControllerProvider,
+        name: r'sessionAdjustmentControllerProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$sessionAdjustmentControllerHash,
+        dependencies: SessionAdjustmentControllerFamily._dependencies,
+        allTransitiveDependencies:
+            SessionAdjustmentControllerFamily._allTransitiveDependencies,
+        sessionId: sessionId,
+      );
 
   SessionAdjustmentControllerProvider._internal(
     super._createNotifier, {
@@ -119,9 +112,7 @@ class SessionAdjustmentControllerProvider
   FutureOr<List<SessionAdjustment>> runNotifierBuild(
     covariant SessionAdjustmentController notifier,
   ) {
-    return notifier.build(
-      sessionId,
-    );
+    return notifier.build(sessionId);
   }
 
   @override
@@ -141,8 +132,11 @@ class SessionAdjustmentControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<SessionAdjustmentController,
-      List<SessionAdjustment>> createElement() {
+  AutoDisposeAsyncNotifierProviderElement<
+    SessionAdjustmentController,
+    List<SessionAdjustment>
+  >
+  createElement() {
     return _SessionAdjustmentControllerProviderElement(this);
   }
 
@@ -168,13 +162,18 @@ mixin SessionAdjustmentControllerRef
 }
 
 class _SessionAdjustmentControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<SessionAdjustmentController,
-        List<SessionAdjustment>> with SessionAdjustmentControllerRef {
+    extends
+        AutoDisposeAsyncNotifierProviderElement<
+          SessionAdjustmentController,
+          List<SessionAdjustment>
+        >
+    with SessionAdjustmentControllerRef {
   _SessionAdjustmentControllerProviderElement(super.provider);
 
   @override
   int get sessionId =>
       (origin as SessionAdjustmentControllerProvider).sessionId;
 }
+
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

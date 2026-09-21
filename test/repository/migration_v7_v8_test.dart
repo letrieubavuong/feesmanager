@@ -241,8 +241,22 @@ void main() {
       final cls = await dbV8.query('lop', where: 'id = 21');
       expect(cls.first['ten_lop'], 'Class 21');
 
+      final tgl = await dbV8.query('tham_gia_lop', where: 'id = 31');
+      expect(tgl.first['id_hoc_sinh'], 11);
+      expect(tgl.first['id_lop'], 21);
+
+      final lh = await dbV8.query('lich_hoc', where: 'id = 41');
+      expect(lh.first['id_lop'], 21);
+
+      final pc = await dbV8.query('phan_ca_hoc_sinh', where: 'id = 51');
+      expect(pc.first['id_hoc_sinh'], 11);
+
+      final bh = await dbV8.query('buoi_hoc', where: 'id = 61');
+      expect(bh.first['id_lop'], 21);
+
       final dd = await dbV8.query('diem_danh', where: 'id = 71');
       expect(dd.first['trang_thai'], 'CO_MAT');
+      expect(dd.first['id_hoc_sinh'], 11);
 
       // Verify FKs for don_nghi_hoc
       final leaveFkList = await dbV8.rawQuery(

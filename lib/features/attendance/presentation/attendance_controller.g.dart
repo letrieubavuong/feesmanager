@@ -34,9 +34,7 @@ abstract class _$AttendanceController
     extends BuildlessAutoDisposeAsyncNotifier<AttendanceSheet> {
   late final int sessionId;
 
-  FutureOr<AttendanceSheet> build(
-    int sessionId,
-  );
+  FutureOr<AttendanceSheet> build(int sessionId);
 }
 
 /// See also [AttendanceController].
@@ -49,21 +47,15 @@ class AttendanceControllerFamily extends Family<AsyncValue<AttendanceSheet>> {
   const AttendanceControllerFamily();
 
   /// See also [AttendanceController].
-  AttendanceControllerProvider call(
-    int sessionId,
-  ) {
-    return AttendanceControllerProvider(
-      sessionId,
-    );
+  AttendanceControllerProvider call(int sessionId) {
+    return AttendanceControllerProvider(sessionId);
   }
 
   @override
   AttendanceControllerProvider getProviderOverride(
     covariant AttendanceControllerProvider provider,
   ) {
-    return call(
-      provider.sessionId,
-    );
+    return call(provider.sessionId);
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -82,24 +74,26 @@ class AttendanceControllerFamily extends Family<AsyncValue<AttendanceSheet>> {
 }
 
 /// See also [AttendanceController].
-class AttendanceControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
-    AttendanceController, AttendanceSheet> {
+class AttendanceControllerProvider
+    extends
+        AutoDisposeAsyncNotifierProviderImpl<
+          AttendanceController,
+          AttendanceSheet
+        > {
   /// See also [AttendanceController].
-  AttendanceControllerProvider(
-    int sessionId,
-  ) : this._internal(
-          () => AttendanceController()..sessionId = sessionId,
-          from: attendanceControllerProvider,
-          name: r'attendanceControllerProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$attendanceControllerHash,
-          dependencies: AttendanceControllerFamily._dependencies,
-          allTransitiveDependencies:
-              AttendanceControllerFamily._allTransitiveDependencies,
-          sessionId: sessionId,
-        );
+  AttendanceControllerProvider(int sessionId)
+    : this._internal(
+        () => AttendanceController()..sessionId = sessionId,
+        from: attendanceControllerProvider,
+        name: r'attendanceControllerProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$attendanceControllerHash,
+        dependencies: AttendanceControllerFamily._dependencies,
+        allTransitiveDependencies:
+            AttendanceControllerFamily._allTransitiveDependencies,
+        sessionId: sessionId,
+      );
 
   AttendanceControllerProvider._internal(
     super._createNotifier, {
@@ -117,9 +111,7 @@ class AttendanceControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
   FutureOr<AttendanceSheet> runNotifierBuild(
     covariant AttendanceController notifier,
   ) {
-    return notifier.build(
-      sessionId,
-    );
+    return notifier.build(sessionId);
   }
 
   @override
@@ -140,7 +132,7 @@ class AttendanceControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
 
   @override
   AutoDisposeAsyncNotifierProviderElement<AttendanceController, AttendanceSheet>
-      createElement() {
+  createElement() {
     return _AttendanceControllerProviderElement(this);
   }
 
@@ -166,12 +158,17 @@ mixin AttendanceControllerRef
 }
 
 class _AttendanceControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<AttendanceController,
-        AttendanceSheet> with AttendanceControllerRef {
+    extends
+        AutoDisposeAsyncNotifierProviderElement<
+          AttendanceController,
+          AttendanceSheet
+        >
+    with AttendanceControllerRef {
   _AttendanceControllerProviderElement(super.provider);
 
   @override
   int get sessionId => (origin as AttendanceControllerProvider).sessionId;
 }
+
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

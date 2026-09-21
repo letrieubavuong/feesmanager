@@ -171,8 +171,26 @@ class SessionAdjustmentService {
       throw Exception('Không tìm thấy buổi học');
     }
 
+    if (origSession.loai != SessionType.CHINH) {
+      throw Exception('Buổi học vắng gốc phải là buổi học chính thức (CHÍNH)');
+    }
+
     if (origSession.trangThai != SessionStatus.DA_HOC) {
       throw Exception('Buổi học vắng gốc phải ở trạng thái ĐÃ HỌC');
+    }
+
+    // Original membership on original session date
+    final origMemberships = await _membershipService
+        .getMembershipsForStudentAndClass(studentId, origSession.idLop);
+    final validOrigMembership = origMemberships.any((m) {
+      final den = m.denNgay ?? '9999-12-31';
+      return m.tuNgay.compareTo(origSession.ngay) <= 0 &&
+          den.compareTo(origSession.ngay) >= 0;
+    });
+    if (!validOrigMembership) {
+      throw Exception(
+        'Học sinh không có quá trình học hợp lệ tại lớp gốc vào ngày buổi học vắng',
+      );
     }
 
     // Original attendance MUST exist and be NGHI_CO_PHEP or NGHI_KHONG_PHEP

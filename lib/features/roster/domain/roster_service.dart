@@ -78,20 +78,45 @@ class RosterService {
       }
     }
 
-    // 2. Process One-Off Adjustments
-    final outgoingAdjs = await _adjustmentRepo.getByOriginalSession(sessionId);
-    final incomingAdjs = await _adjustmentRepo.getByTargetSession(sessionId);
+    final students = await _studentService.getStudents(includeArchived: true);
+    final studentMap = {for (var s in students) s.id: s};
 
-    // Remove outgoing DOI_CA
+    // 2. Process Outgoing DOI_CA Adjustments
+    final outgoingAdjs = await _adjustmentRepo.getByOriginalSession(sessionId);
     for (final outAdj in outgoingAdjs) {
       if (outAdj.loai == SessionAdjustmentType.DOI_CA) {
-        participants.removeWhere((m) => m.student.id == outAdj.idHocSinh);
+        final targetSession = await _sessionService.getSessionById(
+          outAdj.idBuoiHocThamGia,
+        );
+        bool isValid = true;
+
+        if (session.loai != SessionType.CHINH ||
+            targetSession == null ||
+            targetSession.loai != SessionType.CHINH ||
+            targetSession.idLop != session.idLop ||
+            targetSession.ngay != session.ngay ||
+            outAdj.idLopGoc != session.idLop ||
+            !participants.any((m) => m.student.id == outAdj.idHocSinh)) {
+          isValid = false;
+        }
+
+        if (!isValid) {
+          issues.add(
+            RosterIssue(
+              code: RosterIssueCode.ADJUSTMENT_TARGET_SESSION_MISMATCH,
+              message:
+                  'Dữ liệu đổi ca đi của học sinh (ID: ${outAdj.idHocSinh}) không hợp lệ.',
+              context: outAdj,
+            ),
+          );
+        } else {
+          participants.removeWhere((m) => m.student.id == outAdj.idHocSinh);
+        }
       }
     }
 
-    // Add incoming adjustments
-    final students = await _studentService.getStudents(includeArchived: true);
-    final studentMap = {for (var s in students) s.id: s};
+    // 3. Process Incoming Adjustments
+    final incomingAdjs = await _adjustmentRepo.getByTargetSession(sessionId);
 
     for (final incAdj in incomingAdjs) {
       final student = studentMap[incAdj.idHocSinh];
@@ -101,28 +126,6 @@ class RosterService {
             code: RosterIssueCode.ADJUSTMENT_STUDENT_MISSING,
             message:
                 'Không tìm thấy hồ sơ học sinh điều chỉnh (ID: ${incAdj.idHocSinh})',
-            context: incAdj,
-          ),
-        );
-        continue;
-      }
-
-      // Membership validation in orig class
-      final origMemberships = await _membershipService
-          .getMembershipsForStudentAndClass(incAdj.idHocSinh, incAdj.idLopGoc);
-
-      final validM = origMemberships.cast<dynamic>().firstWhere((m) {
-        final den = m.denNgay ?? '9999-12-31';
-        return m.tuNgay.compareTo(session.ngay) <= 0 &&
-            den.compareTo(session.ngay) >= 0;
-      }, orElse: () => null);
-
-      if (validM == null) {
-        issues.add(
-          RosterIssue(
-            code: RosterIssueCode.ADJUSTMENT_MEMBERSHIP_INVALID,
-            message:
-                'Học sinh ${student.hoTen} không có quá trình học hợp lệ tại lớp gốc.',
             context: incAdj,
           ),
         );
@@ -143,56 +146,227 @@ class RosterService {
       }
 
       RosterInclusionSource source;
-      switch (incAdj.loai) {
-        case SessionAdjustmentType.DOI_CA:
-          if (session.loai != SessionType.CHINH) {
-            issues.add(
-              RosterIssue(
-                code: RosterIssueCode.ADJUSTMENT_TYPE_INVALID_FOR_SESSION,
-                message: 'Chỉ buổi học chính thức mới nhận điều chỉnh Đổi ca.',
-                context: incAdj,
-              ),
-            );
-            continue;
-          }
-          source = RosterInclusionSource.DOI_CA;
-          break;
-        case SessionAdjustmentType.HOC_BU:
-          if (session.loai != SessionType.HOC_BU) {
-            issues.add(
-              RosterIssue(
-                code: RosterIssueCode.ADJUSTMENT_TYPE_INVALID_FOR_SESSION,
-                message: 'Chỉ buổi Học bù mới nhận điều chỉnh Học bù.',
-                context: incAdj,
-              ),
-            );
-            continue;
-          }
-          source = RosterInclusionSource.HOC_BU;
-          break;
-        case SessionAdjustmentType.PHAT_SINH:
-          if (session.loai != SessionType.PHAT_SINH) {
-            issues.add(
-              RosterIssue(
-                code: RosterIssueCode.ADJUSTMENT_TYPE_INVALID_FOR_SESSION,
-                message: 'Chỉ buổi Phát sinh mới nhận điều chỉnh Phát sinh.',
-                context: incAdj,
-              ),
-            );
-            continue;
-          }
-          source = RosterInclusionSource.PHAT_SINH;
-          break;
-      }
 
-      participants.add(
-        RosterMember(
-          student: student,
-          membership: validM,
-          adjustment: incAdj,
-          source: source,
-        ),
-      );
+      if (incAdj.loai == SessionAdjustmentType.DOI_CA) {
+        if (session.loai != SessionType.CHINH) {
+          issues.add(
+            RosterIssue(
+              code: RosterIssueCode.ADJUSTMENT_TYPE_INVALID_FOR_SESSION,
+              message: 'Chỉ buổi học chính thức mới nhận điều chỉnh Đổi ca.',
+              context: incAdj,
+            ),
+          );
+          continue;
+        }
+
+        if (incAdj.idBuoiHocGoc == null) {
+          issues.add(
+            RosterIssue(
+              code: RosterIssueCode.ADJUSTMENT_ORIGINAL_SESSION_MISSING,
+              message: 'Thiếu thông tin buổi học gốc cho điều chỉnh Đổi ca.',
+              context: incAdj,
+            ),
+          );
+          continue;
+        }
+
+        final origSession = await _sessionService.getSessionById(
+          incAdj.idBuoiHocGoc!,
+        );
+        if (origSession == null ||
+            origSession.loai != SessionType.CHINH ||
+            origSession.idLop != session.idLop ||
+            origSession.ngay != session.ngay ||
+            incAdj.idLopGoc != session.idLop) {
+          issues.add(
+            RosterIssue(
+              code: RosterIssueCode.ADJUSTMENT_TARGET_SESSION_MISMATCH,
+              message: 'Buổi học gốc của Đổi ca không hợp lệ.',
+              context: incAdj,
+            ),
+          );
+          continue;
+        }
+
+        // Validate student belongs to orig session base roster
+        final origBase = await getBaseRosterForSession(origSession.id!);
+        if (!origBase.participants.any(
+          (m) => m.student.id == incAdj.idHocSinh,
+        )) {
+          issues.add(
+            RosterIssue(
+              code: RosterIssueCode.ADJUSTMENT_MEMBERSHIP_INVALID,
+              message:
+                  'Học sinh ${student.hoTen} không thuộc danh sách gốc của ca chuyển đi.',
+              context: incAdj,
+            ),
+          );
+          continue;
+        }
+
+        // Validate membership on session date
+        final origMemberships = await _membershipService
+            .getMembershipsForStudentAndClass(
+              incAdj.idHocSinh,
+              incAdj.idLopGoc,
+            );
+        final validM = origMemberships.cast<dynamic>().firstWhere((m) {
+          final den = m.denNgay ?? '9999-12-31';
+          return m.tuNgay.compareTo(session.ngay) <= 0 &&
+              den.compareTo(session.ngay) >= 0;
+        }, orElse: () => null);
+
+        if (validM == null) {
+          issues.add(
+            RosterIssue(
+              code: RosterIssueCode.ADJUSTMENT_MEMBERSHIP_INVALID,
+              message:
+                  'Học sinh ${student.hoTen} không có quá trình học hợp lệ vào ngày này.',
+              context: incAdj,
+            ),
+          );
+          continue;
+        }
+
+        source = RosterInclusionSource.DOI_CA;
+        participants.add(
+          RosterMember(
+            student: student,
+            membership: validM,
+            adjustment: incAdj,
+            source: source,
+          ),
+        );
+      } else if (incAdj.loai == SessionAdjustmentType.HOC_BU) {
+        if (session.loai != SessionType.HOC_BU) {
+          issues.add(
+            RosterIssue(
+              code: RosterIssueCode.ADJUSTMENT_TYPE_INVALID_FOR_SESSION,
+              message: 'Chỉ buổi Học bù mới nhận điều chỉnh Học bù.',
+              context: incAdj,
+            ),
+          );
+          continue;
+        }
+
+        if (incAdj.idBuoiHocGoc == null) {
+          issues.add(
+            RosterIssue(
+              code: RosterIssueCode.ADJUSTMENT_ORIGINAL_SESSION_MISSING,
+              message: 'Thiếu thông tin buổi vắng gốc cho điều chỉnh Học bù.',
+              context: incAdj,
+            ),
+          );
+          continue;
+        }
+
+        final origSession = await _sessionService.getSessionById(
+          incAdj.idBuoiHocGoc!,
+        );
+        if (origSession == null ||
+            origSession.loai != SessionType.CHINH ||
+            origSession.trangThai != SessionStatus.DA_HOC ||
+            incAdj.idLopGoc != origSession.idLop ||
+            session.ngay.compareTo(origSession.ngay) < 0) {
+          issues.add(
+            RosterIssue(
+              code: RosterIssueCode.ADJUSTMENT_TARGET_SESSION_MISMATCH,
+              message: 'Buổi học vắng gốc cho Học bù không hợp lệ.',
+              context: incAdj,
+            ),
+          );
+          continue;
+        }
+
+        // Validate HISTORICAL membership on ORIGINAL missed session date
+        final origMemberships = await _membershipService
+            .getMembershipsForStudentAndClass(
+              incAdj.idHocSinh,
+              incAdj.idLopGoc,
+            );
+        final validHistM = origMemberships.cast<dynamic>().firstWhere((m) {
+          final den = m.denNgay ?? '9999-12-31';
+          return m.tuNgay.compareTo(origSession.ngay) <= 0 &&
+              den.compareTo(origSession.ngay) >= 0;
+        }, orElse: () => null);
+
+        if (validHistM == null) {
+          issues.add(
+            RosterIssue(
+              code: RosterIssueCode.ADJUSTMENT_MEMBERSHIP_INVALID,
+              message:
+                  'Học sinh ${student.hoTen} không có quá trình học hợp lệ vào ngày buổi vắng gốc.',
+              context: incAdj,
+            ),
+          );
+          continue;
+        }
+
+        source = RosterInclusionSource.HOC_BU;
+        participants.add(
+          RosterMember(
+            student: student,
+            membership: validHistM,
+            adjustment: incAdj,
+            source: source,
+          ),
+        );
+      } else if (incAdj.loai == SessionAdjustmentType.PHAT_SINH) {
+        if (session.loai != SessionType.PHAT_SINH) {
+          issues.add(
+            RosterIssue(
+              code: RosterIssueCode.ADJUSTMENT_TYPE_INVALID_FOR_SESSION,
+              message: 'Chỉ buổi Phát sinh mới nhận điều chỉnh Phát sinh.',
+              context: incAdj,
+            ),
+          );
+          continue;
+        }
+
+        if (incAdj.idBuoiHocGoc != null) {
+          issues.add(
+            RosterIssue(
+              code: RosterIssueCode.ADJUSTMENT_TARGET_SESSION_MISMATCH,
+              message: 'Điều chỉnh phát sinh không được gắn buổi học gốc.',
+              context: incAdj,
+            ),
+          );
+          continue;
+        }
+
+        final origMemberships = await _membershipService
+            .getMembershipsForStudentAndClass(
+              incAdj.idHocSinh,
+              incAdj.idLopGoc,
+            );
+        final validM = origMemberships.cast<dynamic>().firstWhere((m) {
+          final den = m.denNgay ?? '9999-12-31';
+          return m.tuNgay.compareTo(session.ngay) <= 0 &&
+              den.compareTo(session.ngay) >= 0;
+        }, orElse: () => null);
+
+        if (validM == null) {
+          issues.add(
+            RosterIssue(
+              code: RosterIssueCode.ADJUSTMENT_MEMBERSHIP_INVALID,
+              message:
+                  'Học sinh ${student.hoTen} không có quá trình học hợp lệ tại lớp gốc vào ngày này.',
+              context: incAdj,
+            ),
+          );
+          continue;
+        }
+
+        source = RosterInclusionSource.PHAT_SINH;
+        participants.add(
+          RosterMember(
+            student: student,
+            membership: validM,
+            adjustment: incAdj,
+            source: source,
+          ),
+        );
+      }
     }
 
     final requiresOneOff =

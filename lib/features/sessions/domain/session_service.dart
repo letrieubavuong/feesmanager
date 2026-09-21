@@ -91,7 +91,7 @@ class SessionService {
 
   Future<void> markTaughtFromAttendance(
     int id, {
-    bool oneOffRosterResolved = true,
+    required bool oneOffRosterResolved,
   }) async {
     final existing = await _repo.getById(id);
     if (existing == null) throw Exception('Không tìm thấy buổi học');

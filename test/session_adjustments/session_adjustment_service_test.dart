@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:tuition2027/core/database/app_database.dart';
 import 'package:tuition2027/features/attendance/domain/attendance_service.dart';
 import 'package:tuition2027/features/attendance/data/attendance_repository.dart';
 import 'package:tuition2027/features/attendance/domain/attendance_state.dart';
@@ -11,6 +10,7 @@ import 'package:tuition2027/features/leave/data/leave_request_repository.dart';
 import 'package:tuition2027/features/memberships/domain/membership_service.dart';
 import 'package:tuition2027/features/memberships/data/membership_repository.dart';
 import 'package:tuition2027/features/roster/domain/roster_service.dart';
+import 'package:tuition2027/features/roster/domain/roster_result.dart';
 import 'package:tuition2027/features/schedule/domain/schedule_service.dart';
 import 'package:tuition2027/features/schedule/data/schedule_repository.dart';
 import 'package:tuition2027/features/schedule/data/assignment_repository.dart';
@@ -443,6 +443,309 @@ void main() {
         await expectLater(
           adjustmentService.removeAdjustment(adjId),
           throwsA(isA<Exception>()),
+        );
+      },
+    );
+
+    test('Corrupted outgoing DOI_CA fails closed on roster read', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lich_hoc', {
+        'id': 1,
+        'id_lop': 10,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('buoi_hoc', {
+        'id': 101,
+        'id_lop': 10,
+        'id_lich_hoc': 1,
+        'ngay': '2026-09-21',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      // Target session on DIFFERENT date (corrupted)
+      await db.insert('buoi_hoc', {
+        'id': 102,
+        'id_lop': 10,
+        'id_lich_hoc': 1,
+        'ngay': '2026-09-28',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      // Raw insert corrupted DOI_CA
+      await db.insert('dieu_chinh_buoi_hoc', {
+        'id_hoc_sinh': 1,
+        'id_lop_goc': 10,
+        'id_buoi_hoc_goc': 101,
+        'id_buoi_hoc_tham_gia': 102,
+        'loai': 'DOI_CA',
+        'created_at': nowStr,
+      });
+
+      final roster = await rosterService.getRosterForSession(101);
+      expect(roster.isOperationallyValid, isFalse);
+      expect(
+        roster.issues.any(
+          (i) => i.code == RosterIssueCode.ADJUSTMENT_TARGET_SESSION_MISMATCH,
+        ),
+        isTrue,
+      );
+      expect(roster.participants.any((p) => p.student.id == 1), isTrue);
+    });
+
+    test(
+      'Corrupted HOC_BU with non-CHINH original session fails closed',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        // Original session is HOC_BU instead of CHINH
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'HOC_BU',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 102,
+          'id_lop': 10,
+          'ngay': '2026-09-22',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'HOC_BU',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('dieu_chinh_buoi_hoc', {
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 10,
+          'id_buoi_hoc_goc': 101,
+          'id_buoi_hoc_tham_gia': 102,
+          'loai': 'HOC_BU',
+          'created_at': nowStr,
+        });
+
+        final roster = await rosterService.getRosterForSession(102);
+        expect(
+          roster.issues.any(
+            (i) => i.code == RosterIssueCode.ADJUSTMENT_TARGET_SESSION_MISMATCH,
+          ),
+          isTrue,
+        );
+        expect(roster.participants, isEmpty);
+      },
+    );
+
+    test(
+      'HOC_BU valid with historical membership on original missed session date',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        // Membership ended on 2026-09-25
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'den_ngay': '2026-09-25',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Original session on 2026-09-21 (when student WAS a member)
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 101,
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 10,
+          'trang_thai': 'NGHI_CO_PHEP',
+          'loai_tham_gia': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Target HOC_BU session on 2026-10-10 (AFTER membership ended)
+        await db.insert('buoi_hoc', {
+          'id': 102,
+          'id_lop': 10,
+          'ngay': '2026-10-10',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'HOC_BU',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await adjustmentService.createHocBu(
+          studentId: 1,
+          originalSessionId: 101,
+          targetSessionId: 102,
+        );
+
+        final roster = await rosterService.getRosterForSession(102);
+        expect(roster.participants.length, 1);
+        expect(roster.participants.first.student.id, 1);
+      },
+    );
+
+    test(
+      'AttendanceService rejects CO_MAT and TRE for HOC_BU roster member',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 101,
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 10,
+          'trang_thai': 'NGHI_CO_PHEP',
+          'loai_tham_gia': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 102,
+          'id_lop': 10,
+          'ngay': '2026-09-22',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'HOC_BU',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await adjustmentService.createHocBu(
+          studentId: 1,
+          originalSessionId: 101,
+          targetSessionId: 102,
+        );
+
+        // Attempting CO_MAT -> REJECT
+        await expectLater(
+          attendanceService.saveDraft(102, {1: AttendanceState.CO_MAT}),
+          throwsA(
+            predicate(
+              (e) =>
+                  e.toString().contains('không thể đánh dấu Có mặt hoặc Trễ'),
+            ),
+          ),
+        );
+
+        // Attempting TRE -> REJECT
+        await expectLater(
+          attendanceService.saveDraft(102, {1: AttendanceState.TRE}),
+          throwsA(
+            predicate(
+              (e) =>
+                  e.toString().contains('không thể đánh dấu Có mặt hoặc Trễ'),
+            ),
+          ),
         );
       },
     );
