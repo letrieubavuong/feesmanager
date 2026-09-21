@@ -231,10 +231,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(
-      find.textContaining('chưa có danh sách học sinh tham gia'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('Buổi học bù'), findsOneWidget);
     expect(find.byType(ChoiceChip), findsNothing);
   });
 
@@ -263,10 +260,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(
-      find.textContaining('chưa có danh sách học sinh tham gia'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('chưa có danh sách tham gia'), findsOneWidget);
     expect(find.byType(ChoiceChip), findsNothing);
   });
 

@@ -36,6 +36,9 @@ class SessionService {
     );
   }
 
+  Future<List<ClassSession>> getUpcomingHocBuSessions(String fromDate) =>
+      _repo.getUpcomingHocBuSessions(fromDate);
+
   Future<void> createManualSession(ClassSession session) async {
     final cls = await _classService.getClassById(session.idLop);
     if (cls == null) throw Exception('Không tìm thấy lớp học');

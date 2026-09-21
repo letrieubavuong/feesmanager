@@ -92,10 +92,13 @@
 - [x] RosterService hardened as single canonical owner of final rosters with fail-closed integrity checks on read.
 - [x] Session finalization API hardened with required `oneOffRosterResolved` parameter.
 - [x] HOC_BU original session restricted to CHINH, with historical membership validation on original missed session date.
+- [x] Cross-class HOC_BU and PHAT_SINH support in domain & presentation.
 - [x] HOC_BU attendance state restrictions enforced (`CO_MAT` / `TRE` rejected for HOC_BU roster members).
+- [x] Bulk action "Học bù hết" implemented for HOC_BU sessions.
 - [x] Controller error propagation fixed (rethrow exceptions for UI error dialogs).
+- [x] Live Attendance Sheet refresh after adjustment creation/removal.
 - [x] Mobile UI for Leave management and Session Adjustments with complete navigation entry points.
-- [x] Comprehensive Tests (165 tests passing):
+- [x] Comprehensive Tests (172 tests passing):
     - `test/leave/leave_request_service_test.dart`
     - `test/session_adjustments/session_adjustment_service_test.dart`
     - `test/presentation/phase7_ui_test.dart`
@@ -134,4 +137,4 @@
   - `test/repository/migration_v7_v8_test.dart`
 - **Quality Gate**:
   - `dart analyze`: Clean (No issues found!)
-  - `flutter test`: 100% Pass (165 tests)
+  - `flutter test`: 100% Pass (172 tests)

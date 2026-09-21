@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../roster/domain/roster_member.dart';
 import '../../roster/domain/roster_result.dart';
-
 import '../../session_adjustments/presentation/session_adjustment_controller.dart';
 import '../../session_adjustments/presentation/session_adjustment_dialogs.dart';
 import '../../sessions/domain/class_session.dart';
@@ -26,16 +25,28 @@ class AttendancePage extends ConsumerWidget {
         actions: sheetAsync.when(
           data: (sheet) => [
             if (_isEditable(sheet)) ...[
-              TextButton.icon(
-                onPressed: () => ref
-                    .read(attendanceControllerProvider(sessionId).notifier)
-                    .markAllPresent(),
-                icon: const Icon(Icons.done_all, color: Colors.white),
-                label: const Text(
-                  'Có mặt hết',
-                  style: TextStyle(color: Colors.white),
+              if (sheet.session.loai == SessionType.HOC_BU)
+                TextButton.icon(
+                  onPressed: () => ref
+                      .read(attendanceControllerProvider(sessionId).notifier)
+                      .markAllHocBu(),
+                  icon: const Icon(Icons.done_all, color: Colors.white),
+                  label: const Text(
+                    'Học bù hết',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                )
+              else
+                TextButton.icon(
+                  onPressed: () => ref
+                      .read(attendanceControllerProvider(sessionId).notifier)
+                      .markAllPresent(),
+                  icon: const Icon(Icons.done_all, color: Colors.white),
+                  label: const Text(
+                    'Có mặt hết',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
-              ),
               IconButton(
                 icon: const Icon(Icons.undo),
                 onPressed: () => ref
@@ -191,42 +202,62 @@ class AttendancePage extends ConsumerWidget {
               style: const TextStyle(fontStyle: FontStyle.italic),
             ),
           ),
-        if (sheet.requiresOneOffAdjustments)
+        if (sheet.session.loai == SessionType.PHAT_SINH &&
+            sheet.session.trangThai == SessionStatus.DU_KIEN)
           Container(
             color: Colors.blue.shade50,
-            padding: const EdgeInsets.all(16),
-            child: Column(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
               children: [
-                const Text(
-                  'Buổi học này chưa có danh sách học sinh tham gia. Vui lòng xếp danh sách học sinh tham gia trước khi điểm danh.',
-                  textAlign: TextAlign.center,
-                ),
-                if (sheet.session.loai == SessionType.PHAT_SINH) ...[
-                  const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    onPressed: () =>
-                        SessionAdjustmentDialogs.showThemPhatSinhDialog(
-                          context,
-                          ref,
-                          targetSessionId: sessionId,
-                          classId: sheet.session.idLop,
-                        ),
-                    icon: const Icon(Icons.person_add),
-                    label: const Text('Thêm học sinh tham gia'),
+                Expanded(
+                  child: Text(
+                    sheet.members.isEmpty
+                        ? 'Buổi học phát sinh chưa có danh sách tham gia.'
+                        : 'Danh sách học sinh tham gia phát sinh',
+                    style: TextStyle(
+                      color: Colors.blue.shade900,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ],
+                ),
+                ElevatedButton.icon(
+                  onPressed: () =>
+                      SessionAdjustmentDialogs.showThemPhatSinhDialog(
+                        context,
+                        ref,
+                        targetSessionId: sessionId,
+                        classId: sheet.session.idLop,
+                      ),
+                  icon: const Icon(Icons.person_add, size: 18),
+                  label: const Text('Thêm học sinh'),
+                ),
               ],
             ),
           ),
-        Expanded(
-          child: ListView.separated(
-            itemCount: sheet.members.length,
-            separatorBuilder: (context, index) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final member = sheet.members[index];
-              return _buildStudentRow(context, ref, sheet, member);
-            },
+        if (sheet.session.loai == SessionType.HOC_BU &&
+            sheet.requiresOneOffAdjustments)
+          Container(
+            color: Colors.blue.shade50,
+            padding: const EdgeInsets.all(16),
+            child: const Text(
+              'Buổi học bù này chưa có danh sách học sinh tham gia.',
+              textAlign: TextAlign.center,
+            ),
           ),
+        Expanded(
+          child: sheet.members.isEmpty
+              ? const Center(
+                  child: Text('Chưa có học sinh nào trong danh sách.'),
+                )
+              : ListView.separated(
+                  itemCount: sheet.members.length,
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final member = sheet.members[index];
+                    return _buildStudentRow(context, ref, sheet, member);
+                  },
+                ),
         ),
       ],
     );
@@ -413,16 +444,20 @@ class AttendancePage extends ConsumerWidget {
                   tooltip: 'Hủy điều chỉnh',
                   onPressed: () async {
                     try {
+                      final adj = member.rosterMember.adjustment!;
                       await ref
                           .read(
                             sessionAdjustmentControllerProvider(
                               sessionId,
                             ).notifier,
                           )
-                          .removeAdjustment(
-                            member.rosterMember.adjustment!.id!,
-                            sessionId,
-                          );
+                          .removeAdjustment(adj.id!, sessionId);
+                      ref.invalidate(attendanceControllerProvider(sessionId));
+                      if (adj.idBuoiHocGoc != null) {
+                        ref.invalidate(
+                          attendanceControllerProvider(adj.idBuoiHocGoc!),
+                        );
+                      }
                     } catch (e) {
                       if (context.mounted) _showError(context, e.toString());
                     }
@@ -485,16 +520,13 @@ class AttendancePage extends ConsumerWidget {
               child: Row(
                 children: AttendanceState.values
                     .where((s) {
-                      if (s == AttendanceState.HOC_BU) {
-                        return member.rosterMember.source ==
-                            RosterInclusionSource.HOC_BU;
-                      }
                       if (member.rosterMember.source ==
                           RosterInclusionSource.HOC_BU) {
                         return s != AttendanceState.CO_MAT &&
                             s != AttendanceState.TRE;
+                      } else {
+                        return s != AttendanceState.HOC_BU;
                       }
-                      return true;
                     })
                     .map(
                       (state) => Padding(

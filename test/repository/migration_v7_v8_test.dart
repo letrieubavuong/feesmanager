@@ -420,5 +420,35 @@ void main() {
       await db.close();
       await deleteDatabase(tempDbReg);
     });
+
+    test(
+      'Fresh install DB version is 8 and PRAGMA foreign_key_check is clean',
+      () async {
+        final freshDbPath = join(
+          Directory.systemTemp.path,
+          'test_fresh_v8_install.db',
+        );
+        await deleteDatabase(freshDbPath);
+
+        final appDb = AppDatabase(dbName: freshDbPath);
+        final db = await appDb.database;
+
+        expect(await db.getVersion(), 8);
+
+        final tables = await db.rawQuery(
+          "SELECT name FROM sqlite_master WHERE type='table'",
+        );
+        final tableNames = tables.map((t) => t['name'] as String).toSet();
+
+        expect(tableNames.contains('don_nghi_hoc'), isTrue);
+        expect(tableNames.contains('dieu_chinh_buoi_hoc'), isTrue);
+
+        final fkViolations = await db.rawQuery('PRAGMA foreign_key_check');
+        expect(fkViolations, isEmpty);
+
+        await db.close();
+        await deleteDatabase(freshDbPath);
+      },
+    );
   });
 }

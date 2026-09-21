@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../attendance/presentation/attendance_controller.dart';
+import '../../classes/domain/class_service.dart';
 import '../../memberships/domain/membership_service.dart';
 import '../../roster/domain/roster_service.dart';
 import '../../sessions/domain/class_session.dart';
@@ -25,7 +27,6 @@ class SessionAdjustmentDialogs {
       DateTime.parse(sessionDate),
     );
 
-    // Eligible targets: CHINH, DU_KIEN, targetId != originalSessionId, student NOT in target base roster
     final eligibleTargets = <ClassSession>[];
     for (final s in allClassSessions) {
       if (s.id == originalSessionId) continue;
@@ -86,7 +87,9 @@ class SessionAdjustmentDialogs {
                   );
                 }).toList(),
                 onChanged: (val) {
-                  if (val != null) setDialogState(() => selectedTargetId = val);
+                  if (val != null) {
+                    setDialogState(() => selectedTargetId = val);
+                  }
                 },
               ),
               const SizedBox(height: 12),
@@ -116,6 +119,12 @@ class SessionAdjustmentDialogs {
                         targetSessionId: selectedTargetId,
                         reason: reasonController.text.trim(),
                       );
+                  ref.invalidate(
+                    attendanceControllerProvider(originalSessionId),
+                  );
+                  ref.invalidate(
+                    attendanceControllerProvider(selectedTargetId),
+                  );
                   if (dialogCtx.mounted) Navigator.pop(dialogCtx);
                 } catch (e) {
                   if (dialogCtx.mounted) {
@@ -151,28 +160,22 @@ class SessionAdjustmentDialogs {
     required int classId,
   }) async {
     final sessionService = await ref.read(sessionServiceProvider.future);
+    final classService = await ref.read(classServiceProvider.future);
     final origSession = await sessionService.getSessionById(originalSessionId);
     if (origSession == null) return;
 
-    final fromDate = DateTime.parse(origSession.ngay);
-    final toDate = fromDate.add(const Duration(days: 90));
-
-    final classSessions = await sessionService.getSessionsForClassAndRange(
-      classId,
-      fromDate,
-      toDate,
+    // Cross-class search: query upcoming HOC_BU sessions from original date
+    final upcomingHocBu = await sessionService.getUpcomingHocBuSessions(
+      origSession.ngay,
     );
 
-    // Eligible target HOC_BU sessions: loai == HOC_BU, trangThai == DU_KIEN, ngay >= origSession.ngay
-    final eligibleTargets = classSessions
-        .where(
-          (s) =>
-              s.id != originalSessionId &&
-              s.loai == SessionType.HOC_BU &&
-              s.trangThai == SessionStatus.DU_KIEN &&
-              s.ngay.compareTo(origSession.ngay) >= 0,
-        )
-        .toList();
+    final eligibleTargets = <(ClassSession, String)>[];
+    for (final s in upcomingHocBu) {
+      if (s.id == originalSessionId) continue;
+      final targetClass = await classService.getClassById(s.idLop);
+      final className = targetClass?.tenLop ?? 'Lớp ${s.idLop}';
+      eligibleTargets.add((s, className));
+    }
 
     if (!context.mounted) return;
 
@@ -195,7 +198,7 @@ class SessionAdjustmentDialogs {
       return;
     }
 
-    int selectedTargetId = eligibleTargets.first.id!;
+    int selectedTargetId = eligibleTargets.first.$1.id!;
     final reasonController = TextEditingController();
 
     showDialog(
@@ -211,14 +214,20 @@ class SessionAdjustmentDialogs {
                 decoration: const InputDecoration(
                   labelText: 'Chọn buổi học bù',
                 ),
-                items: eligibleTargets.map((s) {
+                items: eligibleTargets.map((pair) {
+                  final s = pair.$1;
+                  final className = pair.$2;
                   return DropdownMenuItem<int>(
                     value: s.id,
-                    child: Text('${s.ngay} (${s.gioBatDau} - ${s.gioKetThuc})'),
+                    child: Text(
+                      '$className - ${s.ngay} (${s.gioBatDau} - ${s.gioKetThuc})',
+                    ),
                   );
                 }).toList(),
                 onChanged: (val) {
-                  if (val != null) setDialogState(() => selectedTargetId = val);
+                  if (val != null) {
+                    setDialogState(() => selectedTargetId = val);
+                  }
                 },
               ),
               const SizedBox(height: 12),
@@ -248,6 +257,12 @@ class SessionAdjustmentDialogs {
                         targetSessionId: selectedTargetId,
                         reason: reasonController.text.trim(),
                       );
+                  ref.invalidate(
+                    attendanceControllerProvider(originalSessionId),
+                  );
+                  ref.invalidate(
+                    attendanceControllerProvider(selectedTargetId),
+                  );
                   if (dialogCtx.mounted) Navigator.pop(dialogCtx);
                 } catch (e) {
                   if (dialogCtx.mounted) {
@@ -284,31 +299,44 @@ class SessionAdjustmentDialogs {
     final membershipService = await ref.read(membershipServiceProvider.future);
     final studentService = await ref.read(studentServiceProvider.future);
     final sessionService = await ref.read(sessionServiceProvider.future);
+    final classService = await ref.read(classServiceProvider.future);
 
     final targetSession = await sessionService.getSessionById(targetSessionId);
     if (targetSession == null) return;
 
     final targetDate = DateTime.parse(targetSession.ngay);
 
-    final activeStudentIds = await membershipService.getActiveStudentIdsInClass(
-      classId,
-      targetDate,
-    );
-
     final allStudents = await studentService.getStudents();
-    final classStudents = allStudents
-        .where((s) => activeStudentIds.contains(s.id))
-        .toList();
+    final studentClassOptions =
+        <
+          ({int studentId, String studentName, int classId, String className})
+        >[];
+
+    for (final s in allStudents) {
+      final activeMemberships = await membershipService
+          .getActiveMembershipsForStudent(s.id!, date: targetDate);
+      for (final m in activeMemberships) {
+        final cls = await classService.getClassById(m.idLop);
+        if (cls != null) {
+          studentClassOptions.add((
+            studentId: s.id!,
+            studentName: s.hoTen,
+            classId: cls.id!,
+            className: cls.tenLop,
+          ));
+        }
+      }
+    }
 
     if (!context.mounted) return;
 
-    if (classStudents.isEmpty) {
+    if (studentClassOptions.isEmpty) {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('Thêm học sinh phát sinh'),
           content: const Text(
-            'Lớp học không có học sinh nào đang tham gia vào ngày này.',
+            'Không tìm thấy học sinh nào có quá trình học hợp lệ vào ngày này.',
           ),
           actions: [
             TextButton(
@@ -321,7 +349,7 @@ class SessionAdjustmentDialogs {
       return;
     }
 
-    int selectedStudentId = classStudents.first.id!;
+    int selectedOptionIndex = 0;
     final reasonController = TextEditingController();
 
     showDialog(
@@ -333,17 +361,21 @@ class SessionAdjustmentDialogs {
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<int>(
-                initialValue: selectedStudentId,
-                decoration: const InputDecoration(labelText: 'Chọn học sinh'),
-                items: classStudents.map((s) {
+                initialValue: selectedOptionIndex,
+                decoration: const InputDecoration(
+                  labelText: 'Chọn học sinh và lớp gốc',
+                ),
+                items: List.generate(studentClassOptions.length, (idx) {
+                  final opt = studentClassOptions[idx];
                   return DropdownMenuItem<int>(
-                    value: s.id,
-                    child: Text(s.hoTen),
+                    value: idx,
+                    child: Text('${opt.studentName} (${opt.className})'),
                   );
-                }).toList(),
+                }),
                 onChanged: (val) {
-                  if (val != null)
-                    setDialogState(() => selectedStudentId = val);
+                  if (val != null) {
+                    setDialogState(() => selectedOptionIndex = val);
+                  }
                 },
               ),
               const SizedBox(height: 12),
@@ -363,6 +395,7 @@ class SessionAdjustmentDialogs {
             ElevatedButton(
               onPressed: () async {
                 try {
+                  final selectedOpt = studentClassOptions[selectedOptionIndex];
                   await ref
                       .read(
                         sessionAdjustmentControllerProvider(
@@ -370,11 +403,12 @@ class SessionAdjustmentDialogs {
                         ).notifier,
                       )
                       .createPhatSinh(
-                        studentId: selectedStudentId,
-                        originalClassId: classId,
+                        studentId: selectedOpt.studentId,
+                        originalClassId: selectedOpt.classId,
                         targetSessionId: targetSessionId,
                         reason: reasonController.text.trim(),
                       );
+                  ref.invalidate(attendanceControllerProvider(targetSessionId));
                   if (dialogCtx.mounted) Navigator.pop(dialogCtx);
                 } catch (e) {
                   if (dialogCtx.mounted) {

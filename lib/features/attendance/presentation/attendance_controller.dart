@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../roster/domain/roster_member.dart';
 import '../domain/attendance_service.dart';
 import '../domain/attendance_sheet.dart';
 import '../domain/attendance_state.dart';
@@ -54,9 +55,29 @@ class AttendanceController extends _$AttendanceController {
     ref.notifyListeners();
   }
 
+  void markAllHocBu() {
+    if (!state.hasValue) return;
+    _ensureDraft();
+    final currentDraft = Map<int, AttendanceState>.from(_draft!);
+    for (var m in state.value!.members) {
+      if (m.rosterMember.source == RosterInclusionSource.HOC_BU) {
+        currentDraft[m.rosterMember.student.id!] = AttendanceState.HOC_BU;
+      }
+    }
+    _draft = currentDraft;
+    ref.notifyListeners();
+  }
+
   void undoChanges() {
     _draft = null;
     ref.notifyListeners();
+  }
+
+  Future<void> reload() async {
+    final service = await ref.read(attendanceServiceProvider.future);
+    _draft = null;
+    final newSheet = await service.getAttendanceForSession(sessionId);
+    state = AsyncValue.data(newSheet);
   }
 
   int unresolvedCountFromDraft() {

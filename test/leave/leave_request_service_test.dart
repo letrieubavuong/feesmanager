@@ -404,5 +404,342 @@ void main() {
         expect(member.suggestedState, isNull);
       },
     );
+
+    test('Nonexistent student or class rejected for leave request', () async {
+      final req = LeaveRequest(
+        idHocSinh: 999,
+        idLop: 10,
+        tuNgay: '2026-09-10',
+        denNgay: '2026-09-15',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await expectLater(
+        leaveService.createLeaveRequest(req),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test(
+      'Student with no membership intersection rejected for leave request',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        // Membership was only in January
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'den_ngay': '2026-01-31',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Leave requested in September
+        final req = LeaveRequest(
+          idHocSinh: 1,
+          idLop: 10,
+          tuNgay: '2026-09-10',
+          denNgay: '2026-09-15',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        await expectLater(
+          leaveService.createLeaveRequest(req),
+          throwsA(isA<Exception>()),
+        );
+      },
+    );
+
+    test(
+      'Leave boundaries test: inclusive tuNgay/denNgay suggested, outside not suggested',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Mondays: 2026-09-07, 2026-09-14, 2026-09-21, 2026-09-28
+        for (final date in [
+          '2026-09-07',
+          '2026-09-14',
+          '2026-09-21',
+          '2026-09-28',
+        ]) {
+          final id = int.parse(date.replaceAll('-', ''));
+          await db.insert('buoi_hoc', {
+            'id': id,
+            'id_lop': 10,
+            'id_lich_hoc': 1,
+            'ngay': date,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'CHINH',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        }
+
+        // Approved leave 2026-09-14 to 2026-09-21
+        final req = LeaveRequest(
+          idHocSinh: 1,
+          idLop: 10,
+          tuNgay: '2026-09-14',
+          denNgay: '2026-09-21',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        final reqId = await leaveService.createLeaveRequest(req);
+        await leaveService.updateStatus(reqId, LeaveRequestStatus.DA_DUYET);
+
+        // 09-07 (outside) -> no suggestion
+        final sheet07 = await attendanceService.getAttendanceForSession(
+          20260907,
+        );
+        expect(sheet07.members.first.suggestedState, isNull);
+
+        // 09-14 (tuNgay boundary) -> suggestion
+        final sheet14 = await attendanceService.getAttendanceForSession(
+          20260914,
+        );
+        expect(
+          sheet14.members.first.suggestedState,
+          AttendanceState.NGHI_CO_PHEP,
+        );
+
+        // 09-21 (denNgay boundary) -> suggestion
+        final sheet21 = await attendanceService.getAttendanceForSession(
+          20260921,
+        );
+        expect(
+          sheet21.members.first.suggestedState,
+          AttendanceState.NGHI_CO_PHEP,
+        );
+
+        // 09-28 (outside) -> no suggestion
+        final sheet28 = await attendanceService.getAttendanceForSession(
+          20260928,
+        );
+        expect(sheet28.members.first.suggestedState, isNull);
+      },
+    );
+
+    test(
+      'CHO_DUYET and TU_CHOI leave requests do not produce suggestions',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-14',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // CHO_DUYET leave
+        final req1 = LeaveRequest(
+          idHocSinh: 1,
+          idLop: 10,
+          tuNgay: '2026-09-14',
+          denNgay: '2026-09-14',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        await leaveService.createLeaveRequest(req1);
+
+        var sheet = await attendanceService.getAttendanceForSession(1);
+        expect(sheet.members.first.suggestedState, isNull);
+      },
+    );
+
+    test('Approved leave does not add paused student to roster', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      // Membership ended on 2026-08-31
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'den_ngay': '2026-08-31',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lich_hoc', {
+        'id': 1,
+        'id_lop': 10,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('buoi_hoc', {
+        'id': 1,
+        'id_lop': 10,
+        'id_lich_hoc': 1,
+        'ngay': '2026-09-14',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      final sheet = await attendanceService.getAttendanceForSession(1);
+      expect(sheet.members, isEmpty);
+    });
+
+    test(
+      'Late leave approval does not alter historical finalized attendance',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-14',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 1,
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 10,
+          'trang_thai': 'NGHI_KHONG_PHEP',
+          'loai_tham_gia': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        final req = LeaveRequest(
+          idHocSinh: 1,
+          idLop: 10,
+          tuNgay: '2026-09-14',
+          denNgay: '2026-09-14',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        final reqId = await leaveService.createLeaveRequest(req);
+        await leaveService.updateStatus(reqId, LeaveRequestStatus.DA_DUYET);
+
+        final sheet = await attendanceService.getAttendanceForSession(1);
+        expect(sheet.members.first.state, AttendanceState.NGHI_KHONG_PHEP);
+      },
+    );
   });
 }
