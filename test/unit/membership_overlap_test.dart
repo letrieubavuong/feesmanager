@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:tuition2027/features/memberships/data/membership_repository.dart';
-import 'package:tuition2027/features/memberships/domain/membership.dart';
 
 void main() {
   sqfliteFfiInit();

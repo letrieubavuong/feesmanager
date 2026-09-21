@@ -208,13 +208,9 @@ class ScheduleDomainService {
 
     if (existing.denNgay != null) {
       if (endStr == existing.denNgay) return; // Idempotent
-      if (endStr.compareTo(existing.denNgay!) > 0) {
-        throw Exception(
-          'Không thể kéo dài phân ca đã kết thúc ($endStr > ${existing.denNgay})',
-        );
-      }
-      // Note: Truncating an already closed assignment might be allowed in correction flows,
-      // but here we follow the strict rule: closeAssignment handles open ones.
+      throw Exception(
+        'Không thể sửa đổi phân ca đã kết thúc ($endStr != ${existing.denNgay})',
+      );
     }
 
     // Boundary check against membership
@@ -275,13 +271,8 @@ class ScheduleDomainService {
       );
     }
 
-    // OLD ASSIGNMENT HARDENING: Must be active on day immediately before effectiveDate
-    // Effectively: old.tuNgay <= yesterdayStr AND (old.denNgay == null OR old.denNgay >= yesterdayStr)
-    if (oldAssignment.denNgay != null &&
-        yesterdayStr.compareTo(oldAssignment.denNgay!) > 0) {
-      throw Exception(
-        'Không thể đổi ca từ phân ca đã kết thúc trước ngày $startStr',
-      );
+    if (oldAssignment.denNgay != null) {
+      throw Exception('Không thể đổi ca từ phân ca đã kết thúc');
     }
 
     final schedule = await _scheduleRepo.getById(newScheduleId);
@@ -360,7 +351,7 @@ class ScheduleDomainService {
       if (containingMembership.denNgay != null &&
           endStr.compareTo(containingMembership.denNgay!) > 0) {
         throw Exception(
-          'Phân ca kết thúc vào ngày $endStr nhưng học sinh nghỉ lớp vào ngày ${containingMembership.denNgay}',
+          'Phân ca kết thúc vào ngày $endStr but học sinh nghỉ lớp vào ngày ${containingMembership.denNgay}',
         );
       }
     }

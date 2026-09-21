@@ -7,11 +7,8 @@ import 'package:tuition2027/features/schedule/domain/schedule_service.dart';
 import 'package:tuition2027/features/schedule/domain/class_schedule.dart';
 import 'package:tuition2027/features/schedule/domain/student_shift_assignment.dart';
 import 'package:tuition2027/features/students/domain/student.dart';
-import 'package:tuition2027/features/students/domain/student_service.dart';
-import 'package:tuition2027/features/memberships/domain/membership_service.dart';
 import 'package:tuition2027/core/utils/date_formatter.dart';
 import 'package:tuition2027/features/students/presentation/student_detail_page.dart';
-import 'package:tuition2027/features/students/presentation/student_controller.dart';
 
 class AssignmentTab extends ConsumerWidget {
   final int classId;

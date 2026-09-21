@@ -39,19 +39,26 @@
     - `test/schedule/schedule_service_test.dart`
     - `test/schedule/assignment_service_test.dart`
     - `test/repository/real_migration_test.dart`
-- [x] Quality Gate: 45 tests passing.
+    - `test/presentation/schedule_assignment_ui_test.dart`
+- [x] Quality Gate: 54 tests passing.
 
 ## Phase 4: Session + Attendance - NOT STARTED
 
 ---
 
 ## Technical Details
-- **Database**: `tuition_next.db` (Version 1)
+- **Database**: `tuition_next.db`
+- **Version**: 5
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
 - **Tests**:
   - `test/unit/phone_normalizer_test.dart`
   - `test/repository/student_repository_test.dart`
+  - `test/repository/membership_logic_test.dart`
+  - `test/schedule/schedule_service_test.dart`
+  - `test/schedule/assignment_service_test.dart`
+  - `test/repository/real_migration_test.dart`
+  - `test/presentation/schedule_assignment_ui_test.dart`
 - **Quality Gate**:
-  - `dart analyze`: Clean (except deprecated generated code and minor lint warnings)
-  - `flutter test`: 100% Pass
+  - `dart analyze`: Clean
+  - `flutter test`: 100% Pass (54 tests)

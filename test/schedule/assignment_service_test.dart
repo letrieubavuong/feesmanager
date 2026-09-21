@@ -68,8 +68,8 @@ void main() {
           id: 1,
           idLop: cId,
           thuTrongTuan: 1,
-          gioBatDau: '17:30',
-          gioKetThuc: '19:00',
+          gioBatDau: '16:30',
+          gioKetThuc: '18:00',
           hieuLucTu: '2026-09-01',
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
@@ -114,8 +114,8 @@ void main() {
           id: 1,
           idLop: cId,
           thuTrongTuan: 1,
-          gioBatDau: '17:30',
-          gioKetThuc: '19:00',
+          gioBatDau: '16:30',
+          gioKetThuc: '18:00',
           hieuLucTu: '2026-09-01',
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
@@ -172,8 +172,8 @@ void main() {
           id: 1,
           idLop: cId,
           thuTrongTuan: 1,
-          gioBatDau: '17:30',
-          gioKetThuc: '19:00',
+          gioBatDau: '16:30',
+          gioKetThuc: '18:00',
           hieuLucTu: '2026-09-01',
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
@@ -231,8 +231,8 @@ void main() {
           id: 1,
           idLop: cId,
           thuTrongTuan: 1,
-          gioBatDau: '17:30',
-          gioKetThuc: '19:00',
+          gioBatDau: '16:30',
+          gioKetThuc: '18:00',
           hieuLucTu: '2026-09-01',
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
@@ -256,18 +256,6 @@ void main() {
       await service.closeAssignment(aId, DateTime(2026, 9, 15));
       final closed = await service.getAssignmentsForStudent(sId);
       expect(closed.first.denNgay, '2026-09-15');
-
-      // Cannot extend already closed
-      expect(
-        () => service.closeAssignment(aId, DateTime(2026, 9, 16)),
-        throwsA(
-          isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Không thể kéo dài'),
-          ),
-        ),
-      );
     });
 
     test(
@@ -381,8 +369,8 @@ void main() {
           id: 1,
           idLop: c1Id,
           thuTrongTuan: 1,
-          gioBatDau: '17:30',
-          gioKetThuc: '19:00',
+          gioBatDau: '16:30',
+          gioKetThuc: '18:00',
           hieuLucTu: '2026-09-01',
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
@@ -449,19 +437,22 @@ void main() {
       // Attempt shift change in Class A from l1 to l2 (19:00-20:30).
       // l2 (19:00-20:30) conflicts with already assigned Class B l3 (18:30-20:00).
 
-      Object? caughtException;
-      try {
-        await service.changeRecurringShift(
+      await expectLater(
+        service.changeRecurringShift(
           studentId: sId,
           classId: c1Id,
           oldAssignmentId: oldAssignmentId,
           newScheduleId: l2Id,
           effectiveDate: DateTime(2026, 9, 10),
-        );
-      } catch (e) {
-        caughtException = e;
-      }
-      expect(caughtException.toString(), contains('Trùng lịch'));
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Trùng lịch'),
+          ),
+        ),
+      );
 
       // Verify Class A Schedule 1 assignment still open-ended
       final finalAssignments = await service.getAssignmentsForStudent(sId);
@@ -470,5 +461,86 @@ void main() {
       );
       expect(originalA.denNgay, isNull);
     });
+
+    test(
+      'closeAssignment rejects any modification to already closed assignment',
+      () async {
+        final sId = await studentRepo.create(
+          Student(
+            id: 1,
+            hoTen: 'S1',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        final cId = await classRepo.create(
+          ClassEntity(
+            id: 1,
+            tenLop: 'C1',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        final lId = await scheduleRepo.create(
+          ClassSchedule(
+            id: 1,
+            idLop: cId,
+            thuTrongTuan: 1,
+            gioBatDau: '17:30',
+            gioKetThuc: '19:00',
+            hieuLucTu: '2026-09-01',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        await membershipService.enrollStudent(
+          studentId: sId,
+          classId: cId,
+          joinDate: DateTime(2026, 9, 1),
+        );
+
+        await service.assignStudent(
+          studentId: sId,
+          classId: cId,
+          scheduleId: lId,
+          startDate: DateTime(2026, 9, 1),
+        );
+        final aId = (await service.getAssignmentsForStudent(sId)).first.id!;
+
+        // Close it at 2026-09-15
+        await service.closeAssignment(aId, DateTime(2026, 9, 15));
+
+        // Idempotent close
+        await service.closeAssignment(aId, DateTime(2026, 9, 15));
+
+        // Try to "truncate" it to 2026-09-10 -> REJECT
+        await expectLater(
+          service.closeAssignment(aId, DateTime(2026, 9, 10)),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Không thể sửa đổi'),
+            ),
+          ),
+        );
+
+        // Try to "extend" it to 2026-09-20 -> REJECT
+        await expectLater(
+          service.closeAssignment(aId, DateTime(2026, 9, 20)),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Không thể sửa đổi'),
+            ),
+          ),
+        );
+
+        // Verify still 2026-09-15
+        final finalAssignments = await service.getAssignmentsForStudent(sId);
+        expect(finalAssignments.first.denNgay, '2026-09-15');
+      },
+    );
   });
 }
