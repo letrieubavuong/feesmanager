@@ -53,8 +53,9 @@ class StudentDetailPage extends ConsumerWidget {
       ),
       body: studentAsync.when(
         data: (student) {
-          if (student == null)
+          if (student == null) {
             return const Center(child: Text('Không tìm thấy học sinh'));
+          }
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -279,8 +280,8 @@ class StudentDetailPage extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: isActive
-                ? Colors.green.withOpacity(0.1)
-                : Colors.grey.withOpacity(0.1),
+                ? Colors.green.withValues(alpha: 0.1)
+                : Colors.grey.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Text(

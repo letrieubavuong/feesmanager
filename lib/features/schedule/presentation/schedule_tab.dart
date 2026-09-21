@@ -77,7 +77,7 @@ class ScheduleTab extends ConsumerWidget {
     WidgetRef ref,
     ClassSchedule schedule,
   ) {
-    DateTime _endDate = DateTime.now();
+    DateTime endDate = DateTime.now();
 
     showDialog(
       context: context,
@@ -89,16 +89,16 @@ class ScheduleTab extends ConsumerWidget {
             children: [
               ListTile(
                 title: const Text('Ngày kết thúc'),
-                subtitle: Text(DateFormat('dd/MM/yyyy').format(_endDate)),
+                subtitle: Text(DateFormat('dd/MM/yyyy').format(endDate)),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
                   final picked = await showDatePicker(
                     context: context,
-                    initialDate: _endDate,
+                    initialDate: endDate,
                     firstDate: DateTime(2020),
                     lastDate: DateTime(2100),
                   );
-                  if (picked != null) setDialogState(() => _endDate = picked);
+                  if (picked != null) setDialogState(() => endDate = picked);
                 },
               ),
             ],
@@ -113,7 +113,7 @@ class ScheduleTab extends ConsumerWidget {
                 try {
                   final success = await ref
                       .read(classScheduleControllerProvider(classId).notifier)
-                      .close(schedule.id!, _endDate);
+                      .close(schedule.id!, endDate);
                   if (success && context.mounted) Navigator.pop(context);
                 } catch (e) {
                   if (context.mounted) {
@@ -159,7 +159,7 @@ class _ScheduleFormDialogState extends State<ScheduleFormDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             DropdownButtonFormField<int>(
-              value: _thu,
+              initialValue: _thu,
               decoration: const InputDecoration(labelText: 'Thứ'),
               items: List.generate(7, (i) => i + 1)
                   .map(

@@ -17,19 +17,19 @@ class _AppShellState extends State<AppShell> {
       label: 'Trang chủ',
       icon: Icons.home_outlined,
       selectedIcon: Icons.home,
-      content: const Center(child: Text('Trang chủ - Dashboard Placeholder')),
+      content: Center(child: Text('Trang chủ - Dashboard Placeholder')),
     ),
     NavigationItem(
       label: 'Học sinh',
       icon: Icons.people_outline,
       selectedIcon: Icons.people,
-      content: const StudentListPage(),
+      content: StudentListPage(),
     ),
     NavigationItem(
       label: 'Lớp học',
       icon: Icons.class_outlined,
       selectedIcon: Icons.class_,
-      content: const ClassListPage(),
+      content: ClassListPage(),
     ),
     NavigationItem(
       label: 'Lịch học',

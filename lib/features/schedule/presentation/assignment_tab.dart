@@ -216,8 +216,9 @@ class AssignmentTab extends ConsumerWidget {
                     firstDate: DateTime(2020),
                     lastDate: DateTime(2100),
                   );
-                  if (picked != null)
+                  if (picked != null) {
                     setDialogState(() => effectiveDate = picked);
+                  }
                 },
               ),
               const SizedBox(height: 16),
@@ -228,7 +229,7 @@ class AssignmentTab extends ConsumerWidget {
                   );
                   return schedulesAsync.when(
                     data: (schedules) => DropdownButtonFormField<int>(
-                      value: selectedScheduleId,
+                      initialValue: selectedScheduleId,
                       decoration: const InputDecoration(
                         labelText: 'Chọn ca mới',
                       ),
@@ -332,7 +333,7 @@ class _AssignStudentDialogState extends ConsumerState<AssignStudentDialog> {
         children: [
           studentsAsync.when(
             data: (students) => DropdownButtonFormField<int>(
-              value: _selectedStudentId,
+              initialValue: _selectedStudentId,
               decoration: const InputDecoration(labelText: 'Chọn học sinh'),
               items: students
                   .map(

@@ -38,7 +38,7 @@ class _AddStudentToClassDialogState
           children: [
             studentsAsync.when(
               data: (students) => DropdownButtonFormField<Student>(
-                value: _selectedStudent,
+                initialValue: _selectedStudent,
                 decoration: const InputDecoration(
                   labelText: 'Chọn học sinh',
                   border: OutlineInputBorder(),

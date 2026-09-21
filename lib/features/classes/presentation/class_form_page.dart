@@ -69,7 +69,7 @@ class _ClassFormPageState extends ConsumerState<ClassFormPage> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<int>(
-                      value: _khoi,
+                      initialValue: _khoi,
                       decoration: const InputDecoration(
                         labelText: 'Khối',
                         border: OutlineInputBorder(),

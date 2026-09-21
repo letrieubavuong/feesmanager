@@ -67,8 +67,9 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
       ),
       body: classAsync.when(
         data: (cls) {
-          if (cls == null)
+          if (cls == null) {
             return const Center(child: Text('Không tìm thấy lớp học'));
+          }
           return Column(
             children: [
               _buildHeader(context, cls),
@@ -129,7 +130,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
       padding: const EdgeInsets.all(16),
       color: Theme.of(
         context,
-      ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       child: Row(
         children: [
           CircleAvatar(
@@ -426,7 +427,7 @@ class RosterItem extends ConsumerWidget {
   }
 
   void _showLeaveDialog(BuildContext context, WidgetRef ref) {
-    DateTime _endDate = DateTime.now();
+    DateTime endDate = DateTime.now();
     String? selectedReason = 'TAM_NGUNG';
 
     showDialog(
@@ -439,21 +440,21 @@ class RosterItem extends ConsumerWidget {
             children: [
               ListTile(
                 title: const Text('Ngày nghỉ (Ngày cuối học)'),
-                subtitle: Text(DateFormat('dd/MM/yyyy').format(_endDate)),
+                subtitle: Text(DateFormat('dd/MM/yyyy').format(endDate)),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
                   final picked = await showDatePicker(
                     context: context,
-                    initialDate: _endDate,
+                    initialDate: endDate,
                     firstDate: DateTime(2020),
                     lastDate: DateTime(2100),
                   );
-                  if (picked != null) setDialogState(() => _endDate = picked);
+                  if (picked != null) setDialogState(() => endDate = picked);
                 },
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: selectedReason,
+                initialValue: selectedReason,
                 items: const [
                   DropdownMenuItem(value: 'TAM_NGUNG', child: Text('Tạm nghỉ')),
                   DropdownMenuItem(value: 'NGHI_HOC', child: Text('Nghỉ lớp')),
@@ -477,7 +478,7 @@ class RosterItem extends ConsumerWidget {
                   await service.leaveClass(
                     studentId: membership.idHocSinh,
                     classId: membership.idLop,
-                    endDate: _endDate,
+                    endDate: endDate,
                     reason: selectedReason,
                   );
                   if (context.mounted) {

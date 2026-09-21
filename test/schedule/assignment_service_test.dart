@@ -45,7 +45,7 @@ void main() {
 
   tearDown(() async => await db.close());
 
-  group('ScheduleService - Assignment Management', () {
+  group('ScheduleDomainService - Assignment Management', () {
     test('valid assignment', () async {
       final sId = await studentRepo.create(
         Student(
