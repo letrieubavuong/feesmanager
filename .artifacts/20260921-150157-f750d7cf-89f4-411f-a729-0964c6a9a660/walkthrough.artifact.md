@@ -1,36 +1,36 @@
-# Phase 7 Walkthrough: Leave & Session Adjustments Final Hardening
+# Phase 7 Walkthrough: Leave & Session Adjustments Final Acceptance
 
-I have completed the full hardening of Phase 7 (Leave Requests & One-Off Session Adjustments). All issues, API safeguards, roster integrity checks, and UI dialogs/entry points are 100% verified.
+I have completed the final acceptance requirements for Phase 7 (Leave Requests & One-Off Session Adjustments).
 
 ## Key Accomplishments
 
-### 1. Finalization API Hardening
-- **No Permissive Defaults**: `SessionService.markTaughtFromAttendance` now requires `required bool oneOffRosterResolved`, preventing unvalidated finalizations.
+### 1. Static Analysis Clean
+- Fixed flow control syntax error in `session_adjustment_dialogs.dart:346`.
+- `flutter analyze` returned **No issues found!**.
 
-### 2. Make-Up (`HOC_BU`) Domain Hardening
-- **Original Session Type**: Enforced `origSession.loai == SessionType.CHINH` (rejects original `HOC_BU` or `PHAT_SINH`).
-- **Historical Membership Semantics**: Validates membership in `id_lop_goc` on the **original missed session date**, ensuring student makeup eligibility remains valid even if class membership ended before the makeup date.
-- **Attendance State Restrictions**: `AttendanceService` enforces that `HOC_BU` roster members can only be marked as `CHUA_DIEM_DANH`, `HOC_BU`, `NGHI_CO_PHEP`, or `NGHI_KHONG_PHEP` (rejects `CO_MAT` and `TRE`).
+### 2. Live Attendance Sheet Refresh
+- After creating or removing adjustments (`DoiCa`, `HOC_BU`, `PHAT_SINH`), the UI invalidates `attendanceControllerProvider` for both target and original sessions.
+- In uncommitted states, `AttendanceController` resets its local draft (`_draft = null`) and reloads the canonical sheet from `AttendanceService` & `RosterService`.
 
-### 3. Fail-Closed Roster Integrity on Read
-- **Outgoing & Incoming Adjustments**: `RosterService` validates target/original session types, dates, classes, and base roster membership before removing or adding participants. Corrupted adjustments produce blocking `RosterIssue`s without mutating DB or misrepresenting rosters.
+### 3. Multiple Ad-Hoc Participants (`PHAT_SINH`)
+- "Thêm học sinh" button in `AttendancePage` remains visible even after participants exist, supporting ad-hoc additions of multiple students.
+- `ThemPhatSinhDialog` allows choosing the student and their active original class (`id_lop_goc`).
 
-### 4. Controller Error Propagation & Mobile UI
-- **Controller Rethrow**: Fixed `LeaveRequestController` and `SessionAdjustmentController` to rethrow exceptions so UI error dialogs display domain errors correctly.
-- **Full Adjustment UI**: Implemented `DoiCaDialog`, `XepHocBuDialog`, `ThemPhatSinhDialog`, and entry points in `AttendancePage` and `ClassDetailPage`.
+### 4. Cross-Class Make-Up (`HOC_BU`) Selection & Bulk Actions
+- `SessionService.getUpcomingHocBuSessions` queries eligible upcoming makeup sessions across all classes.
+- For `HOC_BU` sessions, `AttendancePage` displays "Học bù hết" bulk action (setting eligible makeup participants to `HOC_BU`). ChoiceChips for `HOC_BU` participants restrict options to `Chưa điểm danh`, `Học bù`, `Nghỉ có phép`, and `Nghỉ không phép`.
 
 ## Verification Summary
 
 ### Automated Tests
-Ran the full test suite.
-- **Total Tests**: 165
+- **Total Tests**: 172
 - **Pass Rate**: 100%
 
 ### Static Analysis
-`flutter analyze` returned 0 issues.
+`flutter analyze` returned `No issues found!`.
 
 ### CI/CD
-All changes pushed to `main`.
-**Commit SHA**: `30cdee920c64a52ef13aed8fba035c25f54aa4c1`
+Pushed to `main` (Commit SHA: `d4b2b366f5057f64dc07c5c15937882b07d20832`).
+GitHub Actions Workflow Run [35630328901](https://github.com/letrieubavuong/feesmanager/actions/runs/35630328901) is **SUCCESS**.
 
 **PHASE 7 READY FOR ACCEPTANCE**

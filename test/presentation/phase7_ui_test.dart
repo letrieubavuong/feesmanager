@@ -92,6 +92,88 @@ void main() {
     expect(list.length, 1);
     expect(list.first.loai, SessionAdjustmentType.DOI_CA);
   });
+
+  test('LeaveRequestController rethrows exception on failure', () async {
+    final container = ProviderContainer(
+      overrides: [
+        leaveRequestControllerProvider(
+          10,
+        ).overrideWith(() => FailingLeaveRequestController()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final controller = container.read(
+      leaveRequestControllerProvider(10).notifier,
+    );
+    await container.read(leaveRequestControllerProvider(10).future);
+
+    expect(
+      () => controller.createLeaveRequest(
+        LeaveRequest(
+          idHocSinh: 1,
+          idLop: 10,
+          tuNgay: '2026-09-10',
+          denNgay: '2026-09-15',
+          createdAt: now,
+          updatedAt: now,
+        ),
+      ),
+      throwsA(isA<Exception>()),
+    );
+  });
+
+  test('SessionAdjustmentController rethrows exception on failure', () async {
+    final container = ProviderContainer(
+      overrides: [
+        sessionAdjustmentControllerProvider(
+          102,
+        ).overrideWith(() => FailingSessionAdjustmentController()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final controller = container.read(
+      sessionAdjustmentControllerProvider(102).notifier,
+    );
+    await container.read(sessionAdjustmentControllerProvider(102).future);
+
+    expect(
+      () => controller.createDoiCa(
+        studentId: 1,
+        originalSessionId: 101,
+        targetSessionId: 102,
+      ),
+      throwsA(isA<Exception>()),
+    );
+  });
+}
+
+class FailingLeaveRequestController extends LeaveRequestController {
+  @override
+  FutureOr<List<LeaveRequest>> build(int classId) => [];
+
+  @override
+  Future<void> createLeaveRequest(LeaveRequest request) async {
+    state = AsyncError(Exception('Create failed'), StackTrace.current);
+    throw Exception('Create failed');
+  }
+}
+
+class FailingSessionAdjustmentController extends SessionAdjustmentController {
+  @override
+  FutureOr<List<SessionAdjustment>> build(int sessionId) => [];
+
+  @override
+  Future<void> createDoiCa({
+    required int studentId,
+    required int originalSessionId,
+    required int targetSessionId,
+    String? reason,
+  }) async {
+    state = AsyncError(Exception('DoiCa failed'), StackTrace.current);
+    throw Exception('DoiCa failed');
+  }
 }
 
 class MockLeaveRequestController extends LeaveRequestController {

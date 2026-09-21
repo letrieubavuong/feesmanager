@@ -6,6 +6,7 @@ import 'package:tuition2027/features/attendance/presentation/attendance_page.dar
 import 'package:tuition2027/features/attendance/presentation/attendance_controller.dart';
 import 'package:tuition2027/features/attendance/domain/attendance_sheet.dart';
 import 'package:tuition2027/features/attendance/domain/attendance_state.dart';
+import 'package:tuition2027/features/attendance/domain/attendance_record.dart';
 import 'package:tuition2027/features/sessions/domain/class_session.dart';
 import 'package:tuition2027/features/students/domain/student.dart';
 import 'package:tuition2027/features/memberships/domain/membership.dart';
@@ -593,6 +594,150 @@ void main() {
     expect(controller.hasDirtyDraft, isFalse);
     expect(controller.effectiveStateFor(101), AttendanceState.CHUA_DIEM_DANH);
   });
+
+  testWidgets('Xếp học bù button hidden on DU_KIEN session', (tester) async {
+    final duKienSession = testSession.copyWith(
+      trangThai: SessionStatus.DU_KIEN,
+    );
+    final sheetDuKien = AttendanceSheet(
+      session: duKienSession,
+      members: [
+        AttendanceSheetMember(
+          rosterMember: testRosterMember,
+          state: AttendanceState.NGHI_CO_PHEP,
+        ),
+      ],
+      issues: [],
+      isRosterValid: true,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          attendanceControllerProvider(
+            1,
+          ).overrideWith(() => MockAttendanceController(sheetDuKien)),
+        ],
+        child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Xếp học bù'), findsNothing);
+  });
+
+  testWidgets('Xếp học bù button visible on DA_HOC session', (tester) async {
+    final daHocSession = testSession.copyWith(trangThai: SessionStatus.DA_HOC);
+    final sheetDaHoc = AttendanceSheet(
+      session: daHocSession,
+      members: [
+        AttendanceSheetMember(
+          rosterMember: testRosterMember,
+          state: AttendanceState.NGHI_CO_PHEP,
+        ),
+      ],
+      issues: [],
+      isRosterValid: true,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          attendanceControllerProvider(
+            2,
+          ).overrideWith(() => MockAttendanceController(sheetDaHoc)),
+        ],
+        child: const MaterialApp(home: AttendancePage(sessionId: 2)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Xếp học bù'), findsOneWidget);
+  });
+
+  testWidgets('Đổi ca button hidden when persistedRecord exists', (
+    tester,
+  ) async {
+    final sheet = AttendanceSheet(
+      session: testSession,
+      members: [
+        AttendanceSheetMember(
+          rosterMember: testRosterMember,
+          state: AttendanceState.CO_MAT,
+          persistedRecord: AttendanceRecord(
+            idBuoiHoc: 1,
+            idHocSinh: 101,
+            idLopGoc: 1,
+            trangThai: AttendanceStatus.CO_MAT,
+            loaiThamGia: AttendanceParticipationType.CHINH,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ),
+      ],
+      issues: [],
+      isRosterValid: true,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          attendanceControllerProvider(
+            1,
+          ).overrideWith(() => MockAttendanceController(sheet)),
+        ],
+        child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Đổi ca'), findsNothing);
+  });
+
+  testWidgets(
+    'Dirty draft blocks roster changing actions (Đổi ca, Thêm học sinh)',
+    (tester) async {
+      final sheet = AttendanceSheet(
+        session: testSession,
+        members: [
+          AttendanceSheetMember(
+            rosterMember: testRosterMember,
+            state: AttendanceState.CHUA_DIEM_DANH,
+          ),
+        ],
+        issues: [],
+        isRosterValid: true,
+      );
+
+      final controller = MockAttendanceController(sheet);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            attendanceControllerProvider(1).overrideWith(() => controller),
+          ],
+          child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Create a dirty draft by tapping "Có mặt"
+      await tester.tap(find.text('Có mặt'));
+      await tester.pumpAndSettle();
+      expect(controller.hasDirtyDraft, isTrue);
+
+      // Tap "Đổi ca" button
+      await tester.tap(find.text('Đổi ca'));
+      await tester.pumpAndSettle();
+
+      // Verify blocking warning dialog appears
+      expect(find.text('Có thay đổi điểm danh chưa lưu'), findsOneWidget);
+      expect(
+        find.textContaining('Vui lòng Lưu nháp hoặc Hoàn tác'),
+        findsOneWidget,
+      );
+    },
+  );
 }
 
 class MockAttendanceController extends AttendanceController {

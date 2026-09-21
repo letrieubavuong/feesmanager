@@ -15,6 +15,30 @@ class AttendancePage extends ConsumerWidget {
 
   const AttendancePage({super.key, required this.sessionId});
 
+  bool _hasDirtyDraft(WidgetRef ref) {
+    return ref
+        .read(attendanceControllerProvider(sessionId).notifier)
+        .hasDirtyDraft;
+  }
+
+  void _showDirtyDraftDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Có thay đổi điểm danh chưa lưu'),
+        content: const Text(
+          'Danh sách học sinh sắp thay đổi. Vui lòng Lưu nháp hoặc Hoàn tác các thay đổi điểm danh trước khi tiếp tục.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sheetAsync = ref.watch(attendanceControllerProvider(sessionId));
@@ -221,13 +245,18 @@ class AttendancePage extends ConsumerWidget {
                   ),
                 ),
                 ElevatedButton.icon(
-                  onPressed: () =>
-                      SessionAdjustmentDialogs.showThemPhatSinhDialog(
-                        context,
-                        ref,
-                        targetSessionId: sessionId,
-                        classId: sheet.session.idLop,
-                      ),
+                  onPressed: () {
+                    if (_hasDirtyDraft(ref)) {
+                      _showDirtyDraftDialog(context);
+                      return;
+                    }
+                    SessionAdjustmentDialogs.showThemPhatSinhDialog(
+                      context,
+                      ref,
+                      targetSessionId: sessionId,
+                      classId: sheet.session.idLop,
+                    );
+                  },
                   icon: const Icon(Icons.person_add, size: 18),
                   label: const Text('Thêm học sinh'),
                 ),
@@ -341,8 +370,10 @@ class AttendancePage extends ConsumerWidget {
         member.rosterMember.source == RosterInclusionSource.EXPLICIT_ASSIGNMENT;
 
     final isMissedOriginal =
-        member.state == AttendanceState.NGHI_CO_PHEP ||
-        member.state == AttendanceState.NGHI_KHONG_PHEP;
+        sheet.session.loai == SessionType.CHINH &&
+        sheet.session.trangThai == SessionStatus.DA_HOC &&
+        (member.state == AttendanceState.NGHI_CO_PHEP ||
+            member.state == AttendanceState.NGHI_KHONG_PHEP);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -406,19 +437,26 @@ class AttendancePage extends ConsumerWidget {
                 ),
               if (isEditable &&
                   isNormalChinh &&
-                  sheet.session.loai == SessionType.CHINH)
+                  sheet.session.loai == SessionType.CHINH &&
+                  member.persistedRecord == null)
                 TextButton(
-                  onPressed: () => SessionAdjustmentDialogs.showDoiCaDialog(
-                    context,
-                    ref,
-                    studentId: student.id!,
-                    originalSessionId: sessionId,
-                    classId: sheet.session.idLop,
-                    sessionDate: sheet.session.ngay,
-                  ),
+                  onPressed: () {
+                    if (_hasDirtyDraft(ref)) {
+                      _showDirtyDraftDialog(context);
+                      return;
+                    }
+                    SessionAdjustmentDialogs.showDoiCaDialog(
+                      context,
+                      ref,
+                      studentId: student.id!,
+                      originalSessionId: sessionId,
+                      classId: sheet.session.idLop,
+                      sessionDate: sheet.session.ngay,
+                    );
+                  },
                   child: const Text('Đổi ca', style: TextStyle(fontSize: 12)),
                 ),
-              if (isMissedOriginal && sheet.session.loai == SessionType.CHINH)
+              if (isMissedOriginal)
                 TextButton(
                   onPressed: () => SessionAdjustmentDialogs.showXepHocBuDialog(
                     context,
@@ -443,6 +481,10 @@ class AttendancePage extends ConsumerWidget {
                   ),
                   tooltip: 'Hủy điều chỉnh',
                   onPressed: () async {
+                    if (_hasDirtyDraft(ref)) {
+                      _showDirtyDraftDialog(context);
+                      return;
+                    }
                     try {
                       final adj = member.rosterMember.adjustment!;
                       await ref
