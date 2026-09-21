@@ -41,8 +41,6 @@ class RosterService {
     }
 
     final issues = <RosterIssue>[];
-    final participants = <RosterMember>[];
-    final unassignedMembers = <Student>[];
 
     // 1. Validate CHINH session integrity
     if (session.idLichHoc == null) {
@@ -52,6 +50,46 @@ class RosterService {
           message: 'Buổi học chính thức thiếu liên kết lịch học gốc.',
         ),
       );
+    } else {
+      final schedule =
+          await _scheduleService.getScheduleById(session.idLichHoc!);
+      final sessionDate = DateTime.parse(session.ngay);
+
+      if (schedule == null) {
+        issues.add(
+          const RosterIssue(
+            code: RosterIssueCode.SESSION_SCHEDULE_MISSING,
+            message: 'Không tìm thấy lịch học gốc của buổi học này.',
+          ),
+        );
+      } else if (schedule.idLop != session.idLop) {
+        issues.add(
+          const RosterIssue(
+            code: RosterIssueCode.SESSION_SCHEDULE_CLASS_MISMATCH,
+            message: 'Lịch học gốc không thuộc về lớp của buổi học này.',
+          ),
+        );
+      } else if (schedule.thuTrongTuan != sessionDate.weekday) {
+        issues.add(
+          const RosterIssue(
+            code: RosterIssueCode.SESSION_SCHEDULE_NOT_EFFECTIVE,
+            message: 'Thứ trong tuần của lịch gốc không khớp với ngày buổi học.',
+          ),
+        );
+      } else if (session.ngay.compareTo(schedule.hieuLucTu) < 0 ||
+          (schedule.hieuLucDen != null &&
+              session.ngay.compareTo(schedule.hieuLucDen!) > 0)) {
+        issues.add(
+          const RosterIssue(
+            code: RosterIssueCode.SESSION_SCHEDULE_NOT_EFFECTIVE,
+            message: 'Lịch học gốc không còn hiệu lực tại ngày của buổi học.',
+          ),
+        );
+      }
+    }
+
+    // Fail closed on blocking integrity issues
+    if (issues.any((i) => i.code != RosterIssueCode.UNASSIGNED_IN_MULTI_SHIFT)) {
       return RosterResult(
         session: session,
         participants: [],
@@ -60,30 +98,19 @@ class RosterService {
       );
     }
 
-    final schedule = await _scheduleService.getScheduleById(session.idLichHoc!);
-    if (schedule == null) {
-      issues.add(
-        const RosterIssue(
-          code: RosterIssueCode.SESSION_SCHEDULE_MISSING,
-          message: 'Không tìm thấy lịch học gốc của buổi học này.',
-        ),
-      );
-    } else if (schedule.idLop != session.idLop) {
-      issues.add(
-        const RosterIssue(
-          code: RosterIssueCode.SESSION_SCHEDULE_CLASS_MISMATCH,
-          message: 'Lịch học gốc không thuộc về lớp của buổi học này.',
-        ),
-      );
-    }
-
-    // 2. Identify shift mode on session date
+    final participants = <RosterMember>[];
+    final unassignedMembers = <Student>[];
     final referenceDate = DateTime.parse(session.ngay);
+
+    // 2. Identify shift mode on session date (filtered by weekday)
     final effectiveSchedules = await _scheduleService.getSchedulesForClass(
       session.idLop,
       date: referenceDate,
     );
-    final isMultiShift = effectiveSchedules.length >= 2;
+    final schedulesForSessionDay = effectiveSchedules
+        .where((s) => s.thuTrongTuan == referenceDate.weekday)
+        .toList();
+    final isMultiShift = schedulesForSessionDay.length >= 2;
 
     // 3. Load all active memberships and students
     final activeMemberships = await _membershipService.getRoster(
@@ -150,7 +177,24 @@ class RosterService {
           );
         } else {
           final a = activeAssignments.first;
-          if (a.idLichHoc == session.idLichHoc) {
+
+          // Harden Assignment Integrity
+          final aSchedule =
+              await _scheduleService.getScheduleById(a.idLichHoc);
+          if (aSchedule == null ||
+              aSchedule.idLop != session.idLop ||
+              aSchedule.thuTrongTuan != referenceDate.weekday ||
+              session.ngay.compareTo(aSchedule.hieuLucTu) < 0 ||
+              (aSchedule.hieuLucDen != null &&
+                  session.ngay.compareTo(aSchedule.hieuLucDen!) > 0)) {
+            issues.add(
+              RosterIssue(
+                code: RosterIssueCode.INVALID_ASSIGNMENT,
+                message: 'Phân ca của học sinh ${student.hoTen} không hợp lệ.',
+                context: a,
+              ),
+            );
+          } else if (a.idLichHoc == session.idLichHoc) {
             participants.add(
               RosterMember(
                 student: student,
@@ -164,9 +208,9 @@ class RosterService {
       }
     }
 
-    // 5. Deterministic sorting by student name
-    participants.sort((a, b) => a.student.hoTen.compareTo(b.student.hoTen));
-    unassignedMembers.sort((a, b) => a.hoTen.compareTo(b.hoTen));
+    // 5. Deterministic sorting by student name, then ID
+    _sortRosterMembers(participants);
+    _sortStudents(unassignedMembers);
 
     return RosterResult(
       session: session,
@@ -174,6 +218,22 @@ class RosterService {
       unassignedMembers: unassignedMembers,
       issues: issues,
     );
+  }
+
+  void _sortRosterMembers(List<RosterMember> list) {
+    list.sort((a, b) {
+      final nameCompare = a.student.hoTen.compareTo(b.student.hoTen);
+      if (nameCompare != 0) return nameCompare;
+      return (a.student.id ?? 0).compareTo(b.student.id ?? 0);
+    });
+  }
+
+  void _sortStudents(List<Student> list) {
+    list.sort((a, b) {
+      final nameCompare = a.hoTen.compareTo(b.hoTen);
+      if (nameCompare != 0) return nameCompare;
+      return (a.id ?? 0).compareTo(b.id ?? 0);
+    });
   }
 }
 

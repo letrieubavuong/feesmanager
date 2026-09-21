@@ -1,0 +1,117 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:tuition2027/features/roster/domain/roster_service.dart';
+import 'package:tuition2027/features/roster/domain/roster_result.dart';
+import 'package:tuition2027/features/sessions/domain/session_service.dart';
+import 'package:tuition2027/features/sessions/data/session_repository.dart';
+import 'package:tuition2027/features/memberships/domain/membership_service.dart';
+import 'package:tuition2027/features/memberships/data/membership_repository.dart';
+import 'package:tuition2027/features/schedule/domain/schedule_service.dart';
+import 'package:tuition2027/features/schedule/data/schedule_repository.dart';
+import 'package:tuition2027/features/schedule/data/assignment_repository.dart';
+import 'package:tuition2027/features/students/domain/student_service.dart';
+import 'package:tuition2027/features/students/data/student_repository.dart';
+import 'package:tuition2027/features/classes/domain/class_service.dart';
+import 'package:tuition2027/features/classes/data/class_repository.dart';
+import '../sessions/test_db_helper_v6.dart';
+
+void main() {
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
+
+  late Database db;
+  late RosterService rosterService;
+
+  final now = DateTime.now().toIso8601String();
+
+  setUp(() async {
+    db = await TestDbHelperV6.createLatest();
+    
+    final sessionRepo = SessionRepository(db);
+    final membershipRepo = MembershipRepository(db);
+    final scheduleRepo = ScheduleRepository(db);
+    final assignmentRepo = AssignmentRepository(db);
+    final studentRepo = StudentRepository(db);
+    final classRepo = ClassRepository(db);
+
+    final membershipService = MembershipService(membershipRepo);
+    final classService = ClassService(classRepo, membershipService);
+    final studentService = StudentService(studentRepo, membershipService);
+    final sessionService = SessionService(sessionRepo, classService);
+    final scheduleService = ScheduleDomainService(
+      scheduleRepo,
+      assignmentRepo,
+      membershipService,
+      classService,
+      studentService,
+    );
+
+    rosterService = RosterService(
+      sessionService,
+      membershipService,
+      scheduleService,
+      studentService,
+    );
+  });
+
+  tearDown(() async => await db.close());
+
+  group('RosterService Integrity Hardening (Corrupted Data)', () {
+    test('Inject multiple active assignments same session date', () async {
+      await db.insert('lop', {'id': 1, 'ten_lop': 'Multi', 'created_at': now, 'updated_at': now});
+      await db.insert('lich_hoc', {'id': 1, 'id_lop': 1, 'thu_trong_tuan': 1, 'gio_bat_dau': '17:30', 'gio_ket_thuc': '19:00', 'hieu_luc_tu': '2026-01-01', 'created_at': now, 'updated_at': now});
+      await db.insert('lich_hoc', {'id': 2, 'id_lop': 1, 'thu_trong_tuan': 1, 'gio_bat_dau': '19:00', 'gio_ket_thuc': '20:30', 'hieu_luc_tu': '2026-01-01', 'created_at': now, 'updated_at': now});
+
+      await db.insert('hoc_sinh', {'id': 1, 'ho_ten': 'S1', 'created_at': now, 'updated_at': now});
+      await db.insert('tham_gia_lop', {'id': 1, 'id_hoc_sinh': 1, 'id_lop': 1, 'tu_ngay': '2026-01-01', 'created_at': now, 'updated_at': now});
+
+      // Inject CORRUPTED data: same student, same class, overlapping dates for different schedules
+      // Note: DB UNIQUE is (id_hoc_sinh, id_lich_hoc, tu_ngay). We can have different schedules.
+      await db.insert('phan_ca_hoc_sinh', {'id': 1, 'id_hoc_sinh': 1, 'id_lop': 1, 'id_lich_hoc': 1, 'tu_ngay': '2026-09-01', 'created_at': now, 'updated_at': now});
+      await db.insert('phan_ca_hoc_sinh', {'id': 2, 'id_hoc_sinh': 1, 'id_lop': 1, 'id_lich_hoc': 2, 'tu_ngay': '2026-09-01', 'created_at': now, 'updated_at': now});
+
+      // Session Mon 17:30
+      await db.insert('buoi_hoc', {'id': 1, 'id_lop': 1, 'id_lich_hoc': 1, 'ngay': '2026-09-07', 'gio_bat_dau': '17:30', 'gio_ket_thuc': '19:00', 'loai': 'CHINH', 'created_at': now, 'updated_at': now});
+
+      final result = await rosterService.getRosterForSession(1);
+      
+      expect(result.participants, isEmpty);
+      expect(result.issues.any((i) => i.code == RosterIssueCode.MULTIPLE_ACTIVE_ASSIGNMENTS), isTrue);
+      expect(result.isOperationallyValid, isFalse);
+    });
+
+    test('Inject CHINH session without linked schedule', () async {
+      await db.insert('lop', {'id': 1, 'ten_lop': 'C', 'created_at': now, 'updated_at': now});
+      // loai CHINH but id_lich_hoc is NULL
+      await db.insert('buoi_hoc', {'id': 1, 'id_lop': 1, 'id_lich_hoc': null, 'ngay': '2026-09-07', 'gio_bat_dau': '17:30', 'gio_ket_thuc': '19:00', 'loai': 'CHINH', 'created_at': now, 'updated_at': now});
+
+      final result = await rosterService.getRosterForSession(1);
+      expect(result.participants, isEmpty);
+      expect(result.issues.any((i) => i.code == RosterIssueCode.SESSION_SCHEDULE_MISSING), isTrue);
+      expect(result.isOperationallyValid, isFalse);
+    });
+
+    test('Inject invalid assignment link (wrong weekday)', () async {
+      await db.insert('lop', {'id': 1, 'ten_lop': 'Multi', 'created_at': now, 'updated_at': now});
+      // S1: Mon 17:30
+      await db.insert('lich_hoc', {'id': 1, 'id_lop': 1, 'thu_trong_tuan': 1, 'gio_bat_dau': '17:30', 'gio_ket_thuc': '19:00', 'hieu_luc_tu': '2026-01-01', 'created_at': now, 'updated_at': now});
+      // S2: Wed 17:30
+      await db.insert('lich_hoc', {'id': 2, 'id_lop': 1, 'thu_trong_tuan': 3, 'gio_bat_dau': '17:30', 'gio_ket_thuc': '19:00', 'hieu_luc_tu': '2026-01-01', 'created_at': now, 'updated_at': now});
+      // S3: Mon 19:00 (to make it Multi-shift on Monday)
+      await db.insert('lich_hoc', {'id': 3, 'id_lop': 1, 'thu_trong_tuan': 1, 'gio_bat_dau': '19:00', 'gio_ket_thuc': '20:30', 'hieu_luc_tu': '2026-01-01', 'created_at': now, 'updated_at': now});
+
+      await db.insert('hoc_sinh', {'id': 1, 'ho_ten': 'S1', 'created_at': now, 'updated_at': now});
+      await db.insert('tham_gia_lop', {'id': 1, 'id_hoc_sinh': 1, 'id_lop': 1, 'tu_ngay': '2026-01-01', 'created_at': now, 'updated_at': now});
+
+      // Inject assignment to WEDNESDAY schedule but active on MONDAY session date
+      await db.insert('phan_ca_hoc_sinh', {'id': 1, 'id_hoc_sinh': 1, 'id_lop': 1, 'id_lich_hoc': 2, 'tu_ngay': '2026-09-01', 'created_at': now, 'updated_at': now});
+
+      // Session Mon 17:30
+      await db.insert('buoi_hoc', {'id': 1, 'id_lop': 1, 'id_lich_hoc': 1, 'ngay': '2026-09-07', 'gio_bat_dau': '17:30', 'gio_ket_thuc': '19:00', 'loai': 'CHINH', 'created_at': now, 'updated_at': now});
+
+      final result = await rosterService.getRosterForSession(1);
+      expect(result.participants, isEmpty);
+      expect(result.issues.any((i) => i.code == RosterIssueCode.INVALID_ASSIGNMENT), isTrue);
+    });
+  });
+}

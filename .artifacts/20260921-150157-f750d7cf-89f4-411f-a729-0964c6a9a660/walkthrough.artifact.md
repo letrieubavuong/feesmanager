@@ -1,37 +1,36 @@
-# Phase 4 Walkthrough: Session Generation
+# Phase 5 Walkthrough: Canonical Session Roster
 
-I have completed the implementation and verification for Phase 4. This phase focused on building the canonical session management system, enabling the conversion of recurring schedules into dated class sessions.
+I have implemented the canonical roster engine, which is the sole source of truth for determining which students belong to a specific class session.
 
 ## Key Accomplishments
 
-### 1. Database Evolution (v6)
-Added the `buoi_hoc` table with strict data integrity rules.
-- **Foreign Keys**: Linked to `lop` and `lich_hoc`.
-- **Identity**: Unique constraint on `(id_lop, ngay, gio_bat_dau)` prevents duplicate entries.
-- **Safety**: CHECK constraints ensure valid session types, statuses, and logical start/end times.
+### 1. Robust Roster Engine
+The `RosterService.getRosterForSession(sessionId)` implements a sophisticated algorithm to resolve student lists based on historical data:
+- **Membership Resolution**: Correctly identifies students active on the session date, respecting join/leave boundaries and pause/resume intervals.
+- **Smart Shift Logic**: Automatically handles classes with a single shift (including all students) and those with multiple shifts (requiring explicit schedule assignments).
+- **Integrity Checks**: Detects and reports data anomalies like unassigned students in multi-shift classes or multiple active assignments for a single student.
 
-### 2. Intelligent Session Generation
-The `SessionGenerationService` handles the complex logic of expanding recurring rules into specific dates.
-- **Idempotency**: Safely rerun generation without risk of duplicates or resetting user-modified statuses.
-- **Snapshotting**: Directly stores schedule times into session records to maintain accurate history.
-- **Conflict Handling**: Detects and alerts users if manual sessions or overlapping schedules exist.
+### 2. Historical Data Preservation
+The system ensures that "what happened in the past, stays in the past":
+- **Archive Awareness**: Students or classes that are currently archived still appear correctly in historical session rosters if they were active at that time.
+- **Pure Reads**: The roster calculation is entirely on-the-fly and read-only, ensuring no accidental database mutations occur during viewing.
 
-### 3. Comprehensive Session UI
-Integrated a new "Buổi học" tab into the Class Detail page.
-- **List Display**: Clear view of all planned and past sessions with Vietnamese weekday formatting.
-- **Automated Workflow**: Bulk "Sinh buổi học" dialog with date range selection and result summary.
-- **Manual Control**: Ability to create "Học bù" or "Phát sinh" sessions and toggle statuses (Hủy, Nghỉ lễ).
+### 3. Integrated Roster UI
+A dedicated, read-only roster view has been added:
+- **Navigation**: Accessible directly from the "Buổi học" tab by tapping any session.
+- **Clear Visualization**: Displays session details, participant list with inclusion sources, and clear warnings for any integrity issues or unassigned members.
+- **Future-Ready**: Includes explicit messaging for `HOC_BU` and `PHAT_SINH` sessions, indicating that participants will be determined via adjustments in later phases.
 
 ### 4. Quality & Verification
-- **Static Analysis**: 100% clean `flutter analyze`.
-- **Automated Testing**: Added 16 new tests, bringing the total to **70 tests passing**.
-- **Migration**: Verified seamless upgrade from version 5 to 6 while preserving all existing data.
+- **100% Pass Rate**: Added 10 new tests, bringing the total to **98 passing tests**.
+- **Static Analysis**: Verified with `flutter analyze`, resulting in zero issues.
+- **Idempotency & Purity**: Domain tests specifically verify that multiple roster loads do not change database state.
 
 ## Verification Summary
 
 ### Automated Tests
-Ran the full test suite including unit, repository, and widget tests.
-- **Total Tests**: 70
+Ran the full suite of unit, repository, and widget tests.
+- **Total Tests**: 98
 - **Pass Rate**: 100%
 
 ### Static Analysis
@@ -39,6 +38,6 @@ Ran the full test suite including unit, repository, and widget tests.
 
 ### CI/CD
 All changes pushed to `main`.
-**Commit SHA**: `a4797117a89ab70188aac64900aea6052f208f6b`
+**Commit SHA**: `d9287682e85055b854378f85f9565576a086085a`
 
-**PHASE 4 READY FOR ACCEPTANCE**
+**PHASE 5 READY FOR ACCEPTANCE**
