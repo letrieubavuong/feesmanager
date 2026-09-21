@@ -56,7 +56,18 @@
     - `test/presentation/sessions_ui_test.dart`
     - `test/repository/migration_v5_v6_test.dart`
 
-## Phase 5: Attendance & Roster - NOT STARTED
+## Phase 5: Canonical Session Roster - COMPLETE
+- [x] Roster domain/read models (`RosterMember`, `RosterResult`).
+- [x] Canonical `getRosterForSession(idBuoiHoc)` engine implementation.
+- [x] Support for Single-shift (automatic) and Multi-shift (explicit) modes.
+- [x] Integrity diagnostics (missing schedule, unassigned students, multiple assignments).
+- [x] Historical integrity preserved (archived students/classes included).
+- [x] Read-only Roster UI integrated into Session management.
+- [x] Comprehensive Tests (98 tests passing):
+    - `test/roster/roster_service_test.dart`
+    - `test/presentation/session_roster_ui_test.dart`
+
+## Phase 6: Attendance - NOT STARTED
 
 ---
 
@@ -77,6 +88,8 @@
   - `test/sessions/session_service_test.dart`
   - `test/presentation/sessions_ui_test.dart`
   - `test/repository/migration_v5_v6_test.dart`
+  - `test/roster/roster_service_test.dart`
+  - `test/presentation/session_roster_ui_test.dart`
 - **Quality Gate**:
   - `dart analyze`: Clean (No issues found!)
-  - `flutter test`: 100% Pass (88 tests)
+  - `flutter test`: 100% Pass (98 tests)

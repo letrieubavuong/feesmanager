@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../domain/class_session.dart';
 import 'session_controller.dart';
+import '../../roster/presentation/session_roster_view.dart';
 import '../../../core/utils/date_formatter.dart';
 
 class SessionTab extends ConsumerStatefulWidget {
@@ -83,6 +84,11 @@ class _SessionTabState extends ConsumerState<SessionTab> {
             itemBuilder: (context, index) {
               final s = sessions[index];
               return ListTile(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => SessionRosterView(sessionId: s.id!),
+                  ),
+                ),
                 leading: CircleAvatar(
                   backgroundColor: _getStatusColor(s.trangThai),
                   child: Text(
