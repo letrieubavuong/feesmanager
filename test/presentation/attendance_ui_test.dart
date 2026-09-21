@@ -10,6 +10,7 @@ import 'package:tuition2027/features/sessions/domain/class_session.dart';
 import 'package:tuition2027/features/students/domain/student.dart';
 import 'package:tuition2027/features/memberships/domain/membership.dart';
 import 'package:tuition2027/features/roster/domain/roster_member.dart';
+import 'package:tuition2027/features/roster/domain/roster_result.dart';
 import 'package:tuition2027/features/sessions/presentation/session_tab.dart';
 import 'package:tuition2027/features/sessions/presentation/session_controller.dart';
 
@@ -282,6 +283,170 @@ void main() {
     expect(find.textContaining('Trạng thái: Có mặt'), findsOneWidget);
   });
 
+  testWidgets(
+    'AttendancePage displays roster issue detail and blocks editing',
+    (tester) async {
+      final sheet = AttendanceSheet(
+        session: testSession,
+        members: [
+          AttendanceSheetMember(
+            rosterMember: testRosterMember,
+            state: AttendanceState.CHUA_DIEM_DANH,
+          ),
+        ],
+        issues: [],
+        isRosterValid: false,
+        rosterIssues: [
+          const RosterIssue(
+            code: RosterIssueCode.SESSION_SCHEDULE_NOT_EFFECTIVE,
+            message: 'Lịch học gốc không còn hiệu lực tại ngày của buổi học.',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            attendanceControllerProvider(
+              1,
+            ).overrideWith(() => MockAttendanceController(sheet)),
+          ],
+          child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Lịch học gốc không còn hiệu lực tại ngày của buổi học.'),
+        findsOneWidget,
+      );
+      expect(find.byType(ChoiceChip), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'AttendancePage displays ATTENDANCE_OUTSIDE_ROSTER issue and blocks editing',
+    (tester) async {
+      final sheet = AttendanceSheet(
+        session: testSession,
+        members: [
+          AttendanceSheetMember(
+            rosterMember: testRosterMember,
+            state: AttendanceState.CHUA_DIEM_DANH,
+          ),
+        ],
+        issues: [
+          const AttendanceSheetIssue(
+            code: AttendanceSheetIssueCode.ATTENDANCE_OUTSIDE_ROSTER,
+            message:
+                'Học sinh (ID: 999) có dữ liệu điểm danh nhưng không thuộc danh sách lớp buổi này.',
+          ),
+        ],
+        isRosterValid: true,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            attendanceControllerProvider(
+              1,
+            ).overrideWith(() => MockAttendanceController(sheet)),
+          ],
+          child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Học sinh (ID: 999) có dữ liệu điểm danh'),
+        findsOneWidget,
+      );
+      expect(find.byType(ChoiceChip), findsNothing);
+    },
+  );
+
+  testWidgets('AttendancePage shows incomplete warning dialog on finalize', (
+    tester,
+  ) async {
+    final sheet = AttendanceSheet(
+      session: testSession,
+      members: [
+        AttendanceSheetMember(
+          rosterMember: testRosterMember,
+          state: AttendanceState.CHUA_DIEM_DANH,
+        ),
+      ],
+      issues: [],
+      isRosterValid: true,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          attendanceControllerProvider(
+            1,
+          ).overrideWith(() => MockAttendanceController(sheet)),
+        ],
+        child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Tap Finalize button
+    await tester.tap(find.text('Hoàn tất'));
+    await tester.pumpAndSettle();
+
+    // Dialog appears
+    expect(find.text('Chưa điểm danh hết'), findsOneWidget);
+  });
+
+  testWidgets('AttendancePage shows error dialog on finalize failure', (
+    tester,
+  ) async {
+    final sheet = AttendanceSheet(
+      session: testSession,
+      members: [
+        AttendanceSheetMember(
+          rosterMember: testRosterMember,
+          state: AttendanceState.CO_MAT,
+        ),
+      ],
+      issues: [],
+      isRosterValid: true,
+    );
+
+    final controller = MockAttendanceController(sheet, failFinalize: true);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          attendanceControllerProvider(1).overrideWith(() => controller),
+        ],
+        child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Tap Finalize
+    await tester.tap(find.text('Hoàn tất'));
+    await tester.pumpAndSettle();
+
+    // Confirm dialog
+    await tester.tap(find.text('Xác nhận'));
+    await tester.pumpAndSettle();
+
+    // Verify error dialog shown
+    expect(find.text('Lỗi'), findsOneWidget);
+    expect(find.textContaining('Finalize failed'), findsAtLeast(1));
+
+    // Verify success snackbar NOT shown
+    expect(find.text('Đã hoàn tất buổi học'), findsNothing);
+  });
+
   testWidgets('SessionTab popup menu for DA_HOC session is absent', (
     tester,
   ) async {
@@ -308,8 +473,13 @@ void main() {
 class MockAttendanceController extends AttendanceController {
   final AttendanceSheet initialSheet;
   final bool failSave;
+  final bool failFinalize;
 
-  MockAttendanceController(this.initialSheet, {this.failSave = false});
+  MockAttendanceController(
+    this.initialSheet, {
+    this.failSave = false,
+    this.failFinalize = false,
+  });
 
   @override
   FutureOr<AttendanceSheet> build(int sessionId) => initialSheet;
@@ -321,6 +491,15 @@ class MockAttendanceController extends AttendanceController {
       throw Exception('Save failed');
     }
     return super.save();
+  }
+
+  @override
+  Future<void> finalize({bool allowIncomplete = false}) async {
+    if (failFinalize) {
+      state = AsyncError(Exception('Finalize failed'), StackTrace.current);
+      throw Exception('Finalize failed');
+    }
+    return super.finalize(allowIncomplete: allowIncomplete);
   }
 }
 

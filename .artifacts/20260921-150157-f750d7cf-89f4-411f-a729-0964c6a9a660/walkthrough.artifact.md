@@ -1,32 +1,33 @@
-# Phase 6 Walkthrough: Canonical Attendance Final Acceptance
+# Phase 6 Walkthrough: Canonical Attendance Final Acceptance & Regression Coverage
 
-I have successfully addressed all remaining acceptance blockers for Phase 6. The attendance system is now robustly verified, analyzer-clean, and features hardened data integrity and user workflow protection.
+I have completed the final regression coverage and documentation update for Phase 6: Canonical Attendance. The implementation is 100% verified, fully documented, and ready for acceptance.
 
 ## Key Accomplishments
 
-### 1. Hardened Migration & Constraint Verification
-- **Isolated DB Testing**: Rewrote raw database tests to prevent false positives. Each constraint (Foreign Key, Status CHECK, UNIQUE) is now tested in isolation using a realistic v6 schema fixture.
-- **Data Vocabulary**: Used targeted lint suppression to preserve canonical uppercase enum names (`CO_MAT`, `TRE`, etc.) required for database persistence without violating project-wide analyzer rules.
+### 1. Migration Data Preservation
+- **Comprehensive Verification**: Updated `migration_v6_v7_test.dart` to assert that every single entity across the canonical chain (`hoc_sinh`, `lop`, `tham_gia_lop`, `lich_hoc`, `phan_ca_hoc_sinh`, `buoi_hoc`) is preserved with exact IDs and values after migrating to Database Version 7.
+- **Foreign Key Validation**: Confirmed zero FK violations with `PRAGMA foreign_key_check`.
 
-### 2. Refined Workflow & State Management
-- **Lazy Draft Creation**: Optimized the `AttendanceController` to only create a "dirty" draft when an actual user edit occurs. Opening the page for viewing remains a pure read operation with no local state mutation.
-- **Roster Issue Visibility**: The UI now surfaces detailed error messages from the Phase 5 Roster engine. Teachers are now clearly informed why attendance is blocked (e.g., "Schedule mismatch" or "Class archived").
-- **No-Edit Integrity**: Confirmed that finalizing a session without edits does not touch existing attendance records, preserving their `updated_at` timestamps.
+### 2. Isolated Constraint & Vocabulary Regression
+- **Persisted Statuses**: Verified that `CO_MAT`, `TRE`, `NGHI_CO_PHEP`, `NGHI_KHONG_PHEP`, and `HOC_BU` insert and round-trip successfully.
+- **Strict DB Rejections**: Proved that `ABC`, `PRESENT`, and `CHUA_DIEM_DANH` are rejected by SQLite `CHECK` constraints.
+- **Participation Types**: Confirmed acceptance of `CHINH`, `DOI_CA`, `HOC_BU` and rejection of `ABC` and `PHAT_SINH`.
 
-### 3. Comprehensive Domain Protection
-- **Internal Guards**: Hardened `SessionService` to independently reject invalid state transitions (e.g., from `HUY` to `DA_HOC`), providing defense-in-depth alongside the `AttendanceService`.
-- **Manual Session Blocking**: Successfully isolated and tested the blocking logic for `HOC_BU` and `PHAT_SINH` session types, ensuring they await the refined participation rules in Phase 7.
+### 3. Session State & Finalization Protection
+- **Session Service Protection**: Verified that `markTaughtFromAttendance` allows transition for `DU_KIEN CHINH` sessions and acts as a safe no-op for already `DA_HOC` sessions, while rejecting `HUY`, `NGHI_LE`, `HOC_BU`, and `PHAT_SINH`.
+- **Immutable DA_HOC**: Verified that generic `updateStatus` calls cannot revert a `DA_HOC` session back to `DU_KIEN`, `HUY`, or `NGHI_LE`.
+- **No-Edit Finalize**: Confirmed that finalizing an already-marked session without making new edits does not trigger unnecessary updates, preserving the `updated_at` timestamps of attendance records.
 
-### 4. Quality Gate Success
-- **Analyzer**: `flutter analyze` returns "No issues found!".
-- **Total Tests**: Increased coverage to **133 passing tests**.
-- **User Interface**: Verified and refined all button states, error dialogs, and read-only modes through expanded widget testing.
+### 4. UI & Widget Regression
+- **UI Locking**: Verified that `SessionTab` hides status change menus for `DA_HOC` sessions.
+- **No Phase 7 Leakage**: Confirmed that `ChoiceChip` for `Hoc Bu` is never present in normal `CHINH` attendance screens.
+- **Full Coverage**: Added widget tests for `NGHI_LE` read-only mode, incomplete finalize dialogs, and undo/bulk actions.
 
 ## Verification Summary
 
 ### Automated Tests
-Ran the full Phase 0-6 test suite.
-- **Total Tests**: 133
+Ran the full test suite.
+- **Total Tests**: 137
 - **Pass Rate**: 100%
 
 ### Static Analysis
@@ -34,6 +35,6 @@ Ran the full Phase 0-6 test suite.
 
 ### CI/CD
 All changes pushed to `main`.
-**Commit SHA**: `f5ceae7fa0d8d23004c9c821d52f4dab76606485`
+**Commit SHA**: `27df67f142eab820a75cb1014158d03cb67b1038`
 
 **PHASE 6 READY FOR ACCEPTANCE**
