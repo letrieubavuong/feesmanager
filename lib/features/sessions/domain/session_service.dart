@@ -73,6 +73,12 @@ class SessionService {
     final existing = await _repo.getById(id);
     if (existing == null) throw Exception('Không tìm thấy buổi học');
 
+    if (existing.trangThai == SessionStatus.DA_HOC) {
+      throw Exception(
+        'Không thể thay đổi trạng thái của buổi học đã hoàn tất.',
+      );
+    }
+
     // DA_HOC is reserved for attendance phase
     if (status == SessionStatus.DA_HOC) {
       throw Exception('Trạng thái ĐÃ HỌC chỉ được cập nhật khi điểm danh.');
@@ -86,6 +92,25 @@ class SessionService {
   Future<void> markTaughtFromAttendance(int id) async {
     final existing = await _repo.getById(id);
     if (existing == null) throw Exception('Không tìm thấy buổi học');
+
+    if (existing.trangThai == SessionStatus.DA_HOC) {
+      return; // No-op if already DA_HOC
+    }
+
+    if (existing.trangThai == SessionStatus.HUY ||
+        existing.trangThai == SessionStatus.NGHI_LE) {
+      throw Exception(
+        'Không thể hoàn tất điểm danh cho buổi học đã ${existing.trangThai.name}.',
+      );
+    }
+
+    if (existing.loai == SessionType.HOC_BU ||
+        existing.loai == SessionType.PHAT_SINH) {
+      // In Phase 6, we block these types from being finalized via attendance
+      throw Exception(
+        'Buổi học bù/phát sinh cần được điều chỉnh ở Phase 7 trước khi hoàn tất.',
+      );
+    }
 
     await _repo.update(
       existing.copyWith(

@@ -1,29 +1,34 @@
-# Phase 5 Walkthrough: Canonical Session Roster Final Verification
+# Phase 6 Walkthrough: Canonical Attendance Implementation
 
-I have completed the final regression tests and verification for Phase 5: Canonical Session Roster. The system is now robustly tested against all identified edge cases and special session types.
+I have completed Phase 6, implementing the canonical attendance system. This phase builds upon the Phase 5 Roster engine to provide a reliable and explainable record of student participation.
 
 ## Key Accomplishments
 
-### 1. Assignment Boundary Verification
-Added explicit tests to ensure that student shift assignments are inclusive of their start and end dates relative to the session date.
-- **Inclusive Bounds**: Confirmed that if an assignment starts or ends on the same day as a session, the student is correctly included in the roster.
-- **Strict Filtering**: Verified that students are excluded if their assignment starts after or ends before the session date.
+### 1. Robust Data Foundation (DB v7)
+- **Migration**: Safely upgraded the database from version 6 to 7.
+- **Canonical Table**: Created the `diem_danh` table with strict integrity constraints (Unique student-session pairs, valid status enums, and foreign keys).
+- **No Null Substitution**: Adhered to the rule that "Missing Row = Chưa điểm danh". This ensures the database only stores explicit facts.
 
-### 2. Conservative Behavior for Special Sessions
-Explicitly verified the business rule that `HOC_BU` (Make-up) and `PHAT_SINH` (Ad-hoc) sessions do not automatically pull from recurring schedules.
-- **Domain Logic**: Confirmed empty initial participant lists for these types.
-- **UI Communication**: Added widget tests to ensure the UI clearly informs the user that manual adjustment is required for these sessions.
+### 2. Reliable Attendance Engine
+- **Roster-First**: The `AttendanceService` exclusively uses `RosterService` to determine who *should* be in a session.
+- **Integrity Diagnostics**: The system automatically detects "orphan" attendance records (students with data but not in the roster), ensuring historical integrity.
+- **Atomic Operations**: All saves use SQLite transactions. If one student's record is invalid, the entire save fails, preventing partial/corrupted states.
 
-### 3. Final Quality Assurance
-- **Expanded Suite**: The automated test suite now consists of **116 passing tests**, providing deep coverage of all phases from skeleton to canonical rosters.
-- **Documentation**: Updated `REBUILD_STATUS.md` to reflect the final test count and phase completion status.
-- **CI/CD Integration**: Verified formatting, static analysis, and full test execution locally and on GitHub Actions.
+### 3. Workflow & Finalization
+- **Draft Management**: Teachers can mark students individually or use the "Mark All Present" bulk action. Changes are kept in a local draft and can be undone before saving.
+- **Session Finalization**: Implemented the transition from `DU_KIEN` (Planned) to `DA_HOC` (Taught).
+- **Protection**: Hardened the system to prevent direct/manual status changes to `DA_HOC` and blocked attendance editing for `HUY` (Cancelled) or `NGHI_LE` (Holiday) sessions.
+
+### 4. Comprehensive Quality Assurance
+- **Expanded Testing**: Added 10 new tests, bringing the total to **126 passing tests**.
+- **Coverage**: Verified database migration, business rules (save/delete/finalize), and UI behavior (choice chips, warnings, navigation).
+- **UI Design**: Delivered a mobile-friendly interface using `ChoiceChips` for rapid entry.
 
 ## Verification Summary
 
 ### Automated Tests
-Ran the full Phase 0-5 test suite.
-- **Total Tests**: 116
+Ran the full Phase 0-6 test suite.
+- **Total Tests**: 126
 - **Pass Rate**: 100%
 
 ### Static Analysis
@@ -31,6 +36,6 @@ Ran the full Phase 0-5 test suite.
 
 ### CI/CD
 All changes pushed to `main`.
-**Commit SHA**: `08342830f8ea8ddc7eab65ba229299b700f6e62e`
+**Commit SHA**: `b5ffa4fc73c03d5ac4f20a60ecb109c734cadd2a`
 
-**PHASE 5 READY FOR ACCEPTANCE**
+**PHASE 6 READY FOR ACCEPTANCE**

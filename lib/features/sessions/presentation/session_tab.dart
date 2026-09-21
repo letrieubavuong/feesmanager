@@ -103,27 +103,29 @@ class _SessionTabState extends ConsumerState<SessionTab> {
                 subtitle: Text(
                   'Loại: ${_getTypeLabel(s.loai)} | Trạng thái: ${_getStatusLabel(s.trangThai)}',
                 ),
-                trailing: PopupMenuButton<SessionStatus>(
-                  onSelected: (status) =>
-                      _confirmStatusChange(context, ref, s, status),
-                  itemBuilder: (context) => [
-                    if (s.trangThai != SessionStatus.DU_KIEN)
-                      const PopupMenuItem(
-                        value: SessionStatus.DU_KIEN,
-                        child: Text('Đánh dấu: DỰ KIẾN'),
+                trailing: s.trangThai == SessionStatus.DA_HOC
+                    ? null
+                    : PopupMenuButton<SessionStatus>(
+                        onSelected: (status) =>
+                            _confirmStatusChange(context, ref, s, status),
+                        itemBuilder: (context) => [
+                          if (s.trangThai != SessionStatus.DU_KIEN)
+                            const PopupMenuItem(
+                              value: SessionStatus.DU_KIEN,
+                              child: Text('Đánh dấu: DỰ KIẾN'),
+                            ),
+                          if (s.trangThai != SessionStatus.HUY)
+                            const PopupMenuItem(
+                              value: SessionStatus.HUY,
+                              child: Text('Đánh dấu: HỦY'),
+                            ),
+                          if (s.trangThai != SessionStatus.NGHI_LE)
+                            const PopupMenuItem(
+                              value: SessionStatus.NGHI_LE,
+                              child: Text('Đánh dấu: NGHỈ LỄ'),
+                            ),
+                        ],
                       ),
-                    if (s.trangThai != SessionStatus.HUY)
-                      const PopupMenuItem(
-                        value: SessionStatus.HUY,
-                        child: Text('Đánh dấu: HỦY'),
-                      ),
-                    if (s.trangThai != SessionStatus.NGHI_LE)
-                      const PopupMenuItem(
-                        value: SessionStatus.NGHI_LE,
-                        child: Text('Đánh dấu: NGHỈ LỄ'),
-                      ),
-                  ],
-                ),
               );
             },
           );

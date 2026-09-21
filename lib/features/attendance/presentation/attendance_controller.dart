@@ -51,12 +51,22 @@ class AttendanceController extends _$AttendanceController {
     if (_draft == null) return;
     final service = await ref.read(attendanceServiceProvider.future);
 
+    final prevState = state;
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    try {
       await service.saveDraft(sessionId, _draft!);
       _draft = null;
-      return service.getAttendanceForSession(sessionId);
-    });
+      final newSheet = await service.getAttendanceForSession(sessionId);
+      state = AsyncValue.data(newSheet);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      // Restore previous data if it was valid so UI doesn't just show error screen
+      // but still rethrow so caller can show snackbar/dialog
+      if (prevState.hasValue) {
+        state = AsyncValue.data(prevState.value!);
+      }
+      rethrow;
+    }
   }
 
   Future<void> finalize({bool allowIncomplete = false}) async {
@@ -67,13 +77,21 @@ class AttendanceController extends _$AttendanceController {
 
     final service = await ref.read(attendanceServiceProvider.future);
 
+    final prevState = state;
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    try {
       await service.finalizeSessionAttendance(
         sessionId,
         allowIncomplete: allowIncomplete,
       );
-      return service.getAttendanceForSession(sessionId);
-    });
+      final newSheet = await service.getAttendanceForSession(sessionId);
+      state = AsyncValue.data(newSheet);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      if (prevState.hasValue) {
+        state = AsyncValue.data(prevState.value!);
+      }
+      rethrow;
+    }
   }
 }

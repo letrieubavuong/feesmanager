@@ -1,4 +1,5 @@
 import '../../roster/domain/roster_member.dart';
+import '../../roster/domain/roster_result.dart';
 import 'attendance_record.dart';
 import 'attendance_state.dart';
 import '../../sessions/domain/class_session.dart';
@@ -42,12 +43,14 @@ class AttendanceSheet {
   final List<AttendanceSheetMember> members;
   final List<AttendanceSheetIssue> issues;
   final bool isRosterValid;
+  final List<RosterIssue> rosterIssues;
 
   AttendanceSheet({
     required this.session,
     required this.members,
     required this.issues,
     required this.isRosterValid,
+    this.rosterIssues = const [],
   });
 
   bool get isOperationallyValid => isRosterValid && issues.isEmpty;

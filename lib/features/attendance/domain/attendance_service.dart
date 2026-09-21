@@ -62,6 +62,7 @@ class AttendanceService {
       members: members,
       issues: issues,
       isRosterValid: roster.isOperationallyValid,
+      rosterIssues: roster.issues,
     );
   }
 
@@ -71,15 +72,22 @@ class AttendanceService {
   ) async {
     final sheet = await getAttendanceForSession(sessionId);
 
-    if (!sheet.isRosterValid) {
+    if (!sheet.isOperationallyValid) {
       throw Exception(
-        'Không thể lưu điểm danh cho danh sách lớp không hợp lệ.',
+        'Không thể lưu điểm danh: Dữ liệu hiện tại không hợp lệ hoặc danh sách lớp có lỗi.',
       );
     }
 
     if (sheet.session.trangThai == SessionStatus.HUY ||
         sheet.session.trangThai == SessionStatus.NGHI_LE) {
       throw Exception('Không thể điểm danh cho buổi học đã Hủy hoặc Nghỉ lễ.');
+    }
+
+    if (sheet.session.loai == SessionType.HOC_BU ||
+        sheet.session.loai == SessionType.PHAT_SINH) {
+      throw Exception(
+        'Không thể lưu điểm danh cho buổi học bù/phát sinh ở Phase 6.',
+      );
     }
 
     final toUpsert = <AttendanceRecord>[];
@@ -132,6 +140,10 @@ class AttendanceService {
     bool allowIncomplete = false,
   }) async {
     final sheet = await getAttendanceForSession(sessionId);
+
+    if (sheet.session.trangThai == SessionStatus.DA_HOC) {
+      return; // Idempotent
+    }
 
     if (!sheet.isOperationallyValid) {
       throw Exception('Không thể hoàn tất: Dữ liệu điểm danh không hợp lệ.');

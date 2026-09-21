@@ -153,12 +153,105 @@ void main() {
     expect(find.textContaining('Không thể chỉnh sửa'), findsOneWidget);
     expect(find.byType(ChoiceChip), findsNothing);
   });
+
+  testWidgets('AttendancePage shows error dialog on save failure', (
+    tester,
+  ) async {
+    final sheet = AttendanceSheet(
+      session: testSession,
+      members: [
+        AttendanceSheetMember(
+          rosterMember: testRosterMember,
+          state: AttendanceState.CHUA_DIEM_DANH,
+        ),
+      ],
+      issues: [],
+      isRosterValid: true,
+    );
+
+    final controller = MockAttendanceController(sheet, failSave: true);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          attendanceControllerProvider(1).overrideWith(() => controller),
+        ],
+        child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Tap to create a draft
+    await tester.tap(find.text('Có mặt'));
+    await tester.pumpAndSettle();
+
+    // Save
+    await tester.tap(find.text('Lưu nháp'));
+    await tester.pump(); // Start save
+    await tester.pumpAndSettle();
+
+    // Verify error dialog
+    expect(find.text('Lỗi'), findsOneWidget);
+    expect(find.textContaining('Save failed'), findsAtLeast(1));
+
+    // Verify success snackbar NOT shown
+    expect(find.text('Đã lưu dữ liệu điểm danh'), findsNothing);
+  });
+
+  testWidgets('AttendancePage blocks editing for DA_HOC session', (
+    tester,
+  ) async {
+    final finalizedSession = testSession.copyWith(
+      trangThai: SessionStatus.DA_HOC,
+    );
+    final sheet = AttendanceSheet(
+      session: finalizedSession,
+      members: [
+        AttendanceSheetMember(
+          rosterMember: testRosterMember,
+          state: AttendanceState.CO_MAT,
+        ),
+      ],
+      issues: [],
+      isRosterValid: true,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          attendanceControllerProvider(
+            1,
+          ).overrideWith(() => MockAttendanceController(sheet)),
+        ],
+        child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // No editable controls (ChoiceChips)
+    expect(find.byType(ChoiceChip), findsNothing);
+    // Static status text visible
+    expect(find.textContaining('Trạng thái: Có mặt'), findsOneWidget);
+  });
 }
 
 class MockAttendanceController extends AttendanceController {
   final AttendanceSheet initialSheet;
-  MockAttendanceController(this.initialSheet);
+  final bool failSave;
+
+  MockAttendanceController(this.initialSheet, {this.failSave = false});
 
   @override
   FutureOr<AttendanceSheet> build(int sessionId) => initialSheet;
+
+  @override
+  Future<void> save() async {
+    if (failSave) {
+      state = AsyncError(Exception('Save failed'), StackTrace.current);
+      throw Exception('Save failed');
+    }
+    return super.save();
+  }
 }
