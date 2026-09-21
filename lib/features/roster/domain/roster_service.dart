@@ -5,6 +5,9 @@ import '../../schedule/domain/schedule_service.dart';
 import '../../students/domain/student_service.dart';
 import '../../students/domain/student.dart';
 import '../../sessions/domain/class_session.dart';
+import '../../session_adjustments/data/session_adjustment_repository.dart';
+import '../../session_adjustments/domain/session_adjustment.dart';
+import '../../session_adjustments/domain/session_adjustment_service.dart';
 import 'roster_member.dart';
 import 'roster_result.dart';
 
@@ -15,15 +18,17 @@ class RosterService {
   final MembershipService _membershipService;
   final ScheduleDomainService _scheduleService;
   final StudentService _studentService;
+  final SessionAdjustmentRepository _adjustmentRepo;
 
   RosterService(
     this._sessionService,
     this._membershipService,
     this._scheduleService,
     this._studentService,
+    this._adjustmentRepo,
   );
 
-  Future<RosterResult> getRosterForSession(int sessionId) async {
+  Future<RosterResult> getBaseRosterForSession(int sessionId) async {
     final session = await _sessionService.getSessionById(sessionId);
     if (session == null) {
       throw Exception('Không tìm thấy buổi học (ID: $sessionId)');
@@ -40,9 +45,176 @@ class RosterService {
       );
     }
 
+    return await _computeBaseChinhRoster(session);
+  }
+
+  Future<RosterResult> getRosterForSession(int sessionId) async {
+    final session = await _sessionService.getSessionById(sessionId);
+    if (session == null) {
+      throw Exception('Không tìm thấy buổi học (ID: $sessionId)');
+    }
+
+    List<RosterMember> participants = [];
+    List<Student> unassignedMembers = [];
+    List<RosterIssue> issues = [];
+
+    // 1. Compute Base Roster
+    if (session.loai == SessionType.CHINH) {
+      final baseResult = await _computeBaseChinhRoster(session);
+      participants = List.from(baseResult.participants);
+      unassignedMembers = List.from(baseResult.unassignedMembers);
+      issues = List.from(baseResult.issues);
+
+      // Fail closed on blocking base schedule issues
+      if (issues.any(
+        (i) => i.code != RosterIssueCode.UNASSIGNED_IN_MULTI_SHIFT,
+      )) {
+        return RosterResult(
+          session: session,
+          participants: [],
+          unassignedMembers: [],
+          issues: issues,
+        );
+      }
+    }
+
+    // 2. Process One-Off Adjustments
+    final outgoingAdjs = await _adjustmentRepo.getByOriginalSession(sessionId);
+    final incomingAdjs = await _adjustmentRepo.getByTargetSession(sessionId);
+
+    // Remove outgoing DOI_CA
+    for (final outAdj in outgoingAdjs) {
+      if (outAdj.loai == SessionAdjustmentType.DOI_CA) {
+        participants.removeWhere((m) => m.student.id == outAdj.idHocSinh);
+      }
+    }
+
+    // Add incoming adjustments
+    final students = await _studentService.getStudents(includeArchived: true);
+    final studentMap = {for (var s in students) s.id: s};
+
+    for (final incAdj in incomingAdjs) {
+      final student = studentMap[incAdj.idHocSinh];
+      if (student == null) {
+        issues.add(
+          RosterIssue(
+            code: RosterIssueCode.ADJUSTMENT_STUDENT_MISSING,
+            message:
+                'Không tìm thấy hồ sơ học sinh điều chỉnh (ID: ${incAdj.idHocSinh})',
+            context: incAdj,
+          ),
+        );
+        continue;
+      }
+
+      // Membership validation in orig class
+      final origMemberships = await _membershipService
+          .getMembershipsForStudentAndClass(incAdj.idHocSinh, incAdj.idLopGoc);
+
+      final validM = origMemberships.cast<dynamic>().firstWhere((m) {
+        final den = m.denNgay ?? '9999-12-31';
+        return m.tuNgay.compareTo(session.ngay) <= 0 &&
+            den.compareTo(session.ngay) >= 0;
+      }, orElse: () => null);
+
+      if (validM == null) {
+        issues.add(
+          RosterIssue(
+            code: RosterIssueCode.ADJUSTMENT_MEMBERSHIP_INVALID,
+            message:
+                'Học sinh ${student.hoTen} không có quá trình học hợp lệ tại lớp gốc.',
+            context: incAdj,
+          ),
+        );
+        continue;
+      }
+
+      // Check duplicates
+      if (participants.any((p) => p.student.id == student.id)) {
+        issues.add(
+          RosterIssue(
+            code: RosterIssueCode.DUPLICATE_ONE_OFF_PARTICIPATION,
+            message:
+                'Học sinh ${student.hoTen} bị trùng lặp trong danh sách tham gia.',
+            context: incAdj,
+          ),
+        );
+        continue;
+      }
+
+      RosterInclusionSource source;
+      switch (incAdj.loai) {
+        case SessionAdjustmentType.DOI_CA:
+          if (session.loai != SessionType.CHINH) {
+            issues.add(
+              RosterIssue(
+                code: RosterIssueCode.ADJUSTMENT_TYPE_INVALID_FOR_SESSION,
+                message: 'Chỉ buổi học chính thức mới nhận điều chỉnh Đổi ca.',
+                context: incAdj,
+              ),
+            );
+            continue;
+          }
+          source = RosterInclusionSource.DOI_CA;
+          break;
+        case SessionAdjustmentType.HOC_BU:
+          if (session.loai != SessionType.HOC_BU) {
+            issues.add(
+              RosterIssue(
+                code: RosterIssueCode.ADJUSTMENT_TYPE_INVALID_FOR_SESSION,
+                message: 'Chỉ buổi Học bù mới nhận điều chỉnh Học bù.',
+                context: incAdj,
+              ),
+            );
+            continue;
+          }
+          source = RosterInclusionSource.HOC_BU;
+          break;
+        case SessionAdjustmentType.PHAT_SINH:
+          if (session.loai != SessionType.PHAT_SINH) {
+            issues.add(
+              RosterIssue(
+                code: RosterIssueCode.ADJUSTMENT_TYPE_INVALID_FOR_SESSION,
+                message: 'Chỉ buổi Phát sinh mới nhận điều chỉnh Phát sinh.',
+                context: incAdj,
+              ),
+            );
+            continue;
+          }
+          source = RosterInclusionSource.PHAT_SINH;
+          break;
+      }
+
+      participants.add(
+        RosterMember(
+          student: student,
+          membership: validM,
+          adjustment: incAdj,
+          source: source,
+        ),
+      );
+    }
+
+    final requiresOneOff =
+        (session.loai == SessionType.HOC_BU ||
+            session.loai == SessionType.PHAT_SINH) &&
+        incomingAdjs.isEmpty;
+
+    _sortRosterMembers(participants);
+    _sortStudents(unassignedMembers);
+
+    return RosterResult(
+      session: session,
+      participants: participants,
+      unassignedMembers: unassignedMembers,
+      issues: issues,
+      requiresOneOffAdjustments: requiresOneOff,
+    );
+  }
+
+  Future<RosterResult> _computeBaseChinhRoster(ClassSession session) async {
     final issues = <RosterIssue>[];
 
-    // 1. Validate CHINH session integrity
     if (session.idLichHoc == null) {
       issues.add(
         const RosterIssue(
@@ -90,7 +262,6 @@ class RosterService {
       }
     }
 
-    // Fail closed on blocking integrity issues
     if (issues.any(
       (i) => i.code != RosterIssueCode.UNASSIGNED_IN_MULTI_SHIFT,
     )) {
@@ -106,7 +277,6 @@ class RosterService {
     final unassignedMembers = <Student>[];
     final referenceDate = DateTime.parse(session.ngay);
 
-    // 2. Identify shift mode on session date (filtered by weekday)
     final effectiveSchedules = await _scheduleService.getSchedulesForClass(
       session.idLop,
       date: referenceDate,
@@ -116,7 +286,6 @@ class RosterService {
         .toList();
     final isMultiShift = schedulesForSessionDay.length >= 2;
 
-    // 3. Load all active memberships and students
     final activeMemberships = await _membershipService.getRoster(
       session.idLop,
       date: referenceDate,
@@ -124,7 +293,6 @@ class RosterService {
     final students = await _studentService.getStudents(includeArchived: true);
     final studentMap = {for (var s in students) s.id: s};
 
-    // 4. Load assignments if Multi-shift
     final assignments = isMultiShift
         ? await _scheduleService.getAssignmentsForClass(session.idLop)
         : null;
@@ -151,10 +319,8 @@ class RosterService {
           ),
         );
       } else {
-        // Multi-shift logic
         final activeAssignments = assignments!.where((a) {
           if (a.idHocSinh != m.idHocSinh) return false;
-          // tuNgay <= session.ngay AND (den_ngay == null OR den_ngay >= session.ngay)
           if (session.ngay.compareTo(a.tuNgay) < 0) return false;
           if (a.denNgay != null && session.ngay.compareTo(a.denNgay!) > 0) {
             return false;
@@ -181,12 +347,9 @@ class RosterService {
           );
         } else {
           final a = activeAssignments.first;
-
-          // Harden Assignment Integrity
           final aSchedule = await _scheduleService.getScheduleById(a.idLichHoc);
           bool isAssignmentValid = true;
 
-          // 1. Basic Schedule Integrity
           if (aSchedule == null ||
               aSchedule.idLop != session.idLop ||
               aSchedule.thuTrongTuan != referenceDate.weekday ||
@@ -196,12 +359,9 @@ class RosterService {
             isAssignmentValid = false;
           }
 
-          // 2. Membership Interval Alignment
-          // a.tu_ngay >= m.tu_ngay
           if (isAssignmentValid && a.tuNgay.compareTo(m.tuNgay) < 0) {
             isAssignmentValid = false;
           }
-          // if m.den_ngay != null => a.den_ngay != null AND a.den_ngay <= m.den_ngay
           if (isAssignmentValid && m.denNgay != null) {
             if (a.denNgay == null || a.denNgay!.compareTo(m.denNgay!) > 0) {
               isAssignmentValid = false;
@@ -230,7 +390,6 @@ class RosterService {
       }
     }
 
-    // 5. Deterministic sorting by student name, then ID
     _sortRosterMembers(participants);
     _sortStudents(unassignedMembers);
 
@@ -265,11 +424,15 @@ Future<RosterService> rosterService(RosterServiceRef ref) async {
   final membershipService = await ref.watch(membershipServiceProvider.future);
   final scheduleService = await ref.watch(classScheduleServiceProvider.future);
   final studentService = await ref.watch(studentServiceProvider.future);
+  final adjustmentRepo = await ref.watch(
+    sessionAdjustmentRepositoryProvider.future,
+  );
 
   return RosterService(
     sessionService,
     membershipService,
     scheduleService,
     studentService,
+    adjustmentRepo,
   );
 }

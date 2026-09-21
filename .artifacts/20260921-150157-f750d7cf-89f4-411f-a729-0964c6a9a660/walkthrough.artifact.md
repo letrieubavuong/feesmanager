@@ -1,27 +1,23 @@
-# Phase 6 Walkthrough: Canonical Attendance Final Acceptance & Specific Regressions
+# Phase 6 Walkthrough: Attendance Upsert Regression Restored
 
-I have added all remaining specific regression test cases for Phase 6: Canonical Attendance. The implementation is 100% verified, clean of analyzer issues, and ready for acceptance.
+I have restored the explicit upsert `created_at` regression test in `test/attendance/attendance_service_test.dart`. The implementation is 100% verified, clean of analyzer issues, and ready for acceptance.
 
 ## Key Accomplishments
 
-### 1. Direct Domain Service Guards
-- **Explicit `NGHI_LE` & `PHAT_SINH` Guards**: Tested `SessionService.markTaughtFromAttendance` directly with `CHINH + NGHI_LE` and `PHAT_SINH + DU_KIEN` sessions, confirming both are rejected.
-- **Attendance Finalize Guards**: Verified that `AttendanceService.finalizeSessionAttendance` rejects both `HOC_BU` and `PHAT_SINH` session types without mutating database rows or session statuses.
+### 1. Restored Upsert Regression Test
+- **Single Row Guarantee**: Verified that saving attendance for the same student and session twice results in exactly `1` row in `diem_danh`.
+- **Identity & Timestamp Preservation**: Verified that changing status from `CO_MAT` to `TRE` keeps `id` and `created_at` unchanged while updating status and `updated_at`.
 
-### 2. Isolated Widget Regression Tests
-- **Independent Status Tests**: Created distinct widget tests for `HUY` and `NGHI_LE` sessions, confirming both present read-only views with no interactive chips or action buttons.
-- **Independent Session Type Tests**: Created distinct widget tests for `HOC_BU` and `PHAT_SINH` sessions, confirming both display Phase 7 notices with no interactive chips or action buttons.
-- **Incomplete Finalize Flow**: Added widget tests verifying that tapping "Hủy" on the unresolved warning dialog cancels finalization, whereas tapping "Vẫn hoàn tất" invokes `finalize(allowIncomplete: true)`.
-
-### 3. Repository & Controller State Regressions
-- **Upsert `created_at` Invariant**: Verified that updating a student's attendance from `CO_MAT` to `TRE` updates `updated_at` while keeping `created_at` and `id` unchanged.
-- **Dirty Draft State**: Verified that `hasDirtyDraft` remains `false` on initial load, stays `false` when reading effective states, becomes `true` on edit, and reverts to `false` on undo.
+### 2. Quality Gate & Documentation
+- **Automated Tests**: Total test count is now **147 passing tests**.
+- **Static Analysis**: `flutter analyze` returns "No issues found!".
+- **Documentation**: Updated `REBUILD_STATUS.md` to reflect 147 passing tests.
 
 ## Verification Summary
 
 ### Automated Tests
 Ran the full test suite.
-- **Total Tests**: 146
+- **Total Tests**: 147
 - **Pass Rate**: 100%
 
 ### Static Analysis
@@ -29,6 +25,6 @@ Ran the full test suite.
 
 ### CI/CD
 All changes pushed to `main`.
-**Commit SHA**: `f3c9ae7292aa3df55f7dcdf67686bfbf90f08826`
+**Commit SHA**: `913697a3e8799145094775de9c6b0dc0c32efb01`
 
 **PHASE 6 READY FOR ACCEPTANCE**

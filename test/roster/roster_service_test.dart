@@ -14,6 +14,7 @@ import 'package:tuition2027/features/students/domain/student_service.dart';
 import 'package:tuition2027/features/students/data/student_repository.dart';
 import 'package:tuition2027/features/classes/domain/class_service.dart';
 import 'package:tuition2027/features/classes/data/class_repository.dart';
+import 'package:tuition2027/features/session_adjustments/data/session_adjustment_repository.dart';
 import '../sessions/test_db_helper_v6.dart';
 
 void main() {
@@ -52,11 +53,14 @@ void main() {
       studentService,
     );
 
+    final adjustmentRepo = SessionAdjustmentRepository(db);
+
     rosterService = RosterService(
       sessionService,
       membershipService,
       scheduleService,
       studentService,
+      adjustmentRepo,
     );
   });
 

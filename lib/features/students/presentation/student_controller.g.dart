@@ -11,19 +11,16 @@ String _$studentListControllerHash() =>
 
 /// See also [StudentListController].
 @ProviderFor(StudentListController)
-final studentListControllerProvider =
-    AutoDisposeAsyncNotifierProvider<
-      StudentListController,
-      List<Student>
-    >.internal(
-      StudentListController.new,
-      name: r'studentListControllerProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$studentListControllerHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final studentListControllerProvider = AutoDisposeAsyncNotifierProvider<
+    StudentListController, List<Student>>.internal(
+  StudentListController.new,
+  name: r'studentListControllerProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$studentListControllerHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$StudentListController = AutoDisposeAsyncNotifier<List<Student>>;
 String _$studentFormControllerHash() =>
@@ -33,14 +30,14 @@ String _$studentFormControllerHash() =>
 @ProviderFor(StudentFormController)
 final studentFormControllerProvider =
     AutoDisposeAsyncNotifierProvider<StudentFormController, void>.internal(
-      StudentFormController.new,
-      name: r'studentFormControllerProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$studentFormControllerHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  StudentFormController.new,
+  name: r'studentFormControllerProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$studentFormControllerHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$StudentFormController = AutoDisposeAsyncNotifier<void>;
 // ignore_for_file: type=lint

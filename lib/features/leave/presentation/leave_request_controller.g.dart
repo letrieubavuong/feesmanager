@@ -1,13 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'assignment_controller.dart';
+part of 'leave_request_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$classAssignmentControllerHash() =>
-    r'f5077878e06e8880e60a784d80c06b66f87762d6';
+String _$leaveRequestControllerHash() =>
+    r'f83c4a6cb1c6c3d1eef1225b688c7f6d3201fb9c';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,37 +30,37 @@ class _SystemHash {
   }
 }
 
-abstract class _$ClassAssignmentController
-    extends BuildlessAutoDisposeAsyncNotifier<List<StudentShiftAssignment>> {
+abstract class _$LeaveRequestController
+    extends BuildlessAutoDisposeAsyncNotifier<List<LeaveRequest>> {
   late final int classId;
 
-  FutureOr<List<StudentShiftAssignment>> build(
+  FutureOr<List<LeaveRequest>> build(
     int classId,
   );
 }
 
-/// See also [ClassAssignmentController].
-@ProviderFor(ClassAssignmentController)
-const classAssignmentControllerProvider = ClassAssignmentControllerFamily();
+/// See also [LeaveRequestController].
+@ProviderFor(LeaveRequestController)
+const leaveRequestControllerProvider = LeaveRequestControllerFamily();
 
-/// See also [ClassAssignmentController].
-class ClassAssignmentControllerFamily
-    extends Family<AsyncValue<List<StudentShiftAssignment>>> {
-  /// See also [ClassAssignmentController].
-  const ClassAssignmentControllerFamily();
+/// See also [LeaveRequestController].
+class LeaveRequestControllerFamily
+    extends Family<AsyncValue<List<LeaveRequest>>> {
+  /// See also [LeaveRequestController].
+  const LeaveRequestControllerFamily();
 
-  /// See also [ClassAssignmentController].
-  ClassAssignmentControllerProvider call(
+  /// See also [LeaveRequestController].
+  LeaveRequestControllerProvider call(
     int classId,
   ) {
-    return ClassAssignmentControllerProvider(
+    return LeaveRequestControllerProvider(
       classId,
     );
   }
 
   @override
-  ClassAssignmentControllerProvider getProviderOverride(
-    covariant ClassAssignmentControllerProvider provider,
+  LeaveRequestControllerProvider getProviderOverride(
+    covariant LeaveRequestControllerProvider provider,
   ) {
     return call(
       provider.classId,
@@ -79,31 +79,31 @@ class ClassAssignmentControllerFamily
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'classAssignmentControllerProvider';
+  String? get name => r'leaveRequestControllerProvider';
 }
 
-/// See also [ClassAssignmentController].
-class ClassAssignmentControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<ClassAssignmentController,
-        List<StudentShiftAssignment>> {
-  /// See also [ClassAssignmentController].
-  ClassAssignmentControllerProvider(
+/// See also [LeaveRequestController].
+class LeaveRequestControllerProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<LeaveRequestController,
+        List<LeaveRequest>> {
+  /// See also [LeaveRequestController].
+  LeaveRequestControllerProvider(
     int classId,
   ) : this._internal(
-          () => ClassAssignmentController()..classId = classId,
-          from: classAssignmentControllerProvider,
-          name: r'classAssignmentControllerProvider',
+          () => LeaveRequestController()..classId = classId,
+          from: leaveRequestControllerProvider,
+          name: r'leaveRequestControllerProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$classAssignmentControllerHash,
-          dependencies: ClassAssignmentControllerFamily._dependencies,
+                  : _$leaveRequestControllerHash,
+          dependencies: LeaveRequestControllerFamily._dependencies,
           allTransitiveDependencies:
-              ClassAssignmentControllerFamily._allTransitiveDependencies,
+              LeaveRequestControllerFamily._allTransitiveDependencies,
           classId: classId,
         );
 
-  ClassAssignmentControllerProvider._internal(
+  LeaveRequestControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -116,8 +116,8 @@ class ClassAssignmentControllerProvider
   final int classId;
 
   @override
-  FutureOr<List<StudentShiftAssignment>> runNotifierBuild(
-    covariant ClassAssignmentController notifier,
+  FutureOr<List<LeaveRequest>> runNotifierBuild(
+    covariant LeaveRequestController notifier,
   ) {
     return notifier.build(
       classId,
@@ -125,10 +125,10 @@ class ClassAssignmentControllerProvider
   }
 
   @override
-  Override overrideWith(ClassAssignmentController Function() create) {
+  Override overrideWith(LeaveRequestController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: ClassAssignmentControllerProvider._internal(
+      override: LeaveRequestControllerProvider._internal(
         () => create()..classId = classId,
         from: from,
         name: null,
@@ -141,15 +141,14 @@ class ClassAssignmentControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<ClassAssignmentController,
-      List<StudentShiftAssignment>> createElement() {
-    return _ClassAssignmentControllerProviderElement(this);
+  AutoDisposeAsyncNotifierProviderElement<LeaveRequestController,
+      List<LeaveRequest>> createElement() {
+    return _LeaveRequestControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is ClassAssignmentControllerProvider &&
-        other.classId == classId;
+    return other is LeaveRequestControllerProvider && other.classId == classId;
   }
 
   @override
@@ -161,19 +160,19 @@ class ClassAssignmentControllerProvider
   }
 }
 
-mixin ClassAssignmentControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<List<StudentShiftAssignment>> {
+mixin LeaveRequestControllerRef
+    on AutoDisposeAsyncNotifierProviderRef<List<LeaveRequest>> {
   /// The parameter `classId` of this provider.
   int get classId;
 }
 
-class _ClassAssignmentControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<ClassAssignmentController,
-        List<StudentShiftAssignment>> with ClassAssignmentControllerRef {
-  _ClassAssignmentControllerProviderElement(super.provider);
+class _LeaveRequestControllerProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<LeaveRequestController,
+        List<LeaveRequest>> with LeaveRequestControllerRef {
+  _LeaveRequestControllerProviderElement(super.provider);
 
   @override
-  int get classId => (origin as ClassAssignmentControllerProvider).classId;
+  int get classId => (origin as LeaveRequestControllerProvider).classId;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

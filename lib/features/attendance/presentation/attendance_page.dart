@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../roster/domain/roster_member.dart';
 import '../../roster/domain/roster_result.dart';
 import '../../sessions/domain/class_session.dart';
 import '../domain/attendance_sheet.dart';
@@ -74,7 +75,7 @@ class AttendancePage extends ConsumerWidget {
   bool _isEditable(AttendanceSheet sheet) {
     return sheet.isOperationallyValid &&
         sheet.session.trangThai == SessionStatus.DU_KIEN &&
-        sheet.session.loai == SessionType.CHINH;
+        !sheet.requiresOneOffAdjustments;
   }
 
   Widget _buildContent(
@@ -187,12 +188,12 @@ class AttendancePage extends ConsumerWidget {
               style: const TextStyle(fontStyle: FontStyle.italic),
             ),
           ),
-        if (sheet.session.loai != SessionType.CHINH)
+        if (sheet.requiresOneOffAdjustments)
           Container(
             color: Colors.blue.shade50,
             padding: const EdgeInsets.all(16),
             child: const Text(
-              'Danh sách người tham gia buổi học bù/phát sinh cần được xác định ở Phase 7.',
+              'Buổi học này chưa có danh sách học sinh tham gia. Vui lòng xếp danh sách học sinh tham gia trước khi điểm danh.',
               textAlign: TextAlign.center,
             ),
           ),
@@ -298,6 +299,39 @@ class AttendancePage extends ConsumerWidget {
                   ),
                 ),
               ),
+              if (member.rosterMember.source == RosterInclusionSource.DOI_CA)
+                const Card(
+                  color: Colors.blue,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    child: Text(
+                      'Đổi ca',
+                      style: TextStyle(color: Colors.white, fontSize: 11),
+                    ),
+                  ),
+                ),
+              if (member.rosterMember.source == RosterInclusionSource.HOC_BU)
+                const Card(
+                  color: Colors.teal,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    child: Text(
+                      'Học bù',
+                      style: TextStyle(color: Colors.white, fontSize: 11),
+                    ),
+                  ),
+                ),
+              if (member.rosterMember.source == RosterInclusionSource.PHAT_SINH)
+                const Card(
+                  color: Colors.purple,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    child: Text(
+                      'Phát sinh',
+                      style: TextStyle(color: Colors.white, fontSize: 11),
+                    ),
+                  ),
+                ),
               if (student.daLuuTru)
                 const Card(
                   color: Colors.grey,
@@ -311,13 +345,67 @@ class AttendancePage extends ConsumerWidget {
                 ),
             ],
           ),
+          if (member.suggestedState != null &&
+              effectiveState == AttendanceState.CHUA_DIEM_DANH)
+            Container(
+              margin: const EdgeInsets.only(top: 8, bottom: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.purple.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.purple.shade200),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.event_available,
+                    size: 16,
+                    color: Colors.purple,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${member.suggestionReason}: Đề xuất ${member.suggestedState!.label}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.purple,
+                      ),
+                    ),
+                  ),
+                  if (isEditable)
+                    TextButton(
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                      onPressed: () {
+                        ref
+                            .read(
+                              attendanceControllerProvider(sessionId).notifier,
+                            )
+                            .updateLocalDraft(
+                              student.id!,
+                              member.suggestedState!,
+                            );
+                      },
+                      child: const Text(
+                        'Áp dụng đề xuất',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           const SizedBox(height: 8),
           if (isEditable)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: AttendanceState.values
-                    .where((s) => s != AttendanceState.HOC_BU)
+                    .where((s) {
+                      if (s == AttendanceState.HOC_BU) {
+                        return member.rosterMember.source ==
+                            RosterInclusionSource.HOC_BU;
+                      }
+                      return true;
+                    })
                     .map(
                       (state) => Padding(
                         padding: const EdgeInsets.only(right: 8),

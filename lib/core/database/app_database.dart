@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int _dbVersion = 7;
+  static const int _dbVersion = 8;
 
   final String dbName;
   Database? _database;
@@ -57,6 +57,9 @@ class AppDatabase {
     if (version >= 7) {
       await _migrateV6ToV7(db);
     }
+    if (version >= 8) {
+      await _migrateV7ToV8(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -77,6 +80,9 @@ class AppDatabase {
     }
     if (oldVersion < 7) {
       await _migrateV6ToV7(db);
+    }
+    if (oldVersion < 8) {
+      await _migrateV7ToV8(db);
     }
   }
 
@@ -403,6 +409,77 @@ class AppDatabase {
     );
     await db.execute(
       'CREATE INDEX idx_diem_danh_hs_buoi ON diem_danh(id_hoc_sinh, id_buoi_hoc)',
+    );
+  }
+
+  Future<void> _migrateV7ToV8(Database db) async {
+    await db.execute('''
+      CREATE TABLE don_nghi_hoc (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_hoc_sinh INTEGER NOT NULL,
+        id_lop INTEGER NOT NULL,
+        tu_ngay TEXT NOT NULL,
+        den_ngay TEXT NOT NULL,
+        ly_do TEXT NULL,
+        trang_thai TEXT NOT NULL DEFAULT 'CHO_DUYET',
+        ghi_chu TEXT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+        FOREIGN KEY (id_lop) REFERENCES lop (id),
+        CHECK (den_ngay >= tu_ngay),
+        CHECK (trang_thai IN ('CHO_DUYET', 'DA_DUYET', 'TU_CHOI'))
+      )
+    ''');
+
+    await db.execute(
+      'CREATE INDEX idx_don_nghi_hoc_hs_dates ON don_nghi_hoc(id_hoc_sinh, tu_ngay, den_ngay)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_don_nghi_hoc_lop_dates ON don_nghi_hoc(id_lop, tu_ngay, den_ngay)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_don_nghi_hoc_trang_thai ON don_nghi_hoc(trang_thai)',
+    );
+
+    await db.execute('''
+      CREATE TABLE dieu_chinh_buoi_hoc (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_hoc_sinh INTEGER NOT NULL,
+        id_lop_goc INTEGER NOT NULL,
+        id_buoi_hoc_goc INTEGER NULL,
+        id_buoi_hoc_tham_gia INTEGER NOT NULL,
+        loai TEXT NOT NULL,
+        ly_do TEXT NULL,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+        FOREIGN KEY (id_lop_goc) REFERENCES lop (id),
+        FOREIGN KEY (id_buoi_hoc_goc) REFERENCES buoi_hoc (id),
+        FOREIGN KEY (id_buoi_hoc_tham_gia) REFERENCES buoi_hoc (id),
+        CHECK (loai IN ('DOI_CA', 'HOC_BU', 'PHAT_SINH')),
+        CHECK (id_buoi_hoc_goc IS NULL OR id_buoi_hoc_goc != id_buoi_hoc_tham_gia),
+        CHECK (loai = 'PHAT_SINH' OR id_buoi_hoc_goc IS NOT NULL),
+        UNIQUE (id_hoc_sinh, id_buoi_hoc_tham_gia)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE UNIQUE INDEX idx_dieu_chinh_doi_ca_unique 
+      ON dieu_chinh_buoi_hoc(id_hoc_sinh, id_buoi_hoc_goc) 
+      WHERE loai = 'DOI_CA' AND id_buoi_hoc_goc IS NOT NULL
+    ''');
+
+    await db.execute(
+      'CREATE INDEX idx_dieu_chinh_tham_gia ON dieu_chinh_buoi_hoc(id_buoi_hoc_tham_gia)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_dieu_chinh_goc ON dieu_chinh_buoi_hoc(id_buoi_hoc_goc)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_dieu_chinh_hs ON dieu_chinh_buoi_hoc(id_hoc_sinh)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_dieu_chinh_lop_goc ON dieu_chinh_buoi_hoc(id_lop_goc)',
     );
   }
 }

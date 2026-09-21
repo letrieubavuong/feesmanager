@@ -1,0 +1,450 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:tuition2027/core/database/app_database.dart';
+import 'package:tuition2027/features/attendance/domain/attendance_service.dart';
+import 'package:tuition2027/features/attendance/data/attendance_repository.dart';
+import 'package:tuition2027/features/attendance/domain/attendance_state.dart';
+import 'package:tuition2027/features/classes/domain/class_service.dart';
+import 'package:tuition2027/features/classes/data/class_repository.dart';
+import 'package:tuition2027/features/leave/domain/leave_request_service.dart';
+import 'package:tuition2027/features/leave/data/leave_request_repository.dart';
+import 'package:tuition2027/features/memberships/domain/membership_service.dart';
+import 'package:tuition2027/features/memberships/data/membership_repository.dart';
+import 'package:tuition2027/features/roster/domain/roster_service.dart';
+import 'package:tuition2027/features/schedule/domain/schedule_service.dart';
+import 'package:tuition2027/features/schedule/data/schedule_repository.dart';
+import 'package:tuition2027/features/schedule/data/assignment_repository.dart';
+import 'package:tuition2027/features/session_adjustments/domain/session_adjustment_service.dart';
+import 'package:tuition2027/features/session_adjustments/data/session_adjustment_repository.dart';
+import 'package:tuition2027/features/sessions/domain/session_service.dart';
+import 'package:tuition2027/features/sessions/data/session_repository.dart';
+import 'package:tuition2027/features/students/domain/student_service.dart';
+import 'package:tuition2027/features/students/data/student_repository.dart';
+import '../sessions/test_db_helper_v6.dart';
+
+void main() {
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
+
+  late Database db;
+  late SessionAdjustmentService adjustmentService;
+  late SessionAdjustmentRepository adjustmentRepo;
+  late RosterService rosterService;
+  late AttendanceService attendanceService;
+  late SessionService sessionService;
+  late AttendanceRepository attendanceRepo;
+
+  final nowStr = DateTime.now().toIso8601String();
+
+  setUp(() async {
+    db = await TestDbHelperV6.createLatest();
+
+    final studentRepo = StudentRepository(db);
+    final membershipRepo = MembershipRepository(db);
+    final classRepo = ClassRepository(db);
+    final sessionRepo = SessionRepository(db);
+    final scheduleRepo = ScheduleRepository(db);
+    final assignmentRepo = AssignmentRepository(db);
+    attendanceRepo = AttendanceRepository(db);
+    adjustmentRepo = SessionAdjustmentRepository(db);
+    final leaveRepo = LeaveRequestRepository(db);
+
+    final membershipService = MembershipService(membershipRepo);
+    final studentService = StudentService(studentRepo, membershipService);
+    final classService = ClassService(classRepo, membershipService);
+    sessionService = SessionService(sessionRepo, classService);
+    final scheduleService = ScheduleDomainService(
+      scheduleRepo,
+      assignmentRepo,
+      membershipService,
+      classService,
+      studentService,
+    );
+    rosterService = RosterService(
+      sessionService,
+      membershipService,
+      scheduleService,
+      studentService,
+      adjustmentRepo,
+    );
+    final leaveService = LeaveRequestService(
+      leaveRepo,
+      studentService,
+      classService,
+      membershipService,
+    );
+    attendanceService = AttendanceService(
+      attendanceRepo,
+      rosterService,
+      sessionService,
+      leaveService,
+    );
+
+    adjustmentService = SessionAdjustmentService(
+      adjustmentRepo,
+      studentService,
+      classService,
+      sessionService,
+      membershipService,
+      attendanceRepo,
+      rosterService,
+    );
+  });
+
+  tearDown(() async => await db.close());
+
+  group('SessionAdjustmentService Domain Tests', () {
+    test(
+      'DOI_CA removes student from orig roster, adds to target roster, phan_ca_hoc_sinh unchanged',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'Student 1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'Class 10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Schedules for multi-shift class on Monday
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lich_hoc', {
+          'id': 2,
+          'id_lop': 10,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '19:30',
+          'gio_ket_thuc': '21:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Student assigned to Shift 1
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': 50,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Two sessions on Monday 2026-09-21
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 102,
+          'id_lop': 10,
+          'id_lich_hoc': 2,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '19:30',
+          'gio_ket_thuc': '21:00',
+          'loai': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Before DOI_CA:
+        var origRoster = await rosterService.getRosterForSession(101);
+        var targetRoster = await rosterService.getRosterForSession(102);
+        expect(origRoster.participants.any((p) => p.student.id == 1), isTrue);
+        expect(
+          targetRoster.participants.any((p) => p.student.id == 1),
+          isFalse,
+        );
+
+        // Create DOI_CA from Session 101 to Session 102
+        await adjustmentService.createDoiCa(
+          studentId: 1,
+          originalSessionId: 101,
+          targetSessionId: 102,
+        );
+
+        // After DOI_CA:
+        origRoster = await rosterService.getRosterForSession(101);
+        targetRoster = await rosterService.getRosterForSession(102);
+        expect(origRoster.participants.any((p) => p.student.id == 1), isFalse);
+        expect(targetRoster.participants.any((p) => p.student.id == 1), isTrue);
+
+        // Assert phan_ca_hoc_sinh is UNCHANGED
+        final pcList = await db.query('phan_ca_hoc_sinh');
+        expect(pcList.length, 1);
+        expect(pcList.first['id_lich_hoc'], 1);
+
+        // Next week session on 2026-09-28:
+        await db.insert('buoi_hoc', {
+          'id': 201,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-28',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        final nextWeekRoster = await rosterService.getRosterForSession(201);
+        expect(
+          nextWeekRoster.participants.any((p) => p.student.id == 1),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'HOC_BU requires known absence (NGHI_CO_PHEP / NGHI_KHONG_PHEP) in original session',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Original CHINH session DA_HOC
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Target HOC_BU session
+        await db.insert('buoi_hoc', {
+          'id': 102,
+          'id_lop': 10,
+          'ngay': '2026-09-22',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'HOC_BU',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // 1. Without original attendance -> REJECT
+        await expectLater(
+          adjustmentService.createHocBu(
+            studentId: 1,
+            originalSessionId: 101,
+            targetSessionId: 102,
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        // 2. Original attendance = CO_MAT -> REJECT
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 101,
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 10,
+          'trang_thai': 'CO_MAT',
+          'loai_tham_gia': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await expectLater(
+          adjustmentService.createHocBu(
+            studentId: 1,
+            originalSessionId: 101,
+            targetSessionId: 102,
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        // 3. Update original attendance = NGHI_CO_PHEP -> ACCEPT
+        await db.update('diem_danh', {
+          'trang_thai': 'NGHI_CO_PHEP',
+        }, where: 'id_buoi_hoc = 101 AND id_hoc_sinh = 1');
+        await adjustmentService.createHocBu(
+          studentId: 1,
+          originalSessionId: 101,
+          targetSessionId: 102,
+        );
+
+        final targetRoster = await rosterService.getRosterForSession(102);
+        expect(targetRoster.participants.any((p) => p.student.id == 1), isTrue);
+
+        // Save make-up attendance
+        await attendanceService.saveDraft(102, {1: AttendanceState.HOC_BU});
+        final ddRow = (await db.query(
+          'diem_danh',
+          where: 'id_buoi_hoc = 102 AND id_hoc_sinh = 1',
+        )).first;
+        expect(ddRow['trang_thai'], 'HOC_BU');
+        expect(ddRow['loai_tham_gia'], 'HOC_BU');
+        expect(ddRow['id_buoi_vang_goc'], 101);
+      },
+    );
+
+    test(
+      'PHAT_SINH starts with empty roster, explicit adjustment populates it, attendance loai_tham_gia = CHINH',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Target PHAT_SINH session
+        await db.insert('buoi_hoc', {
+          'id': 105,
+          'id_lop': 10,
+          'ngay': '2026-09-25',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'PHAT_SINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // 1. Initial roster -> empty, requiresOneOffAdjustments = true
+        var psRoster = await rosterService.getRosterForSession(105);
+        expect(psRoster.participants, isEmpty);
+        expect(psRoster.requiresOneOffAdjustments, isTrue);
+
+        // 2. Create PHAT_SINH adjustment
+        await adjustmentService.createPhatSinh(
+          studentId: 1,
+          originalClassId: 10,
+          targetSessionId: 105,
+        );
+
+        psRoster = await rosterService.getRosterForSession(105);
+        expect(psRoster.participants.length, 1);
+        expect(psRoster.requiresOneOffAdjustments, isFalse);
+
+        // 3. Save attendance
+        await attendanceService.saveDraft(105, {1: AttendanceState.CO_MAT});
+        final ddRow = (await db.query(
+          'diem_danh',
+          where: 'id_buoi_hoc = 105 AND id_hoc_sinh = 1',
+        )).first;
+        expect(ddRow['trang_thai'], 'CO_MAT');
+        expect(ddRow['loai_tham_gia'], 'CHINH');
+
+        // Finalize
+        await attendanceService.finalizeSessionAttendance(105);
+        final sRow = (await db.query('buoi_hoc', where: 'id = 105')).first;
+        expect(sRow['trang_thai'], 'DA_HOC');
+      },
+    );
+
+    test(
+      'Adjustment removal allowed before attendance exists, rejected after attendance exists',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 105,
+          'id_lop': 10,
+          'ngay': '2026-09-25',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'PHAT_SINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        final adjId = await adjustmentService.createPhatSinh(
+          studentId: 1,
+          originalClassId: 10,
+          targetSessionId: 105,
+        );
+
+        // Save attendance in target session
+        await attendanceService.saveDraft(105, {1: AttendanceState.CO_MAT});
+
+        // Attempt to remove adjustment -> REJECT
+        await expectLater(
+          adjustmentService.removeAdjustment(adjId),
+          throwsA(isA<Exception>()),
+        );
+      },
+    );
+  });
+}

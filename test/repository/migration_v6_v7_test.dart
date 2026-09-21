@@ -200,7 +200,7 @@ void main() {
       final appDb = AppDatabase(dbName: dbPath);
       final dbV7 = await appDb.database;
 
-      expect(await dbV7.getVersion(), 7);
+      expect(await dbV7.getVersion(), 8);
 
       // Assert ALL rows survive
       final hs = await dbV7.query('hoc_sinh', where: 'id = 11');

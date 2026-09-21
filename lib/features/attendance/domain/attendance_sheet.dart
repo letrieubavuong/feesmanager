@@ -10,18 +10,28 @@ class AttendanceSheetMember {
   final RosterMember rosterMember;
   final AttendanceRecord? persistedRecord;
   final AttendanceState state;
+  final AttendanceState? suggestedState;
+  final String? suggestionReason;
 
   AttendanceSheetMember({
     required this.rosterMember,
     this.persistedRecord,
     required this.state,
+    this.suggestedState,
+    this.suggestionReason,
   });
 
-  AttendanceSheetMember copyWith({AttendanceState? state}) {
+  AttendanceSheetMember copyWith({
+    AttendanceState? state,
+    AttendanceState? suggestedState,
+    String? suggestionReason,
+  }) {
     return AttendanceSheetMember(
       rosterMember: rosterMember,
       persistedRecord: persistedRecord,
       state: state ?? this.state,
+      suggestedState: suggestedState ?? this.suggestedState,
+      suggestionReason: suggestionReason ?? this.suggestionReason,
     );
   }
 }
@@ -46,6 +56,7 @@ class AttendanceSheet {
   final List<AttendanceSheetIssue> issues;
   final bool isRosterValid;
   final List<RosterIssue> rosterIssues;
+  final bool requiresOneOffAdjustments;
 
   AttendanceSheet({
     required this.session,
@@ -53,6 +64,7 @@ class AttendanceSheet {
     required this.issues,
     required this.isRosterValid,
     this.rosterIssues = const [],
+    this.requiresOneOffAdjustments = false,
   });
 
   bool get isOperationallyValid => isRosterValid && issues.isEmpty;

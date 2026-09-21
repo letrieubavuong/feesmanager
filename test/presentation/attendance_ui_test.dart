@@ -215,6 +215,7 @@ void main() {
       members: [],
       issues: [],
       isRosterValid: true,
+      requiresOneOffAdjustments: true,
     );
 
     await tester.pumpWidget(
@@ -230,7 +231,10 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Phase 7'), findsOneWidget);
+    expect(
+      find.textContaining('chưa có danh sách học sinh tham gia'),
+      findsOneWidget,
+    );
     expect(find.byType(ChoiceChip), findsNothing);
   });
 
@@ -243,6 +247,7 @@ void main() {
       members: [],
       issues: [],
       isRosterValid: true,
+      requiresOneOffAdjustments: true,
     );
 
     await tester.pumpWidget(
@@ -258,7 +263,10 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Phase 7'), findsOneWidget);
+    expect(
+      find.textContaining('chưa có danh sách học sinh tham gia'),
+      findsOneWidget,
+    );
     expect(find.byType(ChoiceChip), findsNothing);
   });
 

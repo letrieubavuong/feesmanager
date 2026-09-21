@@ -1,13 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'attendance_controller.dart';
+part of 'session_adjustment_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$attendanceControllerHash() =>
-    r'3dda3f76864cb08163a5f99cff93ceb9f5eba326';
+String _$sessionAdjustmentControllerHash() =>
+    r'305064133daab5a5a1fb346c8470a189e665d1b4';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,36 +30,37 @@ class _SystemHash {
   }
 }
 
-abstract class _$AttendanceController
-    extends BuildlessAutoDisposeAsyncNotifier<AttendanceSheet> {
+abstract class _$SessionAdjustmentController
+    extends BuildlessAutoDisposeAsyncNotifier<List<SessionAdjustment>> {
   late final int sessionId;
 
-  FutureOr<AttendanceSheet> build(
+  FutureOr<List<SessionAdjustment>> build(
     int sessionId,
   );
 }
 
-/// See also [AttendanceController].
-@ProviderFor(AttendanceController)
-const attendanceControllerProvider = AttendanceControllerFamily();
+/// See also [SessionAdjustmentController].
+@ProviderFor(SessionAdjustmentController)
+const sessionAdjustmentControllerProvider = SessionAdjustmentControllerFamily();
 
-/// See also [AttendanceController].
-class AttendanceControllerFamily extends Family<AsyncValue<AttendanceSheet>> {
-  /// See also [AttendanceController].
-  const AttendanceControllerFamily();
+/// See also [SessionAdjustmentController].
+class SessionAdjustmentControllerFamily
+    extends Family<AsyncValue<List<SessionAdjustment>>> {
+  /// See also [SessionAdjustmentController].
+  const SessionAdjustmentControllerFamily();
 
-  /// See also [AttendanceController].
-  AttendanceControllerProvider call(
+  /// See also [SessionAdjustmentController].
+  SessionAdjustmentControllerProvider call(
     int sessionId,
   ) {
-    return AttendanceControllerProvider(
+    return SessionAdjustmentControllerProvider(
       sessionId,
     );
   }
 
   @override
-  AttendanceControllerProvider getProviderOverride(
-    covariant AttendanceControllerProvider provider,
+  SessionAdjustmentControllerProvider getProviderOverride(
+    covariant SessionAdjustmentControllerProvider provider,
   ) {
     return call(
       provider.sessionId,
@@ -78,30 +79,31 @@ class AttendanceControllerFamily extends Family<AsyncValue<AttendanceSheet>> {
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'attendanceControllerProvider';
+  String? get name => r'sessionAdjustmentControllerProvider';
 }
 
-/// See also [AttendanceController].
-class AttendanceControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
-    AttendanceController, AttendanceSheet> {
-  /// See also [AttendanceController].
-  AttendanceControllerProvider(
+/// See also [SessionAdjustmentController].
+class SessionAdjustmentControllerProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<SessionAdjustmentController,
+        List<SessionAdjustment>> {
+  /// See also [SessionAdjustmentController].
+  SessionAdjustmentControllerProvider(
     int sessionId,
   ) : this._internal(
-          () => AttendanceController()..sessionId = sessionId,
-          from: attendanceControllerProvider,
-          name: r'attendanceControllerProvider',
+          () => SessionAdjustmentController()..sessionId = sessionId,
+          from: sessionAdjustmentControllerProvider,
+          name: r'sessionAdjustmentControllerProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$attendanceControllerHash,
-          dependencies: AttendanceControllerFamily._dependencies,
+                  : _$sessionAdjustmentControllerHash,
+          dependencies: SessionAdjustmentControllerFamily._dependencies,
           allTransitiveDependencies:
-              AttendanceControllerFamily._allTransitiveDependencies,
+              SessionAdjustmentControllerFamily._allTransitiveDependencies,
           sessionId: sessionId,
         );
 
-  AttendanceControllerProvider._internal(
+  SessionAdjustmentControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -114,8 +116,8 @@ class AttendanceControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
   final int sessionId;
 
   @override
-  FutureOr<AttendanceSheet> runNotifierBuild(
-    covariant AttendanceController notifier,
+  FutureOr<List<SessionAdjustment>> runNotifierBuild(
+    covariant SessionAdjustmentController notifier,
   ) {
     return notifier.build(
       sessionId,
@@ -123,10 +125,10 @@ class AttendanceControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
   }
 
   @override
-  Override overrideWith(AttendanceController Function() create) {
+  Override overrideWith(SessionAdjustmentController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: AttendanceControllerProvider._internal(
+      override: SessionAdjustmentControllerProvider._internal(
         () => create()..sessionId = sessionId,
         from: from,
         name: null,
@@ -139,14 +141,14 @@ class AttendanceControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<AttendanceController, AttendanceSheet>
-      createElement() {
-    return _AttendanceControllerProviderElement(this);
+  AutoDisposeAsyncNotifierProviderElement<SessionAdjustmentController,
+      List<SessionAdjustment>> createElement() {
+    return _SessionAdjustmentControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is AttendanceControllerProvider &&
+    return other is SessionAdjustmentControllerProvider &&
         other.sessionId == sessionId;
   }
 
@@ -159,19 +161,20 @@ class AttendanceControllerProvider extends AutoDisposeAsyncNotifierProviderImpl<
   }
 }
 
-mixin AttendanceControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<AttendanceSheet> {
+mixin SessionAdjustmentControllerRef
+    on AutoDisposeAsyncNotifierProviderRef<List<SessionAdjustment>> {
   /// The parameter `sessionId` of this provider.
   int get sessionId;
 }
 
-class _AttendanceControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<AttendanceController,
-        AttendanceSheet> with AttendanceControllerRef {
-  _AttendanceControllerProviderElement(super.provider);
+class _SessionAdjustmentControllerProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<SessionAdjustmentController,
+        List<SessionAdjustment>> with SessionAdjustmentControllerRef {
+  _SessionAdjustmentControllerProviderElement(super.provider);
 
   @override
-  int get sessionId => (origin as AttendanceControllerProvider).sessionId;
+  int get sessionId =>
+      (origin as SessionAdjustmentControllerProvider).sessionId;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

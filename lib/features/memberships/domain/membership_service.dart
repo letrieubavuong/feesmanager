@@ -114,6 +114,14 @@ class MembershipService {
     return _repository.getByStudent(studentId);
   }
 
+  Future<List<ClassMembership>> getMembershipsForStudentAndClass(
+    int studentId,
+    int classId,
+  ) async {
+    final all = await _repository.getByStudent(studentId);
+    return all.where((m) => m.idLop == classId).toList();
+  }
+
   Future<List<ClassMembership>> getRoster(int classId, {DateTime? date}) async {
     final referenceDate = date ?? DateTime.now();
     final dateFormat = DateFormat('yyyy-MM-dd');

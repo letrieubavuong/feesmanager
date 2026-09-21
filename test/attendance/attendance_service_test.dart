@@ -16,6 +16,9 @@ import 'package:tuition2027/features/students/domain/student_service.dart';
 import 'package:tuition2027/features/students/data/student_repository.dart';
 import 'package:tuition2027/features/classes/domain/class_service.dart';
 import 'package:tuition2027/features/classes/data/class_repository.dart';
+import 'package:tuition2027/features/leave/domain/leave_request_service.dart';
+import 'package:tuition2027/features/leave/data/leave_request_repository.dart';
+import 'package:tuition2027/features/session_adjustments/data/session_adjustment_repository.dart';
 import '../sessions/test_db_helper_v6.dart';
 
 void main() {
@@ -36,28 +39,6 @@ void main() {
 
   setUp(() async {
     db = await TestDbHelperV6.createLatest();
-    // Manual v7 migration for test
-    await db.execute('''
-      CREATE TABLE diem_danh (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        id_buoi_hoc INTEGER NOT NULL,
-        id_hoc_sinh INTEGER NOT NULL,
-        id_lop_goc INTEGER NOT NULL,
-        trang_thai TEXT NOT NULL,
-        loai_tham_gia TEXT NOT NULL DEFAULT 'CHINH',
-        id_buoi_vang_goc INTEGER NULL,
-        ghi_chu TEXT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        FOREIGN KEY (id_buoi_hoc) REFERENCES buoi_hoc (id),
-        FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
-        FOREIGN KEY (id_lop_goc) REFERENCES lop (id),
-        FOREIGN KEY (id_buoi_vang_goc) REFERENCES buoi_hoc (id),
-        UNIQUE(id_buoi_hoc, id_hoc_sinh),
-        CHECK (trang_thai IN ('CO_MAT', 'TRE', 'NGHI_CO_PHEP', 'NGHI_KHONG_PHEP', 'HOC_BU')),
-        CHECK (loai_tham_gia IN ('CHINH', 'DOI_CA', 'HOC_BU'))
-      )
-    ''');
 
     final sessionRepo = SessionRepository(db);
     final membershipRepo = MembershipRepository(db);
@@ -65,6 +46,8 @@ void main() {
     final assignmentRepo = AssignmentRepository(db);
     final studentRepo = StudentRepository(db);
     final classRepo = ClassRepository(db);
+    final leaveRepo = LeaveRequestRepository(db);
+    final adjustmentRepo = SessionAdjustmentRepository(db);
     attendanceRepo = AttendanceRepository(db);
 
     membershipService = MembershipService(membershipRepo);
@@ -83,12 +66,21 @@ void main() {
       membershipService,
       scheduleService,
       studentService,
+      adjustmentRepo,
+    );
+
+    final leaveService = LeaveRequestService(
+      leaveRepo,
+      studentService,
+      classService,
+      membershipService,
     );
 
     attendanceService = AttendanceService(
       attendanceRepo,
       rosterService,
       sessionService,
+      leaveService,
     );
   });
 
@@ -301,14 +293,14 @@ void main() {
       });
 
       expect(
-        () => attendanceService.saveDraft(1, {}),
-        throwsA(predicate((e) => e.toString().contains('Phase 6'))),
+        attendanceService.saveDraft(1, {}),
+        throwsA(predicate((e) => e.toString().contains('chưa có danh sách'))),
       );
 
       await db.update('buoi_hoc', {'loai': 'PHAT_SINH'}, where: 'id = 1');
       expect(
-        () => attendanceService.saveDraft(1, {}),
-        throwsA(predicate((e) => e.toString().contains('Phase 6'))),
+        attendanceService.saveDraft(1, {}),
+        throwsA(predicate((e) => e.toString().contains('chưa có danh sách'))),
       );
     });
 
@@ -333,8 +325,8 @@ void main() {
         });
 
         expect(
-          () => attendanceService.finalizeSessionAttendance(1),
-          throwsA(predicate((e) => e.toString().contains('Phase 7'))),
+          attendanceService.finalizeSessionAttendance(1),
+          throwsA(predicate((e) => e.toString().contains('chưa có danh sách'))),
         );
 
         var session = (await db.query('buoi_hoc', where: 'id = 1')).first;
@@ -342,8 +334,8 @@ void main() {
 
         await db.update('buoi_hoc', {'loai': 'PHAT_SINH'}, where: 'id = 1');
         expect(
-          () => attendanceService.finalizeSessionAttendance(1),
-          throwsA(predicate((e) => e.toString().contains('Phase 7'))),
+          attendanceService.finalizeSessionAttendance(1),
+          throwsA(predicate((e) => e.toString().contains('chưa có danh sách'))),
         );
 
         session = (await db.query('buoi_hoc', where: 'id = 1')).first;

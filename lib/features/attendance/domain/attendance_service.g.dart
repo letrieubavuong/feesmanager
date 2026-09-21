@@ -13,17 +13,17 @@ String _$attendanceRepositoryHash() =>
 @ProviderFor(attendanceRepository)
 final attendanceRepositoryProvider =
     FutureProvider<AttendanceRepository>.internal(
-      attendanceRepository,
-      name: r'attendanceRepositoryProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$attendanceRepositoryHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  attendanceRepository,
+  name: r'attendanceRepositoryProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$attendanceRepositoryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef AttendanceRepositoryRef = FutureProviderRef<AttendanceRepository>;
-String _$attendanceServiceHash() => r'40c216513d7877ad91ccec36e6e268e1f11e9a17';
+String _$attendanceServiceHash() => r'de48de09db5491e0b696f6d68d2c90eb848267c7';
 
 /// See also [attendanceService].
 @ProviderFor(attendanceService)

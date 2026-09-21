@@ -258,7 +258,7 @@ void main() {
         throwsA(isA<Exception>()),
       );
 
-      // 5. HOC_BU -> Rejected in Phase 6
+      // 5. HOC_BU -> Rejected if unresolved
       final sessionHB = ClassSession(
         idLop: classId,
         ngay: '2026-09-13',
@@ -271,11 +271,12 @@ void main() {
       );
       final idHB = await sessionRepo.create(sessionHB);
       expect(
-        () => service.markTaughtFromAttendance(idHB),
+        () =>
+            service.markTaughtFromAttendance(idHB, oneOffRosterResolved: false),
         throwsA(isA<Exception>()),
       );
 
-      // 6. PHAT_SINH -> Rejected in Phase 6
+      // 6. PHAT_SINH -> Rejected if unresolved
       final sessionPS = ClassSession(
         idLop: classId,
         ngay: '2026-09-14',
@@ -288,7 +289,8 @@ void main() {
       );
       final idPS = await sessionRepo.create(sessionPS);
       expect(
-        () => service.markTaughtFromAttendance(idPS),
+        () =>
+            service.markTaughtFromAttendance(idPS, oneOffRosterResolved: false),
         throwsA(isA<Exception>()),
       );
     });

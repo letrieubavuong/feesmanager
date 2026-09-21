@@ -89,7 +89,10 @@ class SessionService {
     );
   }
 
-  Future<void> markTaughtFromAttendance(int id) async {
+  Future<void> markTaughtFromAttendance(
+    int id, {
+    bool oneOffRosterResolved = true,
+  }) async {
     final existing = await _repo.getById(id);
     if (existing == null) throw Exception('Không tìm thấy buổi học');
 
@@ -104,11 +107,11 @@ class SessionService {
       );
     }
 
-    if (existing.loai == SessionType.HOC_BU ||
-        existing.loai == SessionType.PHAT_SINH) {
-      // In Phase 6, we block these types from being finalized via attendance
+    if ((existing.loai == SessionType.HOC_BU ||
+            existing.loai == SessionType.PHAT_SINH) &&
+        !oneOffRosterResolved) {
       throw Exception(
-        'Buổi học bù/phát sinh cần được điều chỉnh ở Phase 7 trước khi hoàn tất.',
+        'Buổi học bù/phát sinh chưa được điều chỉnh danh sách học sinh trước khi hoàn tất.',
       );
     }
 

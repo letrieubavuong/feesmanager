@@ -13,14 +13,14 @@ String _$membershipRepositoryHash() =>
 @ProviderFor(membershipRepository)
 final membershipRepositoryProvider =
     FutureProvider<MembershipRepository>.internal(
-      membershipRepository,
-      name: r'membershipRepositoryProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$membershipRepositoryHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  membershipRepository,
+  name: r'membershipRepositoryProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$membershipRepositoryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef MembershipRepositoryRef = FutureProviderRef<MembershipRepository>;
 String _$membershipServiceHash() => r'691658e629af64a22d672bd29cc3e2dd796bc70f';

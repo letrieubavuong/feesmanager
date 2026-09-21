@@ -1,10 +1,15 @@
+import 'dart:io';
+import 'package:path/path.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class TestDbHelperV6 {
   static Future<Database> createLatest() async {
+    final tempDir = await Directory.systemTemp.createTemp('db_test');
+    final dbPath = join(tempDir.path, 'test_v8.db');
+
     final db = await openDatabase(
-      inMemoryDatabasePath,
-      version: 6,
+      dbPath,
+      version: 8,
       onCreate: (db, version) async {
         await db.execute('''
         CREATE TABLE hoc_sinh (
@@ -123,6 +128,74 @@ class TestDbHelperV6 {
             CHECK (trang_thai IN ('DU_KIEN', 'DA_HOC', 'HUY', 'NGHI_LE')),
             UNIQUE(id_lop, ngay, gio_bat_dau)
           )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE diem_danh (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_buoi_hoc INTEGER NOT NULL,
+            id_hoc_sinh INTEGER NOT NULL,
+            id_lop_goc INTEGER NOT NULL,
+            trang_thai TEXT NOT NULL,
+            loai_tham_gia TEXT NOT NULL DEFAULT 'CHINH',
+            id_buoi_vang_goc INTEGER NULL,
+            ghi_chu TEXT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (id_buoi_hoc) REFERENCES buoi_hoc (id),
+            FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+            FOREIGN KEY (id_lop_goc) REFERENCES lop (id),
+            FOREIGN KEY (id_buoi_vang_goc) REFERENCES buoi_hoc (id),
+            UNIQUE(id_buoi_hoc, id_hoc_sinh),
+            CHECK (trang_thai IN ('CO_MAT', 'TRE', 'NGHI_CO_PHEP', 'NGHI_KHONG_PHEP', 'HOC_BU')),
+            CHECK (loai_tham_gia IN ('CHINH', 'DOI_CA', 'HOC_BU'))
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE don_nghi_hoc (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_hoc_sinh INTEGER NOT NULL,
+            id_lop INTEGER NOT NULL,
+            tu_ngay TEXT NOT NULL,
+            den_ngay TEXT NOT NULL,
+            ly_do TEXT NULL,
+            trang_thai TEXT NOT NULL DEFAULT 'CHO_DUYET',
+            ghi_chu TEXT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+            FOREIGN KEY (id_lop) REFERENCES lop (id),
+            CHECK (den_ngay >= tu_ngay),
+            CHECK (trang_thai IN ('CHO_DUYET', 'DA_DUYET', 'TU_CHOI'))
+          )
+        ''');
+
+        await db.execute('''
+          CREATE TABLE dieu_chinh_buoi_hoc (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_hoc_sinh INTEGER NOT NULL,
+            id_lop_goc INTEGER NOT NULL,
+            id_buoi_hoc_goc INTEGER NULL,
+            id_buoi_hoc_tham_gia INTEGER NOT NULL,
+            loai TEXT NOT NULL,
+            ly_do TEXT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+            FOREIGN KEY (id_lop_goc) REFERENCES lop (id),
+            FOREIGN KEY (id_buoi_hoc_goc) REFERENCES buoi_hoc (id),
+            FOREIGN KEY (id_buoi_hoc_tham_gia) REFERENCES buoi_hoc (id),
+            CHECK (loai IN ('DOI_CA', 'HOC_BU', 'PHAT_SINH')),
+            CHECK (id_buoi_hoc_goc IS NULL OR id_buoi_hoc_goc != id_buoi_hoc_tham_gia),
+            CHECK (loai = 'PHAT_SINH' OR id_buoi_hoc_goc IS NOT NULL),
+            UNIQUE (id_hoc_sinh, id_buoi_hoc_tham_gia)
+          )
+        ''');
+
+        await db.execute('''
+          CREATE UNIQUE INDEX idx_dieu_chinh_doi_ca_unique 
+          ON dieu_chinh_buoi_hoc(id_hoc_sinh, id_buoi_hoc_goc) 
+          WHERE loai = 'DOI_CA' AND id_buoi_hoc_goc IS NOT NULL
         ''');
       },
       onConfigure: (db) async {

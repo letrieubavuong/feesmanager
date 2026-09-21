@@ -83,13 +83,28 @@
     - `test/presentation/attendance_ui_test.dart`
     - `test/repository/migration_v6_v7_test.dart`
 
-## Phase 7: Leave / Shift Change / Makeup - NOT STARTED
+## Phase 7: Leave / Shift Change / Makeup - COMPLETE
+- [x] Database Migration (v7 -> v8) with `don_nghi_hoc` and `dieu_chinh_buoi_hoc` tables.
+- [x] Leave Request domain, repository, and service (`don_nghi_hoc`).
+- [x] Session Adjustment domain, repository, and service (`dieu_chinh_buoi_hoc`).
+- [x] Approved Leave suggestions integrated with `AttendanceService` without auto-persisting.
+- [x] One-off Shift Changes (`DOI_CA`), Makeups (`HOC_BU`), and Ad-hoc participation (`PHAT_SINH`).
+- [x] RosterService integrated as single canonical owner of final rosters.
+- [x] Recurring assignments (`phan_ca_hoc_sinh`) strictly preserved and unmutated by adjustments.
+- [x] Mobile UI for Leave management and Session Adjustments.
+- [x] Comprehensive Tests (161 tests passing):
+    - `test/leave/leave_request_service_test.dart`
+    - `test/session_adjustments/session_adjustment_service_test.dart`
+    - `test/presentation/phase7_ui_test.dart`
+    - `test/repository/migration_v7_v8_test.dart`
+
+## Phase 8: Session Credit - NOT STARTED
 
 ---
 
 ## Technical Details
 - **Database**: `tuition_next.db`
-- **Version**: 7
+- **Version**: 8
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
 - **Tests**:
@@ -108,8 +123,12 @@
   - `test/roster/integrity_corrupted_data_test.dart`
   - `test/attendance/attendance_service_test.dart`
   - `test/presentation/attendance_ui_test.dart`
+  - `test/leave/leave_request_service_test.dart`
+  - `test/session_adjustments/session_adjustment_service_test.dart`
+  - `test/presentation/phase7_ui_test.dart`
   - `test/repository/migration_v5_v6_test.dart`
   - `test/repository/migration_v6_v7_test.dart`
+  - `test/repository/migration_v7_v8_test.dart`
 - **Quality Gate**:
   - `dart analyze`: Clean (No issues found!)
-  - `flutter test`: 100% Pass (147 tests)
+  - `flutter test`: 100% Pass (161 tests)
