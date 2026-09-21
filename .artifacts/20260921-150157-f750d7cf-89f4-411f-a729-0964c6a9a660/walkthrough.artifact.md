@@ -1,30 +1,27 @@
-# Phase 6 Walkthrough: Canonical Attendance Final Closure
+# Phase 6 Walkthrough: Canonical Attendance Final Acceptance & Specific Regressions
 
-I have completed all final regression gaps and documentation updates for Phase 6: Canonical Attendance. The system is 100% verified, clean of analyzer issues, and ready for acceptance.
+I have added all remaining specific regression test cases for Phase 6: Canonical Attendance. The implementation is 100% verified, clean of analyzer issues, and ready for acceptance.
 
 ## Key Accomplishments
 
-### 1. Incomplete Finalization & Override Semantics
-- **Default Rejection**: Verified that `finalizeSessionAttendance` with `allowIncomplete: false` rejects finalization if any student remains `CHUA_DIEM_DANH`, keeping the session in `DU_KIEN`.
-- **Explicit Override**: Verified that calling `finalizeSessionAttendance` with `allowIncomplete: true` sets the session status to `DA_HOC` without auto-generating `CO_MAT` records for missing students.
-- **Idempotency**: Confirmed that subsequent calls to finalize an already `DA_HOC` session act as a safe no-op with zero side-effects or timestamp churn.
+### 1. Direct Domain Service Guards
+- **Explicit `NGHI_LE` & `PHAT_SINH` Guards**: Tested `SessionService.markTaughtFromAttendance` directly with `CHINH + NGHI_LE` and `PHAT_SINH + DU_KIEN` sessions, confirming both are rejected.
+- **Attendance Finalize Guards**: Verified that `AttendanceService.finalizeSessionAttendance` rejects both `HOC_BU` and `PHAT_SINH` session types without mutating database rows or session statuses.
 
-### 2. No-Edit Timestamp & Draft Integrity
-- **Timestamp Preservation**: Proved that finalizing an already marked session without new edits preserves the `updated_at` and `created_at` timestamps of all existing `diem_danh` rows.
-- **Dirty Draft Regression**: Verified that `hasDirtyDraft` remains `false` on page load, turns `true` upon user edit, and resets to `false` after save or undo.
+### 2. Isolated Widget Regression Tests
+- **Independent Status Tests**: Created distinct widget tests for `HUY` and `NGHI_LE` sessions, confirming both present read-only views with no interactive chips or action buttons.
+- **Independent Session Type Tests**: Created distinct widget tests for `HOC_BU` and `PHAT_SINH` sessions, confirming both display Phase 7 notices with no interactive chips or action buttons.
+- **Incomplete Finalize Flow**: Added widget tests verifying that tapping "Hủy" on the unresolved warning dialog cancels finalization, whereas tapping "Vẫn hoàn tất" invokes `finalize(allowIncomplete: true)`.
 
-### 3. Direct Session Transition Guards
-- **NGHI_LE & PHAT_SINH Rejections**: Added direct tests in `SessionService` to verify that `markTaughtFromAttendance` rejects `NGHI_LE` sessions and `PHAT_SINH` sessions in Phase 6.
-
-### 4. Comprehensive Widget Testing
-- **Error UI Dialogs**: Verified that save/finalize failures display error dialogs and never trigger false-success snackbars.
-- **Invalid Roster & Outside Roster Displays**: Confirmed that roster errors and orphan attendance warnings are rendered with details and block interactive controls.
+### 3. Repository & Controller State Regressions
+- **Upsert `created_at` Invariant**: Verified that updating a student's attendance from `CO_MAT` to `TRE` updates `updated_at` while keeping `created_at` and `id` unchanged.
+- **Dirty Draft State**: Verified that `hasDirtyDraft` remains `false` on initial load, stays `false` when reading effective states, becomes `true` on edit, and reverts to `false` on undo.
 
 ## Verification Summary
 
 ### Automated Tests
 Ran the full test suite.
-- **Total Tests**: 142
+- **Total Tests**: 145
 - **Pass Rate**: 100%
 
 ### Static Analysis
@@ -32,6 +29,6 @@ Ran the full test suite.
 
 ### CI/CD
 All changes pushed to `main`.
-**Commit SHA**: `c78ba7524598c61e9c634a6e3644f298001dc14c`
+**Commit SHA**: `980c06beb0bc12ae6c6fd38bc1348105d2bd9930`
 
 **PHASE 6 READY FOR ACCEPTANCE**

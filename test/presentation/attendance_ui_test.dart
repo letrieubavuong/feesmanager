@@ -547,6 +547,50 @@ void main() {
     // PopupMenuButton should NOT be rendered for DA_HOC session
     expect(find.byType(PopupMenuButton<SessionStatus>), findsNothing);
   });
+
+  test('AttendanceController dirty draft state regression', () async {
+    final sheet = AttendanceSheet(
+      session: testSession,
+      members: [
+        AttendanceSheetMember(
+          rosterMember: testRosterMember,
+          state: AttendanceState.CHUA_DIEM_DANH,
+        ),
+      ],
+      issues: [],
+      isRosterValid: true,
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        attendanceControllerProvider(
+          1,
+        ).overrideWith(() => MockAttendanceController(sheet)),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final controller = container.read(attendanceControllerProvider(1).notifier);
+    await container.read(attendanceControllerProvider(1).future);
+
+    // 1. Immediately after load
+    expect(controller.hasDirtyDraft, isFalse);
+
+    // 2. Read effective state
+    final eff = controller.effectiveStateFor(101);
+    expect(eff, AttendanceState.CHUA_DIEM_DANH);
+    expect(controller.hasDirtyDraft, isFalse);
+
+    // 3. updateLocalDraft
+    controller.updateLocalDraft(101, AttendanceState.CO_MAT);
+    expect(controller.hasDirtyDraft, isTrue);
+    expect(controller.effectiveStateFor(101), AttendanceState.CO_MAT);
+
+    // 4. undoChanges
+    controller.undoChanges();
+    expect(controller.hasDirtyDraft, isFalse);
+    expect(controller.effectiveStateFor(101), AttendanceState.CHUA_DIEM_DANH);
+  });
 }
 
 class MockAttendanceController extends AttendanceController {
