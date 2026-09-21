@@ -83,7 +83,9 @@ void main() {
       expect(tables.length, 3);
 
       // Verify FKs
-      final fkLich = await dbLatest.rawQuery('PRAGMA foreign_key_list(lich_hoc)');
+      final fkLich = await dbLatest.rawQuery(
+        'PRAGMA foreign_key_list(lich_hoc)',
+      );
       expect(fkLich.any((f) => f['table'] == 'lop'), isTrue);
 
       final fkPhanCa = await dbLatest.rawQuery(

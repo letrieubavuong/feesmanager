@@ -28,9 +28,8 @@ String _$classServiceHash() => r'11d04ab4f27ae57570df4582a34343a7c02352e3';
 final classServiceProvider = FutureProvider<ClassService>.internal(
   classService,
   name: r'classServiceProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$classServiceHash,
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$classServiceHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );

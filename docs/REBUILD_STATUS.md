@@ -46,11 +46,11 @@
 - [x] Database Migration (v5 -> v6) with canonical `buoi_hoc` table.
 - [x] Idempotent session generation from recurring schedules.
 - [x] Time snapshotting (Preserve historical session times if schedule changes).
-- [x] Manual session creation (Học bù, Phát sinh) with validation.
-- [x] Status management (Dự kiến, Hủy, Nghỉ lễ).
-- [x] Class Detail UI integration with "Buổi học" tab.
-- [x] Advanced conflict detection for overlapping sessions.
-- [x] Comprehensive Tests (70 tests passing):
+- [x] Manual session creation (Học bù, Phát sinh) with strict validation.
+- [x] Status management (Dự kiến, Hủy, Nghỉ lễ) with confirmation.
+- [x] Class Detail UI integration with "Buổi học" tab and range filter.
+- [x] Canonical session identity/conflict protection by class + date + start time.
+- [x] Comprehensive Tests (83 tests passing):
     - `test/sessions/session_generation_service_test.dart`
     - `test/sessions/session_service_test.dart`
     - `test/presentation/sessions_ui_test.dart`
@@ -79,4 +79,4 @@
   - `test/repository/migration_v5_v6_test.dart`
 - **Quality Gate**:
   - `dart analyze`: Clean
-  - `flutter test`: 100% Pass (70 tests)
+  - `flutter test`: 100% Pass (83 tests)

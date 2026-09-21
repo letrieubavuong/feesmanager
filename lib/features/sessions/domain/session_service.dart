@@ -46,6 +46,10 @@ class SessionService {
       throw Exception('Vui lòng dùng chức năng Sinh buổi học cho loại CHÍNH.');
     }
 
+    if (session.idLichHoc != null) {
+      throw Exception('Buổi học thủ công không được gắn với lịch định kỳ.');
+    }
+
     _validateSession(session);
 
     final existing = await _repo.findByClassDateStart(
@@ -79,6 +83,26 @@ class SessionService {
   }
 
   void _validateSession(ClassSession session) {
+    // Validate date format YYYY-MM-DD
+    final dateRegExp = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+    if (!dateRegExp.hasMatch(session.ngay)) {
+      throw Exception('Định dạng ngày không hợp lệ (YYYY-MM-DD)');
+    }
+    try {
+      DateTime.parse(session.ngay);
+    } catch (e) {
+      throw Exception('Ngày không hợp lệ');
+    }
+
+    // Validate time format HH:mm
+    final timeRegExp = RegExp(r'^([01]\d|2[0-3]):([0-5]\d)$');
+    if (!timeRegExp.hasMatch(session.gioBatDau)) {
+      throw Exception('Định dạng giờ bắt đầu không hợp lệ (HH:mm)');
+    }
+    if (!timeRegExp.hasMatch(session.gioKetThuc)) {
+      throw Exception('Định dạng giờ kết thúc không hợp lệ (HH:mm)');
+    }
+
     if (session.gioBatDau.compareTo(session.gioKetThuc) >= 0) {
       throw Exception('Giờ kết thúc phải sau giờ bắt đầu');
     }

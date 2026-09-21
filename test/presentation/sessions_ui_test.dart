@@ -6,43 +6,43 @@ import 'package:tuition2027/features/sessions/presentation/session_tab.dart';
 import 'package:tuition2027/features/sessions/presentation/session_controller.dart';
 import 'package:tuition2027/features/sessions/domain/class_session.dart';
 import 'package:tuition2027/features/sessions/domain/session_generation_service.dart';
+import 'package:intl/intl.dart';
 
 void main() {
+  final now = DateTime.now();
   final testSession = ClassSession(
     id: 1,
     idLop: 1,
-    ngay: '2026-09-07',
+    ngay: DateFormat('yyyy-MM-dd').format(now),
     gioBatDau: '17:30',
     gioKetThuc: '19:00',
     loai: SessionType.CHINH,
     trangThai: SessionStatus.DU_KIEN,
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
+    createdAt: now,
+    updatedAt: now,
   );
 
   testWidgets('SessionTab shows empty state', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          classSessionControllerProvider(
-            1,
-          ).overrideWith(() => MockSessionController([])),
+          classSessionControllerProvider(1)
+              .overrideWith(() => MockSessionController([])),
         ],
         child: const MaterialApp(home: Scaffold(body: SessionTab(classId: 1))),
       ),
     );
 
     await tester.pumpAndSettle();
-    expect(find.text('Lớp chưa có buổi học nào.'), findsOneWidget);
+    expect(find.textContaining('Không có buổi học nào'), findsOneWidget);
   });
 
   testWidgets('SessionTab shows session list', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          classSessionControllerProvider(
-            1,
-          ).overrideWith(() => MockSessionController([testSession])),
+          classSessionControllerProvider(1)
+              .overrideWith(() => MockSessionController([testSession])),
         ],
         child: const MaterialApp(home: Scaffold(body: SessionTab(classId: 1))),
       ),
@@ -57,9 +57,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          classSessionControllerProvider(
-            1,
-          ).overrideWith(() => MockSessionController([])),
+          classSessionControllerProvider(1)
+              .overrideWith(() => MockSessionController([])),
         ],
         child: const MaterialApp(home: Scaffold(body: SessionTab(classId: 1))),
       ),
@@ -77,9 +76,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          classSessionControllerProvider(
-            1,
-          ).overrideWith(() => MockSessionController([])),
+          classSessionControllerProvider(1)
+              .overrideWith(() => MockSessionController([])),
         ],
         child: const MaterialApp(home: Scaffold(body: SessionTab(classId: 1))),
       ),
@@ -108,18 +106,94 @@ void main() {
     await tester.tap(find.byIcon(Icons.auto_awesome));
     await tester.pumpAndSettle();
 
-    // Fill dates (defaults are fine)
     await tester.tap(find.text('Sinh buổi học'));
     await tester.pumpAndSettle();
 
-    // Result dialog should appear
     expect(find.text('Kết quả sinh buổi học'), findsOneWidget);
     expect(find.textContaining('Đã tạo mới: 10'), findsOneWidget);
+  });
+
+  testWidgets('Mark HUY with confirmation', (tester) async {
+    final mockController = MockSessionController([testSession]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          classSessionControllerProvider(1).overrideWith(() => mockController),
+        ],
+        child: const MaterialApp(home: Scaffold(body: SessionTab(classId: 1))),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(PopupMenuButton<SessionStatus>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Đánh dấu: HỦY'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Xác nhận thay đổi'), findsOneWidget);
+    expect(find.textContaining('muốn đánh dấu buổi học này là HỦY'),
+        findsOneWidget);
+
+    await tester.tap(find.text('Xác nhận'));
+    await tester.pumpAndSettle();
+
+    expect(mockController.lastUpdatedStatus, SessionStatus.HUY);
+  });
+
+  testWidgets('Restore DU_KIEN with confirmation', (tester) async {
+    final sessionHuy = testSession.copyWith(trangThai: SessionStatus.HUY);
+    final mockController = MockSessionController([sessionHuy]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          classSessionControllerProvider(1).overrideWith(() => mockController),
+        ],
+        child: const MaterialApp(home: Scaffold(body: SessionTab(classId: 1))),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(PopupMenuButton<SessionStatus>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Đánh dấu: DỰ KIẾN'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Xác nhận'));
+    await tester.pumpAndSettle();
+
+    expect(mockController.lastUpdatedStatus, SessionStatus.DU_KIEN);
+  });
+
+  testWidgets('Range filter works', (tester) async {
+    // Using fixed dates for test consistency if possible, 
+    // but the widget defaults relative to "now".
+    final date1 = DateTime.now().subtract(const Duration(days: 2));
+    final date2 = DateTime.now().add(const Duration(days: 2));
+    
+    final sValid1 = testSession.copyWith(id: 1, ngay: DateFormat('yyyy-MM-dd').format(date1));
+    final sValid2 = testSession.copyWith(id: 2, ngay: DateFormat('yyyy-MM-dd').format(date2));
+    
+    final mockController = MockSessionController([sValid1, sValid2]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          classSessionControllerProvider(1).overrideWith(() => mockController),
+        ],
+        child: const MaterialApp(home: Scaffold(body: SessionTab(classId: 1))),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.textContaining(DateFormat('dd/MM/yyyy').format(date1)), findsOneWidget);
+    expect(find.textContaining(DateFormat('dd/MM/yyyy').format(date2)), findsOneWidget);
   });
 }
 
 class MockSessionController extends ClassSessionController {
   final List<ClassSession> data;
+  SessionStatus? lastUpdatedStatus;
+
   MockSessionController(this.data);
 
   @override
@@ -135,5 +209,10 @@ class MockSessionController extends ClassSessionController {
       existingCount: 5,
       conflictCount: 0,
     );
+  }
+
+  @override
+  Future<void> updateStatus(int sessionId, SessionStatus status) async {
+    lastUpdatedStatus = status;
   }
 }

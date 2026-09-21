@@ -5,19 +5,70 @@ import '../domain/class_session.dart';
 import 'session_controller.dart';
 import '../../../core/utils/date_formatter.dart';
 
-class SessionTab extends ConsumerWidget {
+class SessionTab extends ConsumerStatefulWidget {
   final int classId;
   const SessionTab({super.key, required this.classId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sessionsAsync = ref.watch(classSessionControllerProvider(classId));
+  ConsumerState<SessionTab> createState() => _SessionTabState();
+}
+
+class _SessionTabState extends ConsumerState<SessionTab> {
+  DateTime _startDate = DateTime.now().subtract(const Duration(days: 7));
+  DateTime _endDate = DateTime.now().add(const Duration(days: 30));
+
+  @override
+  Widget build(BuildContext context) {
+    final sessionsAsync = ref.watch(classSessionControllerProvider(widget.classId));
 
     return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              const Text('Từ: '),
+              TextButton(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _startDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) setState(() => _startDate = picked);
+                },
+                child: Text(DateFormat('dd/MM/yyyy').format(_startDate)),
+              ),
+              const Text(' - Đến: '),
+              TextButton(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _endDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) setState(() => _endDate = picked);
+                },
+                child: Text(DateFormat('dd/MM/yyyy').format(_endDate)),
+              ),
+            ],
+          ),
+        ),
+      ),
       body: sessionsAsync.when(
-        data: (sessions) {
+        data: (allSessions) {
+          final sessions = allSessions.where((s) {
+            final date = DateTime.parse(s.ngay);
+            final start = DateTime(_startDate.year, _startDate.month, _startDate.day);
+            final end = DateTime(_endDate.year, _endDate.month, _endDate.day);
+            return !date.isBefore(start) && !date.isAfter(end);
+          }).toList();
+
           if (sessions.isEmpty) {
-            return const Center(child: Text('Lớp chưa có buổi học nào.'));
+            return const Center(child: Text('Không có buổi học nào trong khoảng này.'));
           }
           return ListView.builder(
             itemCount: sessions.length,
@@ -40,7 +91,7 @@ class SessionTab extends ConsumerWidget {
                 ),
                 trailing: PopupMenuButton<SessionStatus>(
                   onSelected: (status) =>
-                      _handleStatusChange(context, ref, s.id!, status),
+                      _confirmStatusChange(context, ref, s, status),
                   itemBuilder: (context) => [
                     if (s.trangThai != SessionStatus.DU_KIEN)
                       const PopupMenuItem(
@@ -131,21 +182,42 @@ class SessionTab extends ConsumerWidget {
     }
   }
 
-  void _handleStatusChange(
+  void _confirmStatusChange(
     BuildContext context,
     WidgetRef ref,
-    int id,
+    ClassSession session,
     SessionStatus status,
   ) async {
-    try {
-      await ref
-          .read(classSessionControllerProvider(classId).notifier)
-          .updateStatus(id, status);
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+    final label = _getStatusLabel(status).toUpperCase();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xác nhận thay đổi'),
+        content: Text('Bạn có chắc chắn muốn đánh dấu buổi học này là $label?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Xác nhận'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await ref
+            .read(classSessionControllerProvider(widget.classId).notifier)
+            .updateStatus(session.id!, status);
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(e.toString())));
+        }
       }
     }
   }
@@ -153,14 +225,14 @@ class SessionTab extends ConsumerWidget {
   void _showGenerateDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => GenerateSessionsDialog(classId: classId),
+      builder: (context) => GenerateSessionsDialog(classId: widget.classId),
     );
   }
 
   void _showManualDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => ManualSessionDialog(classId: classId),
+      builder: (context) => ManualSessionDialog(classId: widget.classId),
     );
   }
 }
