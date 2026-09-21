@@ -78,7 +78,7 @@
 - [x] Status protection: DA_HOC sessions are immutable for generic status changes.
 - [x] Bulk action "Mark All Present" and "Undo" support.
 - [x] Mobile-friendly Attendance UI with ChoiceChips.
-- [x] Comprehensive Tests (146 tests passing):
+- [x] Comprehensive Tests (147 tests passing):
     - `test/attendance/attendance_service_test.dart`
     - `test/presentation/attendance_ui_test.dart`
     - `test/repository/migration_v6_v7_test.dart`
@@ -112,4 +112,4 @@
   - `test/repository/migration_v6_v7_test.dart`
 - **Quality Gate**:
   - `dart analyze`: Clean (No issues found!)
-  - `flutter test`: 100% Pass (146 tests)
+  - `flutter test`: 100% Pass (147 tests)

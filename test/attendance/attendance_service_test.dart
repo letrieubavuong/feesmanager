@@ -708,5 +708,68 @@ void main() {
         expect(session['updated_at'], sessionUpdatedAt);
       },
     );
+
+    test('Upsert created_at regression', () async {
+      await db.insert('lop', {
+        'id': 1,
+        'ten_lop': 'C1',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('lich_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('buoi_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'id_lich_hoc': 1,
+        'ngay': '2026-09-21',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('hoc_sinh', {
+        'id': 101,
+        'ho_ten': 'Student A',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 1,
+        'id_hoc_sinh': 101,
+        'id_lop': 1,
+        'tu_ngay': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      // 1. First save: CO_MAT
+      await attendanceService.saveDraft(1, {101: AttendanceState.CO_MAT});
+
+      var rows = await db.query('diem_danh');
+      expect(rows.length, 1);
+      expect(rows.first['trang_thai'], 'CO_MAT');
+
+      final firstId = rows.first['id'];
+      final createdAt = rows.first['created_at'];
+
+      // 2. Save same student/session: TRE
+      await attendanceService.saveDraft(1, {101: AttendanceState.TRE});
+
+      rows = await db.query('diem_danh');
+      expect(rows.length, 1);
+      expect(rows.first['id'], firstId);
+      expect(rows.first['trang_thai'], 'TRE');
+      expect(rows.first['created_at'], createdAt);
+    });
   });
 }
