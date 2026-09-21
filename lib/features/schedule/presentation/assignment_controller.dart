@@ -9,8 +9,7 @@ class ClassAssignmentController extends _$ClassAssignmentController {
   @override
   FutureOr<List<StudentShiftAssignment>> build(int classId) async {
     final service = await ref.watch(scheduleServiceProvider.future);
-    final repo = await ref.watch(assignmentRepositoryProvider.future);
-    return repo.getByClass(classId);
+    return service.getAssignmentsForClass(classId);
   }
 
   Future<void> refresh() async {
@@ -22,7 +21,7 @@ class ClassAssignmentController extends _$ClassAssignmentController {
     required int studentId,
     required int classId,
     required int scheduleId,
-    required DateTime joinDate,
+    required DateTime startDate,
   }) async {
     state = const AsyncValue.loading();
     final service = await ref.read(scheduleServiceProvider.future);
@@ -30,7 +29,7 @@ class ClassAssignmentController extends _$ClassAssignmentController {
       studentId: studentId,
       classId: classId,
       scheduleId: scheduleId,
-      joinDate: joinDate,
+      startDate: startDate,
     );
     if (result.canAssign) {
       ref.invalidateSelf();

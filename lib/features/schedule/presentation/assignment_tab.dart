@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'schedule_controller.dart';
 import 'assignment_controller.dart';
+import '../../students/domain/student.dart';
+import '../../students/domain/student_service.dart';
+import '../../memberships/domain/membership_service.dart';
+import '../../../../core/utils/date_formatter.dart';
 import '../../students/presentation/student_detail_page.dart';
 import '../../students/presentation/student_controller.dart';
 
@@ -32,8 +36,10 @@ class AssignmentTab extends ConsumerWidget {
                    final shiftAssignments = assignments.where((a) => a.idLichHoc == s.id && (a.denNgay == null)).toList();
                    
                    return ExpansionTile(
-                     leading: CircleAvatar(child: Text('T${s.thuTrongTuan == 7 ? 'N' : s.thuTrongTuan + 1}')),
-                     title: Text('${s.gioBatDau} - ${s.gioKetThuc}'),
+                     leading: CircleAvatar(child: Text(s.thuTrongTuan == 7 ? 'CN' : 'T${s.thuTrongTuan + 1}')),
+                     title: Text(
+                       '${DateFormatter.formatVietnameseWeekday(s.thuTrongTuan)}: ${s.gioBatDau} - ${s.gioKetThuc}',
+                     ),
                      subtitle: Text('${shiftAssignments.length} học sinh'),
                      children: [
                         ...shiftAssignments.map((a) => ListTile(
@@ -93,9 +99,7 @@ class _AssignStudentDialogState extends ConsumerState<AssignStudentDialog> {
 
   @override
   Widget build(BuildContext context) {
-    // For simplicity, we get all students. 
-    // In a hardened version, we'd query the Class Roster for active members.
-    final studentsAsync = ref.watch(studentListControllerProvider);
+    final studentsAsync = ref.watch(assignmentCandidateProvider((widget.classId, _startDate)));
 
     return AlertDialog(
       title: const Text('Phân ca cho học sinh'),
@@ -116,9 +120,20 @@ class _AssignStudentDialogState extends ConsumerState<AssignStudentDialog> {
           ListTile(
             title: const Text('Ngày bắt đầu áp dụng'),
             subtitle: Text(DateFormat('dd/MM/yyyy').format(_startDate)),
+            trailing: const Icon(Icons.calendar_today),
             onTap: () async {
-               final picked = await showDatePicker(context: context, initialDate: _startDate, firstDate: DateTime(2020), lastDate: DateTime(2100));
-               if (picked != null) setState(() => _startDate = picked);
+               final picked = await showDatePicker(
+                 context: context, 
+                 initialDate: _startDate, 
+                 firstDate: DateTime(2020), 
+                 lastDate: DateTime(2100)
+               );
+               if (picked != null) {
+                 setState(() {
+                   _startDate = picked;
+                   _selectedStudentId = null; // Reset selection as candidate list might change
+                 });
+               }
             },
           ),
         ],
@@ -134,17 +149,33 @@ class _AssignStudentDialogState extends ConsumerState<AssignStudentDialog> {
   }
 
   void _submit() async {
-    final result = await ref.read(classAssignmentControllerProvider(widget.classId).notifier).assign(
-      studentId: _selectedStudentId!,
-      classId: widget.classId,
-      scheduleId: widget.scheduleId,
-      joinDate: _startDate,
-    );
+    try {
+      final result = await ref.read(classAssignmentControllerProvider(widget.classId).notifier).assign(
+        studentId: _selectedStudentId!,
+        classId: widget.classId,
+        scheduleId: widget.scheduleId,
+        startDate: _startDate,
+      );
 
-    if (result.canAssign) {
-      if (mounted) Navigator.pop(context);
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.conflictReason ?? 'Lỗi không xác định')));
+      if (result.canAssign) {
+        if (mounted) Navigator.pop(context);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.conflictReason ?? 'Lỗi không xác định')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
+      }
     }
   }
 }
+
+final assignmentCandidateProvider = FutureProvider.family<List<Student>, (int, DateTime)>((ref, arg) async {
+  final membershipService = await ref.watch(membershipServiceProvider.future);
+  final studentService = await ref.watch(studentServiceProvider.future);
+  
+  final activeIds = await membershipService.getActiveStudentIdsInClass(arg.$1, arg.$2);
+  final allStudents = await studentService.getStudents();
+  
+  return allStudents.where((s) => activeIds.contains(s.id)).toList();
+});

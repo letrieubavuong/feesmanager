@@ -20,18 +20,23 @@
 - [x] Unit and Repository tests passing
 
 ## Phase 2: Class + Membership - COMPLETE
-- [x] Database Migration (v1 -> v3) with `CHECK` constraints
-- [x] Real file-based migration tests (v1->v3, v2->v3)
-- [x] Membership overlap prevention logic
-- [x] Multiple classes per student support
-- [x] Full membership history UI (closed + active)
-- [x] "Học lại" (Re-enroll) functionality
-- [x] Class archive/restore with active member warnings
-- [x] Class list filtering (Active/Archived)
-- [x] Widget tests for main UI flows
-- [x] Quality Gate: 22 tests passing
+- [x] Database Migration (v1 -> v3) with `CHECK` constraints and Foreign Keys fixed.
+- [x] Real file-based migration tests (v1->v3, v2->v3) including FK verification.
+- [x] Membership overlap prevention logic with exhaustive unit tests.
+- [x] Three-state Class Archive filter (Active, Archived, All).
+- [x] Full membership history UI (closed + active) in Class and Student details.
+- [x] Widget tests for main UI flows.
 
-## Phase 3: Schedule + Session - NOT STARTED
+## Phase 3: Schedule + Student Shift Assignment - COMPLETE
+- [x] Database Migration (v3 -> v4).
+- [x] Recurring schedule management (`lich_hoc`) with effective intervals.
+- [x] Student shift assignment (`phan_ca_hoc_sinh`) with membership boundary enforcement.
+- [x] Hard conflict detection (overlapping shifts for the same student).
+- [x] Functional "Lịch học" and "Phân ca" tabs in Class Detail.
+- [x] Student Detail showing active and historical shift assignments.
+- [x] Quality Gate: 34 tests passing.
+
+## Phase 4: Session + Attendance - NOT STARTED
 
 ---
 

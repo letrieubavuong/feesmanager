@@ -146,6 +146,12 @@ class MembershipService {
     final active = await _repository.getActiveByStudent(studentId, now);
     return active.isNotEmpty;
   }
+
+  Future<List<int>> getActiveStudentIdsInClass(int classId, DateTime date) async {
+    final dateFormat = DateFormat('yyyy-MM-dd');
+    final active = await _repository.getActiveByClass(classId, dateFormat.format(date));
+    return active.map((m) => m.idHocSinh).toList();
+  }
 }
 
 @Riverpod(keepAlive: true)

@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../domain/class_schedule.dart';
 import 'schedule_controller.dart';
 
+import '../../../../core/utils/date_formatter.dart';
+
 class ScheduleTab extends ConsumerWidget {
   final int classId;
   const ScheduleTab({super.key, required this.classId});
@@ -26,10 +28,13 @@ class ScheduleTab extends ConsumerWidget {
               return ListTile(
                 leading: CircleAvatar(
                   backgroundColor: isActive ? Colors.blue.shade100 : Colors.grey.shade200,
-                  child: Text('T${s.thuTrongTuan == 7 ? 'N' : s.thuTrongTuan + 1}'),
+                  child: Text(s.thuTrongTuan == 7 ? 'CN' : 'T${s.thuTrongTuan + 1}'),
                 ),
-                title: Text('${s.gioBatDau} - ${s.gioKetThuc}', style: TextStyle(fontWeight: isActive ? FontWeight.bold : null)),
-                subtitle: Text('Hiệu lực: ${s.hieuLucTu}${s.hieuLucDen != null ? ' đến ${s.hieuLucDen}' : ''}'),
+                title: Text(
+                  '${DateFormatter.formatVietnameseWeekday(s.thuTrongTuan)}: ${s.gioBatDau} - ${s.gioKetThuc}',
+                  style: TextStyle(fontWeight: isActive ? FontWeight.bold : null),
+                ),
+                subtitle: Text('Hiệu lực: ${DateFormatter.formatShortDate(s.hieuLucTu)}${s.hieuLucDen != null ? ' đến ${DateFormatter.formatShortDate(s.hieuLucDen)}' : ''}'),
                 trailing: isActive 
                   ? IconButton(
                       icon: const Icon(Icons.event_busy),
@@ -59,31 +64,52 @@ class ScheduleTab extends ConsumerWidget {
   }
 
   void _showCloseScheduleDialog(BuildContext context, WidgetRef ref, ClassSchedule schedule) {
-    final dateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(DateTime.now()));
+    DateTime _endDate = DateTime.now();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Kết thúc lịch học'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Ngày cuối cùng áp dụng lịch này:'),
-            TextField(controller: dateController, decoration: const InputDecoration(hintText: 'YYYY-MM-DD')),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Kết thúc lịch học'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('Ngày kết thúc'),
+                subtitle: Text(DateFormat('dd/MM/yyyy').format(_endDate)),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context, 
+                    initialDate: _endDate, 
+                    firstDate: DateTime(2020), 
+                    lastDate: DateTime(2100)
+                  );
+                  if (picked != null) setDialogState(() => _endDate = picked);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+            TextButton(
+              onPressed: () async {
+                try {
+                  final success = await ref.read(classScheduleControllerProvider(classId).notifier).close(
+                    schedule.id!, 
+                    _endDate
+                  );
+                  if (success && context.mounted) Navigator.pop(context);
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
+                  }
+                }
+              },
+              child: const Text('Xác nhận'),
+            ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
-          TextButton(
-            onPressed: () async {
-              final success = await ref.read(classScheduleControllerProvider(classId).notifier).close(
-                schedule.id!, 
-                DateTime.parse(dateController.text)
-              );
-              if (success && context.mounted) Navigator.pop(context);
-            },
-            child: const Text('Xác nhận'),
-          ),
-        ],
       ),
     );
   }

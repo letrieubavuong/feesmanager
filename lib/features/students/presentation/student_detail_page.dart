@@ -9,6 +9,7 @@ import '../../classes/presentation/class_controller.dart';
 import 'student_form_page.dart';
 import 'student_controller.dart';
 
+import '../../../../core/utils/date_formatter.dart';
 import '../../schedule/domain/student_shift_assignment.dart';
 import '../../schedule/domain/schedule_service.dart';
 import '../../schedule/domain/class_schedule.dart';
@@ -210,7 +211,7 @@ class StudentDetailPage extends ConsumerWidget {
             final scheduleAsync = ref.watch(scheduleDetailProvider(a.idLichHoc));
             return scheduleAsync.when(
               data: (s) => Text(
-                'Thứ ${s?.thuTrongTuan == 7 ? 'CN' : s!.thuTrongTuan + 1}: ${s?.gioBatDau} - ${s?.gioKetThuc}',
+                '${DateFormatter.formatVietnameseWeekday(s?.thuTrongTuan ?? 0)}: ${s?.gioBatDau} - ${s?.gioKetThuc}',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               loading: () => const Text('...'),

@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int _dbVersion = 4;
+  static const int _dbVersion = 5;
 
   final String dbName;
   Database? _database;
@@ -48,6 +48,9 @@ class AppDatabase {
     if (version >= 4) {
       await _migrateV3ToV4(db);
     }
+    if (version >= 5) {
+      await _migrateV4ToV5(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -59,6 +62,9 @@ class AppDatabase {
     }
     if (oldVersion < 4) {
       await _migrateV3ToV4(db);
+    }
+    if (oldVersion < 5) {
+      await _migrateV4ToV5(db);
     }
   }
 
@@ -256,5 +262,56 @@ class AppDatabase {
     await db.execute('CREATE INDEX idx_phan_ca_hoc_sinh_hs ON phan_ca_hoc_sinh(id_hoc_sinh)');
     await db.execute('CREATE INDEX idx_phan_ca_hoc_sinh_lop ON phan_ca_hoc_sinh(id_lop)');
     await db.execute('CREATE INDEX idx_phan_ca_hoc_sinh_lich ON phan_ca_hoc_sinh(id_lich_hoc)');
+  }
+
+  Future<void> _migrateV4ToV5(Database db) async {
+    await db.execute('PRAGMA foreign_keys = OFF');
+    try {
+      await db.transaction((txn) async {
+        // 1. Create new table with UNIQUE constraint
+        await txn.execute('''
+          CREATE TABLE phan_ca_hoc_sinh_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_hoc_sinh INTEGER NOT NULL,
+            id_lop INTEGER NOT NULL,
+            id_lich_hoc INTEGER NOT NULL,
+            tu_ngay TEXT NOT NULL,
+            den_ngay TEXT NULL,
+            nguon TEXT NULL,
+            ghi_chu TEXT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+            FOREIGN KEY (id_lop) REFERENCES lop (id),
+            FOREIGN KEY (id_lich_hoc) REFERENCES lich_hoc (id),
+            UNIQUE(id_hoc_sinh, id_lich_hoc, tu_ngay),
+            CHECK (den_ngay IS NULL OR den_ngay >= tu_ngay)
+          )
+        ''');
+
+        // 2. Copy data
+        await txn.execute('''
+          INSERT INTO phan_ca_hoc_sinh_new (
+            id, id_hoc_sinh, id_lop, id_lich_hoc, tu_ngay, den_ngay,
+            nguon, ghi_chu, created_at, updated_at
+          )
+          SELECT 
+            id, id_hoc_sinh, id_lop, id_lich_hoc, tu_ngay, den_ngay,
+            nguon, ghi_chu, created_at, updated_at
+          FROM phan_ca_hoc_sinh
+        ''');
+
+        // 3. Drop old and rename
+        await txn.execute('DROP TABLE phan_ca_hoc_sinh');
+        await txn.execute('ALTER TABLE phan_ca_hoc_sinh_new RENAME TO phan_ca_hoc_sinh');
+
+        // 4. Recreate indexes
+        await txn.execute('CREATE INDEX idx_phan_ca_hoc_sinh_hs ON phan_ca_hoc_sinh(id_hoc_sinh)');
+        await txn.execute('CREATE INDEX idx_phan_ca_hoc_sinh_lop ON phan_ca_hoc_sinh(id_lop)');
+        await txn.execute('CREATE INDEX idx_phan_ca_hoc_sinh_lich ON phan_ca_hoc_sinh(id_lich_hoc)');
+      });
+    } finally {
+      await db.execute('PRAGMA foreign_keys = ON');
+    }
   }
 }

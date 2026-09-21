@@ -6,6 +6,8 @@ class AssignmentRepository {
 
   AssignmentRepository(this._db);
 
+  Database get db => _db;
+
   Future<int> create(StudentShiftAssignment assignment) async {
     return await _db.insert('phan_ca_hoc_sinh', assignment.toMap());
   }
@@ -57,5 +59,15 @@ class AssignmentRepository {
       orderBy: 'tu_ngay DESC',
     );
     return List.generate(maps.length, (i) => StudentShiftAssignment.fromMap(maps[i]));
+  }
+
+  Future<StudentShiftAssignment?> getById(int id) async {
+    final List<Map<String, dynamic>> maps = await _db.query(
+      'phan_ca_hoc_sinh',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (maps.isEmpty) return null;
+    return StudentShiftAssignment.fromMap(maps.first);
   }
 }
