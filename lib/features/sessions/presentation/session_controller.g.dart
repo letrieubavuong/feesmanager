@@ -1,13 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'schedule_controller.dart';
+part of 'session_controller.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$classScheduleControllerHash() =>
-    r'c5a2663e2ef4e7ba3dfbcac79a30462377e5408e';
+String _$classSessionControllerHash() =>
+    r'f94f79425913015c588df8cd507f3d2dd3eaccd8';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,31 +30,31 @@ class _SystemHash {
   }
 }
 
-abstract class _$ClassScheduleController
-    extends BuildlessAutoDisposeAsyncNotifier<List<ClassSchedule>> {
+abstract class _$ClassSessionController
+    extends BuildlessAutoDisposeAsyncNotifier<List<ClassSession>> {
   late final int classId;
 
-  FutureOr<List<ClassSchedule>> build(int classId);
+  FutureOr<List<ClassSession>> build(int classId);
 }
 
-/// See also [ClassScheduleController].
-@ProviderFor(ClassScheduleController)
-const classScheduleControllerProvider = ClassScheduleControllerFamily();
+/// See also [ClassSessionController].
+@ProviderFor(ClassSessionController)
+const classSessionControllerProvider = ClassSessionControllerFamily();
 
-/// See also [ClassScheduleController].
-class ClassScheduleControllerFamily
-    extends Family<AsyncValue<List<ClassSchedule>>> {
-  /// See also [ClassScheduleController].
-  const ClassScheduleControllerFamily();
+/// See also [ClassSessionController].
+class ClassSessionControllerFamily
+    extends Family<AsyncValue<List<ClassSession>>> {
+  /// See also [ClassSessionController].
+  const ClassSessionControllerFamily();
 
-  /// See also [ClassScheduleController].
-  ClassScheduleControllerProvider call(int classId) {
-    return ClassScheduleControllerProvider(classId);
+  /// See also [ClassSessionController].
+  ClassSessionControllerProvider call(int classId) {
+    return ClassSessionControllerProvider(classId);
   }
 
   @override
-  ClassScheduleControllerProvider getProviderOverride(
-    covariant ClassScheduleControllerProvider provider,
+  ClassSessionControllerProvider getProviderOverride(
+    covariant ClassSessionControllerProvider provider,
   ) {
     return call(provider.classId);
   }
@@ -71,32 +71,32 @@ class ClassScheduleControllerFamily
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'classScheduleControllerProvider';
+  String? get name => r'classSessionControllerProvider';
 }
 
-/// See also [ClassScheduleController].
-class ClassScheduleControllerProvider
+/// See also [ClassSessionController].
+class ClassSessionControllerProvider
     extends
         AutoDisposeAsyncNotifierProviderImpl<
-          ClassScheduleController,
-          List<ClassSchedule>
+          ClassSessionController,
+          List<ClassSession>
         > {
-  /// See also [ClassScheduleController].
-  ClassScheduleControllerProvider(int classId)
+  /// See also [ClassSessionController].
+  ClassSessionControllerProvider(int classId)
     : this._internal(
-        () => ClassScheduleController()..classId = classId,
-        from: classScheduleControllerProvider,
-        name: r'classScheduleControllerProvider',
+        () => ClassSessionController()..classId = classId,
+        from: classSessionControllerProvider,
+        name: r'classSessionControllerProvider',
         debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
             ? null
-            : _$classScheduleControllerHash,
-        dependencies: ClassScheduleControllerFamily._dependencies,
+            : _$classSessionControllerHash,
+        dependencies: ClassSessionControllerFamily._dependencies,
         allTransitiveDependencies:
-            ClassScheduleControllerFamily._allTransitiveDependencies,
+            ClassSessionControllerFamily._allTransitiveDependencies,
         classId: classId,
       );
 
-  ClassScheduleControllerProvider._internal(
+  ClassSessionControllerProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -109,17 +109,17 @@ class ClassScheduleControllerProvider
   final int classId;
 
   @override
-  FutureOr<List<ClassSchedule>> runNotifierBuild(
-    covariant ClassScheduleController notifier,
+  FutureOr<List<ClassSession>> runNotifierBuild(
+    covariant ClassSessionController notifier,
   ) {
     return notifier.build(classId);
   }
 
   @override
-  Override overrideWith(ClassScheduleController Function() create) {
+  Override overrideWith(ClassSessionController Function() create) {
     return ProviderOverride(
       origin: this,
-      override: ClassScheduleControllerProvider._internal(
+      override: ClassSessionControllerProvider._internal(
         () => create()..classId = classId,
         from: from,
         name: null,
@@ -133,16 +133,16 @@ class ClassScheduleControllerProvider
 
   @override
   AutoDisposeAsyncNotifierProviderElement<
-    ClassScheduleController,
-    List<ClassSchedule>
+    ClassSessionController,
+    List<ClassSession>
   >
   createElement() {
-    return _ClassScheduleControllerProviderElement(this);
+    return _ClassSessionControllerProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is ClassScheduleControllerProvider && other.classId == classId;
+    return other is ClassSessionControllerProvider && other.classId == classId;
   }
 
   @override
@@ -154,23 +154,23 @@ class ClassScheduleControllerProvider
   }
 }
 
-mixin ClassScheduleControllerRef
-    on AutoDisposeAsyncNotifierProviderRef<List<ClassSchedule>> {
+mixin ClassSessionControllerRef
+    on AutoDisposeAsyncNotifierProviderRef<List<ClassSession>> {
   /// The parameter `classId` of this provider.
   int get classId;
 }
 
-class _ClassScheduleControllerProviderElement
+class _ClassSessionControllerProviderElement
     extends
         AutoDisposeAsyncNotifierProviderElement<
-          ClassScheduleController,
-          List<ClassSchedule>
+          ClassSessionController,
+          List<ClassSession>
         >
-    with ClassScheduleControllerRef {
-  _ClassScheduleControllerProviderElement(super.provider);
+    with ClassSessionControllerRef {
+  _ClassSessionControllerProviderElement(super.provider);
 
   @override
-  int get classId => (origin as ClassScheduleControllerProvider).classId;
+  int get classId => (origin as ClassSessionControllerProvider).classId;
 }
 
 // ignore_for_file: type=lint

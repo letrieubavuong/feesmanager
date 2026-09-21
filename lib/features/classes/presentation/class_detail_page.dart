@@ -13,6 +13,7 @@ import '../../students/presentation/student_detail_page.dart';
 
 import '../../schedule/presentation/schedule_tab.dart';
 import '../../schedule/presentation/assignment_tab.dart';
+import '../../sessions/presentation/session_tab.dart';
 
 class ClassDetailPage extends ConsumerStatefulWidget {
   final int classId;
@@ -85,7 +86,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                           Tab(text: 'Lịch sử'),
                           Tab(text: 'Lịch học'),
                           Tab(text: 'Phân ca'),
-                          Tab(text: 'Điểm danh'),
+                          Tab(text: 'Buổi học'),
                           Tab(text: 'Học phí'),
                         ],
                       ),
@@ -103,7 +104,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                             _buildHistoryTab(context, historyAsync),
                             ScheduleTab(classId: widget.classId),
                             AssignmentTab(classId: widget.classId),
-                            _buildPlaceholder('Điểm danh'),
+                            SessionTab(classId: widget.classId),
                             _buildPlaceholder('Học phí'),
                           ],
                         ),

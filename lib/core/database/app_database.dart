@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int _dbVersion = 5;
+  static const int _dbVersion = 6;
 
   final String dbName;
   Database? _database;
@@ -51,6 +51,9 @@ class AppDatabase {
     if (version >= 5) {
       await _migrateV4ToV5(db);
     }
+    if (version >= 6) {
+      await _migrateV5ToV6(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -65,6 +68,9 @@ class AppDatabase {
     }
     if (oldVersion < 5) {
       await _migrateV4ToV5(db);
+    }
+    if (oldVersion < 6) {
+      await _migrateV5ToV6(db);
     }
   }
 
@@ -327,5 +333,36 @@ class AppDatabase {
     } finally {
       await db.execute('PRAGMA foreign_keys = ON');
     }
+  }
+
+  Future<void> _migrateV5ToV6(Database db) async {
+    await db.execute('''
+      CREATE TABLE buoi_hoc (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_lop INTEGER NOT NULL,
+        id_lich_hoc INTEGER NULL,
+        ngay TEXT NOT NULL,
+        gio_bat_dau TEXT NOT NULL,
+        gio_ket_thuc TEXT NOT NULL,
+        loai TEXT NOT NULL,
+        trang_thai TEXT NOT NULL DEFAULT 'DU_KIEN',
+        ghi_chu TEXT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (id_lop) REFERENCES lop (id),
+        FOREIGN KEY (id_lich_hoc) REFERENCES lich_hoc (id),
+        CHECK (gio_ket_thuc > gio_bat_dau),
+        CHECK (loai IN ('CHINH', 'HOC_BU', 'PHAT_SINH')),
+        CHECK (trang_thai IN ('DU_KIEN', 'DA_HOC', 'HUY', 'NGHI_LE')),
+        UNIQUE(id_lop, ngay, gio_bat_dau)
+      )
+    ''');
+
+    await db.execute(
+      'CREATE INDEX idx_buoi_hoc_lop_ngay ON buoi_hoc(id_lop, ngay)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_buoi_hoc_lich_ngay ON buoi_hoc(id_lich_hoc, ngay)',
+    );
   }
 }
