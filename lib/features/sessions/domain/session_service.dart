@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/database/database_provider.dart';
 import '../../classes/domain/class_service.dart';
@@ -83,18 +84,19 @@ class SessionService {
   }
 
   void _validateSession(ClassSession session) {
-    // Validate date format YYYY-MM-DD
-    final dateRegExp = RegExp(r'^\d{4}-\d{2}-\d{2}$');
-    if (!dateRegExp.hasMatch(session.ngay)) {
-      throw Exception('Định dạng ngày không hợp lệ (YYYY-MM-DD)');
-    }
+    // 1. Strict Date Validation (No silent normalization)
     try {
-      DateTime.parse(session.ngay);
+      final parsed = DateFormat('yyyy-MM-dd').parseStrict(session.ngay);
+      // Double check canonical format to avoid any extra whitespace or weirdness
+      final formatted = DateFormat('yyyy-MM-dd').format(parsed);
+      if (formatted != session.ngay) {
+        throw Exception('Ngày không ở định dạng canonical YYYY-MM-DD');
+      }
     } catch (e) {
-      throw Exception('Ngày không hợp lệ');
+      throw Exception('Ngày không hợp lệ hoặc sai định dạng (${session.ngay})');
     }
 
-    // Validate time format HH:mm
+    // 2. Validate time format HH:mm
     final timeRegExp = RegExp(r'^([01]\d|2[0-3]):([0-5]\d)$');
     if (!timeRegExp.hasMatch(session.gioBatDau)) {
       throw Exception('Định dạng giờ bắt đầu không hợp lệ (HH:mm)');
@@ -103,6 +105,7 @@ class SessionService {
       throw Exception('Định dạng giờ kết thúc không hợp lệ (HH:mm)');
     }
 
+    // 3. Logical Consistency
     if (session.gioBatDau.compareTo(session.gioKetThuc) >= 0) {
       throw Exception('Giờ kết thúc phải sau giờ bắt đầu');
     }

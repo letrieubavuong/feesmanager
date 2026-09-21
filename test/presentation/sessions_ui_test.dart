@@ -26,8 +26,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          classSessionControllerProvider(1)
-              .overrideWith(() => MockSessionController([])),
+          classSessionControllerProvider(
+            1,
+          ).overrideWith(() => MockSessionController([])),
         ],
         child: const MaterialApp(home: Scaffold(body: SessionTab(classId: 1))),
       ),
@@ -41,8 +42,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          classSessionControllerProvider(1)
-              .overrideWith(() => MockSessionController([testSession])),
+          classSessionControllerProvider(
+            1,
+          ).overrideWith(() => MockSessionController([testSession])),
         ],
         child: const MaterialApp(home: Scaffold(body: SessionTab(classId: 1))),
       ),
@@ -57,8 +59,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          classSessionControllerProvider(1)
-              .overrideWith(() => MockSessionController([])),
+          classSessionControllerProvider(
+            1,
+          ).overrideWith(() => MockSessionController([])),
         ],
         child: const MaterialApp(home: Scaffold(body: SessionTab(classId: 1))),
       ),
@@ -76,8 +79,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          classSessionControllerProvider(1)
-              .overrideWith(() => MockSessionController([])),
+          classSessionControllerProvider(
+            1,
+          ).overrideWith(() => MockSessionController([])),
         ],
         child: const MaterialApp(home: Scaffold(body: SessionTab(classId: 1))),
       ),
@@ -130,14 +134,45 @@ void main() {
     await tester.tap(find.text('Đánh dấu: HỦY'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Xác nhận thay đổi'), findsOneWidget);
-    expect(find.textContaining('muốn đánh dấu buổi học này là HỦY'),
-        findsOneWidget);
+    expect(find.text('Đánh dấu buổi học'), findsOneWidget);
+    expect(
+      find.textContaining('muốn đánh dấu buổi học này là HỦY'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('Xác nhận'));
     await tester.pumpAndSettle();
 
     expect(mockController.lastUpdatedStatus, SessionStatus.HUY);
+  });
+
+  testWidgets('Mark NGHI_LE with confirmation', (tester) async {
+    final mockController = MockSessionController([testSession]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          classSessionControllerProvider(1).overrideWith(() => mockController),
+        ],
+        child: const MaterialApp(home: Scaffold(body: SessionTab(classId: 1))),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(PopupMenuButton<SessionStatus>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Đánh dấu: NGHỈ LỄ'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Đánh dấu buổi học'), findsOneWidget);
+    expect(
+      find.textContaining('muốn đánh dấu buổi học này là NGHỈ LỄ'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Xác nhận'));
+    await tester.pumpAndSettle();
+
+    expect(mockController.lastUpdatedStatus, SessionStatus.NGHI_LE);
   });
 
   testWidgets('Restore DU_KIEN with confirmation', (tester) async {
@@ -158,6 +193,7 @@ void main() {
     await tester.tap(find.text('Đánh dấu: DỰ KIẾN'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Khôi phục buổi học'), findsOneWidget);
     await tester.tap(find.text('Xác nhận'));
     await tester.pumpAndSettle();
 
@@ -165,15 +201,24 @@ void main() {
   });
 
   testWidgets('Range filter works', (tester) async {
-    // Using fixed dates for test consistency if possible, 
-    // but the widget defaults relative to "now".
     final date1 = DateTime.now().subtract(const Duration(days: 2));
     final date2 = DateTime.now().add(const Duration(days: 2));
-    
-    final sValid1 = testSession.copyWith(id: 1, ngay: DateFormat('yyyy-MM-dd').format(date1));
-    final sValid2 = testSession.copyWith(id: 2, ngay: DateFormat('yyyy-MM-dd').format(date2));
-    
-    final mockController = MockSessionController([sValid1, sValid2]);
+    final dateOutside = DateTime.now().add(const Duration(days: 40));
+
+    final sValid1 = testSession.copyWith(
+      id: 1,
+      ngay: DateFormat('yyyy-MM-dd').format(date1),
+    );
+    final sValid2 = testSession.copyWith(
+      id: 2,
+      ngay: DateFormat('yyyy-MM-dd').format(date2),
+    );
+    final sOutside = testSession.copyWith(
+      id: 3,
+      ngay: DateFormat('yyyy-MM-dd').format(dateOutside),
+    );
+
+    final mockController = MockSessionController([sValid1, sValid2, sOutside]);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -185,14 +230,99 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(find.textContaining(DateFormat('dd/MM/yyyy').format(date1)), findsOneWidget);
-    expect(find.textContaining(DateFormat('dd/MM/yyyy').format(date2)), findsOneWidget);
+    // Default range is -7 to +30 days, should show sValid1 and sValid2
+    expect(
+      find.textContaining(DateFormat('dd/MM/yyyy').format(date1)),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(DateFormat('dd/MM/yyyy').format(date2)),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(DateFormat('dd/MM/yyyy').format(dateOutside)),
+      findsNothing,
+    );
+  });
+
+  testWidgets('PHAT_SINH manual creation flow', (tester) async {
+    final mockController = MockSessionController([]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          classSessionControllerProvider(1).overrideWith(() => mockController),
+        ],
+        child: const MaterialApp(home: Scaffold(body: SessionTab(classId: 1))),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    // Select PHAT_SINH
+    await tester.tap(find.text('Học bù'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Phát sinh').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Thêm'));
+    await tester.pumpAndSettle();
+
+    expect(mockController.lastManualSession?.loai, SessionType.PHAT_SINH);
+  });
+
+  testWidgets('HOC_BU manual creation flow', (tester) async {
+    final mockController = MockSessionController([]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          classSessionControllerProvider(1).overrideWith(() => mockController),
+        ],
+        child: const MaterialApp(home: Scaffold(body: SessionTab(classId: 1))),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Thêm'));
+    await tester.pumpAndSettle();
+
+    expect(mockController.lastManualSession?.loai, SessionType.HOC_BU);
+  });
+
+  testWidgets('Invalid manual time displays error', (tester) async {
+    final mockController = MockSessionController([]);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          classSessionControllerProvider(1).overrideWith(() => mockController),
+        ],
+        child: const MaterialApp(home: Scaffold(body: SessionTab(classId: 1))),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    // Mock controller to throw exception
+    mockController.shouldThrowOnCreate = true;
+
+    await tester.tap(find.text('Thêm'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Mock Error'), findsOneWidget);
   });
 }
 
 class MockSessionController extends ClassSessionController {
   final List<ClassSession> data;
   SessionStatus? lastUpdatedStatus;
+  ClassSession? lastManualSession;
+  bool shouldThrowOnCreate = false;
 
   MockSessionController(this.data);
 
@@ -214,5 +344,13 @@ class MockSessionController extends ClassSessionController {
   @override
   Future<void> updateStatus(int sessionId, SessionStatus status) async {
     lastUpdatedStatus = status;
+  }
+
+  @override
+  Future<void> createManual(ClassSession session) async {
+    if (shouldThrowOnCreate) {
+      throw Exception('Mock Error');
+    }
+    lastManualSession = session;
   }
 }

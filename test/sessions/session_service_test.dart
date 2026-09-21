@@ -32,11 +32,14 @@ void main() {
 
   group('SessionService Tests', () {
     test('Manual creation of HOC_BU is allowed', () async {
-      final classId = await classRepo.create(ClassEntity(
+      final classId = await classRepo.create(
+        ClassEntity(
           id: 1,
           tenLop: 'Class 1',
           createdAt: DateTime.now(),
-          updatedAt: DateTime.now()));
+          updatedAt: DateTime.now(),
+        ),
+      );
       final session = ClassSession(
         idLop: classId,
         ngay: '2026-09-10',
@@ -54,11 +57,14 @@ void main() {
     });
 
     test('Manual creation of PHAT_SINH is allowed', () async {
-      final classId = await classRepo.create(ClassEntity(
+      final classId = await classRepo.create(
+        ClassEntity(
           id: 1,
           tenLop: 'Class 1',
           createdAt: DateTime.now(),
-          updatedAt: DateTime.now()));
+          updatedAt: DateTime.now(),
+        ),
+      );
       final session = ClassSession(
         idLop: classId,
         ngay: '2026-09-10',
@@ -76,11 +82,14 @@ void main() {
     });
 
     test('Manual creation of CHINH is rejected', () async {
-      final classId = await classRepo.create(ClassEntity(
+      final classId = await classRepo.create(
+        ClassEntity(
           id: 1,
           tenLop: 'Class 1',
           createdAt: DateTime.now(),
-          updatedAt: DateTime.now()));
+          updatedAt: DateTime.now(),
+        ),
+      );
       final session = ClassSession(
         idLop: classId,
         ngay: '2026-09-10',
@@ -98,11 +107,14 @@ void main() {
     });
 
     test('Manual creation with idLichHoc is rejected', () async {
-      final classId = await classRepo.create(ClassEntity(
+      final classId = await classRepo.create(
+        ClassEntity(
           id: 1,
           tenLop: 'Class 1',
           createdAt: DateTime.now(),
-          updatedAt: DateTime.now()));
+          updatedAt: DateTime.now(),
+        ),
+      );
       final session = ClassSession(
         idLop: classId,
         idLichHoc: 1,
@@ -121,11 +133,14 @@ void main() {
     });
 
     test('Status update to DA_HOC is rejected (Phase 4)', () async {
-      final classId = await classRepo.create(ClassEntity(
+      final classId = await classRepo.create(
+        ClassEntity(
           id: 1,
           tenLop: 'Class 1',
           createdAt: DateTime.now(),
-          updatedAt: DateTime.now()));
+          updatedAt: DateTime.now(),
+        ),
+      );
       final session = ClassSession(
         idLop: classId,
         ngay: '2026-09-10',
@@ -145,11 +160,14 @@ void main() {
     });
 
     test('Status transitions: DU_KIEN <-> HUY / NGHI_LE', () async {
-      final classId = await classRepo.create(ClassEntity(
+      final classId = await classRepo.create(
+        ClassEntity(
           id: 1,
           tenLop: 'Class 1',
           createdAt: DateTime.now(),
-          updatedAt: DateTime.now()));
+          updatedAt: DateTime.now(),
+        ),
+      );
       final session = ClassSession(
         idLop: classId,
         ngay: '2026-09-10',
@@ -169,21 +187,28 @@ void main() {
       // To NGHI_LE
       await service.updateStatus(s.id!, SessionStatus.NGHI_LE);
       expect(
-          (await sessionRepo.getById(s.id!))!.trangThai, SessionStatus.NGHI_LE);
+        (await sessionRepo.getById(s.id!))!.trangThai,
+        SessionStatus.NGHI_LE,
+      );
 
       // Back to DU_KIEN
       await service.updateStatus(s.id!, SessionStatus.DU_KIEN);
       expect(
-          (await sessionRepo.getById(s.id!))!.trangThai, SessionStatus.DU_KIEN);
+        (await sessionRepo.getById(s.id!))!.trangThai,
+        SessionStatus.DU_KIEN,
+      );
     });
 
     test('Archived class rejected for manual session', () async {
-      final classId = await classRepo.create(ClassEntity(
+      final classId = await classRepo.create(
+        ClassEntity(
           id: 1,
           tenLop: 'Archived',
           daLuuTru: true,
           createdAt: DateTime.now(),
-          updatedAt: DateTime.now()));
+          updatedAt: DateTime.now(),
+        ),
+      );
       final session = ClassSession(
         idLop: classId,
         ngay: '2026-09-10',
@@ -200,12 +225,59 @@ void main() {
       );
     });
 
-    test('Validation: Invalid date string rejected', () async {
-      final classId = await classRepo.create(ClassEntity(
+    test('Validation: strict date validation rejected', () async {
+      final classId = await classRepo.create(
+        ClassEntity(
           id: 1,
           tenLop: 'Class 1',
           createdAt: DateTime.now(),
-          updatedAt: DateTime.now()));
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      final base = ClassSession(
+        idLop: classId,
+        ngay: '2026-02-30', // Impossible date
+        gioBatDau: '08:00',
+        gioKetThuc: '09:00',
+        loai: SessionType.HOC_BU,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      // Impossible Feb 30 rejected
+      expect(
+        () => service.createManualSession(base),
+        throwsA(predicate((e) => e.toString().contains('không hợp lệ'))),
+      );
+
+      // Month 13 rejected
+      expect(
+        () => service.createManualSession(base.copyWith(ngay: '2026-13-01')),
+        throwsA(predicate((e) => e.toString().contains('không hợp lệ'))),
+      );
+
+      // April 31 rejected
+      expect(
+        () => service.createManualSession(base.copyWith(ngay: '2026-04-31')),
+        throwsA(predicate((e) => e.toString().contains('không hợp lệ'))),
+      );
+
+      // Valid leap day accepted
+      final leapSession = base.copyWith(ngay: '2028-02-29');
+      await service.createManualSession(leapSession);
+      expect((await sessionRepo.getByClass(classId)).length, 1);
+    });
+
+    test('Validation: Invalid date string rejected', () async {
+      final classId = await classRepo.create(
+        ClassEntity(
+          id: 1,
+          tenLop: 'Class 1',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
       final session = ClassSession(
         idLop: classId,
         ngay: '2026/09/10', // Wrong format
@@ -215,16 +287,21 @@ void main() {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      expect(() => service.createManualSession(session),
-          throwsA(predicate((e) => e.toString().contains('Định dạng ngày'))));
+      expect(
+        () => service.createManualSession(session),
+        throwsA(predicate((e) => e.toString().contains('không hợp lệ'))),
+      );
     });
 
     test('Validation: Malformed time rejected', () async {
-      final classId = await classRepo.create(ClassEntity(
+      final classId = await classRepo.create(
+        ClassEntity(
           id: 1,
           tenLop: 'Class 1',
           createdAt: DateTime.now(),
-          updatedAt: DateTime.now()));
+          updatedAt: DateTime.now(),
+        ),
+      );
       final base = ClassSession(
         idLop: classId,
         ngay: '2026-09-10',
@@ -235,19 +312,24 @@ void main() {
         updatedAt: DateTime.now(),
       );
       expect(
-          () => service.createManualSession(base.copyWith(gioBatDau: '8:00')),
-          throwsA(predicate((e) => e.toString().contains('giờ bắt đầu'))));
+        () => service.createManualSession(base.copyWith(gioBatDau: '8:00')),
+        throwsA(predicate((e) => e.toString().contains('giờ bắt đầu'))),
+      );
       expect(
-          () => service.createManualSession(base.copyWith(gioBatDau: '25:00')),
-          throwsA(predicate((e) => e.toString().contains('giờ bắt đầu'))));
+        () => service.createManualSession(base.copyWith(gioBatDau: '25:00')),
+        throwsA(predicate((e) => e.toString().contains('giờ bắt đầu'))),
+      );
     });
 
     test('Validation: end <= start rejected', () async {
-      final classId = await classRepo.create(ClassEntity(
+      final classId = await classRepo.create(
+        ClassEntity(
           id: 1,
           tenLop: 'Class 1',
           createdAt: DateTime.now(),
-          updatedAt: DateTime.now()));
+          updatedAt: DateTime.now(),
+        ),
+      );
       final base = ClassSession(
         idLop: classId,
         ngay: '2026-09-10',
@@ -257,19 +339,25 @@ void main() {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      expect(() => service.createManualSession(base),
-          throwsA(predicate((e) => e.toString().contains('sau giờ bắt đầu'))));
       expect(
-          () => service.createManualSession(base.copyWith(gioKetThuc: '07:00')),
-          throwsA(predicate((e) => e.toString().contains('sau giờ bắt đầu'))));
+        () => service.createManualSession(base),
+        throwsA(predicate((e) => e.toString().contains('sau giờ bắt đầu'))),
+      );
+      expect(
+        () => service.createManualSession(base.copyWith(gioKetThuc: '07:00')),
+        throwsA(predicate((e) => e.toString().contains('sau giờ bắt đầu'))),
+      );
     });
 
     test('Validation: Duplicate identity rejected', () async {
-      final classId = await classRepo.create(ClassEntity(
+      final classId = await classRepo.create(
+        ClassEntity(
           id: 1,
           tenLop: 'C',
           createdAt: DateTime.now(),
-          updatedAt: DateTime.now()));
+          updatedAt: DateTime.now(),
+        ),
+      );
       final session = ClassSession(
         idLop: classId,
         ngay: '2026-09-10',
@@ -281,8 +369,10 @@ void main() {
       );
       await sessionRepo.create(session);
 
-      expect(() => service.createManualSession(session),
-          throwsA(predicate((e) => e.toString().contains('Đã tồn tại'))));
+      expect(
+        () => service.createManualSession(session),
+        throwsA(predicate((e) => e.toString().contains('Đã tồn tại'))),
+      );
     });
   });
 }

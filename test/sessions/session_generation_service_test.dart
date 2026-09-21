@@ -34,8 +34,10 @@ void main() {
     final assignmentRepo = AssignmentRepository(db);
     final membershipService = MembershipService(MembershipRepository(db));
     final classService = ClassService(classRepo, membershipService);
-    final studentService =
-        StudentService(StudentRepository(db), membershipService);
+    final studentService = StudentService(
+      StudentRepository(db),
+      membershipService,
+    );
     final scheduleService = ScheduleDomainService(
       scheduleRepo,
       assignmentRepo,
@@ -44,8 +46,11 @@ void main() {
       studentService,
     );
 
-    genService =
-        SessionGenerationService(sessionRepo, scheduleService, classService);
+    genService = SessionGenerationService(
+      sessionRepo,
+      scheduleService,
+      classService,
+    );
   });
 
   tearDown(() async => await db.close());
@@ -162,58 +167,67 @@ void main() {
       expect(result.createdCount, 4);
     });
 
-    test('Status preservation: Rerunning generation does not reset status',
-        () async {
-      final classId = await classRepo.create(
-        ClassEntity(
-          tenLop: 'Class 1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-      );
-      await scheduleRepo.create(
-        ClassSchedule(
-          idLop: classId,
-          thuTrongTuan: 1,
-          gioBatDau: '17:30',
-          gioKetThuc: '19:00',
-          hieuLucTu: '2026-09-01',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-      );
+    test(
+      'Status preservation: Rerunning generation does not reset status',
+      () async {
+        final classId = await classRepo.create(
+          ClassEntity(
+            tenLop: 'Class 1',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        await scheduleRepo.create(
+          ClassSchedule(
+            idLop: classId,
+            thuTrongTuan: 1,
+            gioBatDau: '17:30',
+            gioKetThuc: '19:00',
+            hieuLucTu: '2026-09-01',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
 
-      await genService.generateForClass(
-        classId: classId,
-        fromDate: DateTime(2026, 9, 7),
-        toDate: DateTime(2026, 9, 7),
-      );
-      final sessions = await sessionRepo.getByClass(classId);
-      final session = sessions.first;
+        await genService.generateForClass(
+          classId: classId,
+          fromDate: DateTime(2026, 9, 7),
+          toDate: DateTime(2026, 9, 7),
+        );
+        final sessions = await sessionRepo.getByClass(classId);
+        final session = sessions.first;
 
-      // Mark as HUY
-      await sessionRepo.update(session.copyWith(trangThai: SessionStatus.HUY));
-      // Rerun generation
-      await genService.generateForClass(
-        classId: classId,
-        fromDate: DateTime(2026, 9, 7),
-        toDate: DateTime(2026, 9, 7),
-      );
-      expect((await sessionRepo.getById(session.id!))!.trangThai,
-          SessionStatus.HUY);
+        // Mark as HUY
+        await sessionRepo.update(
+          session.copyWith(trangThai: SessionStatus.HUY),
+        );
+        // Rerun generation
+        await genService.generateForClass(
+          classId: classId,
+          fromDate: DateTime(2026, 9, 7),
+          toDate: DateTime(2026, 9, 7),
+        );
+        expect(
+          (await sessionRepo.getById(session.id!))!.trangThai,
+          SessionStatus.HUY,
+        );
 
-      // Mark as NGHI_LE
-      await sessionRepo
-          .update(session.copyWith(trangThai: SessionStatus.NGHI_LE));
-      // Rerun generation
-      await genService.generateForClass(
-        classId: classId,
-        fromDate: DateTime(2026, 9, 7),
-        toDate: DateTime(2026, 9, 7),
-      );
-      expect((await sessionRepo.getById(session.id!))!.trangThai,
-          SessionStatus.NGHI_LE);
-    });
+        // Mark as NGHI_LE
+        await sessionRepo.update(
+          session.copyWith(trangThai: SessionStatus.NGHI_LE),
+        );
+        // Rerun generation
+        await genService.generateForClass(
+          classId: classId,
+          fromDate: DateTime(2026, 9, 7),
+          toDate: DateTime(2026, 9, 7),
+        );
+        expect(
+          (await sessionRepo.getById(session.id!))!.trangThai,
+          SessionStatus.NGHI_LE,
+        );
+      },
+    );
 
     test('Conflict: Existing manual session with different details', () async {
       final classId = await classRepo.create(
@@ -317,65 +331,69 @@ void main() {
       expect(s21.gioBatDau, '19:00');
     });
 
-    test('Snapshot: Generated session keeps old time after schedule change',
-        () async {
-      final classId = await classRepo.create(
-        ClassEntity(
-          tenLop: 'Class 1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-      );
-      final sId = await scheduleRepo.create(
-        ClassSchedule(
-          idLop: classId,
-          thuTrongTuan: 1,
-          gioBatDau: '17:30',
-          gioKetThuc: '19:00',
-          hieuLucTu: '2026-09-01',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-      );
+    test(
+      'Snapshot: Generated session keeps old time after schedule change',
+      () async {
+        final classId = await classRepo.create(
+          ClassEntity(
+            tenLop: 'Class 1',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        final sId = await scheduleRepo.create(
+          ClassSchedule(
+            idLop: classId,
+            thuTrongTuan: 1,
+            gioBatDau: '17:30',
+            gioKetThuc: '19:00',
+            hieuLucTu: '2026-09-01',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
 
-      // Generate for Sept 7
-      await genService.generateForClass(
-        classId: classId,
-        fromDate: DateTime(2026, 9, 7),
-        toDate: DateTime(2026, 9, 7),
-      );
+        // Generate for Sept 7
+        await genService.generateForClass(
+          classId: classId,
+          fromDate: DateTime(2026, 9, 7),
+          toDate: DateTime(2026, 9, 7),
+        );
 
-      // 1. "Close" the old schedule
-      final oldSchedule = await scheduleRepo.getById(sId);
-      await scheduleRepo.update(oldSchedule!.copyWith(
-        hieuLucDen: '2026-09-10',
-        updatedAt: DateTime.now(),
-      ));
+        // 1. "Close" the old schedule
+        final oldSchedule = await scheduleRepo.getById(sId);
+        await scheduleRepo.update(
+          oldSchedule!.copyWith(
+            hieuLucDen: '2026-09-10',
+            updatedAt: DateTime.now(),
+          ),
+        );
 
-      // 2. "Create" a new schedule replacing it
-      await scheduleRepo.create(
-        ClassSchedule(
-          idLop: classId,
-          thuTrongTuan: 1,
-          gioBatDau: '18:00',
-          gioKetThuc: '19:30',
-          hieuLucTu: '2026-09-11',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-      );
+        // 2. "Create" a new schedule replacing it
+        await scheduleRepo.create(
+          ClassSchedule(
+            idLop: classId,
+            thuTrongTuan: 1,
+            gioBatDau: '18:00',
+            gioKetThuc: '19:30',
+            hieuLucTu: '2026-09-11',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
 
-      // Regeneration should not change existing session's time
-      await genService.generateForClass(
-        classId: classId,
-        fromDate: DateTime(2026, 9, 1),
-        toDate: DateTime(2026, 9, 30),
-      );
+        // Regeneration should not change existing session's time
+        await genService.generateForClass(
+          classId: classId,
+          fromDate: DateTime(2026, 9, 1),
+          toDate: DateTime(2026, 9, 30),
+        );
 
-      final sessions = await sessionRepo.getByClass(classId);
-      final s7 = sessions.firstWhere((s) => s.ngay == '2026-09-07');
-      expect(s7.gioBatDau, '17:30'); // Snapshotted
-    });
+        final sessions = await sessionRepo.getByClass(classId);
+        final s7 = sessions.firstWhere((s) => s.ngay == '2026-09-07');
+        expect(s7.gioBatDau, '17:30'); // Snapshotted
+      },
+    );
 
     test('Multiple shifts same date works', () async {
       final classId = await classRepo.create(

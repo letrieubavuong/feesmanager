@@ -19,7 +19,9 @@ class _SessionTabState extends ConsumerState<SessionTab> {
 
   @override
   Widget build(BuildContext context) {
-    final sessionsAsync = ref.watch(classSessionControllerProvider(widget.classId));
+    final sessionsAsync = ref.watch(
+      classSessionControllerProvider(widget.classId),
+    );
 
     return Scaffold(
       appBar: PreferredSize(
@@ -62,13 +64,19 @@ class _SessionTabState extends ConsumerState<SessionTab> {
         data: (allSessions) {
           final sessions = allSessions.where((s) {
             final date = DateTime.parse(s.ngay);
-            final start = DateTime(_startDate.year, _startDate.month, _startDate.day);
+            final start = DateTime(
+              _startDate.year,
+              _startDate.month,
+              _startDate.day,
+            );
             final end = DateTime(_endDate.year, _endDate.month, _endDate.day);
             return !date.isBefore(start) && !date.isAfter(end);
           }).toList();
 
           if (sessions.isEmpty) {
-            return const Center(child: Text('Không có buổi học nào trong khoảng này.'));
+            return const Center(
+              child: Text('Không có buổi học nào trong khoảng này.'),
+            );
           }
           return ListView.builder(
             itemCount: sessions.length,
@@ -189,11 +197,17 @@ class _SessionTabState extends ConsumerState<SessionTab> {
     SessionStatus status,
   ) async {
     final label = _getStatusLabel(status).toUpperCase();
+    final actionText = status == SessionStatus.DU_KIEN
+        ? 'Khôi phục'
+        : 'Đánh dấu';
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Xác nhận thay đổi'),
-        content: Text('Bạn có chắc chắn muốn đánh dấu buổi học này là $label?'),
+        title: Text('$actionText buổi học'),
+        content: Text(
+          'Bạn có chắc chắn muốn ${actionText.toLowerCase()} buổi học này là $label?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
