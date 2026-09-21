@@ -39,7 +39,7 @@
     - `test/schedule/schedule_service_test.dart`
     - `test/schedule/assignment_service_test.dart`
     - `test/repository/real_migration_test.dart`
-- [x] Quality Gate: 41 tests passing.
+- [x] Quality Gate: 45 tests passing.
 
 ## Phase 4: Session + Attendance - NOT STARTED
 
