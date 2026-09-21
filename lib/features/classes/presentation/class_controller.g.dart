@@ -156,7 +156,7 @@ class _ClassDetailProviderElement
 }
 
 String _$classListControllerHash() =>
-    r'f0da4389434688ff8f0d9fae79126c9c13481c9e';
+    r'0ef9ab73add1be0da2b0e76c9fa54d4ee3290179';
 
 /// See also [ClassListController].
 @ProviderFor(ClassListController)

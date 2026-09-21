@@ -18,9 +18,11 @@ void main() {
   late ClassRepository classRepo;
 
   setUp(() async {
-    db = await openDatabase(inMemoryDatabasePath, version: 2,
-        onCreate: (db, version) async {
-      await db.execute('''
+    db = await openDatabase(
+      inMemoryDatabasePath,
+      version: 2,
+      onCreate: (db, version) async {
+        await db.execute('''
         CREATE TABLE hoc_sinh (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           ho_ten TEXT NOT NULL,
@@ -43,7 +45,7 @@ void main() {
           updated_at TEXT NOT NULL
         )
       ''');
-      await db.execute('''
+        await db.execute('''
         CREATE TABLE lop (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           ten_lop TEXT NOT NULL,
@@ -56,7 +58,7 @@ void main() {
           updated_at TEXT NOT NULL
         )
       ''');
-      await db.execute('''
+        await db.execute('''
         CREATE TABLE tham_gia_lop (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           id_hoc_sinh INTEGER NOT NULL,
@@ -72,8 +74,9 @@ void main() {
           FOREIGN KEY (id_lop) REFERENCES lop (id)
         )
       ''');
-    });
-    
+      },
+    );
+
     classRepo = ClassRepository(db);
     final studentRepo = StudentRepository(db);
     final membershipRepo = MembershipRepository(db);
@@ -87,30 +90,48 @@ void main() {
 
   group('Student Archive Blocking', () {
     test('should block archive if student has active membership', () async {
-      await studentService.saveStudent(Student(hoTen: 'An', createdAt: DateTime.now(), updatedAt: DateTime.now()));
+      await studentService.saveStudent(
+        Student(
+          hoTen: 'An',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
       final students = await studentService.getStudents();
       final id = students.first.id!;
 
-      final cId = await classRepo.create(ClassEntity(tenLop: 'Class A', createdAt: DateTime.now(), updatedAt: DateTime.now()));
+      final cId = await classRepo.create(
+        ClassEntity(
+          tenLop: 'Class A',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
 
       await membershipService.enrollStudent(
-        studentId: id, 
-        classId: cId, 
+        studentId: id,
+        classId: cId,
         joinDate: DateTime.now().subtract(const Duration(days: 10)),
       );
-      
+
       expect(
         studentService.archiveStudent(id),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('Học sinh vẫn đang thuộc các lớp'))),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Học sinh vẫn đang thuộc các lớp'),
+          ),
+        ),
       );
 
       // End membership (yesterday)
       await membershipService.leaveClass(
-        studentId: id, 
-        classId: cId, 
+        studentId: id,
+        classId: cId,
         endDate: DateTime.now().subtract(const Duration(days: 1)),
       );
-      
+
       // Should now be allowed to archive
       await studentService.archiveStudent(id);
       final archived = await studentService.getStudents(includeArchived: true);

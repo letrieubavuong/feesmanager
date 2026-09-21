@@ -23,7 +23,10 @@ class StudentService {
     return _repository.getAll(includeArchived: includeArchived);
   }
 
-  Future<List<Student>> searchStudents(String query, {bool includeArchived = false}) {
+  Future<List<Student>> searchStudents(
+    String query, {
+    bool includeArchived = false,
+  }) {
     if (query.trim().isEmpty) {
       return getStudents(includeArchived: includeArchived);
     }
@@ -52,7 +55,9 @@ class StudentService {
   Future<void> archiveStudent(int id) async {
     final hasActive = await _membershipService.hasActiveMemberships(id);
     if (hasActive) {
-      throw Exception('Học sinh vẫn đang thuộc các lớp. Hãy kết thúc các membership trước.');
+      throw Exception(
+        'Học sinh vẫn đang thuộc các lớp. Hãy kết thúc các membership trước.',
+      );
     }
     await _repository.setArchiveStatus(id, true);
   }

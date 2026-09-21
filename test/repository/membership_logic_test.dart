@@ -17,9 +17,11 @@ void main() {
   late ClassRepository classRepo;
 
   setUp(() async {
-    db = await openDatabase(inMemoryDatabasePath, version: 2,
-        onCreate: (db, version) async {
-      await db.execute('''
+    db = await openDatabase(
+      inMemoryDatabasePath,
+      version: 2,
+      onCreate: (db, version) async {
+        await db.execute('''
         CREATE TABLE hoc_sinh (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           ho_ten TEXT NOT NULL,
@@ -42,7 +44,7 @@ void main() {
           updated_at TEXT NOT NULL
         )
       ''');
-      await db.execute('''
+        await db.execute('''
         CREATE TABLE lop (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           ten_lop TEXT NOT NULL,
@@ -55,7 +57,7 @@ void main() {
           updated_at TEXT NOT NULL
         )
       ''');
-      await db.execute('''
+        await db.execute('''
         CREATE TABLE tham_gia_lop (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           id_hoc_sinh INTEGER NOT NULL,
@@ -72,13 +74,14 @@ void main() {
           UNIQUE(id_hoc_sinh, id_lop, tu_ngay)
         )
       ''');
-      await db.execute('''
+        await db.execute('''
         CREATE UNIQUE INDEX idx_tham_gia_lop_open_interval 
         ON tham_gia_lop(id_hoc_sinh, id_lop) 
         WHERE den_ngay IS NULL
       ''');
-    });
-    
+      },
+    );
+
     studentRepo = StudentRepository(db);
     classRepo = ClassRepository(db);
     final membershipRepo = MembershipRepository(db);
@@ -91,32 +94,72 @@ void main() {
 
   group('Membership Logic', () {
     test('enroll and class size', () async {
-      final sId = await studentRepo.create(Student(hoTen: 'An', createdAt: DateTime.now(), updatedAt: DateTime.now()));
-      final cId = await classRepo.create(ClassEntity(tenLop: 'Class A', createdAt: DateTime.now(), updatedAt: DateTime.now()));
+      final sId = await studentRepo.create(
+        Student(
+          hoTen: 'An',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+      final cId = await classRepo.create(
+        ClassEntity(
+          tenLop: 'Class A',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
 
-      await service.enrollStudent(studentId: sId, classId: cId, joinDate: DateTime(2026, 9, 1));
-      
+      await service.enrollStudent(
+        studentId: sId,
+        classId: cId,
+        joinDate: DateTime(2026, 9, 1),
+      );
+
       expect(await service.getClassSize(cId, date: DateTime(2026, 8, 31)), 0);
       expect(await service.getClassSize(cId, date: DateTime(2026, 9, 1)), 1);
       expect(await service.getClassSize(cId, date: DateTime(2026, 9, 20)), 1);
     });
 
     test('pause and resume', () async {
-      final sId = await studentRepo.create(Student(hoTen: 'An', createdAt: DateTime.now(), updatedAt: DateTime.now()));
-      final cId = await classRepo.create(ClassEntity(tenLop: 'Class A', createdAt: DateTime.now(), updatedAt: DateTime.now()));
+      final sId = await studentRepo.create(
+        Student(
+          hoTen: 'An',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+      final cId = await classRepo.create(
+        ClassEntity(
+          tenLop: 'Class A',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
 
       // Enroll
-      await service.enrollStudent(studentId: sId, classId: cId, joinDate: DateTime(2026, 9, 1));
-      
+      await service.enrollStudent(
+        studentId: sId,
+        classId: cId,
+        joinDate: DateTime(2026, 9, 1),
+      );
+
       // Pause from 16/10 (last day active is 15/10)
-      await service.leaveClass(studentId: sId, classId: cId, endDate: DateTime(2026, 10, 15));
-      
+      await service.leaveClass(
+        studentId: sId,
+        classId: cId,
+        endDate: DateTime(2026, 10, 15),
+      );
+
       expect(await service.getClassSize(cId, date: DateTime(2026, 10, 15)), 1);
       expect(await service.getClassSize(cId, date: DateTime(2026, 10, 16)), 0);
 
       // Resume from 20/10
-      await service.enrollStudent(studentId: sId, classId: cId, joinDate: DateTime(2026, 10, 20));
-      
+      await service.enrollStudent(
+        studentId: sId,
+        classId: cId,
+        joinDate: DateTime(2026, 10, 20),
+      );
+
       expect(await service.getClassSize(cId, date: DateTime(2026, 10, 19)), 0);
       expect(await service.getClassSize(cId, date: DateTime(2026, 10, 20)), 1);
 
@@ -125,26 +168,70 @@ void main() {
     });
 
     test('prevent duplicate open membership', () async {
-      final sId = await studentRepo.create(Student(hoTen: 'An', createdAt: DateTime.now(), updatedAt: DateTime.now()));
-      final cId = await classRepo.create(ClassEntity(tenLop: 'Class A', createdAt: DateTime.now(), updatedAt: DateTime.now()));
+      final sId = await studentRepo.create(
+        Student(
+          hoTen: 'An',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+      final cId = await classRepo.create(
+        ClassEntity(
+          tenLop: 'Class A',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
 
-      await service.enrollStudent(studentId: sId, classId: cId, joinDate: DateTime(2026, 9, 1));
-      
+      await service.enrollStudent(
+        studentId: sId,
+        classId: cId,
+        joinDate: DateTime(2026, 9, 1),
+      );
+
       expect(
-        () => service.enrollStudent(studentId: sId, classId: cId, joinDate: DateTime(2026, 10, 1)),
+        () => service.enrollStudent(
+          studentId: sId,
+          classId: cId,
+          joinDate: DateTime(2026, 10, 1),
+        ),
         throwsA(isA<Exception>()),
       );
     });
 
     test('rejoin after leaving', () async {
-      final sId = await studentRepo.create(Student(hoTen: 'An', createdAt: DateTime.now(), updatedAt: DateTime.now()));
-      final cId = await classRepo.create(ClassEntity(tenLop: 'Class A', createdAt: DateTime.now(), updatedAt: DateTime.now()));
+      final sId = await studentRepo.create(
+        Student(
+          hoTen: 'An',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+      final cId = await classRepo.create(
+        ClassEntity(
+          tenLop: 'Class A',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
 
-      await service.enrollStudent(studentId: sId, classId: cId, joinDate: DateTime(2026, 1, 1));
-      await service.leaveClass(studentId: sId, classId: cId, endDate: DateTime(2026, 3, 31));
-      
-      await service.enrollStudent(studentId: sId, classId: cId, joinDate: DateTime(2026, 6, 1));
-      
+      await service.enrollStudent(
+        studentId: sId,
+        classId: cId,
+        joinDate: DateTime(2026, 1, 1),
+      );
+      await service.leaveClass(
+        studentId: sId,
+        classId: cId,
+        endDate: DateTime(2026, 3, 31),
+      );
+
+      await service.enrollStudent(
+        studentId: sId,
+        classId: cId,
+        joinDate: DateTime(2026, 6, 1),
+      );
+
       final history = await service.getMembershipHistory(sId);
       expect(history.length, 2);
     });

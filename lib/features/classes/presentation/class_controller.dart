@@ -2,20 +2,22 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/class.dart';
 import '../domain/class_service.dart';
 
+import '../domain/class_filter.dart';
+
 part 'class_controller.g.dart';
 
 @riverpod
 class ClassListController extends _$ClassListController {
-  bool _includeArchived = false;
+  ClassFilter _filter = ClassFilter.active;
   String _query = '';
 
   @override
   FutureOr<List<ClassEntity>> build() async {
     final service = await ref.watch(classServiceProvider.future);
     if (_query.isNotEmpty) {
-      return service.searchClasses(_query, includeArchived: _includeArchived);
+      return service.searchClasses(_query, filter: _filter);
     }
-    return service.getClasses(includeArchived: _includeArchived);
+    return service.getClasses(filter: _filter);
   }
 
   Future<void> search(String query) async {
@@ -23,8 +25,8 @@ class ClassListController extends _$ClassListController {
     ref.invalidateSelf();
   }
 
-  void toggleIncludeArchived(bool value) {
-    _includeArchived = value;
+  void setFilter(ClassFilter filter) {
+    _filter = filter;
     ref.invalidateSelf();
   }
 

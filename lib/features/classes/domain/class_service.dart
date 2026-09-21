@@ -4,6 +4,8 @@ import '../../memberships/domain/membership_service.dart';
 import '../data/class_repository.dart';
 import 'class.dart';
 
+import 'class_filter.dart';
+
 part 'class_service.g.dart';
 
 @Riverpod(keepAlive: true)
@@ -18,15 +20,20 @@ class ClassService {
 
   ClassService(this._repository, this._membershipService);
 
-  Future<List<ClassEntity>> getClasses({bool includeArchived = false}) {
-    return _repository.getAll(includeArchived: includeArchived);
+  Future<List<ClassEntity>> getClasses({
+    ClassFilter filter = ClassFilter.active,
+  }) {
+    return _repository.getAll(filter: filter);
   }
 
-  Future<List<ClassEntity>> searchClasses(String query, {bool includeArchived = false}) {
+  Future<List<ClassEntity>> searchClasses(
+    String query, {
+    ClassFilter filter = ClassFilter.active,
+  }) {
     if (query.trim().isEmpty) {
-      return getClasses(includeArchived: includeArchived);
+      return getClasses(filter: filter);
     }
-    return _repository.search(query.trim(), includeArchived: includeArchived);
+    return _repository.search(query.trim(), filter: filter);
   }
 
   Future<void> saveClass(ClassEntity classEntity) async {

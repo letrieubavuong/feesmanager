@@ -9,6 +9,10 @@ import '../../classes/presentation/class_controller.dart';
 import 'student_form_page.dart';
 import 'student_controller.dart';
 
+import '../../schedule/domain/student_shift_assignment.dart';
+import '../../schedule/domain/schedule_service.dart';
+import '../../schedule/domain/class_schedule.dart';
+
 part 'student_detail_page.g.dart';
 
 class StudentDetailPage extends ConsumerWidget {
@@ -31,7 +35,8 @@ class StudentDetailPage extends ConsumerWidget {
                     onPressed: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (context) => StudentFormPage(student: student),
+                          builder: (context) =>
+                              StudentFormPage(student: student),
                         ),
                       );
                     },
@@ -47,7 +52,8 @@ class StudentDetailPage extends ConsumerWidget {
       ),
       body: studentAsync.when(
         data: (student) {
-          if (student == null) return const Center(child: Text('Không tìm thấy học sinh'));
+          if (student == null)
+            return const Center(child: Text('Không tìm thấy học sinh'));
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -56,22 +62,56 @@ class StudentDetailPage extends ConsumerWidget {
                 _buildHeader(context, student),
                 const SizedBox(height: 24),
                 _buildSectionTitle(context, 'Thông tin cá nhân'),
-                _buildInfoTile(Icons.cake, 'Ngày sinh', student.ngaySinh ?? 'Chưa cập nhật'),
-                _buildInfoTile(Icons.location_on, 'Địa chỉ', student.diaChi ?? 'Chưa cập nhật'),
-                _buildInfoTile(Icons.facebook, 'Facebook', student.facebook ?? 'Chưa cập nhật'),
+                _buildInfoTile(
+                  Icons.cake,
+                  'Ngày sinh',
+                  student.ngaySinh ?? 'Chưa cập nhật',
+                ),
+                _buildInfoTile(
+                  Icons.location_on,
+                  'Địa chỉ',
+                  student.diaChi ?? 'Chưa cập nhật',
+                ),
+                _buildInfoTile(
+                  Icons.facebook,
+                  'Facebook',
+                  student.facebook ?? 'Chưa cập nhật',
+                ),
                 const SizedBox(height: 16),
                 _buildSectionTitle(context, 'Liên hệ'),
-                _buildInfoTile(Icons.person, 'Phụ huynh', student.tenPhuHuynh ?? 'Chưa cập nhật'),
-                _buildInfoTile(Icons.phone, 'SĐT Phụ huynh', student.sdtPhuHuynh ?? 'Chưa cập nhật'),
-                _buildInfoTile(Icons.phone_android, 'SĐT Học sinh', student.sdtHocSinh ?? 'Chưa cập nhật'),
-                _buildInfoTile(Icons.email, 'Email', student.email ?? 'Chưa cập nhật'),
+                _buildInfoTile(
+                  Icons.person,
+                  'Phụ huynh',
+                  student.tenPhuHuynh ?? 'Chưa cập nhật',
+                ),
+                _buildInfoTile(
+                  Icons.phone,
+                  'SĐT Phụ huynh',
+                  student.sdtPhuHuynh ?? 'Chưa cập nhật',
+                ),
+                _buildInfoTile(
+                  Icons.phone_android,
+                  'SĐT Học sinh',
+                  student.sdtHocSinh ?? 'Chưa cập nhật',
+                ),
+                _buildInfoTile(
+                  Icons.email,
+                  'Email',
+                  student.email ?? 'Chưa cập nhật',
+                ),
                 const SizedBox(height: 16),
                 _buildSectionTitle(context, 'Khác'),
-                _buildInfoTile(Icons.note, 'Ghi chú', student.ghiChu ?? 'Không có ghi chú'),
+                _buildInfoTile(
+                  Icons.note,
+                  'Ghi chú',
+                  student.ghiChu ?? 'Không có ghi chú',
+                ),
                 const SizedBox(height: 24),
                 const Divider(),
                 const SizedBox(height: 16),
                 _buildMembershipSection(context, ref, student.id!),
+                const SizedBox(height: 16),
+                _buildScheduleSection(context, ref, student.id!),
                 _buildPlaceholderSection(context, 'Lịch sử điểm danh'),
                 _buildPlaceholderSection(context, 'Học phí & Thanh toán'),
               ],
@@ -84,8 +124,14 @@ class StudentDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildMembershipSection(BuildContext context, WidgetRef ref, int studentId) {
-    final membershipsAsync = ref.watch(studentMembershipHistoryProvider(studentId));
+  Widget _buildMembershipSection(
+    BuildContext context,
+    WidgetRef ref,
+    int studentId,
+  ) {
+    final membershipsAsync = ref.watch(
+      studentMembershipHistoryProvider(studentId),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,11 +142,16 @@ class StudentDetailPage extends ConsumerWidget {
             if (memberships.isEmpty) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8.0),
-                child: Text('Học sinh chưa tham gia lớp nào.', style: TextStyle(fontStyle: FontStyle.italic)),
+                child: Text(
+                  'Học sinh chưa tham gia lớp nào.',
+                  style: TextStyle(fontStyle: FontStyle.italic),
+                ),
               );
             }
             return Column(
-              children: memberships.map((m) => _buildMembershipTile(context, ref, m)).toList(),
+              children: memberships
+                  .map((m) => _buildMembershipTile(context, ref, m))
+                  .toList(),
             );
           },
           loading: () => const CircularProgressIndicator(),
@@ -110,7 +161,82 @@ class StudentDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildMembershipTile(BuildContext context, WidgetRef ref, ClassMembership m) {
+  Widget _buildScheduleSection(
+    BuildContext context,
+    WidgetRef ref,
+    int studentId,
+  ) {
+    final assignmentsAsync = ref.watch(studentScheduleProvider(studentId));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle(context, 'Lịch học (Phân ca)'),
+        assignmentsAsync.when(
+          data: (assignments) {
+            if (assignments.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  'Chưa có lịch học được phân.',
+                  style: TextStyle(fontStyle: FontStyle.italic),
+                ),
+              );
+            }
+            return Column(
+              children: assignments
+                  .map((a) => _buildAssignmentTile(context, ref, a))
+                  .toList(),
+            );
+          },
+          loading: () => const CircularProgressIndicator(),
+          error: (e, _) => Text('Lỗi tải lịch: $e'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAssignmentTile(
+    BuildContext context,
+    WidgetRef ref,
+    StudentShiftAssignment a,
+  ) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ListTile(
+        leading: const Icon(Icons.calendar_today),
+        title: Consumer(
+          builder: (context, ref, _) {
+            final scheduleAsync = ref.watch(scheduleDetailProvider(a.idLichHoc));
+            return scheduleAsync.when(
+              data: (s) => Text(
+                'Thứ ${s?.thuTrongTuan == 7 ? 'CN' : s!.thuTrongTuan + 1}: ${s?.gioBatDau} - ${s?.gioKetThuc}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              loading: () => const Text('...'),
+              error: (_, __) => const Text('Lỗi tải lịch'),
+            );
+          },
+        ),
+        subtitle: Consumer(
+          builder: (context, ref, _) {
+            final classAsync = ref.watch(classDetailProvider(a.idLop));
+            return classAsync.when(
+              data: (c) => Text('Lớp: ${c?.tenLop ?? 'Unknown'}'),
+              loading: () => const Text('...'),
+              error: (_, __) => const Text('Lỗi tải lớp'),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMembershipTile(
+    BuildContext context,
+    WidgetRef ref,
+    ClassMembership m,
+  ) {
     final classAsync = ref.watch(classDetailProvider(m.idLop));
     final isActive = m.isActiveOn(DateTime.now());
 
@@ -119,11 +245,13 @@ class StudentDetailPage extends ConsumerWidget {
       child: ListTile(
         title: classAsync.when(
           data: (c) => Text(
-            c?.tenLop ?? 'Unknown Class', 
+            c?.tenLop ?? 'Unknown Class',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              decoration: c?.daLuuTru == true ? TextDecoration.lineThrough : null,
-            )
+              decoration: c?.daLuuTru == true
+                  ? TextDecoration.lineThrough
+                  : null,
+            ),
           ),
           loading: () => const Text('Loading...'),
           error: (_, __) => const Text('Error'),
@@ -131,20 +259,33 @@ class StudentDetailPage extends ConsumerWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Từ: ${m.tuNgay}${m.denNgay != null ? ' - Đến: ${m.denNgay}' : ''}'),
+            Text(
+              'Từ: ${m.tuNgay}${m.denNgay != null ? ' - Đến: ${m.denNgay}' : ''}',
+            ),
             if (m.lyDoKetThuc != null)
-              Text('Lý do nghỉ: ${m.lyDoKetThuc}', style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12)),
+              Text(
+                'Lý do nghỉ: ${m.lyDoKetThuc}',
+                style: const TextStyle(
+                  fontStyle: FontStyle.italic,
+                  fontSize: 12,
+                ),
+              ),
           ],
         ),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: isActive ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+            color: isActive
+                ? Colors.green.withOpacity(0.1)
+                : Colors.grey.withOpacity(0.1),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Text(
             isActive ? 'Đang học' : 'Đã nghỉ',
-            style: TextStyle(color: isActive ? Colors.green : Colors.grey, fontSize: 12),
+            style: TextStyle(
+              color: isActive ? Colors.green : Colors.grey,
+              fontSize: 12,
+            ),
           ),
         ),
       ),
@@ -168,7 +309,9 @@ class StudentDetailPage extends ConsumerWidget {
             children: [
               Text(
                 student.hoTen,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               Text(
                 '${student.khoi != null ? 'Khối ${student.khoi}' : 'Chưa cập nhật khối'} • ${student.truongDangHoc ?? 'Chưa cập nhật trường'}',
@@ -186,7 +329,10 @@ class StudentDetailPage extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Text(
         title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -217,7 +363,10 @@ class StudentDetailPage extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               'Chức năng sẽ được triển khai ở phase tiếp theo.',
-              style: TextStyle(color: Theme.of(context).disabledColor, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                color: Theme.of(context).disabledColor,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ],
         ),
@@ -232,11 +381,16 @@ class StudentDetailPage extends ConsumerWidget {
         title: const Text('Lưu trữ học sinh'),
         content: const Text('Bạn có chắc chắn muốn lưu trữ học sinh này?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
           TextButton(
             onPressed: () async {
               try {
-                await ref.read(studentListControllerProvider.notifier).archive(studentId);
+                await ref
+                    .read(studentListControllerProvider.notifier)
+                    .archive(studentId);
                 if (context.mounted) {
                   Navigator.pop(context); // Close dialog
                   Navigator.pop(context); // Go back to list
@@ -245,7 +399,9 @@ class StudentDetailPage extends ConsumerWidget {
                 if (context.mounted) {
                   Navigator.pop(context); // Close dialog
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+                    SnackBar(
+                      content: Text(e.toString().replaceAll('Exception: ', '')),
+                    ),
                   );
                 }
               }
@@ -266,7 +422,22 @@ Future<Student?> studentDetail(StudentDetailRef ref, int id) async {
 }
 
 @riverpod
-Future<List<ClassMembership>> studentMembershipHistory(StudentMembershipHistoryRef ref, int id) async {
+Future<List<ClassMembership>> studentMembershipHistory(
+  StudentMembershipHistoryRef ref,
+  int id,
+) async {
   final service = await ref.watch(membershipServiceProvider.future);
   return service.getMembershipHistory(id);
+}
+
+@riverpod
+Future<List<StudentShiftAssignment>> studentSchedule(StudentScheduleRef ref, int id) async {
+  final repo = await ref.watch(assignmentRepositoryProvider.future);
+  return repo.getByStudent(id);
+}
+
+@riverpod
+Future<ClassSchedule?> scheduleDetail(ScheduleDetailRef ref, int id) async {
+  final repo = await ref.watch(scheduleRepositoryProvider.future);
+  return repo.getById(id);
 }

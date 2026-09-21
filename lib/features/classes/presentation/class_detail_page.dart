@@ -11,6 +11,9 @@ import '../../memberships/presentation/add_student_to_class_dialog.dart';
 import '../../memberships/presentation/membership_providers.dart';
 import '../../students/presentation/student_detail_page.dart';
 
+import '../../schedule/presentation/schedule_tab.dart';
+import '../../schedule/presentation/assignment_tab.dart';
+
 class ClassDetailPage extends ConsumerStatefulWidget {
   final int classId;
   const ClassDetailPage({super.key, required this.classId});
@@ -25,8 +28,12 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
   @override
   Widget build(BuildContext context) {
     final classAsync = ref.watch(classDetailProvider(widget.classId));
-    final rosterAsync = ref.watch(classRosterProvider((widget.classId, _referenceDate)));
-    final historyAsync = ref.watch(classMembershipHistoryProvider(widget.classId));
+    final rosterAsync = ref.watch(
+      classRosterProvider((widget.classId, _referenceDate)),
+    );
+    final historyAsync = ref.watch(
+      classMembershipHistoryProvider(widget.classId),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -40,11 +47,15 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                       IconButton(
                         icon: const Icon(Icons.edit),
                         onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => ClassFormPage(cls: cls)),
+                          MaterialPageRoute(
+                            builder: (context) => ClassFormPage(cls: cls),
+                          ),
                         ),
                       ),
                       IconButton(
-                        icon: Icon(cls.daLuuTru ? Icons.unarchive : Icons.archive),
+                        icon: Icon(
+                          cls.daLuuTru ? Icons.unarchive : Icons.archive,
+                        ),
                         onPressed: () => _handleArchiveToggle(context, cls),
                       ),
                     ],
@@ -56,13 +67,14 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
       ),
       body: classAsync.when(
         data: (cls) {
-          if (cls == null) return const Center(child: Text('Không tìm thấy lớp học'));
+          if (cls == null)
+            return const Center(child: Text('Không tìm thấy lớp học'));
           return Column(
             children: [
               _buildHeader(context, cls),
               Expanded(
                 child: DefaultTabController(
-                  length: 5,
+                  length: 6,
                   child: Column(
                     children: [
                       const TabBar(
@@ -71,6 +83,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                           Tab(text: 'Sĩ số'),
                           Tab(text: 'Lịch sử'),
                           Tab(text: 'Lịch học'),
+                          Tab(text: 'Phân ca'),
                           Tab(text: 'Điểm danh'),
                           Tab(text: 'Học phí'),
                         ],
@@ -81,11 +94,14 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                             Column(
                               children: [
                                 _buildDateSelector(context),
-                                Expanded(child: _buildRosterTab(context, rosterAsync)),
+                                Expanded(
+                                  child: _buildRosterTab(context, rosterAsync),
+                                ),
                               ],
                             ),
                             _buildHistoryTab(context, historyAsync),
-                            _buildPlaceholder('Lịch học'),
+                            ScheduleTab(classId: widget.classId),
+                            AssignmentTab(classId: widget.classId),
                             _buildPlaceholder('Điểm danh'),
                             _buildPlaceholder('Học phí'),
                           ],
@@ -111,20 +127,32 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
   Widget _buildHeader(BuildContext context, ClassEntity cls) {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      color: Theme.of(
+        context,
+      ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
       child: Row(
         children: [
           CircleAvatar(
             radius: 30,
-            child: Text(cls.tenLop[0].toUpperCase(), style: const TextStyle(fontSize: 24)),
+            child: Text(
+              cls.tenLop[0].toUpperCase(),
+              style: const TextStyle(fontSize: 24),
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(cls.tenLop, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-                Text('${cls.monHoc ?? 'Môn chưa xác định'} • Khối ${cls.khoi ?? '?'}'),
+                Text(
+                  cls.tenLop,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '${cls.monHoc ?? 'Môn chưa xác định'} • Khối ${cls.khoi ?? '?'}',
+                ),
               ],
             ),
           ),
@@ -158,11 +186,16 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
     );
   }
 
-  Widget _buildRosterTab(BuildContext context, AsyncValue<List<ClassMembership>> rosterAsync) {
+  Widget _buildRosterTab(
+    BuildContext context,
+    AsyncValue<List<ClassMembership>> rosterAsync,
+  ) {
     return rosterAsync.when(
       data: (memberships) {
         if (memberships.isEmpty) {
-          return const Center(child: Text('Không có học sinh nào trong ngày này.'));
+          return const Center(
+            child: Text('Không có học sinh nào trong ngày này.'),
+          );
         }
         return ListView.builder(
           itemCount: memberships.length,
@@ -177,7 +210,10 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
     );
   }
 
-  Widget _buildHistoryTab(BuildContext context, AsyncValue<List<ClassMembership>> historyAsync) {
+  Widget _buildHistoryTab(
+    BuildContext context,
+    AsyncValue<List<ClassMembership>> historyAsync,
+  ) {
     return historyAsync.when(
       data: (memberships) {
         if (memberships.isEmpty) {
@@ -203,7 +239,10 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
         children: [
           const Icon(Icons.construction, size: 48, color: Colors.grey),
           const SizedBox(height: 16),
-          Text('Chức năng $title', style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            'Chức năng $title',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           const Text('Sẽ được triển khai ở phase sau.'),
         ],
       ),
@@ -212,16 +251,26 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
 
   void _handleArchiveToggle(BuildContext context, ClassEntity cls) async {
     if (!cls.daLuuTru) {
-      final activeCount = await ref.read(classServiceProvider.future).then((s) => s.getActiveMemberCount(cls.id!));
+      final activeCount = await ref
+          .read(classServiceProvider.future)
+          .then((s) => s.getActiveMemberCount(cls.id!));
       if (activeCount > 0 && context.mounted) {
         final confirm = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Lưu trữ lớp học'),
-            content: Text('Lớp hiện còn $activeCount học sinh đang học. Bạn vẫn muốn lưu trữ lớp này?'),
+            content: Text(
+              'Lớp hiện còn $activeCount học sinh đang học. Bạn vẫn muốn lưu trữ lớp này?',
+            ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hủy')),
-              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Vẫn lưu trữ')),
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Hủy'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Vẫn lưu trữ'),
+              ),
             ],
           ),
         );
@@ -273,9 +322,14 @@ class HistoryItem extends ConsumerWidget {
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Từ: ${membership.tuNgay}${membership.denNgay != null ? ' - Đến: ${membership.denNgay}' : ''}'),
+          Text(
+            'Từ: ${membership.tuNgay}${membership.denNgay != null ? ' - Đến: ${membership.denNgay}' : ''}',
+          ),
           if (membership.lyDoKetThuc != null)
-            Text('Lý do nghỉ: ${membership.lyDoKetThuc}', style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12)),
+            Text(
+              'Lý do nghỉ: ${membership.lyDoKetThuc}',
+              style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12),
+            ),
         ],
       ),
       trailing: !isActive
@@ -288,7 +342,9 @@ class HistoryItem extends ConsumerWidget {
   }
 
   void _showReEnrollDialog(BuildContext context, WidgetRef ref) {
-    final dateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(DateTime.now()));
+    final dateController = TextEditingController(
+      text: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+    );
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -297,15 +353,23 @@ class HistoryItem extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text('Ngày học lại:'),
-            TextField(controller: dateController, decoration: const InputDecoration(hintText: 'YYYY-MM-DD')),
+            TextField(
+              controller: dateController,
+              decoration: const InputDecoration(hintText: 'YYYY-MM-DD'),
+            ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
           TextButton(
             onPressed: () async {
               try {
-                final service = await ref.read(membershipServiceProvider.future);
+                final service = await ref.read(
+                  membershipServiceProvider.future,
+                );
                 await service.enrollStudent(
                   studentId: membership.idHocSinh,
                   classId: membership.idLop,
@@ -320,7 +384,11 @@ class HistoryItem extends ConsumerWidget {
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString().replaceAll('Exception: ', '')),
+                    ),
+                  );
                 }
               }
             },
@@ -347,7 +415,9 @@ class RosterItem extends ConsumerWidget {
         loading: () => const Text('Loading...'),
         error: (_, __) => const Text('Error'),
       ),
-      subtitle: Text('Từ: ${membership.tuNgay}${membership.denNgay != null ? ' - Đến: ${membership.denNgay}' : ''}'),
+      subtitle: Text(
+        'Từ: ${membership.tuNgay}${membership.denNgay != null ? ' - Đến: ${membership.denNgay}' : ''}',
+      ),
       trailing: IconButton(
         icon: const Icon(Icons.logout),
         onPressed: () => _showLeaveDialog(context, ref),
@@ -356,7 +426,9 @@ class RosterItem extends ConsumerWidget {
   }
 
   void _showLeaveDialog(BuildContext context, WidgetRef ref) {
-    final dateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(DateTime.now()));
+    final dateController = TextEditingController(
+      text: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+    );
     String? selectedReason = 'TAM_NGUNG';
 
     showDialog(
@@ -368,7 +440,10 @@ class RosterItem extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text('Ngày nghỉ (Ngày cuối cùng còn học)'),
-              TextField(controller: dateController, decoration: const InputDecoration(hintText: 'YYYY-MM-DD')),
+              TextField(
+                controller: dateController,
+                decoration: const InputDecoration(hintText: 'YYYY-MM-DD'),
+              ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: selectedReason,
@@ -382,11 +457,16 @@ class RosterItem extends ConsumerWidget {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy'),
+            ),
             TextButton(
               onPressed: () async {
                 try {
-                  final service = await ref.read(membershipServiceProvider.future);
+                  final service = await ref.read(
+                    membershipServiceProvider.future,
+                  );
                   await service.leaveClass(
                     studentId: membership.idHocSinh,
                     classId: membership.idLop,
@@ -401,7 +481,9 @@ class RosterItem extends ConsumerWidget {
                   }
                 } catch (e) {
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(e.toString())));
                   }
                 }
               },
@@ -414,7 +496,8 @@ class RosterItem extends ConsumerWidget {
   }
 }
 
-final classMembershipHistoryProvider = FutureProvider.family<List<ClassMembership>, int>((ref, classId) async {
-  final repo = await ref.watch(membershipRepositoryProvider.future);
-  return repo.getByClass(classId);
-});
+final classMembershipHistoryProvider =
+    FutureProvider.family<List<ClassMembership>, int>((ref, classId) async {
+      final repo = await ref.watch(membershipRepositoryProvider.future);
+      return repo.getByClass(classId);
+    });

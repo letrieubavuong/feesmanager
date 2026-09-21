@@ -11,9 +11,11 @@ void main() {
   late StudentRepository repository;
 
   setUp(() async {
-    db = await openDatabase(inMemoryDatabasePath, version: 1,
-        onCreate: (db, version) async {
-      await db.execute('''
+    db = await openDatabase(
+      inMemoryDatabasePath,
+      version: 1,
+      onCreate: (db, version) async {
+        await db.execute('''
         CREATE TABLE hoc_sinh (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           ho_ten TEXT NOT NULL,
@@ -36,7 +38,8 @@ void main() {
           updated_at TEXT NOT NULL
         )
       ''');
-    });
+      },
+    );
     repository = StudentRepository(db);
   });
 
@@ -65,7 +68,7 @@ void main() {
     test('update student', () async {
       final id = await repository.create(testStudent);
       final student = (await repository.getById(id))!;
-      
+
       final updatedStudent = student.copyWith(hoTen: 'Nguyen Van C');
       await repository.update(updatedStudent);
 
@@ -75,7 +78,7 @@ void main() {
 
     test('archive and restore', () async {
       final id = await repository.create(testStudent);
-      
+
       await repository.setArchiveStatus(id, true);
       var activeStudents = await repository.getAll();
       expect(activeStudents.length, 0);
@@ -91,7 +94,9 @@ void main() {
 
     test('search students', () async {
       await repository.create(testStudent);
-      await repository.create(testStudent.copyWith(hoTen: 'Tran Van B', sdtPhuHuynh: '0905999999'));
+      await repository.create(
+        testStudent.copyWith(hoTen: 'Tran Van B', sdtPhuHuynh: '0905999999'),
+      );
 
       final searchByName = await repository.search('Nguyen');
       expect(searchByName.length, 1);

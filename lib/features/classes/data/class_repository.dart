@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import '../domain/class.dart';
+import '../domain/class_filter.dart';
 
 class ClassRepository {
   final Database _db;
@@ -30,21 +31,37 @@ class ClassRepository {
     return ClassEntity.fromMap(maps.first);
   }
 
-  Future<List<ClassEntity>> getAll({bool includeArchived = false}) async {
+  Future<List<ClassEntity>> getAll({
+    ClassFilter filter = ClassFilter.active,
+  }) async {
+    String? whereClause;
+    if (filter == ClassFilter.active) {
+      whereClause = 'da_luu_tru = 0';
+    } else if (filter == ClassFilter.archived) {
+      whereClause = 'da_luu_tru = 1';
+    }
+
     final List<Map<String, dynamic>> maps = await _db.query(
       'lop',
-      where: includeArchived ? null : 'da_luu_tru = 0',
+      where: whereClause,
       orderBy: 'ten_lop ASC',
     );
 
     return List.generate(maps.length, (i) => ClassEntity.fromMap(maps[i]));
   }
 
-  Future<List<ClassEntity>> search(String query, {bool includeArchived = false}) async {
-    final String whereClause = includeArchived
-        ? '(ten_lop LIKE ? OR mon_hoc LIKE ?)'
-        : '(ten_lop LIKE ? OR mon_hoc LIKE ?) AND da_luu_tru = 0';
-    
+  Future<List<ClassEntity>> search(
+    String query, {
+    ClassFilter filter = ClassFilter.active,
+  }) async {
+    String filterPart = '';
+    if (filter == ClassFilter.active) {
+      filterPart = ' AND da_luu_tru = 0';
+    } else if (filter == ClassFilter.archived) {
+      filterPart = ' AND da_luu_tru = 1';
+    }
+
+    final String whereClause = '(ten_lop LIKE ? OR mon_hoc LIKE ?)$filterPart';
     final String likeQuery = '%$query%';
     final List<dynamic> whereArgs = [likeQuery, likeQuery];
 

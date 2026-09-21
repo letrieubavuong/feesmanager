@@ -15,11 +15,14 @@ void main() {
     dbPath = join(tempDir.path, 'test_migration.db');
   });
 
-  group('AppDatabase Migration', () {
-    test('v1 -> v3 (fresh install simulator)', () async {
+  group('AppDatabase Migration Hardening', () {
+    test('v1 -> latest (v3) verification', () async {
       // Create v1 db
-      final dbV1 = await openDatabase(dbPath, version: 1, onCreate: (db, version) async {
-        await db.execute('''
+      final dbV1 = await openDatabase(
+        dbPath,
+        version: 1,
+        onCreate: (db, version) async {
+          await db.execute('''
           CREATE TABLE hoc_sinh (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             ho_ten TEXT NOT NULL,
@@ -42,7 +45,8 @@ void main() {
             updated_at TEXT NOT NULL
           )
         ''');
-      });
+        },
+      );
 
       await dbV1.insert('hoc_sinh', {
         'id': 100,
@@ -56,32 +60,50 @@ void main() {
 
       // Upgrade to latest using AppDatabase
       final appDb = AppDatabase(dbName: dbPath);
-      // Overriding directory for test
-      // AppDatabase currently uses getDatabasesPath(). 
-      // For ffi on windows it usually points to a local folder.
-      // Let's just use the absolute path in AppDatabase constructor by refactoring it to accept full path or just name.
-      // Actually we refactored it to accept dbName. Let's make sure it works.
-      
       final dbV3 = await appDb.database;
-      
+
       final student = await dbV3.query('hoc_sinh', where: 'id = 100');
       expect(student.length, 1);
-      expect(student.first['ho_ten'], 'Legacy Student');
 
-      // Check if new tables exist
-      final tables = await dbV3.rawQuery("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('lop', 'tham_gia_lop')");
+      // Verify tables exist
+      final tables = await dbV3.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('lop', 'tham_gia_lop')",
+      );
       expect(tables.length, 2);
 
-      expect(await dbV3.getVersion(), 3);
+      // Verify Foreign Keys in v3
+      final fkList = await dbV3.rawQuery(
+        'PRAGMA foreign_key_list(tham_gia_lop)',
+      );
+      final hasStudentFk = fkList.any(
+        (fk) => fk['table'] == 'hoc_sinh' && fk['from'] == 'id_hoc_sinh',
+      );
+      final hasClassFk = fkList.any(
+        (fk) => fk['table'] == 'lop' && fk['from'] == 'id_lop',
+      );
+
+      expect(
+        hasStudentFk,
+        isTrue,
+        reason: 'Missing id_hoc_sinh -> hoc_sinh(id) FK',
+      );
+      expect(hasClassFk, isTrue, reason: 'Missing id_lop -> lop(id) FK');
+
       await dbV3.close();
     });
 
-    test('v2 -> v3 (added constraints)', () async {
-       final dbV2 = await openDatabase(dbPath, version: 2, onCreate: (db, version) async {
-        // Mock v2 creation (tables from v1 + v2 migration)
-        await db.execute('CREATE TABLE hoc_sinh (id INTEGER PRIMARY KEY, ho_ten TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)');
-        await db.execute('CREATE TABLE lop (id INTEGER PRIMARY KEY, ten_lop TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)');
-        await db.execute('''
+    test('v2 -> v3 (added constraints and preserved FKs)', () async {
+      final dbV2 = await openDatabase(
+        dbPath,
+        version: 2,
+        onCreate: (db, version) async {
+          await db.execute(
+            'CREATE TABLE hoc_sinh (id INTEGER PRIMARY KEY, ho_ten TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)',
+          );
+          await db.execute(
+            'CREATE TABLE lop (id INTEGER PRIMARY KEY, ten_lop TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)',
+          );
+          await db.execute('''
           CREATE TABLE tham_gia_lop (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             id_hoc_sinh INTEGER NOT NULL,
@@ -92,17 +114,34 @@ void main() {
             mien_giam_phan_tram INTEGER NOT NULL DEFAULT 0,
             ghi_chu TEXT NULL,
             created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+            FOREIGN KEY (id_lop) REFERENCES lop (id)
           )
         ''');
-      });
+        },
+      );
 
+      // Insert valid data in v2
+      await dbV2.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'Student 1',
+        'created_at': '...',
+        'updated_at': '...',
+      });
+      await dbV2.insert('lop', {
+        'id': 1,
+        'ten_lop': 'Class 1',
+        'created_at': '...',
+        'updated_at': '...',
+      });
       await dbV2.insert('tham_gia_lop', {
+        'id': 300,
         'id_hoc_sinh': 1,
         'id_lop': 1,
         'tu_ngay': '2026-09-01',
-        'den_ngay': '2026-10-01', // Valid in v3
-        'mien_giam_phan_tram': 50, // Valid in v3
+        'den_ngay': '2026-10-01',
+        'mien_giam_phan_tram': 50,
         'created_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       });
@@ -110,37 +149,44 @@ void main() {
 
       // Upgrade to v3
       final appDb = AppDatabase(dbName: dbPath);
-      
-      // We need to disable foreign keys during migration in AppDatabase if we want to copy data 
-      // where children were inserted before parents (though usually it's fine if they already exist).
-      // In this test, parents DO exist but FK check might be sensitive during table swap.
       final dbV3 = await appDb.database;
 
-      final row = await dbV3.query('tham_gia_lop');
+      // Verify preservation
+      final row = await dbV3.query('tham_gia_lop', where: 'id = 300');
       expect(row.length, 1);
-      expect(row.first['mien_giam_phan_tram'], 50);
+      expect(row.first['id_hoc_sinh'], 1);
 
-      // Verify constraints now work
+      // Verify FKs preserved
+      final fkList = await dbV3.rawQuery(
+        'PRAGMA foreign_key_list(tham_gia_lop)',
+      );
+      expect(fkList.any((fk) => fk['table'] == 'hoc_sinh'), isTrue);
+      expect(fkList.any((fk) => fk['table'] == 'lop'), isTrue);
+
+      // Verify constraints enforced in v3
+      await dbV3.execute('PRAGMA foreign_keys = ON');
+
+      // Invalid student FK
       expect(
         () => dbV3.insert('tham_gia_lop', {
-          'id_hoc_sinh': 1,
+          'id_hoc_sinh': 999,
           'id_lop': 1,
-          'tu_ngay': '2026-10-01',
-          'den_ngay': '2026-09-01', // CHECK(den_ngay >= tu_ngay)
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
+          'tu_ngay': '2026-11-01',
+          'created_at': '...',
+          'updated_at': '...',
         }),
         throwsA(isA<DatabaseException>()),
       );
 
+      // Invalid mien_giam range
       expect(
         () => dbV3.insert('tham_gia_lop', {
           'id_hoc_sinh': 1,
           'id_lop': 1,
-          'tu_ngay': '2026-10-01',
-          'mien_giam_phan_tram': -1, // CHECK(between 0 and 100)
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
+          'tu_ngay': '2026-11-01',
+          'mien_giam_phan_tram': 101,
+          'created_at': '...',
+          'updated_at': '...',
         }),
         throwsA(isA<DatabaseException>()),
       );

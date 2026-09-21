@@ -7,7 +7,9 @@ import 'membership.dart';
 part 'membership_service.g.dart';
 
 @Riverpod(keepAlive: true)
-Future<MembershipRepository> membershipRepository(MembershipRepositoryRef ref) async {
+Future<MembershipRepository> membershipRepository(
+  MembershipRepositoryRef ref,
+) async {
   final db = await ref.watch(databaseProvider.future);
   return MembershipRepository(db);
 }
@@ -31,9 +33,16 @@ class MembershipService {
     final dateFormat = DateFormat('yyyy-MM-dd');
     final joinDateStr = dateFormat.format(joinDate);
 
-    final isOverlap = await _repository.hasOverlappingMembership(studentId, classId, joinDateStr, null);
+    final isOverlap = await _repository.hasOverlappingMembership(
+      studentId,
+      classId,
+      joinDateStr,
+      null,
+    );
     if (isOverlap) {
-      throw Exception('Khoảng thời gian này đã có membership khác của học sinh trong lớp');
+      throw Exception(
+        'Khoảng thời gian này đã có membership khác của học sinh trong lớp',
+      );
     }
 
     final membership = ClassMembership(
@@ -64,10 +73,12 @@ class MembershipService {
     final endDateStr = dateFormat.format(endDate);
 
     if (endDateStr.compareTo(open.tuNgay) < 0) {
-      throw Exception('Ngày kết thúc không được trước ngày bắt đầu (${open.tuNgay})');
+      throw Exception(
+        'Ngày kết thúc không được trước ngày bắt đầu (${open.tuNgay})',
+      );
     }
 
-    // Since we are closing an open interval, we don't need to check overlap for the rest of history 
+    // Since we are closing an open interval, we don't need to check overlap for the rest of history
     // because it was already checked when the interval was opened.
 
     final updated = open.copyWith(
@@ -79,12 +90,23 @@ class MembershipService {
     await _repository.update(updated);
   }
 
-  Future<ClassMembership?> getActiveMembership(int studentId, int classId, DateTime date) {
+  Future<ClassMembership?> getActiveMembership(
+    int studentId,
+    int classId,
+    DateTime date,
+  ) {
     final dateFormat = DateFormat('yyyy-MM-dd');
-    return _repository.getActiveMembership(studentId, classId, dateFormat.format(date));
+    return _repository.getActiveMembership(
+      studentId,
+      classId,
+      dateFormat.format(date),
+    );
   }
 
-  Future<List<ClassMembership>> getMembershipHistory(int studentId, {int? classId}) async {
+  Future<List<ClassMembership>> getMembershipHistory(
+    int studentId, {
+    int? classId,
+  }) async {
     if (classId != null) {
       final all = await _repository.getByStudent(studentId);
       return all.where((m) => m.idLop == classId).toList();
@@ -95,7 +117,10 @@ class MembershipService {
   Future<List<ClassMembership>> getRoster(int classId, {DateTime? date}) async {
     final referenceDate = date ?? DateTime.now();
     final dateFormat = DateFormat('yyyy-MM-dd');
-    return _repository.getActiveByClass(classId, dateFormat.format(referenceDate));
+    return _repository.getActiveByClass(
+      classId,
+      dateFormat.format(referenceDate),
+    );
   }
 
   Future<int> getClassSize(int classId, {DateTime? date}) async {
@@ -104,10 +129,16 @@ class MembershipService {
     return _repository.getClassSize(classId, dateFormat.format(referenceDate));
   }
 
-  Future<List<ClassMembership>> getActiveMembershipsForStudent(int studentId, {DateTime? date}) async {
+  Future<List<ClassMembership>> getActiveMembershipsForStudent(
+    int studentId, {
+    DateTime? date,
+  }) async {
     final referenceDate = date ?? DateTime.now();
     final dateFormat = DateFormat('yyyy-MM-dd');
-    return _repository.getActiveByStudent(studentId, dateFormat.format(referenceDate));
+    return _repository.getActiveByStudent(
+      studentId,
+      dateFormat.format(referenceDate),
+    );
   }
 
   Future<bool> hasActiveMemberships(int studentId) async {

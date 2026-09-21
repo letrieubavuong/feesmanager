@@ -20,16 +20,16 @@
 - [x] Unit and Repository tests passing
 
 ## Phase 2: Class + Membership - COMPLETE
-- [x] Database Migration (v1 -> v2)
-- [x] Class canonical table and CRUD
-- [x] Membership interval-based logic (no status fields)
+- [x] Database Migration (v1 -> v3) with `CHECK` constraints
+- [x] Real file-based migration tests (v1->v3, v2->v3)
+- [x] Membership overlap prevention logic
 - [x] Multiple classes per student support
-- [x] Pause/Resume/Leave history
-- [x] Blocking student archive if active in classes
-- [x] Derived class size based on reference date
-- [x] Class roster UI with membership management
-- [x] Student detail UI with class history
-- [x] Tests for migration, logic, and business rules
+- [x] Full membership history UI (closed + active)
+- [x] "Học lại" (Re-enroll) functionality
+- [x] Class archive/restore with active member warnings
+- [x] Class list filtering (Active/Archived)
+- [x] Widget tests for main UI flows
+- [x] Quality Gate: 22 tests passing
 
 ## Phase 3: Schedule + Session - NOT STARTED
 

@@ -1,89 +1,78 @@
-import 'package:intl/intl.dart';
-
-class ClassMembership {
+class StudentShiftAssignment {
   final int? id;
   final int idHocSinh;
   final int idLop;
+  final int idLichHoc;
   final String tuNgay; // YYYY-MM-DD
   final String? denNgay; // YYYY-MM-DD
-  final String? lyDoKetThuc;
-  final int mienGiamPhanTram;
+  final String? nguon;
   final String? ghiChu;
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  const ClassMembership({
+  const StudentShiftAssignment({
     this.id,
     required this.idHocSinh,
     required this.idLop,
+    required this.idLichHoc,
     required this.tuNgay,
     this.denNgay,
-    this.lyDoKetThuc,
-    this.mienGiamPhanTram = 0,
+    this.nguon,
     this.ghiChu,
     required this.createdAt,
     required this.updatedAt,
   });
-
-  bool isActiveOn(DateTime date) {
-    final dateFormat = DateFormat('yyyy-MM-dd');
-    final queryDateStr = dateFormat.format(date);
-
-    if (queryDateStr.compareTo(tuNgay) < 0) return false;
-    if (denNgay == null) return true;
-    return queryDateStr.compareTo(denNgay!) <= 0;
-  }
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'id_hoc_sinh': idHocSinh,
       'id_lop': idLop,
+      'id_lich_hoc': idLichHoc,
       'tu_ngay': tuNgay,
       'den_ngay': denNgay,
-      'ly_do_ket_thuc': lyDoKetThuc,
-      'mien_giam_phan_tram': mienGiamPhanTram,
+      'nguon': nguon,
       'ghi_chu': ghiChu,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
   }
 
-  factory ClassMembership.fromMap(Map<String, dynamic> map) {
-    return ClassMembership(
+  factory StudentShiftAssignment.fromMap(Map<String, dynamic> map) {
+    return StudentShiftAssignment(
       id: map['id'] as int?,
       idHocSinh: map['id_hoc_sinh'] as int,
       idLop: map['id_lop'] as int,
+      idLichHoc: map['id_lich_hoc'] as int,
       tuNgay: map['tu_ngay'] as String,
       denNgay: map['den_ngay'] as String?,
-      lyDoKetThuc: map['ly_do_ket_thuc'] as String?,
-      mienGiamPhanTram: map['mien_giam_phan_tram'] as int,
+      nguon: map['nguon'] as String?,
       ghiChu: map['ghi_chu'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
     );
   }
 
-  ClassMembership copyWith({
+  StudentShiftAssignment copyWith({
     int? id,
     int? idHocSinh,
     int? idLop,
+    int? idLichHoc,
     String? tuNgay,
     String? denNgay,
-    String? lyDoKetThuc,
-    int? mienGiamPhanTram,
+    String? nguon,
     String? ghiChu,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
-    return ClassMembership(
+    return StudentShiftAssignment(
       id: id ?? this.id,
       idHocSinh: idHocSinh ?? this.idHocSinh,
       idLop: idLop ?? this.idLop,
+      idLichHoc: idLichHoc ?? this.idLichHoc,
       tuNgay: tuNgay ?? this.tuNgay,
       denNgay: denNgay ?? this.denNgay,
-      lyDoKetThuc: lyDoKetThuc ?? this.lyDoKetThuc,
-      mienGiamPhanTram: mienGiamPhanTram ?? this.mienGiamPhanTram,
+      nguon: nguon ?? this.nguon,
       ghiChu: ghiChu ?? this.ghiChu,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

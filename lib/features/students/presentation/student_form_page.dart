@@ -13,7 +13,7 @@ class StudentFormPage extends ConsumerStatefulWidget {
 
 class _StudentFormPageState extends ConsumerState<StudentFormPage> {
   final _formKey = GlobalKey<FormState>();
-  
+
   late TextEditingController _hoTenController;
   late TextEditingController _ngaySinhController;
   late TextEditingController _tenPhuHuynhController;
@@ -24,7 +24,7 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
   late TextEditingController _diaChiController;
   late TextEditingController _facebookController;
   late TextEditingController _ghiChuController;
-  
+
   int? _khoi;
   String? _gioiTinh;
 
@@ -66,12 +66,7 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.student == null ? 'Thêm học sinh' : 'Sửa học sinh'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: _save,
-          ),
-        ],
+        actions: [IconButton(icon: const Icon(Icons.check), onPressed: _save)],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -82,8 +77,13 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
             children: [
               TextFormField(
                 controller: _hoTenController,
-                decoration: const InputDecoration(labelText: 'Họ và tên *', border: OutlineInputBorder()),
-                validator: (value) => (value == null || value.trim().isEmpty) ? 'Vui lòng nhập họ tên' : null,
+                decoration: const InputDecoration(
+                  labelText: 'Họ và tên *',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => (value == null || value.trim().isEmpty)
+                    ? 'Vui lòng nhập họ tên'
+                    : null,
               ),
               const SizedBox(height: 16),
               Row(
@@ -91,9 +91,17 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
                   Expanded(
                     child: DropdownButtonFormField<int>(
                       initialValue: _khoi,
-                      decoration: const InputDecoration(labelText: 'Khối', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(
+                        labelText: 'Khối',
+                        border: OutlineInputBorder(),
+                      ),
                       items: List.generate(12, (index) => index + 1)
-                          .map((k) => DropdownMenuItem(value: k, child: Text('Khối $k')))
+                          .map(
+                            (k) => DropdownMenuItem(
+                              value: k,
+                              child: Text('Khối $k'),
+                            ),
+                          )
                           .toList(),
                       onChanged: (v) => setState(() => _khoi = v),
                     ),
@@ -102,7 +110,10 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       initialValue: _gioiTinh,
-                      decoration: const InputDecoration(labelText: 'Giới tính', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(
+                        labelText: 'Giới tính',
+                        border: OutlineInputBorder(),
+                      ),
                       items: const [
                         DropdownMenuItem(value: 'NAM', child: Text('Nam')),
                         DropdownMenuItem(value: 'NU', child: Text('Nữ')),
@@ -116,51 +127,81 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _truongController,
-                decoration: const InputDecoration(labelText: 'Trường đang học', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Trường đang học',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 16),
               const Divider(),
-              const Text('Thông tin phụ huynh', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Thông tin phụ huynh',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _tenPhuHuynhController,
-                decoration: const InputDecoration(labelText: 'Tên phụ huynh', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Tên phụ huynh',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _sdtPhuHuynhController,
-                decoration: const InputDecoration(labelText: 'SĐT phụ huynh', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'SĐT phụ huynh',
+                  border: OutlineInputBorder(),
+                ),
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 16),
               const Divider(),
-              const Text('Liên hệ khác', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Liên hệ khác',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _sdtHocSinhController,
-                decoration: const InputDecoration(labelText: 'SĐT học sinh', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'SĐT học sinh',
+                  border: OutlineInputBorder(),
+                ),
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                ),
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _diaChiController,
-                decoration: const InputDecoration(labelText: 'Địa chỉ', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Địa chỉ',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _facebookController,
-                decoration: const InputDecoration(labelText: 'Facebook', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Facebook',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _ghiChuController,
-                decoration: const InputDecoration(labelText: 'Ghi chú', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Ghi chú',
+                  border: OutlineInputBorder(),
+                ),
                 maxLines: 3,
               ),
             ],
@@ -173,26 +214,31 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
   void _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final student = (widget.student ?? Student(
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      hoTen: '',
-    )).copyWith(
-      hoTen: _hoTenController.text,
-      ngaySinh: _ngaySinhController.text,
-      tenPhuHuynh: _tenPhuHuynhController.text,
-      sdtPhuHuynh: _sdtPhuHuynhController.text,
-      sdtHocSinh: _sdtHocSinhController.text,
-      email: _emailController.text,
-      truongDangHoc: _truongController.text,
-      khoi: _khoi,
-      gioiTinh: _gioiTinh,
-      diaChi: _diaChiController.text,
-      facebook: _facebookController.text,
-      ghiChu: _ghiChuController.text,
-    );
+    final student =
+        (widget.student ??
+                Student(
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  hoTen: '',
+                ))
+            .copyWith(
+              hoTen: _hoTenController.text,
+              ngaySinh: _ngaySinhController.text,
+              tenPhuHuynh: _tenPhuHuynhController.text,
+              sdtPhuHuynh: _sdtPhuHuynhController.text,
+              sdtHocSinh: _sdtHocSinhController.text,
+              email: _emailController.text,
+              truongDangHoc: _truongController.text,
+              khoi: _khoi,
+              gioiTinh: _gioiTinh,
+              diaChi: _diaChiController.text,
+              facebook: _facebookController.text,
+              ghiChu: _ghiChuController.text,
+            );
 
-    final success = await ref.read(studentFormControllerProvider.notifier).save(student);
+    final success = await ref
+        .read(studentFormControllerProvider.notifier)
+        .save(student);
     if (success && mounted) {
       ref.read(studentListControllerProvider.notifier).refresh();
       Navigator.of(context).pop();

@@ -44,7 +44,9 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                     icon: const Icon(Icons.clear),
                     onPressed: () {
                       _searchController.clear();
-                      ref.read(studentListControllerProvider.notifier).search('');
+                      ref
+                          .read(studentListControllerProvider.notifier)
+                          .search('');
                     },
                   ),
               ],
@@ -55,12 +57,11 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
       body: studentListAsync.when(
         data: (students) {
           if (students.isEmpty) {
-            return const Center(
-              child: Text('Không tìm thấy học sinh nào.'),
-            );
+            return const Center(child: Text('Không tìm thấy học sinh nào.'));
           }
           return RefreshIndicator(
-            onRefresh: () => ref.read(studentListControllerProvider.notifier).refresh(),
+            onRefresh: () =>
+                ref.read(studentListControllerProvider.notifier).refresh(),
             child: ListView.separated(
               itemCount: students.length,
               separatorBuilder: (context, index) => const Divider(height: 1),
@@ -79,7 +80,8 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => StudentDetailPage(studentId: student.id!),
+                        builder: (context) =>
+                            StudentDetailPage(studentId: student.id!),
                       ),
                     );
                   },
@@ -94,9 +96,7 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const StudentFormPage(),
-            ),
+            MaterialPageRoute(builder: (context) => const StudentFormPage()),
           );
         },
         child: const Icon(Icons.add),

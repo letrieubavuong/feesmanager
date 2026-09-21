@@ -5,11 +5,7 @@ import 'app/theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(
-    const ProviderScope(
-      child: TuitionApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: TuitionApp()));
 }
 
 class TuitionApp extends StatelessWidget {

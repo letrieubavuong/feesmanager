@@ -41,10 +41,14 @@ class MembershipRepository {
     return List.generate(maps.length, (i) => ClassMembership.fromMap(maps[i]));
   }
 
-  Future<List<ClassMembership>> getActiveByClass(int classId, String dateStr) async {
+  Future<List<ClassMembership>> getActiveByClass(
+    int classId,
+    String dateStr,
+  ) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'tham_gia_lop',
-      where: 'id_lop = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+      where:
+          'id_lop = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
       whereArgs: [classId, dateStr, dateStr],
       orderBy: 'tu_ngay DESC',
     );
@@ -52,10 +56,14 @@ class MembershipRepository {
     return List.generate(maps.length, (i) => ClassMembership.fromMap(maps[i]));
   }
 
-  Future<List<ClassMembership>> getActiveByStudent(int studentId, String dateStr) async {
+  Future<List<ClassMembership>> getActiveByStudent(
+    int studentId,
+    String dateStr,
+  ) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'tham_gia_lop',
-      where: 'id_hoc_sinh = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+      where:
+          'id_hoc_sinh = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
       whereArgs: [studentId, dateStr, dateStr],
       orderBy: 'tu_ngay DESC',
     );
@@ -74,10 +82,15 @@ class MembershipRepository {
     return ClassMembership.fromMap(maps.first);
   }
 
-  Future<ClassMembership?> getActiveMembership(int studentId, int classId, String dateStr) async {
+  Future<ClassMembership?> getActiveMembership(
+    int studentId,
+    int classId,
+    String dateStr,
+  ) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'tham_gia_lop',
-      where: 'id_hoc_sinh = ? AND id_lop = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+      where:
+          'id_hoc_sinh = ? AND id_lop = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
       whereArgs: [studentId, classId, dateStr, dateStr],
     );
 
@@ -85,10 +98,16 @@ class MembershipRepository {
     return ClassMembership.fromMap(maps.first);
   }
 
-  Future<bool> hasOverlappingMembership(int studentId, int classId, String start, String? end, {int? excludeId}) async {
+  Future<bool> hasOverlappingMembership(
+    int studentId,
+    int classId,
+    String start,
+    String? end, {
+    int? excludeId,
+  }) async {
     String whereClause = 'id_hoc_sinh = ? AND id_lop = ?';
     List<dynamic> whereArgs = [studentId, classId];
-    
+
     if (excludeId != null) {
       whereClause += ' AND id != ?';
       whereArgs.add(excludeId);

@@ -25,7 +25,9 @@ class _ClassFormPageState extends ConsumerState<ClassFormPage> {
     final c = widget.cls;
     _tenLopController = TextEditingController(text: c?.tenLop);
     _monHocController = TextEditingController(text: c?.monHoc);
-    _siSoToiDaController = TextEditingController(text: c?.siSoToiDa?.toString());
+    _siSoToiDaController = TextEditingController(
+      text: c?.siSoToiDa?.toString(),
+    );
     _ghiChuController = TextEditingController(text: c?.ghiChu);
     _khoi = c?.khoi;
   }
@@ -44,9 +46,7 @@ class _ClassFormPageState extends ConsumerState<ClassFormPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.cls == null ? 'Thêm lớp học' : 'Sửa lớp học'),
-        actions: [
-          IconButton(icon: const Icon(Icons.check), onPressed: _save),
-        ],
+        actions: [IconButton(icon: const Icon(Icons.check), onPressed: _save)],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -56,8 +56,13 @@ class _ClassFormPageState extends ConsumerState<ClassFormPage> {
             children: [
               TextFormField(
                 controller: _tenLopController,
-                decoration: const InputDecoration(labelText: 'Tên lớp *', border: OutlineInputBorder()),
-                validator: (value) => (value == null || value.trim().isEmpty) ? 'Vui lòng nhập tên lớp' : null,
+                decoration: const InputDecoration(
+                  labelText: 'Tên lớp *',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => (value == null || value.trim().isEmpty)
+                    ? 'Vui lòng nhập tên lớp'
+                    : null,
               ),
               const SizedBox(height: 16),
               Row(
@@ -65,9 +70,17 @@ class _ClassFormPageState extends ConsumerState<ClassFormPage> {
                   Expanded(
                     child: DropdownButtonFormField<int>(
                       value: _khoi,
-                      decoration: const InputDecoration(labelText: 'Khối', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(
+                        labelText: 'Khối',
+                        border: OutlineInputBorder(),
+                      ),
                       items: List.generate(12, (index) => index + 1)
-                          .map((k) => DropdownMenuItem(value: k, child: Text('Khối $k')))
+                          .map(
+                            (k) => DropdownMenuItem(
+                              value: k,
+                              child: Text('Khối $k'),
+                            ),
+                          )
                           .toList(),
                       onChanged: (v) => setState(() => _khoi = v),
                     ),
@@ -76,7 +89,10 @@ class _ClassFormPageState extends ConsumerState<ClassFormPage> {
                   Expanded(
                     child: TextFormField(
                       controller: _siSoToiDaController,
-                      decoration: const InputDecoration(labelText: 'Sĩ số tối đa', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(
+                        labelText: 'Sĩ số tối đa',
+                        border: OutlineInputBorder(),
+                      ),
                       keyboardType: TextInputType.number,
                     ),
                   ),
@@ -85,12 +101,18 @@ class _ClassFormPageState extends ConsumerState<ClassFormPage> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _monHocController,
-                decoration: const InputDecoration(labelText: 'Môn học', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Môn học',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _ghiChuController,
-                decoration: const InputDecoration(labelText: 'Ghi chú', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Ghi chú',
+                  border: OutlineInputBorder(),
+                ),
                 maxLines: 3,
               ),
             ],
@@ -103,19 +125,24 @@ class _ClassFormPageState extends ConsumerState<ClassFormPage> {
   void _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final classEntity = (widget.cls ?? ClassEntity(
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      tenLop: '',
-    )).copyWith(
-      tenLop: _tenLopController.text,
-      monHoc: _monHocController.text,
-      siSoToiDa: int.tryParse(_siSoToiDaController.text),
-      khoi: _khoi,
-      ghiChu: _ghiChuController.text,
-    );
+    final classEntity =
+        (widget.cls ??
+                ClassEntity(
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  tenLop: '',
+                ))
+            .copyWith(
+              tenLop: _tenLopController.text,
+              monHoc: _monHocController.text,
+              siSoToiDa: int.tryParse(_siSoToiDaController.text),
+              khoi: _khoi,
+              ghiChu: _ghiChuController.text,
+            );
 
-    final success = await ref.read(classFormControllerProvider.notifier).save(classEntity);
+    final success = await ref
+        .read(classFormControllerProvider.notifier)
+        .save(classEntity);
     if (success && mounted) {
       ref.read(classListControllerProvider.notifier).refresh();
       Navigator.of(context).pop();

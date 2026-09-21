@@ -8,10 +8,7 @@ class AppTheme {
         seedColor: Colors.blue,
         brightness: Brightness.light,
       ),
-      appBarTheme: const AppBarTheme(
-        centerTitle: true,
-        elevation: 0,
-      ),
+      appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
     );
   }
 
@@ -22,10 +19,7 @@ class AppTheme {
         seedColor: Colors.blue,
         brightness: Brightness.dark,
       ),
-      appBarTheme: const AppBarTheme(
-        centerTitle: true,
-        elevation: 0,
-      ),
+      appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
     );
   }
 }

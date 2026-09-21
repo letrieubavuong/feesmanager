@@ -8,13 +8,19 @@ import '../domain/membership_service.dart';
 class AddStudentToClassDialog extends ConsumerStatefulWidget {
   final int classId;
   final VoidCallback onSuccess;
-  const AddStudentToClassDialog({super.key, required this.classId, required this.onSuccess});
+  const AddStudentToClassDialog({
+    super.key,
+    required this.classId,
+    required this.onSuccess,
+  });
 
   @override
-  ConsumerState<AddStudentToClassDialog> createState() => _AddStudentToClassDialogState();
+  ConsumerState<AddStudentToClassDialog> createState() =>
+      _AddStudentToClassDialogState();
 }
 
-class _AddStudentToClassDialogState extends ConsumerState<AddStudentToClassDialog> {
+class _AddStudentToClassDialogState
+    extends ConsumerState<AddStudentToClassDialog> {
   Student? _selectedStudent;
   DateTime _joinDate = DateTime.now();
   final _mienGiamController = TextEditingController(text: '0');
@@ -33,8 +39,15 @@ class _AddStudentToClassDialogState extends ConsumerState<AddStudentToClassDialo
             studentsAsync.when(
               data: (students) => DropdownButtonFormField<Student>(
                 value: _selectedStudent,
-                decoration: const InputDecoration(labelText: 'Chọn học sinh', border: OutlineInputBorder()),
-                items: students.map((s) => DropdownMenuItem(value: s, child: Text(s.hoTen))).toList(),
+                decoration: const InputDecoration(
+                  labelText: 'Chọn học sinh',
+                  border: OutlineInputBorder(),
+                ),
+                items: students
+                    .map(
+                      (s) => DropdownMenuItem(value: s, child: Text(s.hoTen)),
+                    )
+                    .toList(),
                 onChanged: (v) => setState(() => _selectedStudent = v),
               ),
               loading: () => const CircularProgressIndicator(),
@@ -58,20 +71,29 @@ class _AddStudentToClassDialogState extends ConsumerState<AddStudentToClassDialo
             const SizedBox(height: 16),
             TextField(
               controller: _mienGiamController,
-              decoration: const InputDecoration(labelText: 'Miễn giảm (%)', border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                labelText: 'Miễn giảm (%)',
+                border: OutlineInputBorder(),
+              ),
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _ghiChuController,
-              decoration: const InputDecoration(labelText: 'Ghi chú', border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                labelText: 'Ghi chú',
+                border: OutlineInputBorder(),
+              ),
               maxLines: 2,
             ),
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Hủy'),
+        ),
         ElevatedButton(
           onPressed: _selectedStudent == null ? null : _submit,
           child: const Text('Thêm'),
@@ -94,7 +116,9 @@ class _AddStudentToClassDialogState extends ConsumerState<AddStudentToClassDialo
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
       }
     }
   }

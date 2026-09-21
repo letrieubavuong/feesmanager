@@ -75,33 +75,39 @@ class _AppShellState extends State<AppShell> {
             NavigationRail(
               extended: width >= 800,
               selectedIndex: _selectedIndex,
-              onDestinationSelected: (index) => setState(() => _selectedIndex = index),
-              labelType: width >= 800 ? NavigationRailLabelType.none : NavigationRailLabelType.all,
+              onDestinationSelected: (index) =>
+                  setState(() => _selectedIndex = index),
+              labelType: width >= 800
+                  ? NavigationRailLabelType.none
+                  : NavigationRailLabelType.all,
               destinations: _items
-                  .map((item) => NavigationRailDestination(
-                        icon: Icon(item.icon),
-                        selectedIcon: Icon(item.selectedIcon),
-                        label: Text(item.label),
-                      ))
+                  .map(
+                    (item) => NavigationRailDestination(
+                      icon: Icon(item.icon),
+                      selectedIcon: Icon(item.selectedIcon),
+                      label: Text(item.label),
+                    ),
+                  )
                   .toList(),
             ),
           const VerticalDivider(thickness: 1, width: 1),
-          Expanded(
-            child: _items[_selectedIndex].content,
-          ),
+          Expanded(child: _items[_selectedIndex].content),
         ],
       ),
       bottomNavigationBar: useSidebar
           ? null
           : NavigationBar(
               selectedIndex: _selectedIndex,
-              onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+              onDestinationSelected: (index) =>
+                  setState(() => _selectedIndex = index),
               destinations: _items
-                  .map((item) => NavigationDestination(
-                        icon: Icon(item.icon),
-                        selectedIcon: Icon(item.selectedIcon),
-                        label: item.label,
-                      ))
+                  .map(
+                    (item) => NavigationDestination(
+                      icon: Icon(item.icon),
+                      selectedIcon: Icon(item.selectedIcon),
+                      label: item.label,
+                    ),
+                  )
                   .toList(),
             ),
     );
@@ -134,7 +140,11 @@ class PlaceholderPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.construction, size: 64, color: Theme.of(context).disabledColor),
+            Icon(
+              Icons.construction,
+              size: 64,
+              color: Theme.of(context).disabledColor,
+            ),
             const SizedBox(height: 16),
             Text(
               'Chức năng $title',

@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int _dbVersion = 3;
+  static const int _dbVersion = 4;
 
   final String dbName;
   Database? _database;
@@ -16,7 +16,9 @@ class AppDatabase {
   }
 
   Future<Database> _initDatabase() async {
-    final path = isAbsolute(dbName) ? dbName : join(await getDatabasesPath(), dbName);
+    final path = isAbsolute(dbName)
+        ? dbName
+        : join(await getDatabasesPath(), dbName);
 
     return await openDatabase(
       path,
@@ -43,6 +45,9 @@ class AppDatabase {
     if (version >= 3) {
       await _migrateV2ToV3(db);
     }
+    if (version >= 4) {
+      await _migrateV3ToV4(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -51,6 +56,9 @@ class AppDatabase {
     }
     if (oldVersion < 3) {
       await _migrateV2ToV3(db);
+    }
+    if (oldVersion < 4) {
+      await _migrateV3ToV4(db);
     }
   }
 
@@ -80,8 +88,12 @@ class AppDatabase {
     ''');
 
     await db.execute('CREATE INDEX idx_hoc_sinh_ho_ten ON hoc_sinh(ho_ten)');
-    await db.execute('CREATE INDEX idx_hoc_sinh_sdt_phu_huynh ON hoc_sinh(sdt_phu_huynh)');
-    await db.execute('CREATE INDEX idx_hoc_sinh_da_luu_tru ON hoc_sinh(da_luu_tru)');
+    await db.execute(
+      'CREATE INDEX idx_hoc_sinh_sdt_phu_huynh ON hoc_sinh(sdt_phu_huynh)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_hoc_sinh_da_luu_tru ON hoc_sinh(da_luu_tru)',
+    );
   }
 
   Future<void> _migrateV1ToV2(Database db) async {
@@ -124,8 +136,12 @@ class AppDatabase {
     ''');
 
     await db.execute('CREATE INDEX idx_lop_da_luu_tru ON lop(da_luu_tru)');
-    await db.execute('CREATE INDEX idx_tham_gia_lop_hoc_sinh ON tham_gia_lop(id_hoc_sinh)');
-    await db.execute('CREATE INDEX idx_tham_gia_lop_lop ON tham_gia_lop(id_lop)');
+    await db.execute(
+      'CREATE INDEX idx_tham_gia_lop_hoc_sinh ON tham_gia_lop(id_hoc_sinh)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_tham_gia_lop_lop ON tham_gia_lop(id_lop)',
+    );
   }
 
   Future<void> _migrateV2ToV3(Database db) async {
@@ -134,7 +150,7 @@ class AppDatabase {
     try {
       await db.transaction((txn) async {
         // 1. Create new table with constraints
-      await txn.execute('''
+        await txn.execute('''
         CREATE TABLE tham_gia_lop_new (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           id_hoc_sinh INTEGER NOT NULL,
@@ -146,14 +162,16 @@ class AppDatabase {
           ghi_chu TEXT NULL,
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL,
+          FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+          FOREIGN KEY (id_lop) REFERENCES lop (id),
           UNIQUE(id_hoc_sinh, id_lop, tu_ngay),
           CHECK (den_ngay IS NULL OR den_ngay >= tu_ngay),
           CHECK (mien_giam_phan_tram BETWEEN 0 AND 100)
         )
       ''');
 
-      // 2. Copy data
-      await txn.execute('''
+        // 2. Copy data
+        await txn.execute('''
         INSERT INTO tham_gia_lop_new (
           id, id_hoc_sinh, id_lop, tu_ngay, den_ngay, 
           ly_do_ket_thuc, mien_giam_phan_tram, ghi_chu, 
@@ -166,21 +184,77 @@ class AppDatabase {
         FROM tham_gia_lop
       ''');
 
-      // 3. Drop old table and rename
-      await txn.execute('DROP TABLE tham_gia_lop');
-      await txn.execute('ALTER TABLE tham_gia_lop_new RENAME TO tham_gia_lop');
+        // 3. Drop old table and rename
+        await txn.execute('DROP TABLE tham_gia_lop');
+        await txn.execute(
+          'ALTER TABLE tham_gia_lop_new RENAME TO tham_gia_lop',
+        );
 
-      // 4. Recreate indexes
-      await txn.execute('''
+        // 4. Recreate indexes
+        await txn.execute('''
         CREATE UNIQUE INDEX idx_tham_gia_lop_open_interval 
         ON tham_gia_lop(id_hoc_sinh, id_lop) 
         WHERE den_ngay IS NULL
       ''');
-      await txn.execute('CREATE INDEX idx_tham_gia_lop_hoc_sinh ON tham_gia_lop(id_hoc_sinh)');
-      await txn.execute('CREATE INDEX idx_tham_gia_lop_lop ON tham_gia_lop(id_lop)');
-    });
+        await txn.execute(
+          'CREATE INDEX idx_tham_gia_lop_hoc_sinh ON tham_gia_lop(id_hoc_sinh)',
+        );
+        await txn.execute(
+          'CREATE INDEX idx_tham_gia_lop_lop ON tham_gia_lop(id_lop)',
+        );
+      });
     } finally {
       await db.execute('PRAGMA foreign_keys = ON');
     }
+  }
+
+  Future<void> _migrateV3ToV4(Database db) async {
+    await db.execute('''
+      CREATE TABLE lich_hoc (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_lop INTEGER NOT NULL,
+        thu_trong_tuan INTEGER NOT NULL,
+        gio_bat_dau TEXT NOT NULL,
+        gio_ket_thuc TEXT NOT NULL,
+        hieu_luc_tu TEXT NOT NULL,
+        hieu_luc_den TEXT NULL,
+        ghi_chu TEXT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (id_lop) REFERENCES lop (id),
+        CHECK (thu_trong_tuan BETWEEN 1 AND 7),
+        CHECK (gio_ket_thuc > gio_bat_dau),
+        CHECK (hieu_luc_den IS NULL OR hieu_luc_den >= hieu_luc_tu)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE UNIQUE INDEX idx_lich_hoc_unique 
+      ON lich_hoc(id_lop, thu_trong_tuan, gio_bat_dau, hieu_luc_tu)
+    ''');
+
+    await db.execute('''
+      CREATE TABLE phan_ca_hoc_sinh (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_hoc_sinh INTEGER NOT NULL,
+        id_lop INTEGER NOT NULL,
+        id_lich_hoc INTEGER NOT NULL,
+        tu_ngay TEXT NOT NULL,
+        den_ngay TEXT NULL,
+        nguon TEXT NULL,
+        ghi_chu TEXT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+        FOREIGN KEY (id_lop) REFERENCES lop (id),
+        FOREIGN KEY (id_lich_hoc) REFERENCES lich_hoc (id),
+        CHECK (den_ngay IS NULL OR den_ngay >= tu_ngay)
+      )
+    ''');
+
+    await db.execute('CREATE INDEX idx_lich_hoc_lop ON lich_hoc(id_lop)');
+    await db.execute('CREATE INDEX idx_phan_ca_hoc_sinh_hs ON phan_ca_hoc_sinh(id_hoc_sinh)');
+    await db.execute('CREATE INDEX idx_phan_ca_hoc_sinh_lop ON phan_ca_hoc_sinh(id_lop)');
+    await db.execute('CREATE INDEX idx_phan_ca_hoc_sinh_lich ON phan_ca_hoc_sinh(id_lich_hoc)');
   }
 }

@@ -21,7 +21,7 @@ final classRepositoryProvider = FutureProvider<ClassRepository>.internal(
 );
 
 typedef ClassRepositoryRef = FutureProviderRef<ClassRepository>;
-String _$classServiceHash() => r'12f071cca7265b4b2b241e9fcb620a9c4ba16706';
+String _$classServiceHash() => r'11d04ab4f27ae57570df4582a34343a7c02352e3';
 
 /// See also [classService].
 @ProviderFor(classService)

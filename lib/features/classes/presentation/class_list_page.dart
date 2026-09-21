@@ -6,6 +6,8 @@ import 'class_detail_page.dart';
 import '../domain/class.dart';
 import '../../memberships/presentation/membership_providers.dart';
 
+import '../domain/class_filter.dart';
+
 class ClassListPage extends ConsumerStatefulWidget {
   const ClassListPage({super.key});
 
@@ -15,7 +17,7 @@ class ClassListPage extends ConsumerStatefulWidget {
 
 class _ClassListPageState extends ConsumerState<ClassListPage> {
   final _searchController = TextEditingController();
-  bool _showArchived = false;
+  ClassFilter _filter = ClassFilter.active;
 
   @override
   void dispose() {
@@ -31,16 +33,15 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
       appBar: AppBar(
         title: const Text('Lớp học'),
         actions: [
-          PopupMenuButton<bool>(
-            initialValue: _showArchived,
+          PopupMenuButton<ClassFilter>(
+            initialValue: _filter,
             onSelected: (value) {
-              setState(() => _showArchived = value);
-              ref.read(classListControllerProvider.notifier).toggleIncludeArchived(value);
+              setState(() => _filter = value);
+              ref.read(classListControllerProvider.notifier).setFilter(value);
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: false, child: Text('Đang hoạt động')),
-              const PopupMenuItem(value: true, child: Text('Đã lưu trữ')),
-            ],
+            itemBuilder: (context) => ClassFilter.values
+                .map((f) => PopupMenuItem(value: f, child: Text(f.label)))
+                .toList(),
             icon: const Icon(Icons.filter_list),
           ),
         ],
@@ -73,11 +74,14 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
         data: (classes) {
           if (classes.isEmpty) {
             return Center(
-              child: Text(_showArchived ? 'Không có lớp học nào đã lưu trữ.' : 'Không tìm thấy lớp học nào.'),
+              child: Text(
+                'Không tìm thấy lớp học nào (${_filter.label.toLowerCase()}).',
+              ),
             );
           }
           return RefreshIndicator(
-            onRefresh: () => ref.read(classListControllerProvider.notifier).refresh(),
+            onRefresh: () =>
+                ref.read(classListControllerProvider.notifier).refresh(),
             child: ListView.separated(
               itemCount: classes.length,
               separatorBuilder: (context, index) => const Divider(height: 1),
@@ -113,7 +117,7 @@ class ClassListTile extends ConsumerWidget {
 
     return ListTile(
       title: Text(
-        cls.tenLop, 
+        cls.tenLop,
         style: TextStyle(
           fontWeight: FontWeight.bold,
           decoration: cls.daLuuTru ? TextDecoration.lineThrough : null,
@@ -131,12 +135,16 @@ class ClassListTile extends ConsumerWidget {
             data: (size) => Text(
               '$size / ${cls.siSoToiDa ?? '∞'}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: (cls.siSoToiDa != null && size >= cls.siSoToiDa!) 
-                  ? Colors.red 
-                  : null,
+                color: (cls.siSoToiDa != null && size >= cls.siSoToiDa!)
+                    ? Colors.red
+                    : null,
               ),
             ),
-            loading: () => const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+            loading: () => const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
             error: (_, __) => const Text('?'),
           ),
           const Icon(Icons.chevron_right, size: 16),
@@ -144,7 +152,9 @@ class ClassListTile extends ConsumerWidget {
       ),
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => ClassDetailPage(classId: cls.id!)),
+          MaterialPageRoute(
+            builder: (context) => ClassDetailPage(classId: cls.id!),
+          ),
         );
       },
     );
