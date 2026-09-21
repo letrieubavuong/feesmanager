@@ -9,7 +9,7 @@ import '../../classes/presentation/class_controller.dart';
 import 'student_form_page.dart';
 import 'student_controller.dart';
 
-import '../../../../core/utils/date_formatter.dart';
+import 'package:tuition2027/core/utils/date_formatter.dart';
 import '../../schedule/domain/student_shift_assignment.dart';
 import '../../schedule/domain/schedule_service.dart';
 import '../../schedule/domain/class_schedule.dart';
@@ -432,13 +432,16 @@ Future<List<ClassMembership>> studentMembershipHistory(
 }
 
 @riverpod
-Future<List<StudentShiftAssignment>> studentSchedule(StudentScheduleRef ref, int id) async {
-  final repo = await ref.watch(assignmentRepositoryProvider.future);
-  return repo.getByStudent(id);
+Future<List<StudentShiftAssignment>> studentSchedule(
+  StudentScheduleRef ref,
+  int id,
+) async {
+  final service = await ref.watch(classScheduleServiceProvider.future);
+  return service.getAssignmentsForStudent(id);
 }
 
 @riverpod
 Future<ClassSchedule?> scheduleDetail(ScheduleDetailRef ref, int id) async {
-  final repo = await ref.watch(scheduleRepositoryProvider.future);
-  return repo.getById(id);
+  final service = await ref.watch(classScheduleServiceProvider.future);
+  return service.getScheduleById(id);
 }

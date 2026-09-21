@@ -290,7 +290,7 @@ class _StudentMembershipHistoryProviderElement
   int get id => (origin as StudentMembershipHistoryProvider).id;
 }
 
-String _$studentScheduleHash() => r'8a3f7d7571f1e29f2e7bba8a9f106a3c4437bbf6';
+String _$studentScheduleHash() => r'c5a28a99139aee715b89dbe583475f015beb72f2';
 
 /// See also [studentSchedule].
 @ProviderFor(studentSchedule)
@@ -424,7 +424,7 @@ class _StudentScheduleProviderElement
   int get id => (origin as StudentScheduleProvider).id;
 }
 
-String _$scheduleDetailHash() => r'11311cfbad5c616ec965dc674fba371e8ff08e53';
+String _$scheduleDetailHash() => r'70a3b2853b12e10d5cf86a1afc3fbeaa797aa4f0';
 
 /// See also [scheduleDetail].
 @ProviderFor(scheduleDetail)

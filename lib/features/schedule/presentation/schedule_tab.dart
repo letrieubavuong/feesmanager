@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../domain/class_schedule.dart';
 import 'schedule_controller.dart';
 
-import '../../../../core/utils/date_formatter.dart';
+import 'package:tuition2027/core/utils/date_formatter.dart';
 
 class ScheduleTab extends ConsumerWidget {
   final int classId;

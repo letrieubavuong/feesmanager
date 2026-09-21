@@ -8,7 +8,7 @@ part 'schedule_controller.g.dart';
 class ClassScheduleController extends _$ClassScheduleController {
   @override
   FutureOr<List<ClassSchedule>> build(int classId) async {
-    final service = await ref.watch(scheduleServiceProvider.future);
+    final service = await ref.watch(classScheduleServiceProvider.future);
     return service.getSchedulesForClass(classId);
   }
 
@@ -20,9 +20,11 @@ class ClassScheduleController extends _$ClassScheduleController {
   Future<bool> create(ClassSchedule schedule) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final service = await ref.read(scheduleServiceProvider.future);
+      final service = await ref.read(classScheduleServiceProvider.future);
       await service.createSchedule(schedule);
-      return ref.read(scheduleServiceProvider.future).then((s) => s.getSchedulesForClass(schedule.idLop));
+      return ref
+          .read(classScheduleServiceProvider.future)
+          .then((s) => s.getSchedulesForClass(schedule.idLop));
     });
     return !state.hasError;
   }
@@ -31,9 +33,11 @@ class ClassScheduleController extends _$ClassScheduleController {
     final schedule = (await future).firstWhere((s) => s.id == scheduleId);
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final service = await ref.read(scheduleServiceProvider.future);
+      final service = await ref.read(classScheduleServiceProvider.future);
       await service.closeSchedule(scheduleId, endDate);
-      return ref.read(scheduleServiceProvider.future).then((s) => s.getSchedulesForClass(schedule.idLop));
+      return ref
+          .read(classScheduleServiceProvider.future)
+          .then((s) => s.getSchedulesForClass(schedule.idLop));
     });
     return !state.hasError;
   }

@@ -426,9 +426,7 @@ class RosterItem extends ConsumerWidget {
   }
 
   void _showLeaveDialog(BuildContext context, WidgetRef ref) {
-    final dateController = TextEditingController(
-      text: DateFormat('yyyy-MM-dd').format(DateTime.now()),
-    );
+    DateTime _endDate = DateTime.now();
     String? selectedReason = 'TAM_NGUNG';
 
     showDialog(
@@ -439,10 +437,19 @@ class RosterItem extends ConsumerWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Ngày nghỉ (Ngày cuối cùng còn học)'),
-              TextField(
-                controller: dateController,
-                decoration: const InputDecoration(hintText: 'YYYY-MM-DD'),
+              ListTile(
+                title: const Text('Ngày nghỉ (Ngày cuối học)'),
+                subtitle: Text(DateFormat('dd/MM/yyyy').format(_endDate)),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _endDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) setDialogState(() => _endDate = picked);
+                },
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
@@ -470,7 +477,7 @@ class RosterItem extends ConsumerWidget {
                   await service.leaveClass(
                     studentId: membership.idHocSinh,
                     classId: membership.idLop,
-                    endDate: DateTime.parse(dateController.text),
+                    endDate: _endDate,
                     reason: selectedReason,
                   );
                   if (context.mounted) {

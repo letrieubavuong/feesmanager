@@ -28,12 +28,15 @@
 - [x] Widget tests for main UI flows.
 
 ## Phase 3: Schedule + Student Shift Assignment - COMPLETE
-- [x] Database Migration (v3 -> v4).
-- [x] Recurring schedule management (`lich_hoc`) with effective intervals.
-- [x] Student shift assignment (`phan_ca_hoc_sinh`) with membership boundary enforcement.
-- [x] Hard conflict detection (overlapping shifts for the same student).
-- [x] Functional "Lịch học" and "Phân ca" tabs in Class Detail.
-- [x] Student Detail showing active and historical shift assignments.
+- [x] Database Migration (v1 -> v5) with duplicate assignment protection.
+- [x] Strict boundary enforcement (Assignments must stay within Membership and Schedule intervals).
+- [x] Advanced future conflict detection (interval overlap algorithm).
+- [x] Atomic shift changes (close old, open new in one transaction).
+- [x] Presentation hardening (no direct repository calls from UI).
+- [x] Candidate filtering (only show active members for assignment).
+- [x] DatePicker integration for all date inputs.
+- [x] Standardized Vietnamese weekday formatting.
+- [x] GitHub Actions CI workflow implemented.
 - [x] Quality Gate: 34 tests passing.
 
 ## Phase 4: Session + Attendance - NOT STARTED

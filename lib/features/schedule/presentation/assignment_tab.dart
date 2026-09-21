@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'schedule_controller.dart';
-import 'assignment_controller.dart';
-import '../../students/domain/student.dart';
-import '../../students/domain/student_service.dart';
-import '../../memberships/domain/membership_service.dart';
-import '../../../../core/utils/date_formatter.dart';
-import '../../students/presentation/student_detail_page.dart';
-import '../../students/presentation/student_controller.dart';
+import 'package:tuition2027/features/schedule/presentation/schedule_controller.dart';
+import 'package:tuition2027/features/schedule/presentation/assignment_controller.dart';
+import 'package:tuition2027/features/schedule/domain/schedule_service.dart';
+import 'package:tuition2027/features/students/domain/student.dart';
+import 'package:tuition2027/features/students/domain/student_service.dart';
+import 'package:tuition2027/features/memberships/domain/membership_service.dart';
+import 'package:tuition2027/core/utils/date_formatter.dart';
+import 'package:tuition2027/features/students/presentation/student_detail_page.dart';
+import 'package:tuition2027/features/students/presentation/student_controller.dart';
 
 class AssignmentTab extends ConsumerWidget {
   final int classId;
@@ -170,12 +171,8 @@ class _AssignStudentDialogState extends ConsumerState<AssignStudentDialog> {
   }
 }
 
-final assignmentCandidateProvider = FutureProvider.family<List<Student>, (int, DateTime)>((ref, arg) async {
-  final membershipService = await ref.watch(membershipServiceProvider.future);
-  final studentService = await ref.watch(studentServiceProvider.future);
-  
-  final activeIds = await membershipService.getActiveStudentIdsInClass(arg.$1, arg.$2);
-  final allStudents = await studentService.getStudents();
-  
-  return allStudents.where((s) => activeIds.contains(s.id)).toList();
-});
+final assignmentCandidateProvider =
+    FutureProvider.family<List<Student>, (int, DateTime)>((ref, arg) async {
+      final service = await ref.watch(classScheduleServiceProvider.future);
+      return service.getAssignmentCandidates(arg.$1, arg.$2);
+    });

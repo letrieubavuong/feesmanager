@@ -7,7 +7,7 @@ part of 'assignment_controller.dart';
 // **************************************************************************
 
 String _$classAssignmentControllerHash() =>
-    r'cef10f68beb93167765828173c62509ed34a0449';
+    r'0aed890afdc1d42683246f9df0d6cbb825b2ce81';
 
 /// Copied from Dart SDK
 class _SystemHash {

@@ -8,7 +8,7 @@ part 'assignment_controller.g.dart';
 class ClassAssignmentController extends _$ClassAssignmentController {
   @override
   FutureOr<List<StudentShiftAssignment>> build(int classId) async {
-    final service = await ref.watch(scheduleServiceProvider.future);
+    final service = await ref.watch(classScheduleServiceProvider.future);
     return service.getAssignmentsForClass(classId);
   }
 
@@ -24,7 +24,7 @@ class ClassAssignmentController extends _$ClassAssignmentController {
     required DateTime startDate,
   }) async {
     state = const AsyncValue.loading();
-    final service = await ref.read(scheduleServiceProvider.future);
+    final service = await ref.read(classScheduleServiceProvider.future);
     final result = await service.assignStudent(
       studentId: studentId,
       classId: classId,
