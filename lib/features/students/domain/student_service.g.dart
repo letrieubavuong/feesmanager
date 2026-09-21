@@ -21,7 +21,7 @@ final studentRepositoryProvider = FutureProvider<StudentRepository>.internal(
 );
 
 typedef StudentRepositoryRef = FutureProviderRef<StudentRepository>;
-String _$studentServiceHash() => r'6f605c89777a81434ad26e225769a6a23a2ff445';
+String _$studentServiceHash() => r'724eb6a8f854bfca1b94101c1f7cc2f6af99c886';
 
 /// See also [studentService].
 @ProviderFor(studentService)

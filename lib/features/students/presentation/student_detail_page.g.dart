@@ -154,5 +154,140 @@ class _StudentDetailProviderElement
   @override
   int get id => (origin as StudentDetailProvider).id;
 }
+
+String _$studentMembershipHistoryHash() =>
+    r'c744f0fe3141cd5a5d41b298f26148772e4d19e9';
+
+/// See also [studentMembershipHistory].
+@ProviderFor(studentMembershipHistory)
+const studentMembershipHistoryProvider = StudentMembershipHistoryFamily();
+
+/// See also [studentMembershipHistory].
+class StudentMembershipHistoryFamily
+    extends Family<AsyncValue<List<ClassMembership>>> {
+  /// See also [studentMembershipHistory].
+  const StudentMembershipHistoryFamily();
+
+  /// See also [studentMembershipHistory].
+  StudentMembershipHistoryProvider call(
+    int id,
+  ) {
+    return StudentMembershipHistoryProvider(
+      id,
+    );
+  }
+
+  @override
+  StudentMembershipHistoryProvider getProviderOverride(
+    covariant StudentMembershipHistoryProvider provider,
+  ) {
+    return call(
+      provider.id,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'studentMembershipHistoryProvider';
+}
+
+/// See also [studentMembershipHistory].
+class StudentMembershipHistoryProvider
+    extends AutoDisposeFutureProvider<List<ClassMembership>> {
+  /// See also [studentMembershipHistory].
+  StudentMembershipHistoryProvider(
+    int id,
+  ) : this._internal(
+          (ref) => studentMembershipHistory(
+            ref as StudentMembershipHistoryRef,
+            id,
+          ),
+          from: studentMembershipHistoryProvider,
+          name: r'studentMembershipHistoryProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$studentMembershipHistoryHash,
+          dependencies: StudentMembershipHistoryFamily._dependencies,
+          allTransitiveDependencies:
+              StudentMembershipHistoryFamily._allTransitiveDependencies,
+          id: id,
+        );
+
+  StudentMembershipHistoryProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.id,
+  }) : super.internal();
+
+  final int id;
+
+  @override
+  Override overrideWith(
+    FutureOr<List<ClassMembership>> Function(
+            StudentMembershipHistoryRef provider)
+        create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: StudentMembershipHistoryProvider._internal(
+        (ref) => create(ref as StudentMembershipHistoryRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        id: id,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<List<ClassMembership>> createElement() {
+    return _StudentMembershipHistoryProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is StudentMembershipHistoryProvider && other.id == id;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, id.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin StudentMembershipHistoryRef
+    on AutoDisposeFutureProviderRef<List<ClassMembership>> {
+  /// The parameter `id` of this provider.
+  int get id;
+}
+
+class _StudentMembershipHistoryProviderElement
+    extends AutoDisposeFutureProviderElement<List<ClassMembership>>
+    with StudentMembershipHistoryRef {
+  _StudentMembershipHistoryProviderElement(super.provider);
+
+  @override
+  int get id => (origin as StudentMembershipHistoryProvider).id;
+}
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

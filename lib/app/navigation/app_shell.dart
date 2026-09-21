@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../features/students/presentation/student_list_page.dart';
+import '../../features/classes/presentation/class_list_page.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -28,7 +29,7 @@ class _AppShellState extends State<AppShell> {
       label: 'Lớp học',
       icon: Icons.class_outlined,
       selectedIcon: Icons.class_,
-      content: PlaceholderPage(title: 'Lớp học'),
+      content: const ClassListPage(),
     ),
     NavigationItem(
       label: 'Lịch học',

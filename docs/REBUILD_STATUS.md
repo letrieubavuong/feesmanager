@@ -19,7 +19,19 @@
 - [x] Archive/Restore functionality (no hard delete)
 - [x] Unit and Repository tests passing
 
-## Phase 2: Class Module - NOT STARTED
+## Phase 2: Class + Membership - COMPLETE
+- [x] Database Migration (v1 -> v2)
+- [x] Class canonical table and CRUD
+- [x] Membership interval-based logic (no status fields)
+- [x] Multiple classes per student support
+- [x] Pause/Resume/Leave history
+- [x] Blocking student archive if active in classes
+- [x] Derived class size based on reference date
+- [x] Class roster UI with membership management
+- [x] Student detail UI with class history
+- [x] Tests for migration, logic, and business rules
+
+## Phase 3: Schedule + Session - NOT STARTED
 
 ---
 

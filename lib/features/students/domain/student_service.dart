@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/database/database_provider.dart';
 import '../../../core/utils/phone_normalizer.dart';
+import '../../memberships/domain/membership_service.dart';
 import '../data/student_repository.dart';
 import 'student.dart';
 
@@ -14,8 +15,9 @@ Future<StudentRepository> studentRepository(StudentRepositoryRef ref) async {
 
 class StudentService {
   final StudentRepository _repository;
+  final MembershipService _membershipService;
 
-  StudentService(this._repository);
+  StudentService(this._repository, this._membershipService);
 
   Future<List<Student>> getStudents({bool includeArchived = false}) {
     return _repository.getAll(includeArchived: includeArchived);
@@ -48,6 +50,10 @@ class StudentService {
   }
 
   Future<void> archiveStudent(int id) async {
+    final hasActive = await _membershipService.hasActiveMemberships(id);
+    if (hasActive) {
+      throw Exception('Học sinh vẫn đang thuộc các lớp. Hãy kết thúc các membership trước.');
+    }
     await _repository.setArchiveStatus(id, true);
   }
 
@@ -63,5 +69,6 @@ class StudentService {
 @Riverpod(keepAlive: true)
 Future<StudentService> studentService(StudentServiceRef ref) async {
   final repo = await ref.watch(studentRepositoryProvider.future);
-  return StudentService(repo);
+  final membershipService = await ref.watch(membershipServiceProvider.future);
+  return StudentService(repo, membershipService);
 }

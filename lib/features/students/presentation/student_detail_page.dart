@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/student.dart';
 import '../domain/student_service.dart';
+import '../../memberships/domain/membership.dart';
+import '../../memberships/domain/membership_service.dart';
+import '../../classes/presentation/class_controller.dart';
 import 'student_form_page.dart';
 import 'student_controller.dart';
 
@@ -68,7 +71,7 @@ class StudentDetailPage extends ConsumerWidget {
                 const SizedBox(height: 24),
                 const Divider(),
                 const SizedBox(height: 16),
-                _buildPlaceholderSection(context, 'Lớp đang học'),
+                _buildMembershipSection(context, ref, student.id!),
                 _buildPlaceholderSection(context, 'Lịch sử điểm danh'),
                 _buildPlaceholderSection(context, 'Học phí & Thanh toán'),
               ],
@@ -77,6 +80,60 @@ class StudentDetailPage extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Lỗi: $e')),
+      ),
+    );
+  }
+
+  Widget _buildMembershipSection(BuildContext context, WidgetRef ref, int studentId) {
+    final membershipsAsync = ref.watch(studentMembershipHistoryProvider(studentId));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle(context, 'Lớp học'),
+        membershipsAsync.when(
+          data: (memberships) {
+            if (memberships.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
+                child: Text('Học sinh chưa tham gia lớp nào.', style: TextStyle(fontStyle: FontStyle.italic)),
+              );
+            }
+            return Column(
+              children: memberships.map((m) => _buildMembershipTile(context, ref, m)).toList(),
+            );
+          },
+          loading: () => const CircularProgressIndicator(),
+          error: (e, _) => Text('Lỗi tải lớp: $e'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMembershipTile(BuildContext context, WidgetRef ref, ClassMembership m) {
+    final classAsync = ref.watch(classDetailProvider(m.idLop));
+    final isActive = m.isActiveOn(DateTime.now());
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ListTile(
+        title: classAsync.when(
+          data: (c) => Text(c?.tenLop ?? 'Unknown Class', style: const TextStyle(fontWeight: FontWeight.bold)),
+          loading: () => const Text('Loading...'),
+          error: (_, __) => const Text('Error'),
+        ),
+        subtitle: Text('Từ: ${m.tuNgay}${m.denNgay != null ? ' - Đến: ${m.denNgay}' : ''}'),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: isActive ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            isActive ? 'Đang học' : 'Đã nghỉ',
+            style: TextStyle(color: isActive ? Colors.green : Colors.grey, fontSize: 12),
+          ),
+        ),
       ),
     );
   }
@@ -165,10 +222,19 @@ class StudentDetailPage extends ConsumerWidget {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
           TextButton(
             onPressed: () async {
-              await ref.read(studentListControllerProvider.notifier).archive(studentId);
-              if (context.mounted) {
-                Navigator.pop(context); // Close dialog
-                Navigator.pop(context); // Go back to list
+              try {
+                await ref.read(studentListControllerProvider.notifier).archive(studentId);
+                if (context.mounted) {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(context); // Go back to list
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.pop(context); // Close dialog
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+                  );
+                }
               }
             },
             child: const Text('Lưu trữ'),
@@ -184,4 +250,10 @@ class StudentDetailPage extends ConsumerWidget {
 Future<Student?> studentDetail(StudentDetailRef ref, int id) async {
   final service = await ref.watch(studentServiceProvider.future);
   return service.getStudentById(id);
+}
+
+@riverpod
+Future<List<ClassMembership>> studentMembershipHistory(StudentMembershipHistoryRef ref, int id) async {
+  final service = await ref.watch(membershipServiceProvider.future);
+  return service.getMembershipHistory(id);
 }
