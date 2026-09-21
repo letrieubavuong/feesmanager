@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int _dbVersion = 6;
+  static const int _dbVersion = 7;
 
   final String dbName;
   Database? _database;
@@ -54,6 +54,9 @@ class AppDatabase {
     if (version >= 6) {
       await _migrateV5ToV6(db);
     }
+    if (version >= 7) {
+      await _migrateV6ToV7(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -71,6 +74,9 @@ class AppDatabase {
     }
     if (oldVersion < 6) {
       await _migrateV5ToV6(db);
+    }
+    if (oldVersion < 7) {
+      await _migrateV6ToV7(db);
     }
   }
 
@@ -363,6 +369,40 @@ class AppDatabase {
     );
     await db.execute(
       'CREATE INDEX idx_buoi_hoc_lich_ngay ON buoi_hoc(id_lich_hoc, ngay)',
+    );
+  }
+
+  Future<void> _migrateV6ToV7(Database db) async {
+    await db.execute('''
+      CREATE TABLE diem_danh (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_buoi_hoc INTEGER NOT NULL,
+        id_hoc_sinh INTEGER NOT NULL,
+        id_lop_goc INTEGER NOT NULL,
+        trang_thai TEXT NOT NULL,
+        loai_tham_gia TEXT NOT NULL DEFAULT 'CHINH',
+        id_buoi_vang_goc INTEGER NULL,
+        ghi_chu TEXT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (id_buoi_hoc) REFERENCES buoi_hoc (id),
+        FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+        FOREIGN KEY (id_lop_goc) REFERENCES lop (id),
+        FOREIGN KEY (id_buoi_vang_goc) REFERENCES buoi_hoc (id),
+        UNIQUE(id_buoi_hoc, id_hoc_sinh),
+        CHECK (trang_thai IN ('CO_MAT', 'TRE', 'NGHI_CO_PHEP', 'NGHI_KHONG_PHEP', 'HOC_BU')),
+        CHECK (loai_tham_gia IN ('CHINH', 'DOI_CA', 'HOC_BU'))
+      )
+    ''');
+
+    await db.execute(
+      'CREATE INDEX idx_diem_danh_buoi_hoc ON diem_danh(id_buoi_hoc)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_diem_danh_hoc_sinh ON diem_danh(id_hoc_sinh)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_diem_danh_hs_buoi ON diem_danh(id_hoc_sinh, id_buoi_hoc)',
     );
   }
 }

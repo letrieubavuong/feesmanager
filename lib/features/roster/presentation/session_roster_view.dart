@@ -7,6 +7,8 @@ import 'roster_controller.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../sessions/domain/class_session.dart';
 
+import '../../attendance/presentation/attendance_page.dart';
+
 class SessionRosterView extends ConsumerWidget {
   final int sessionId;
   const SessionRosterView({super.key, required this.sessionId});
@@ -16,7 +18,27 @@ class SessionRosterView extends ConsumerWidget {
     final rosterAsync = ref.watch(sessionRosterProvider(sessionId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Danh sách học sinh buổi học')),
+      appBar: AppBar(
+        title: const Text('Danh sách học sinh buổi học'),
+        actions: [
+          rosterAsync.when(
+            data: (result) => TextButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => AttendancePage(sessionId: sessionId),
+                ),
+              ),
+              icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+              label: const Text(
+                'Điểm danh',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+        ],
+      ),
       body: rosterAsync.when(
         data: (result) => _buildContent(context, result),
         loading: () => const Center(child: CircularProgressIndicator()),

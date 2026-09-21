@@ -83,6 +83,18 @@ class SessionService {
     );
   }
 
+  Future<void> markTaughtFromAttendance(int id) async {
+    final existing = await _repo.getById(id);
+    if (existing == null) throw Exception('Không tìm thấy buổi học');
+
+    await _repo.update(
+      existing.copyWith(
+        trangThai: SessionStatus.DA_HOC,
+        updatedAt: DateTime.now(),
+      ),
+    );
+  }
+
   void _validateSession(ClassSession session) {
     // 1. Strict Date Validation (No silent normalization)
     try {

@@ -16,7 +16,7 @@ void main() {
   });
 
   group('AppDatabase Migration Hardening', () {
-    test('v3 -> latest (v6) verification', () async {
+    test('v3 -> latest (v7) verification', () async {
       final dbV3 = await openDatabase(
         dbPath,
         version: 3,
@@ -75,12 +75,12 @@ void main() {
       final appDb = AppDatabase(dbName: dbPath);
       final dbLatest = await appDb.database;
 
-      expect(await dbLatest.getVersion(), 6);
+      expect(await dbLatest.getVersion(), 7);
 
       final tables = await dbLatest.rawQuery(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('lich_hoc', 'phan_ca_hoc_sinh', 'buoi_hoc')",
+        "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('lich_hoc', 'phan_ca_hoc_sinh', 'buoi_hoc', 'diem_danh')",
       );
-      expect(tables.length, 3);
+      expect(tables.length, 4);
 
       // Verify FKs
       final fkLich = await dbLatest.rawQuery(
@@ -101,6 +101,13 @@ void main() {
       expect(fkBuoiHoc.any((f) => f['table'] == 'lop'), isTrue);
       expect(fkBuoiHoc.any((f) => f['table'] == 'lich_hoc'), isTrue);
 
+      final fkDiemDanh = await dbLatest.rawQuery(
+        'PRAGMA foreign_key_list(diem_danh)',
+      );
+      expect(fkDiemDanh.any((f) => f['table'] == 'buoi_hoc'), isTrue);
+      expect(fkDiemDanh.any((f) => f['table'] == 'hoc_sinh'), isTrue);
+      expect(fkDiemDanh.any((f) => f['table'] == 'lop'), isTrue);
+
       await dbLatest.close();
     });
 
@@ -108,7 +115,7 @@ void main() {
       final appDb = AppDatabase(dbName: dbPath);
       final db = await appDb.database;
 
-      expect(await db.getVersion(), 6);
+      expect(await db.getVersion(), 7);
 
       final violations = await db.rawQuery('PRAGMA foreign_key_check');
       expect(violations.isEmpty, isTrue);
