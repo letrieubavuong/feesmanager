@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../roster/domain/roster_result.dart';
 import '../../sessions/domain/class_session.dart';
 import '../domain/attendance_sheet.dart';
 import '../domain/attendance_state.dart';
@@ -88,22 +89,79 @@ class AttendancePage extends ConsumerWidget {
           Container(
             color: Colors.red.shade50,
             padding: const EdgeInsets.all(16),
-            child: const Row(
+            child: Column(
               children: [
-                Icon(Icons.warning, color: Colors.red),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Danh sách lớp (Roster) hiện tại không hợp lệ. Vui lòng kiểm tra lại cấu hình lịch học hoặc phân ca.',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
+                const Row(
+                  children: [
+                    Icon(Icons.warning, color: Colors.red),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Danh sách lớp (Roster) hiện tại không hợp lệ. Vui lòng kiểm tra lại cấu hình lịch học hoặc phân ca.',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (sheet.rosterIssues.isNotEmpty)
+                  ...sheet.rosterIssues.map(
+                    (ri) => Padding(
+                      padding: const EdgeInsets.only(top: 8.0, left: 36),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 14,
+                            color: Colors.red,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              ri.message,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
+        if (sheet.rosterIssues.any(
+          (ri) => ri.code == RosterIssueCode.UNASSIGNED_IN_MULTI_SHIFT,
+        ))
+          ...sheet.rosterIssues
+              .where(
+                (ri) => ri.code == RosterIssueCode.UNASSIGNED_IN_MULTI_SHIFT,
+              )
+              .map(
+                (ri) => Container(
+                  color: Colors.orange.shade50,
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.orange,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          ri.message,
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
         if (sheet.issues.isNotEmpty)
           ...sheet.issues.map(
             (issue) => Container(
@@ -216,15 +274,13 @@ class AttendancePage extends ConsumerWidget {
   ) {
     final student = member.rosterMember.student;
     final isEditable = _isEditable(sheet);
-    final draftState =
-        ref.watch(
-          attendanceControllerProvider(sessionId).select(
-            (s) => ref
-                .read(attendanceControllerProvider(sessionId).notifier)
-                .draft[student.id],
-          ),
-        ) ??
-        member.state;
+    final effectiveState = ref.watch(
+      attendanceControllerProvider(sessionId).select(
+        (s) => ref
+            .read(attendanceControllerProvider(sessionId).notifier)
+            .effectiveStateFor(student.id!),
+      ),
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -267,7 +323,7 @@ class AttendancePage extends ConsumerWidget {
                         padding: const EdgeInsets.only(right: 8),
                         child: ChoiceChip(
                           label: Text(state.label),
-                          selected: draftState == state,
+                          selected: effectiveState == state,
                           onSelected: (selected) {
                             if (selected) {
                               ref
@@ -320,6 +376,14 @@ class AttendancePage extends ConsumerWidget {
     WidgetRef ref,
     AttendanceSheet sheet,
   ) {
+    final hasDirtyDraft = ref.watch(
+      attendanceControllerProvider(sessionId).select(
+        (s) => ref
+            .read(attendanceControllerProvider(sessionId).notifier)
+            .hasDirtyDraft,
+      ),
+    );
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -336,7 +400,7 @@ class AttendancePage extends ConsumerWidget {
         children: [
           Expanded(
             child: OutlinedButton(
-              onPressed: () => _handleSave(context, ref),
+              onPressed: hasDirtyDraft ? () => _handleSave(context, ref) : null,
               child: const Text('Lưu nháp'),
             ),
           ),
@@ -374,12 +438,9 @@ class AttendancePage extends ConsumerWidget {
   ) async {
     try {
       // Check incomplete
-      final currentDraft = ref
+      final unresolved = ref
           .read(attendanceControllerProvider(sessionId).notifier)
-          .draft;
-      final unresolved = currentDraft.values
-          .where((v) => v == AttendanceState.CHUA_DIEM_DANH)
-          .length;
+          .unresolvedCountFromDraft();
 
       if (unresolved > 0) {
         final confirm = await showDialog<bool>(

@@ -304,6 +304,12 @@ void main() {
         () => attendanceService.saveDraft(1, {}),
         throwsA(predicate((e) => e.toString().contains('Phase 6'))),
       );
+
+      await db.update('buoi_hoc', {'loai': 'PHAT_SINH'}, where: 'id = 1');
+      expect(
+        () => attendanceService.saveDraft(1, {}),
+        throwsA(predicate((e) => e.toString().contains('Phase 6'))),
+      );
     });
 
     test(
@@ -419,6 +425,39 @@ void main() {
       expect(updatedAtAfter, updatedAt);
     });
 
+    test('HUY and NGHI_LE sessions block save and finalize', () async {
+      await db.insert('lop', {
+        'id': 1,
+        'ten_lop': 'C1',
+        'created_at': now,
+        'updated_at': now,
+      });
+      await db.insert('buoi_hoc', {
+        'id': 1,
+        'id_lop': 1,
+        'ngay': '2026-09-21',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'trang_thai': 'HUY',
+        'created_at': now,
+        'updated_at': now,
+      });
+
+      expect(() => attendanceService.saveDraft(1, {}), throwsException);
+      expect(
+        () => attendanceService.finalizeSessionAttendance(1),
+        throwsException,
+      );
+
+      await db.update('buoi_hoc', {'trang_thai': 'NGHI_LE'}, where: 'id = 1');
+      expect(() => attendanceService.saveDraft(1, {}), throwsException);
+      expect(
+        () => attendanceService.finalizeSessionAttendance(1),
+        throwsException,
+      );
+    });
+
     test('DA_HOC session is protected from generic status updates', () async {
       await db.insert('lop', {
         'id': 1,
@@ -440,6 +479,10 @@ void main() {
 
       expect(
         () => sessionService.updateStatus(1, SessionStatus.DU_KIEN),
+        throwsA(predicate((e) => e.toString().contains('đã hoàn tất'))),
+      );
+      expect(
+        () => sessionService.updateStatus(1, SessionStatus.HUY),
         throwsA(predicate((e) => e.toString().contains('đã hoàn tất'))),
       );
     });

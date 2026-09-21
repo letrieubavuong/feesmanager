@@ -19,87 +19,132 @@ void main() {
     });
 
     test('Migration v6 to v7 preserves canonical Phase 0-5 data', () async {
-      // 1. Create a REAL v6 database with canonical schema
       final dbV6 = await openDatabase(
         dbPath,
         version: 6,
         onCreate: (db, version) async {
           await db.execute('''
-            CREATE TABLE hoc_sinh (
-              id INTEGER PRIMARY KEY,
-              ho_ten TEXT NOT NULL,
-              created_at TEXT NOT NULL,
-              updated_at TEXT NOT NULL
-            )
-          ''');
+          CREATE TABLE hoc_sinh (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ho_ten TEXT NOT NULL,
+            ngay_sinh TEXT NULL,
+            gioi_tinh TEXT NULL,
+            ten_phu_huynh TEXT NULL,
+            sdt_phu_huynh TEXT NULL,
+            sdt_hoc_sinh TEXT NULL,
+            email TEXT NULL,
+            truong_dang_hoc TEXT NULL,
+            khoi INTEGER NULL,
+            dia_chi TEXT NULL,
+            facebook TEXT NULL,
+            ghi_chu TEXT NULL,
+            zalo_user_id TEXT NULL,
+            zalo_display_name TEXT NULL,
+            zalo_link_status TEXT NOT NULL DEFAULT 'CHUA_LIEN_KET',
+            da_luu_tru INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          )
+        ''');
+
           await db.execute('''
-            CREATE TABLE lop (
-              id INTEGER PRIMARY KEY,
-              ten_lop TEXT NOT NULL,
-              created_at TEXT NOT NULL,
-              updated_at TEXT NOT NULL
-            )
-          ''');
+          CREATE TABLE lop (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ten_lop TEXT NOT NULL,
+            khoi INTEGER NULL,
+            mon_hoc TEXT NULL,
+            si_so_toi_da INTEGER NULL,
+            ghi_chu TEXT NULL,
+            da_luu_tru INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          )
+        ''');
+
           await db.execute('''
-            CREATE TABLE tham_gia_lop (
-              id INTEGER PRIMARY KEY,
-              id_hoc_sinh INTEGER NOT NULL,
-              id_lop INTEGER NOT NULL,
-              tu_ngay TEXT NOT NULL,
-              den_ngay TEXT,
-              created_at TEXT NOT NULL,
-              updated_at TEXT NOT NULL,
-              FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
-              FOREIGN KEY (id_lop) REFERENCES lop (id)
-            )
-          ''');
+          CREATE TABLE tham_gia_lop (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_hoc_sinh INTEGER NOT NULL,
+            id_lop INTEGER NOT NULL,
+            tu_ngay TEXT NOT NULL,
+            den_ngay TEXT NULL,
+            ly_do_ket_thuc TEXT NULL,
+            mien_giam_phan_tram INTEGER NOT NULL DEFAULT 0,
+            ghi_chu TEXT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+            FOREIGN KEY (id_lop) REFERENCES lop (id),
+            UNIQUE(id_hoc_sinh, id_lop, tu_ngay),
+            CHECK (den_ngay IS NULL OR den_ngay >= tu_ngay),
+            CHECK (mien_giam_phan_tram BETWEEN 0 AND 100)
+          )
+        ''');
+
           await db.execute('''
-            CREATE TABLE lich_hoc (
-              id INTEGER PRIMARY KEY,
-              id_lop INTEGER NOT NULL,
-              thu_trong_tuan INTEGER NOT NULL,
-              gio_bat_dau TEXT NOT NULL,
-              gio_ket_thuc TEXT NOT NULL,
-              hieu_luc_tu TEXT NOT NULL,
-              created_at TEXT NOT NULL,
-              updated_at TEXT NOT NULL,
-              FOREIGN KEY (id_lop) REFERENCES lop (id)
-            )
-          ''');
+          CREATE TABLE lich_hoc (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_lop INTEGER NOT NULL,
+            thu_trong_tuan INTEGER NOT NULL,
+            gio_bat_dau TEXT NOT NULL,
+            gio_ket_thuc TEXT NOT NULL,
+            hieu_luc_tu TEXT NOT NULL,
+            hieu_luc_den TEXT NULL,
+            ghi_chu TEXT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (id_lop) REFERENCES lop (id),
+            CHECK (thu_trong_tuan BETWEEN 1 AND 7),
+            CHECK (gio_ket_thuc > gio_bat_dau),
+            CHECK (hieu_luc_den IS NULL OR hieu_luc_den >= hieu_luc_tu)
+          )
+        ''');
+
           await db.execute('''
-            CREATE TABLE phan_ca_hoc_sinh (
-              id INTEGER PRIMARY KEY,
-              id_hoc_sinh INTEGER NOT NULL,
-              id_lop INTEGER NOT NULL,
-              id_lich_hoc INTEGER NOT NULL,
-              tu_ngay TEXT NOT NULL,
-              created_at TEXT NOT NULL,
-              updated_at TEXT NOT NULL,
-              FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
-              FOREIGN KEY (id_lop) REFERENCES lop (id),
-              FOREIGN KEY (id_lich_hoc) REFERENCES lich_hoc (id)
-            )
-          ''');
+          CREATE TABLE phan_ca_hoc_sinh (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_hoc_sinh INTEGER NOT NULL,
+            id_lop INTEGER NOT NULL,
+            id_lich_hoc INTEGER NOT NULL,
+            tu_ngay TEXT NOT NULL,
+            den_ngay TEXT NULL,
+            nguon TEXT NULL,
+            ghi_chu TEXT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+            FOREIGN KEY (id_lop) REFERENCES lop (id),
+            FOREIGN KEY (id_lich_hoc) REFERENCES lich_hoc (id),
+            UNIQUE(id_hoc_sinh, id_lich_hoc, tu_ngay),
+            CHECK (den_ngay IS NULL OR den_ngay >= tu_ngay)
+          )
+        ''');
+
           await db.execute('''
             CREATE TABLE buoi_hoc (
-              id INTEGER PRIMARY KEY,
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
               id_lop INTEGER NOT NULL,
-              id_lich_hoc INTEGER,
+              id_lich_hoc INTEGER NULL,
               ngay TEXT NOT NULL,
               gio_bat_dau TEXT NOT NULL,
               gio_ket_thuc TEXT NOT NULL,
               loai TEXT NOT NULL,
               trang_thai TEXT NOT NULL DEFAULT 'DU_KIEN',
+              ghi_chu TEXT NULL,
               created_at TEXT NOT NULL,
               updated_at TEXT NOT NULL,
               FOREIGN KEY (id_lop) REFERENCES lop (id),
-              FOREIGN KEY (id_lich_hoc) REFERENCES lich_hoc (id)
+              FOREIGN KEY (id_lich_hoc) REFERENCES lich_hoc (id),
+              CHECK (gio_ket_thuc > gio_bat_dau),
+              CHECK (loai IN ('CHINH', 'HOC_BU', 'PHAT_SINH')),
+              CHECK (trang_thai IN ('DU_KIEN', 'DA_HOC', 'HUY', 'NGHI_LE')),
+              UNIQUE(id_lop, ngay, gio_bat_dau)
             )
           ''');
         },
+        onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
       );
 
-      // 2. Populate explicit IDs and values
       await dbV6.insert('hoc_sinh', {
         'id': 11,
         'ho_ten': 'Student 11',
@@ -152,21 +197,18 @@ void main() {
       });
       await dbV6.close();
 
-      // 3. Open with latest AppDatabase
       final appDb = AppDatabase(dbName: dbPath);
       final dbV7 = await appDb.database;
 
-      // 4. Assert user_version == 7
       expect(await dbV7.getVersion(), 7);
 
-      // 5. Assert every existing row/ID/value is preserved
       final hs = await dbV7.query('hoc_sinh', where: 'id = 11');
       expect(hs.first['ho_ten'], 'Student 11');
 
       final buoi = await dbV7.query('buoi_hoc', where: 'id = 61');
       expect(buoi.first['ngay'], '2026-09-21');
+      expect(buoi.first['id_lich_hoc'], 41);
 
-      // 6. Verify diem_danh FKs
       final fkList = await dbV7.rawQuery("PRAGMA foreign_key_list(diem_danh)");
       final fks = fkList
           .map((f) => {'from': f['from'], 'table': f['table']})
@@ -191,11 +233,13 @@ void main() {
         isTrue,
       );
 
+      final violations = await dbV7.rawQuery('PRAGMA foreign_key_check');
+      expect(violations, isEmpty);
+
       await dbV7.close();
     });
 
     test('Raw DB constraints and vocab regression', () async {
-      // Use explicit path for file-based testing to avoid memory issues with FKs in some FFI setups
       final tempDbReg = join(
         Directory.systemTemp.path,
         'test_regression_v7.db',
@@ -205,7 +249,6 @@ void main() {
       final appDb = AppDatabase(dbName: tempDbReg);
       final db = await appDb.database;
 
-      // Mock prerequisite data
       await db.execute(
         "INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at) VALUES (1, 'H', 'now', 'now')",
       );
@@ -216,13 +259,38 @@ void main() {
         "INSERT INTO buoi_hoc (id, id_lop, ngay, gio_bat_dau, gio_ket_thuc, loai, created_at, updated_at) VALUES (1, 1, '2026-09-21', '17:30', '19:00', 'CHINH', 'now', 'now')",
       );
 
-      // Valid insert
-      await db.execute('''
-        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, loai_tham_gia, created_at, updated_at)
-        VALUES (1, 1, 1, 'CO_MAT', 'CHINH', 'now', 'now')
-      ''');
+      final validStatuses = [
+        'CO_MAT',
+        'TRE',
+        'NGHI_CO_PHEP',
+        'NGHI_KHONG_PHEP',
+        'HOC_BU',
+      ];
+      for (int i = 0; i < validStatuses.length; i++) {
+        final sId = i + 10;
+        await db.execute(
+          "INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at) VALUES (?, 'S', 'now', 'now')",
+          [sId],
+        );
+        await db.execute(
+          '''
+          INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, loai_tham_gia, created_at, updated_at)
+          VALUES (1, ?, 1, ?, 'CHINH', 'now', 'now')
+        ''',
+          [sId, validStatuses[i]],
+        );
 
-      // Reject invalid status ABC
+        final row = await db.query(
+          'diem_danh',
+          where: 'id_hoc_sinh = ?',
+          whereArgs: [sId],
+        );
+        expect(row.first['trang_thai'], validStatuses[i]);
+      }
+
+      await db.execute(
+        "INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at) VALUES (2, 'H2', 'now', 'now')",
+      );
       expect(
         () => db.execute('''
         INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
@@ -231,7 +299,9 @@ void main() {
         throwsA(isA<DatabaseException>()),
       );
 
-      // Reject application-only CHUA_DIEM_DANH
+      await db.execute(
+        "INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at) VALUES (3, 'H3', 'now', 'now')",
+      );
       expect(
         () => db.execute('''
         INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
@@ -240,16 +310,83 @@ void main() {
         throwsA(isA<DatabaseException>()),
       );
 
-      // Unique constraint
       expect(
         () => db.execute('''
-        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
-        VALUES (1, 1, 1, 'TRE', 'CHINH', 'now', 'now')
+        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, loai_tham_gia, created_at, updated_at)
+        VALUES (1, 10, 1, 'TRE', 'CHINH', 'now', 'now')
+      '''),
+        throwsA(isA<DatabaseException>()),
+      );
+
+      expect(
+        () => db.execute('''
+        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, loai_tham_gia, created_at, updated_at)
+        VALUES (999, 1, 1, 'CO_MAT', 'CHINH', 'now', 'now')
+      '''),
+        throwsA(isA<DatabaseException>()),
+      );
+
+      expect(
+        () => db.execute('''
+        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, loai_tham_gia, created_at, updated_at)
+        VALUES (1, 999, 1, 'CO_MAT', 'CHINH', 'now', 'now')
+      '''),
+        throwsA(isA<DatabaseException>()),
+      );
+
+      expect(
+        () => db.execute('''
+        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, loai_tham_gia, created_at, updated_at)
+        VALUES (1, 1, 999, 'CO_MAT', 'CHINH', 'now', 'now')
+      '''),
+        throwsA(isA<DatabaseException>()),
+      );
+
+      expect(
+        () => db.execute('''
+        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, id_buoi_vang_goc, trang_thai, loai_tham_gia, created_at, updated_at)
+        VALUES (1, 1, 1, 999, 'CO_MAT', 'CHINH', 'now', 'now')
+      '''),
+        throwsA(isA<DatabaseException>()),
+      );
+
+      await db.execute(
+        "INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at) VALUES (4, 'H4', 'now', 'now')",
+      );
+      await db.execute('''
+        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, id_buoi_vang_goc, trang_thai, loai_tham_gia, created_at, updated_at)
+        VALUES (1, 4, 1, NULL, 'CO_MAT', 'CHINH', 'now', 'now')
+      ''');
+
+      final validTypes = ['CHINH', 'DOI_CA', 'HOC_BU'];
+      for (int i = 0; i < validTypes.length; i++) {
+        final sId = i + 100;
+        await db.execute(
+          "INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at) VALUES (?, 'ST', 'now', 'now')",
+          [sId],
+        );
+        await db.execute(
+          '''
+          INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, loai_tham_gia, created_at, updated_at)
+          VALUES (1, ?, 1, 'CO_MAT', ?, 'now', 'now')
+        ''',
+          [sId, validTypes[i]],
+        );
+      }
+
+      await db.execute(
+        "INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at) VALUES (5, 'H5', 'now', 'now')",
+      );
+      expect(
+        () => db.execute('''
+        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, loai_tham_gia, created_at, updated_at)
+        VALUES (1, 5, 1, 'CO_MAT', 'ABC', 'now', 'now')
       '''),
         throwsA(isA<DatabaseException>()),
       );
 
       await db.close();
+      await deleteDatabase(tempDbReg);
     });
   });
 }

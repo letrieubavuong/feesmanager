@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 import '../../roster/domain/roster_member.dart';
 import '../../roster/domain/roster_result.dart';
 import 'attendance_record.dart';

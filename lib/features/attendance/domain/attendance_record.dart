@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 enum AttendanceStatus { CO_MAT, TRE, NGHI_CO_PHEP, NGHI_KHONG_PHEP, HOC_BU }
 
 enum AttendanceParticipationType { CHINH, DOI_CA, HOC_BU }

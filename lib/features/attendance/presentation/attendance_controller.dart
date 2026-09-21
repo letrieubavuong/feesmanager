@@ -16,17 +16,28 @@ class AttendanceController extends _$AttendanceController {
   // Local draft state to avoid DB writes on every radio tap
   Map<int, AttendanceState>? _draft;
 
-  Map<int, AttendanceState> get draft {
+  bool get hasDirtyDraft => _draft != null;
+
+  AttendanceState effectiveStateFor(int studentId) {
+    return _draft?[studentId] ??
+        state.value?.members
+            .where((m) => m.rosterMember.student.id == studentId)
+            .firstOrNull
+            ?.state ??
+        AttendanceState.CHUA_DIEM_DANH;
+  }
+
+  void _ensureDraft() {
     if (_draft == null && state.hasValue) {
       _draft = {
         for (var m in state.value!.members) m.rosterMember.student.id!: m.state,
       };
     }
-    return _draft ?? {};
   }
 
   void updateLocalDraft(int studentId, AttendanceState newState) {
-    final currentDraft = Map<int, AttendanceState>.from(draft);
+    _ensureDraft();
+    final currentDraft = Map<int, AttendanceState>.from(_draft!);
     currentDraft[studentId] = newState;
     _draft = currentDraft;
     ref.notifyListeners();
@@ -34,7 +45,8 @@ class AttendanceController extends _$AttendanceController {
 
   void markAllPresent() {
     if (!state.hasValue) return;
-    final currentDraft = Map<int, AttendanceState>.from(draft);
+    _ensureDraft();
+    final currentDraft = Map<int, AttendanceState>.from(_draft!);
     for (var m in state.value!.members) {
       currentDraft[m.rosterMember.student.id!] = AttendanceState.CO_MAT;
     }
@@ -45,6 +57,15 @@ class AttendanceController extends _$AttendanceController {
   void undoChanges() {
     _draft = null;
     ref.notifyListeners();
+  }
+
+  int unresolvedCountFromDraft() {
+    if (_draft != null) {
+      return _draft!.values
+          .where((v) => v == AttendanceState.CHUA_DIEM_DANH)
+          .length;
+    }
+    return state.value?.unresolvedCount ?? 0;
   }
 
   Future<void> save() async {
@@ -60,8 +81,6 @@ class AttendanceController extends _$AttendanceController {
       state = AsyncValue.data(newSheet);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
-      // Restore previous data if it was valid so UI doesn't just show error screen
-      // but still rethrow so caller can show snackbar/dialog
       if (prevState.hasValue) {
         state = AsyncValue.data(prevState.value!);
       }
