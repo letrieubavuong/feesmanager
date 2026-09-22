@@ -224,38 +224,63 @@ void main() {
       },
     );
 
-    test(
-      'Re-finalization of DA_THANH_TOAN and CON_NO invoices is REJECTED',
-      () async {
-        await tuitionRepo.insertInvoice(
-          TuitionInvoice(
-            idHocSinh: 1,
-            idLop: 1,
-            thang: '2026-09',
-            idChinhSachHocPhi: 1,
-            soBuoiEligible: 12,
-            soBuoiTinhPhi: 12,
-            creditOpening: 0,
-            creditEarned: 0,
-            creditUsed: 0,
-            creditClosing: 0,
-            tongTruocGiam: 600000,
-            giamPhanTram: 0,
-            giamSoTien: 0,
-            soTienPhaiThu: 600000,
-            trangThai: TuitionInvoiceStatus.DA_THANH_TOAN,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-        );
+    test('Re-finalization of DA_THANH_TOAN invoice is REJECTED', () async {
+      await tuitionRepo.insertInvoice(
+        TuitionInvoice(
+          idHocSinh: 1,
+          idLop: 1,
+          thang: '2026-09',
+          idChinhSachHocPhi: 1,
+          soBuoiEligible: 12,
+          soBuoiTinhPhi: 12,
+          creditOpening: 0,
+          creditEarned: 0,
+          creditUsed: 0,
+          creditClosing: 0,
+          tongTruocGiam: 600000,
+          giamPhanTram: 0,
+          giamSoTien: 0,
+          soTienPhaiThu: 600000,
+          trangThai: TuitionInvoiceStatus.DA_THANH_TOAN,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
 
-        // Attempting to re-finalize a DA_THANH_TOAN invoice is REJECTED!
-        expect(
-          () => invoiceService.finalizeStudentInvoice(1, 1, '2026-09'),
-          throwsA(isA<Exception>()),
-        );
-      },
-    );
+      expect(
+        () => invoiceService.finalizeStudentInvoice(1, 1, '2026-09'),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('Re-finalization of CON_NO invoice is REJECTED', () async {
+      await tuitionRepo.insertInvoice(
+        TuitionInvoice(
+          idHocSinh: 1,
+          idLop: 1,
+          thang: '2026-09',
+          idChinhSachHocPhi: 1,
+          soBuoiEligible: 12,
+          soBuoiTinhPhi: 12,
+          creditOpening: 0,
+          creditEarned: 0,
+          creditUsed: 0,
+          creditClosing: 0,
+          tongTruocGiam: 600000,
+          giamPhanTram: 0,
+          giamSoTien: 0,
+          soTienPhaiThu: 600000,
+          trangThai: TuitionInvoiceStatus.CON_NO,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      expect(
+        () => invoiceService.finalizeStudentInvoice(1, 1, '2026-09'),
+        throwsA(isA<Exception>()),
+      );
+    });
 
     test(
       'Double-count credit finalization Case B: Pre-reconciled extra credit does not insert duplicate ledger row',

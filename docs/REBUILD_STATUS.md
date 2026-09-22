@@ -109,14 +109,16 @@
 - [x] Single canonical ownership for N & credit candidates in `SessionCreditService`.
 - [x] Canonical formula for `creditClosing` in `TuitionService` preventing double-counting of pre-reconciled ledger entries.
 - [x] Month-boundary policy enforcement (`YYYY-MM-01` start, last day of month end).
-- [x] Protection of open policies against finite policy overrides when future finalized invoices exist.
+- [x] Finite policies cannot overlap and truncate an existing open policy; open-policy continuity is preserved unconditionally.
+- [x] Canonical finalized snapshot status definitions: `DA_CHOT`, `DA_THANH_TOAN`, `CON_NO` (`TuitionInvoiceStatusX.isFinalizedSnapshot`). `NHAP` is the only draft status.
 - [x] Protection of existing credit ledger entries from retroactive $N$ policy changes.
 - [x] Fail-closed strict makeup attendance validation (`_hasValidMakeupAttendance`).
 - [x] Batch student lookup in `StudentRepository` (`getByIds`) eliminating N+1 query overhead.
 - [x] Unique student class-month population (`getUniqueStudentIdsForClassMonth`) ensuring pause/rejoin students appear once.
 - [x] Canonical `effectiveTuitionPolicyProvider` replacing duplicate UI filtering.
+- [x] `TuitionPolicyController` managing policy creation and orchestrating live provider invalidation across previews and policies.
 - [x] Complete UI provider invalidation across all student invoices & previews upon batch finalization.
-- [x] Comprehensive Tests (245 tests passing):
+- [x] Comprehensive Tests (249 tests passing):
     - `test/repository/migration_v10_v11_test.dart`
     - `test/tuition/tuition_policy_service_test.dart`
     - `test/tuition/tuition_service_test.dart`
@@ -130,7 +132,7 @@
 - **Version**: 11
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
-- **Tests**: 245 tests passing
+- **Tests**: 249 tests passing
 - **Quality Gate**:
   - `dart analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (245 tests)
+  - `flutter test`: 100% Pass (249 tests)
