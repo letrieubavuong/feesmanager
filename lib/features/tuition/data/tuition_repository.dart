@@ -17,6 +17,20 @@ class TuitionRepository {
     return await txn.insert('hoc_phi_thang', invoice.toMap());
   }
 
+  Future<int> updateInvoiceStatusInTxn(
+    Transaction txn,
+    int invoiceId,
+    TuitionInvoiceStatus status,
+    DateTime updatedAt,
+  ) async {
+    return await txn.update(
+      'hoc_phi_thang',
+      {'trang_thai': status.name, 'updated_at': updatedAt.toIso8601String()},
+      where: 'id = ?',
+      whereArgs: [invoiceId],
+    );
+  }
+
   Future<TuitionInvoice?> getInvoice(
     int studentId,
     int classId,

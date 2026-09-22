@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int _dbVersion = 11;
+  static const int _dbVersion = 12;
 
   final String dbName;
   Database? _database;
@@ -69,6 +69,9 @@ class AppDatabase {
     if (version >= 11) {
       await _migrateV10ToV11(db);
     }
+    if (version >= 12) {
+      await _migrateV11ToV12(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -101,6 +104,9 @@ class AppDatabase {
     }
     if (oldVersion < 11) {
       await _migrateV10ToV11(db);
+    }
+    if (oldVersion < 12) {
+      await _migrateV11ToV12(db);
     }
   }
 
@@ -705,6 +711,45 @@ class AppDatabase {
     );
     await db.execute(
       'CREATE INDEX idx_hoc_phi_thang_status ON hoc_phi_thang(trang_thai)',
+    );
+  }
+
+  Future<void> _migrateV11ToV12(Database db) async {
+    await db.execute('''
+      CREATE TABLE thanh_toan (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_hoc_sinh INTEGER NOT NULL,
+        id_lop INTEGER NOT NULL,
+        id_hoc_phi_thang INTEGER NULL,
+        thang TEXT NOT NULL,
+        so_tien INTEGER NOT NULL,
+        ngay_thanh_toan TEXT NOT NULL,
+        phuong_thuc TEXT NOT NULL,
+        ma_giao_dich TEXT NULL,
+        ghi_chu TEXT NULL,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id) ON DELETE RESTRICT,
+        FOREIGN KEY (id_lop) REFERENCES lop (id) ON DELETE RESTRICT,
+        FOREIGN KEY (id_hoc_phi_thang) REFERENCES hoc_phi_thang (id) ON DELETE RESTRICT,
+        CHECK (so_tien > 0),
+        CHECK (phuong_thuc IN ('TIEN_MAT', 'CHUYEN_KHOAN', 'KHAC'))
+      )
+    ''');
+
+    await db.execute('''
+      CREATE UNIQUE INDEX idx_thanh_toan_ma_giao_dich 
+      ON thanh_toan (ma_giao_dich) 
+      WHERE ma_giao_dich IS NOT NULL AND ma_giao_dich <> ''
+    ''');
+
+    await db.execute(
+      'CREATE INDEX idx_thanh_toan_invoice ON thanh_toan (id_hoc_phi_thang)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_thanh_toan_student_class_month ON thanh_toan (id_hoc_sinh, id_lop, thang)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_thanh_toan_ngay ON thanh_toan (ngay_thanh_toan)',
     );
   }
 }

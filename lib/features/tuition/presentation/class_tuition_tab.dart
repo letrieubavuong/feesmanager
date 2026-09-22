@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../memberships/presentation/membership_providers.dart';
+import '../../payments/domain/invoice_payment_summary.dart';
+import '../../payments/domain/payment.dart';
+import '../../payments/domain/payment_method.dart';
+import '../../payments/presentation/payment_controller.dart';
 import '../../students/domain/student.dart';
 import '../../students/presentation/student_detail_page.dart';
 import '../domain/tuition_invoice.dart';
@@ -459,6 +463,9 @@ class _StudentTuitionCard extends ConsumerWidget {
     final invoiceAsync = ref.watch(
       studentInvoiceProvider(studentId, classId, month),
     );
+    final paymentSummaryAsync = ref.watch(
+      invoicePaymentSummaryProvider((studentId, classId, month)),
+    );
 
     return studentAsync.when(
       data: (student) {
@@ -474,8 +481,10 @@ class _StudentTuitionCard extends ConsumerWidget {
             child: isFinalized
                 ? _buildFinalizedInvoiceSnapshot(
                     context,
+                    ref,
                     student.hoTen,
                     invoice!,
+                    paymentSummaryAsync.value,
                   )
                 : previewAsync.when(
                     data: (preview) => _buildDraftPreviewCard(
@@ -498,21 +507,27 @@ class _StudentTuitionCard extends ConsumerWidget {
 
   Widget _buildFinalizedInvoiceSnapshot(
     BuildContext context,
+    WidgetRef ref,
     String studentName,
     TuitionInvoice invoice,
+    InvoicePaymentSummary? summary,
   ) {
     final formattedDate = invoice.chotLuc != null
         ? DateFormat('HH:mm dd/MM/yyyy').format(invoice.chotLuc!)
         : 'Đã chốt';
 
-    final statusLabel = switch (invoice.trangThai) {
+    final totalPaid = summary?.totalPaid ?? 0;
+    final remainingDebt = summary?.remainingDebt ?? invoice.soTienPhaiThu;
+    final settlementStatus = summary?.settlementStatus ?? invoice.trangThai;
+
+    final statusLabel = switch (settlementStatus) {
       TuitionInvoiceStatus.DA_CHOT => 'ĐÃ CHỐT',
       TuitionInvoiceStatus.DA_THANH_TOAN => 'ĐÃ THANH TOÁN',
       TuitionInvoiceStatus.CON_NO => 'CÒN NỢ',
       TuitionInvoiceStatus.NHAP => 'NHÁP',
     };
 
-    final statusColor = switch (invoice.trangThai) {
+    final statusColor = switch (settlementStatus) {
       TuitionInvoiceStatus.DA_CHOT => Colors.teal,
       TuitionInvoiceStatus.DA_THANH_TOAN => Colors.green.shade700,
       TuitionInvoiceStatus.CON_NO => Colors.red.shade700,
@@ -548,15 +563,15 @@ class _StudentTuitionCard extends ConsumerWidget {
           children: [
             Expanded(
               child: Text(
-                'Số buổi eligible: ${invoice.soBuoiEligible} (Tính phí: ${invoice.soBuoiTinhPhi})',
+                'Phải thu: ${NumberFormat('#,###').format(invoice.soTienPhaiThu)}đ | Đã trả: ${NumberFormat('#,###').format(totalPaid)}đ',
               ),
             ),
             Text(
-              'Phải thu: ${NumberFormat('#,###').format(invoice.soTienPhaiThu)}đ',
-              style: const TextStyle(
-                fontSize: 16,
+              'Còn lại: ${NumberFormat('#,###').format(remainingDebt)}đ',
+              style: TextStyle(
+                fontSize: 15,
                 fontWeight: FontWeight.bold,
-                color: Colors.teal,
+                color: remainingDebt > 0 ? Colors.red.shade800 : Colors.teal,
               ),
             ),
           ],
@@ -579,6 +594,31 @@ class _StudentTuitionCard extends ConsumerWidget {
             fontStyle: FontStyle.italic,
             color: Colors.grey.shade600,
           ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          alignment: WrapAlignment.end,
+          children: [
+            if (summary?.payments.isNotEmpty == true)
+              OutlinedButton.icon(
+                onPressed: () =>
+                    _showPaymentHistoryDialog(context, summary!.payments),
+                icon: const Icon(Icons.history, size: 16),
+                label: const Text('Lịch sử TT'),
+              ),
+            if (remainingDebt > 0 && invoice.soTienPhaiThu > 0)
+              ElevatedButton.icon(
+                onPressed: () =>
+                    _showRecordPaymentDialog(context, ref, remainingDebt),
+                icon: const Icon(Icons.payment, size: 16),
+                label: const Text('Thanh toán'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+          ],
         ),
       ],
     );
@@ -675,6 +715,162 @@ class _StudentTuitionCard extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _showRecordPaymentDialog(
+    BuildContext context,
+    WidgetRef ref,
+    int remainingDebt,
+  ) {
+    final amountController = TextEditingController(text: '$remainingDebt');
+    final dateController = TextEditingController(
+      text: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+    );
+    PaymentMethod selectedMethod = PaymentMethod.CHUYEN_KHOAN;
+    final txController = TextEditingController();
+    final noteController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Ghi nhận thanh toán'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Số tiền thanh toán (đ)',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: dateController,
+                  decoration: const InputDecoration(
+                    labelText: 'Ngày thanh toán (YYYY-MM-DD)',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<PaymentMethod>(
+                  initialValue: selectedMethod,
+                  decoration: const InputDecoration(
+                    labelText: 'Phương thức thanh toán',
+                  ),
+                  items: PaymentMethod.values
+                      .map(
+                        (m) => DropdownMenuItem(
+                          value: m,
+                          child: Text(m.displayName),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) setState(() => selectedMethod = val);
+                  },
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: txController,
+                  decoration: const InputDecoration(
+                    labelText: 'Mã giao dịch (Không bắt buộc)',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: noteController,
+                  decoration: const InputDecoration(labelText: 'Ghi chú'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  final amountText = amountController.text.trim();
+                  final amount = int.tryParse(amountText);
+                  if (amount == null || amount <= 0) {
+                    throw Exception('Số tiền thanh toán không hợp lệ');
+                  }
+
+                  await ref
+                      .read(paymentControllerProvider.notifier)
+                      .recordPayment(
+                        studentId: studentId,
+                        classId: classId,
+                        month: month,
+                        amount: amount,
+                        paymentDate: dateController.text.trim(),
+                        method: selectedMethod,
+                        transactionId: txController.text.trim(),
+                        note: noteController.text.trim(),
+                      );
+
+                  if (dialogCtx.mounted) {
+                    Navigator.pop(dialogCtx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Đã ghi nhận thanh toán thành công!'),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (dialogCtx.mounted) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+                  }
+                }
+              },
+              child: const Text('Thực hiện thanh toán'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPaymentHistoryDialog(BuildContext context, List<Payment> payments) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Lịch sử thanh toán'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: payments.isEmpty
+              ? const Text('Chưa có thanh toán nào.')
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: payments.length,
+                  itemBuilder: (ctx, i) {
+                    final p = payments[i];
+                    return ListTile(
+                      title: Text(
+                        '${NumberFormat('#,###').format(p.amount)}đ (${p.method.displayName})',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        'Ngày: ${p.paymentDate}${p.transactionId != null ? " | Mã GD: ${p.transactionId}" : ""}${p.note != null ? " | Ghi chú: ${p.note}" : ""}',
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
     );
   }
 }

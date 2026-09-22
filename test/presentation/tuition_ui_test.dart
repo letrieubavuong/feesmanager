@@ -7,6 +7,7 @@ import 'package:path/path.dart';
 import 'package:tuition2027/core/database/app_database.dart';
 import 'package:tuition2027/core/database/database_provider.dart';
 import 'package:tuition2027/features/memberships/presentation/membership_providers.dart';
+import 'package:tuition2027/features/payments/presentation/payment_controller.dart';
 import 'package:tuition2027/features/students/domain/student.dart';
 import 'package:tuition2027/features/students/presentation/student_detail_page.dart';
 import 'package:tuition2027/features/tuition/domain/tuition_invoice.dart';
@@ -109,6 +110,11 @@ void main() {
                 1,
                 nowMonth,
               ).overrideWith(() => _FakeTuitionPreviewController()),
+              invoicePaymentSummaryProvider((
+                1,
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => null),
             ],
             child: const MaterialApp(
               home: Scaffold(body: ClassTuitionTab(classId: 1)),
@@ -181,6 +187,11 @@ void main() {
                 1,
                 nowMonth,
               ).overrideWith((ref) async => testInvoice),
+              invoicePaymentSummaryProvider((
+                1,
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => null),
             ],
             child: const MaterialApp(
               home: Scaffold(body: ClassTuitionTab(classId: 1)),
@@ -250,6 +261,11 @@ void main() {
                 1,
                 nowMonth,
               ).overrideWith((ref) async => testInvoice),
+              invoicePaymentSummaryProvider((
+                1,
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => null),
             ],
             child: const MaterialApp(
               home: Scaffold(body: ClassTuitionTab(classId: 1)),
@@ -319,6 +335,11 @@ void main() {
                 1,
                 nowMonth,
               ).overrideWith((ref) async => testInvoice),
+              invoicePaymentSummaryProvider((
+                1,
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => null),
             ],
             child: const MaterialApp(
               home: Scaffold(body: ClassTuitionTab(classId: 1)),
