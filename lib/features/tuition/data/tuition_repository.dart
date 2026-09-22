@@ -45,6 +45,21 @@ class TuitionRepository {
     return TuitionInvoice.fromMap(maps.first);
   }
 
+  Future<TuitionInvoice?> getInvoiceInTxn(
+    Transaction txn,
+    int studentId,
+    int classId,
+    String month,
+  ) async {
+    final maps = await txn.query(
+      'hoc_phi_thang',
+      where: 'id_hoc_sinh = ? AND id_lop = ? AND thang = ?',
+      whereArgs: [studentId, classId, month],
+    );
+    if (maps.isEmpty) return null;
+    return TuitionInvoice.fromMap(maps.first);
+  }
+
   Future<List<TuitionInvoice>> getInvoicesForClassMonth(
     int classId,
     String month,

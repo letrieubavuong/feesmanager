@@ -484,7 +484,7 @@ class _StudentTuitionCard extends ConsumerWidget {
                     ref,
                     student.hoTen,
                     invoice!,
-                    paymentSummaryAsync.value,
+                    paymentSummaryAsync,
                   )
                 : previewAsync.when(
                     data: (preview) => _buildDraftPreviewCard(
@@ -510,117 +510,139 @@ class _StudentTuitionCard extends ConsumerWidget {
     WidgetRef ref,
     String studentName,
     TuitionInvoice invoice,
-    InvoicePaymentSummary? summary,
+    AsyncValue<InvoicePaymentSummary?> summaryAsync,
   ) {
-    final formattedDate = invoice.chotLuc != null
-        ? DateFormat('HH:mm dd/MM/yyyy').format(invoice.chotLuc!)
-        : 'Đã chốt';
-
-    final totalPaid = summary?.totalPaid ?? 0;
-    final remainingDebt = summary?.remainingDebt ?? invoice.soTienPhaiThu;
-    final settlementStatus = summary?.settlementStatus ?? invoice.trangThai;
-
-    final statusLabel = switch (settlementStatus) {
-      TuitionInvoiceStatus.DA_CHOT => 'ĐÃ CHỐT',
-      TuitionInvoiceStatus.DA_THANH_TOAN => 'ĐÃ THANH TOÁN',
-      TuitionInvoiceStatus.CON_NO => 'CÒN NỢ',
-      TuitionInvoiceStatus.NHAP => 'NHÁP',
-    };
-
-    final statusColor = switch (settlementStatus) {
-      TuitionInvoiceStatus.DA_CHOT => Colors.teal,
-      TuitionInvoiceStatus.DA_THANH_TOAN => Colors.green.shade700,
-      TuitionInvoiceStatus.CON_NO => Colors.red.shade700,
-      TuitionInvoiceStatus.NHAP => Colors.grey,
-    };
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              studentName,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            Chip(
-              label: Text(
-                statusLabel,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              backgroundColor: statusColor,
-            ),
-          ],
+    return summaryAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8.0),
+        child: Text(
+          'Đang tải dữ liệu thanh toán...',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
         ),
-        const SizedBox(height: 6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      ),
+      error: (e, _) => Text(
+        'Lỗi dữ liệu thanh toán: $e',
+        style: const TextStyle(color: Colors.red, fontSize: 12),
+      ),
+      data: (summary) {
+        final totalPaid = summary?.totalPaid ?? 0;
+        final remainingDebt = summary?.remainingDebt ?? invoice.soTienPhaiThu;
+        final settlementStatus = summary?.settlementStatus ?? invoice.trangThai;
+
+        final statusLabel = switch (settlementStatus) {
+          TuitionInvoiceStatus.DA_CHOT => 'ĐÃ CHỐT',
+          TuitionInvoiceStatus.DA_THANH_TOAN => 'ĐÃ THANH TOÁN',
+          TuitionInvoiceStatus.CON_NO => 'CÒN NỢ',
+          TuitionInvoiceStatus.NHAP => 'NHÁP',
+        };
+
+        final statusColor = switch (settlementStatus) {
+          TuitionInvoiceStatus.DA_CHOT => Colors.teal,
+          TuitionInvoiceStatus.DA_THANH_TOAN => Colors.green.shade700,
+          TuitionInvoiceStatus.CON_NO => Colors.red.shade700,
+          TuitionInvoiceStatus.NHAP => Colors.grey,
+        };
+
+        final formattedDate = invoice.chotLuc != null
+            ? DateFormat('HH:mm dd/MM/yyyy').format(invoice.chotLuc!)
+            : 'Đã chốt';
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Text(
-                'Phải thu: ${NumberFormat('#,###').format(invoice.soTienPhaiThu)}đ | Đã trả: ${NumberFormat('#,###').format(totalPaid)}đ',
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  studentName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Chip(
+                  label: Text(
+                    statusLabel,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  backgroundColor: statusColor,
+                ),
+              ],
             ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Phải thu: ${NumberFormat('#,###').format(invoice.soTienPhaiThu)}đ | Đã trả: ${NumberFormat('#,###').format(totalPaid)}đ',
+                  ),
+                ),
+                Text(
+                  'Còn lại: ${NumberFormat('#,###').format(remainingDebt)}đ',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: remainingDebt > 0
+                        ? Colors.red.shade800
+                        : Colors.teal,
+                  ),
+                ),
+              ],
+            ),
+            if (invoice.giamPhanTram > 0)
+              Text(
+                'Miễn giảm: ${invoice.giamPhanTram}% (-${NumberFormat('#,###').format(invoice.giamSoTien)}đ)',
+                style: TextStyle(color: Colors.orange.shade800, fontSize: 12),
+              ),
+            const SizedBox(height: 4),
             Text(
-              'Còn lại: ${NumberFormat('#,###').format(remainingDebt)}đ',
+              'Credit sổ cái snapshot: Đầu ${invoice.creditOpening} | Đã cộng +${invoice.creditEarned} | Đã dùng -${invoice.creditUsed} | Cuối ${invoice.creditClosing}',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Thời điểm chốt: $formattedDate',
               style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: remainingDebt > 0 ? Colors.red.shade800 : Colors.teal,
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+                color: Colors.grey.shade600,
               ),
             ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              alignment: WrapAlignment.end,
+              children: [
+                if (summary != null && summary.payments.isNotEmpty)
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        _showPaymentHistoryDialog(context, summary.payments),
+                    icon: const Icon(Icons.history, size: 16),
+                    label: const Text('Lịch sử TT'),
+                  ),
+                if (summary != null &&
+                    remainingDebt > 0 &&
+                    invoice.soTienPhaiThu > 0)
+                  ElevatedButton.icon(
+                    onPressed: () =>
+                        _showRecordPaymentDialog(context, ref, remainingDebt),
+                    icon: const Icon(Icons.payment, size: 16),
+                    label: const Text('Thanh toán'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.teal,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+              ],
+            ),
           ],
-        ),
-        if (invoice.giamPhanTram > 0)
-          Text(
-            'Miễn giảm: ${invoice.giamPhanTram}% (-${NumberFormat('#,###').format(invoice.giamSoTien)}đ)',
-            style: TextStyle(color: Colors.orange.shade800, fontSize: 12),
-          ),
-        const SizedBox(height: 4),
-        Text(
-          'Credit sổ cái snapshot: Đầu ${invoice.creditOpening} | Đã cộng +${invoice.creditEarned} | Đã dùng -${invoice.creditUsed} | Cuối ${invoice.creditClosing}',
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Thời điểm chốt: $formattedDate',
-          style: TextStyle(
-            fontSize: 11,
-            fontStyle: FontStyle.italic,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          alignment: WrapAlignment.end,
-          children: [
-            if (summary?.payments.isNotEmpty == true)
-              OutlinedButton.icon(
-                onPressed: () =>
-                    _showPaymentHistoryDialog(context, summary!.payments),
-                icon: const Icon(Icons.history, size: 16),
-                label: const Text('Lịch sử TT'),
-              ),
-            if (remainingDebt > 0 && invoice.soTienPhaiThu > 0)
-              ElevatedButton.icon(
-                onPressed: () =>
-                    _showRecordPaymentDialog(context, ref, remainingDebt),
-                icon: const Icon(Icons.payment, size: 16),
-                label: const Text('Thanh toán'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-          ],
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -748,11 +770,36 @@ class _StudentTuitionCard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                TextField(
-                  controller: dateController,
-                  decoration: const InputDecoration(
-                    labelText: 'Ngày thanh toán (YYYY-MM-DD)',
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: dateController,
+                        decoration: const InputDecoration(
+                          labelText: 'Ngày thanh toán (YYYY-MM-DD)',
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.calendar_today),
+                      onPressed: () async {
+                        final initialDt =
+                            DateTime.tryParse(dateController.text.trim()) ??
+                            DateTime.now();
+                        final picked = await showDatePicker(
+                          context: dialogCtx,
+                          initialDate: initialDt,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2030),
+                        );
+                        if (picked != null) {
+                          dateController.text = DateFormat(
+                            'yyyy-MM-dd',
+                          ).format(picked);
+                        }
+                      },
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<PaymentMethod>(

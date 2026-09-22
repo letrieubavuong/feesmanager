@@ -10,6 +10,7 @@ import '../data/payment_repository.dart';
 import 'invoice_payment_summary.dart';
 import 'payment.dart';
 import 'payment_method.dart';
+import 'payment_settlement_rules.dart';
 
 part 'payment_service.g.dart';
 
@@ -47,96 +48,109 @@ class PaymentService {
         ? null
         : transactionId?.trim();
 
-    final invoice = await _tuitionRepo.getInvoice(studentId, classId, month);
-    if (invoice == null) {
-      throw Exception(
-        'Không tìm thấy hóa đơn học phí cho học sinh trong tháng $month',
-      );
-    }
-
-    if (!invoice.trangThai.isFinalizedSnapshot) {
-      throw Exception(
-        'Chưa thể ghi nhận thanh toán cho hóa đơn nháp. Vui lòng chốt học phí trước.',
-      );
-    }
-
-    if (invoice.idHocSinh != studentId ||
-        invoice.idLop != classId ||
-        invoice.thang != month) {
-      throw Exception(
-        'Thông tin học sinh, lớp hoặc tháng không khớp với hóa đơn',
-      );
-    }
-
-    final currentTotalPaid = await _paymentRepo.getTotalPaidForInvoice(
-      invoice.id!,
-    );
-    final remainingDebt = invoice.soTienPhaiThu - currentTotalPaid;
-
-    if (invoice.soTienPhaiThu == 0 || remainingDebt <= 0) {
-      throw Exception(
-        'Hóa đơn đã được thanh toán đủ. Không thể ghi nhận thêm thanh toán.',
-      );
-    }
-
-    if (amount > remainingDebt) {
-      throw Exception(
-        'Số tiền thanh toán (${NumberFormat('#,###').format(amount)}đ) vượt quá dư nợ còn lại (${NumberFormat('#,###').format(remainingDebt)}đ)',
-      );
-    }
-
-    if (trimmedTxId != null) {
-      final existingTx = await _paymentRepo.findByTransactionId(trimmedTxId);
-      if (existingTx != null) {
-        throw Exception(
-          'Mã giao dịch "$trimmedTxId" đã tồn tại trong hệ thống.',
-        );
-      }
-    }
-
-    final newTotalPaid = currentTotalPaid + amount;
-    final TuitionInvoiceStatus newStatus;
-
-    if (newTotalPaid == invoice.soTienPhaiThu) {
-      newStatus = TuitionInvoiceStatus.DA_THANH_TOAN;
-    } else if (newTotalPaid > 0) {
-      newStatus = TuitionInvoiceStatus.CON_NO;
-    } else {
-      newStatus = TuitionInvoiceStatus.DA_CHOT;
-    }
-
-    final now = DateTime.now();
-    final payment = Payment(
-      studentId: studentId,
-      classId: classId,
-      invoiceId: invoice.id!,
-      month: month,
-      amount: amount,
-      paymentDate: paymentDate,
-      method: method,
-      transactionId: trimmedTxId,
-      note: note?.trim().isEmpty == true ? null : note?.trim(),
-      createdAt: now,
-    );
-
     Payment? createdPayment;
 
-    // Single atomic transaction for payment insertion & invoice status update
+    // Single atomic transaction wrapping ALL reads, validations, and writes
     await _db.transaction((txn) async {
+      // 1. Load invoice IN TRANSACTION
+      final invoice = await _tuitionRepo.getInvoiceInTxn(
+        txn,
+        studentId,
+        classId,
+        month,
+      );
+      if (invoice == null) {
+        throw Exception(
+          'Không tìm thấy hóa đơn học phí cho học sinh trong tháng $month',
+        );
+      }
+
+      if (!invoice.trangThai.isFinalizedSnapshot) {
+        throw Exception(
+          'Chưa thể ghi nhận thanh toán cho hóa đơn nháp. Vui lòng chốt học phí trước.',
+        );
+      }
+
+      if (invoice.idHocSinh != studentId ||
+          invoice.idLop != classId ||
+          invoice.thang != month) {
+        throw Exception(
+          'Thông tin học sinh, lớp hoặc tháng không khớp với hóa đơn',
+        );
+      }
+
+      // 2. Load existing payments and current summary IN TRANSACTION
+      final existingPayments = await _paymentRepo.getPaymentsForInvoiceInTxn(
+        txn,
+        invoice.id!,
+      );
+      final currentSummary = PaymentSettlementRules.evaluate(
+        invoice: invoice,
+        payments: existingPayments,
+      );
+
+      if (invoice.soTienPhaiThu == 0 || currentSummary.remainingDebt <= 0) {
+        throw Exception(
+          'Hóa đơn đã được thanh toán đủ. Không thể ghi nhận thêm thanh toán.',
+        );
+      }
+
+      if (amount > currentSummary.remainingDebt) {
+        throw Exception(
+          'Số tiền thanh toán (${NumberFormat('#,###').format(amount)}đ) vượt quá dư nợ còn lại (${NumberFormat('#,###').format(currentSummary.remainingDebt)}đ)',
+        );
+      }
+
+      // 3. Check duplicate transaction ID IN TRANSACTION
+      if (trimmedTxId != null) {
+        final existingTx = await _paymentRepo.findByTransactionIdInTxn(
+          txn,
+          trimmedTxId,
+        );
+        if (existingTx != null) {
+          throw Exception(
+            'Mã giao dịch "$trimmedTxId" đã tồn tại trong hệ thống.',
+          );
+        }
+      }
+
+      final newTotalPaid = currentSummary.totalPaid + amount;
+      final newStatus = PaymentSettlementRules.deriveStatus(
+        isFinalized: invoice.trangThai.isFinalizedSnapshot,
+        amountDue: invoice.soTienPhaiThu,
+        totalPaid: newTotalPaid,
+      );
+
+      final now = DateTime.now();
+      final payment = Payment(
+        studentId: studentId,
+        classId: classId,
+        invoiceId: invoice.id!,
+        month: month,
+        amount: amount,
+        paymentDate: paymentDate,
+        method: method,
+        transactionId: trimmedTxId,
+        note: note?.trim().isEmpty == true ? null : note?.trim(),
+        createdAt: now,
+      );
+
+      // 4. Insert payment IN TRANSACTION
       final id = await _paymentRepo.insertInTxn(txn, payment);
-      await _tuitionRepo.updateInvoiceStatusInTxn(
+
+      // 5. Update invoice status IN TRANSACTION
+      final rowsUpdated = await _tuitionRepo.updateInvoiceStatusInTxn(
         txn,
         invoice.id!,
         newStatus,
         now,
       );
 
-      final maps = await txn.query(
-        'thanh_toan',
-        where: 'id = ?',
-        whereArgs: [id],
-      );
-      createdPayment = Payment.fromMap(maps.first);
+      if (rowsUpdated != 1) {
+        throw Exception('Lỗi cập nhật trạng thái hóa đơn học phí.');
+      }
+
+      createdPayment = await _paymentRepo.getByIdInTxn(txn, id);
     });
 
     return createdPayment!;
@@ -151,10 +165,42 @@ class PaymentService {
     if (invoice == null) return null;
 
     final payments = await _paymentRepo.getPaymentsForInvoice(invoice.id!);
-    return InvoicePaymentSummary.calculate(
+    return PaymentSettlementRules.evaluate(
       invoice: invoice,
       payments: payments,
     );
+  }
+
+  Future<Map<int, InvoicePaymentSummary>> getPaymentSummariesForClassMonth(
+    int classId,
+    String month,
+  ) async {
+    final invoices = await _tuitionRepo.getInvoicesForClassMonth(
+      classId,
+      month,
+    );
+    if (invoices.isEmpty) return {};
+
+    final invoiceIds = invoices.map((i) => i.id!).toList();
+    final allPayments = await _paymentRepo.getPaymentsForInvoiceIds(invoiceIds);
+
+    final paymentsByInvoice = <int, List<Payment>>{};
+    for (final p in allPayments) {
+      if (p.invoiceId != null) {
+        paymentsByInvoice.putIfAbsent(p.invoiceId!, () => []).add(p);
+      }
+    }
+
+    final resultMap = <int, InvoicePaymentSummary>{};
+    for (final invoice in invoices) {
+      final payments = paymentsByInvoice[invoice.id] ?? [];
+      resultMap[invoice.idHocSinh] = PaymentSettlementRules.evaluate(
+        invoice: invoice,
+        payments: payments,
+      );
+    }
+
+    return resultMap;
   }
 
   Future<List<Payment>> getPaymentsForStudentClassMonth(

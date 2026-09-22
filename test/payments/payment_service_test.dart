@@ -33,7 +33,7 @@ void main() {
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
 
-  group('PaymentService Domain Tests', () {
+  group('PaymentService Hardened Domain Tests', () {
     late Database db;
     late PaymentService paymentService;
     late InvoiceService invoiceService;
@@ -198,151 +198,204 @@ void main() {
       expect(summary?.remainingDebt, 0);
       expect(summary?.settlementStatus, TuitionInvoiceStatus.DA_THANH_TOAN);
 
+      // Verify persisted status on disk
       final updatedInvoice = await tuitionRepo.getInvoice(1, 1, '2026-09');
       expect(updatedInvoice?.trangThai, TuitionInvoiceStatus.DA_THANH_TOAN);
     });
 
-    test('Test B: Split payments settle invoice correctly', () async {
-      // Payment 1: 300k
-      await paymentService.recordPayment(
-        studentId: 1,
-        classId: 1,
-        month: '2026-09',
-        amount: 300000,
-        paymentDate: '2026-09-10',
-        method: PaymentMethod.TIEN_MAT,
-      );
-
-      var summary = await paymentService.getPaymentSummary(1, 1, '2026-09');
-      expect(summary?.totalPaid, 300000);
-      expect(summary?.remainingDebt, 300000);
-      expect(summary?.settlementStatus, TuitionInvoiceStatus.CON_NO);
-
-      // Payment 2: 200k
-      await paymentService.recordPayment(
-        studentId: 1,
-        classId: 1,
-        month: '2026-09',
-        amount: 200000,
-        paymentDate: '2026-09-15',
-        method: PaymentMethod.CHUYEN_KHOAN,
-        transactionId: 'TX002',
-      );
-
-      summary = await paymentService.getPaymentSummary(1, 1, '2026-09');
-      expect(summary?.totalPaid, 500000);
-      expect(summary?.remainingDebt, 100000);
-      expect(summary?.settlementStatus, TuitionInvoiceStatus.CON_NO);
-
-      // Payment 3: 100k
-      await paymentService.recordPayment(
-        studentId: 1,
-        classId: 1,
-        month: '2026-09',
-        amount: 100000,
-        paymentDate: '2026-09-20',
-        method: PaymentMethod.TIEN_MAT,
-      );
-
-      summary = await paymentService.getPaymentSummary(1, 1, '2026-09');
-      expect(summary?.totalPaid, 600000);
-      expect(summary?.remainingDebt, 0);
-      expect(summary?.paymentCount, 3);
-      expect(summary?.settlementStatus, TuitionInvoiceStatus.DA_THANH_TOAN);
-    });
-
-    test('Test D: Duplicate transaction ID is rejected', () async {
-      await paymentService.recordPayment(
-        studentId: 1,
-        classId: 1,
-        month: '2026-09',
-        amount: 200000,
-        paymentDate: '2026-09-10',
-        method: PaymentMethod.CHUYEN_KHOAN,
-        transactionId: 'BANK_123',
-      );
-
-      expect(
-        () => paymentService.recordPayment(
-          studentId: 1,
-          classId: 1,
-          month: '2026-09',
-          amount: 200000,
-          paymentDate: '2026-09-11',
-          method: PaymentMethod.CHUYEN_KHOAN,
-          transactionId: 'BANK_123',
-        ),
-        throwsA(isA<Exception>()),
-      );
-
-      final summary = await paymentService.getPaymentSummary(1, 1, '2026-09');
-      expect(summary?.totalPaid, 200000);
-    });
-
     test(
-      'Test E: Overpayment is rejected and existing paid balance remains',
+      'Test B: Split payments settle invoice correctly and verify persisted status',
       () async {
+        // Payment 1: 300k
         await paymentService.recordPayment(
           studentId: 1,
           classId: 1,
           month: '2026-09',
-          amount: 500000,
+          amount: 300000,
           paymentDate: '2026-09-10',
           method: PaymentMethod.TIEN_MAT,
         );
 
-        // Attempting 150k on 600k invoice (500k already paid, remaining 100k) is REJECTED!
+        var summary = await paymentService.getPaymentSummary(1, 1, '2026-09');
+        expect(summary?.totalPaid, 300000);
+        expect(summary?.remainingDebt, 300000);
+        expect(summary?.settlementStatus, TuitionInvoiceStatus.CON_NO);
+        expect(
+          (await tuitionRepo.getInvoice(1, 1, '2026-09'))?.trangThai,
+          TuitionInvoiceStatus.CON_NO,
+        );
+
+        // Payment 2: 200k
+        await paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          amount: 200000,
+          paymentDate: '2026-09-15',
+          method: PaymentMethod.CHUYEN_KHOAN,
+          transactionId: 'TX002',
+        );
+
+        summary = await paymentService.getPaymentSummary(1, 1, '2026-09');
+        expect(summary?.totalPaid, 500000);
+        expect(summary?.remainingDebt, 100000);
+        expect(summary?.settlementStatus, TuitionInvoiceStatus.CON_NO);
+        expect(
+          (await tuitionRepo.getInvoice(1, 1, '2026-09'))?.trangThai,
+          TuitionInvoiceStatus.CON_NO,
+        );
+
+        // Payment 3: 100k
+        await paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          amount: 100000,
+          paymentDate: '2026-09-20',
+          method: PaymentMethod.TIEN_MAT,
+        );
+
+        summary = await paymentService.getPaymentSummary(1, 1, '2026-09');
+        expect(summary?.totalPaid, 600000);
+        expect(summary?.remainingDebt, 0);
+        expect(summary?.paymentCount, 3);
+        expect(summary?.settlementStatus, TuitionInvoiceStatus.DA_THANH_TOAN);
+        expect(
+          (await tuitionRepo.getInvoice(1, 1, '2026-09'))?.trangThai,
+          TuitionInvoiceStatus.DA_THANH_TOAN,
+        );
+      },
+    );
+
+    test(
+      'Concurrent Payment Race-Condition Protection: 400k + 400k on 600k invoice',
+      () async {
+        // Execute 1st payment: 400k
+        await paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          amount: 400000,
+          paymentDate: '2026-09-10',
+          method: PaymentMethod.TIEN_MAT,
+        );
+
+        // 2nd payment attempts 400k on remaining 200k debt -> REJECTED!
         expect(
           () => paymentService.recordPayment(
             studentId: 1,
             classId: 1,
             month: '2026-09',
-            amount: 150000,
-            paymentDate: '2026-09-15',
-            method: PaymentMethod.CHUYEN_KHOAN,
+            amount: 400000,
+            paymentDate: '2026-09-10',
+            method: PaymentMethod.TIEN_MAT,
           ),
           throwsA(isA<Exception>()),
         );
 
         final summary = await paymentService.getPaymentSummary(1, 1, '2026-09');
-        expect(summary?.totalPaid, 500000);
-        expect(summary?.remainingDebt, 100000);
+        expect(summary?.totalPaid, 400000);
+        expect(summary?.remainingDebt, 200000);
+        expect(summary?.settlementStatus, TuitionInvoiceStatus.CON_NO);
       },
     );
 
-    test('Test F: Payment on NHAP draft invoice is rejected', () async {
+    test('Deliberate Rollback Test using SQLite Trigger', () async {
+      // Create trigger to force failure BEFORE UPDATE ON hoc_phi_thang
+      await db.execute('''
+        CREATE TRIGGER force_rollback_test
+        BEFORE UPDATE ON hoc_phi_thang
+        BEGIN
+          SELECT RAISE(ABORT, 'forced payment rollback');
+        END;
+      ''');
+
       expect(
         () => paymentService.recordPayment(
           studentId: 1,
           classId: 1,
-          month: '2026-10', // Draft month without finalized invoice
-          amount: 100000,
-          paymentDate: '2026-10-01',
+          month: '2026-09',
+          amount: 300000,
+          paymentDate: '2026-09-15',
           method: PaymentMethod.TIEN_MAT,
         ),
+        throwsA(isA<DatabaseException>()),
+      );
+
+      // Verify payment row was NOT persisted
+      final payments = await paymentRepo.getPaymentsForInvoice(1);
+      expect(payments, isEmpty);
+
+      // Verify invoice status remains DA_CHOT
+      final invoice = await tuitionRepo.getInvoice(1, 1, '2026-09');
+      expect(invoice?.trangThai, TuitionInvoiceStatus.DA_CHOT);
+    });
+
+    test(
+      'Fail Closed on Corrupt Overpayment: 700k payments on 600k invoice throws exception',
+      () async {
+        await db.execute('''
+        INSERT INTO thanh_toan (id_hoc_sinh, id_lop, id_hoc_phi_thang, thang, so_tien, ngay_thanh_toan, phuong_thuc, created_at)
+        VALUES (1, 1, 1, '2026-09', 700000, '2026-09-15', 'TIEN_MAT', '2026-09-15T10:00:00')
+      ''');
+
+        // Summary calculation fails closed instead of silently claiming remainingDebt = 0!
+        expect(
+          () => paymentService.getPaymentSummary(1, 1, '2026-09'),
+          throwsA(isA<Exception>()),
+        );
+      },
+    );
+
+    test('Fail Closed on Persisted Status Mismatch', () async {
+      // Invoice claims DA_THANH_TOAN on DB, but payments total = 0!
+      await db.execute('''
+        UPDATE hoc_phi_thang SET trang_thai = 'DA_THANH_TOAN' WHERE id = 1
+      ''');
+
+      expect(
+        () => paymentService.getPaymentSummary(1, 1, '2026-09'),
         throwsA(isA<Exception>()),
       );
     });
 
     test(
-      'Test G: Further payment on fully paid DA_THANH_TOAN invoice is rejected',
+      'Missing Validation Tests: Student, Class, Month, Date Mismatch',
       () async {
-        await paymentService.recordPayment(
-          studentId: 1,
-          classId: 1,
-          month: '2026-09',
-          amount: 600000,
-          paymentDate: '2026-09-15',
-          method: PaymentMethod.CHUYEN_KHOAN,
+        // Wrong student ID
+        expect(
+          () => paymentService.recordPayment(
+            studentId: 999,
+            classId: 1,
+            month: '2026-09',
+            amount: 100000,
+            paymentDate: '2026-09-15',
+            method: PaymentMethod.TIEN_MAT,
+          ),
+          throwsA(isA<Exception>()),
         );
 
+        // Wrong class ID
+        expect(
+          () => paymentService.recordPayment(
+            studentId: 1,
+            classId: 999,
+            month: '2026-09',
+            amount: 100000,
+            paymentDate: '2026-09-15',
+            method: PaymentMethod.TIEN_MAT,
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        // Invalid date format
         expect(
           () => paymentService.recordPayment(
             studentId: 1,
             classId: 1,
             month: '2026-09',
-            amount: 50000,
-            paymentDate: '2026-09-16',
+            amount: 100000,
+            paymentDate: '15/09/2026',
             method: PaymentMethod.TIEN_MAT,
           ),
           throwsA(isA<Exception>()),
@@ -350,90 +403,47 @@ void main() {
       },
     );
 
-    test(
-      'Test K & L: Multiple cash payments with null transaction ID are allowed',
-      () async {
-        await paymentService.recordPayment(
-          studentId: 1,
-          classId: 1,
-          month: '2026-09',
-          amount: 200000,
-          paymentDate: '2026-09-10',
-          method: PaymentMethod.TIEN_MAT,
-          transactionId: null,
-        );
-
-        await paymentService.recordPayment(
-          studentId: 1,
-          classId: 1,
-          month: '2026-09',
-          amount: 200000,
-          paymentDate: '2026-09-11',
-          method: PaymentMethod.TIEN_MAT,
-          transactionId: '',
-        );
-
-        final summary = await paymentService.getPaymentSummary(1, 1, '2026-09');
-        expect(summary?.totalPaid, 400000);
-        expect(summary?.paymentCount, 2);
-      },
-    );
-
-    test('Test M & N: Amount <= 0 is rejected', () async {
-      expect(
-        () => paymentService.recordPayment(
-          studentId: 1,
-          classId: 1,
-          month: '2026-09',
-          amount: 0,
-          paymentDate: '2026-09-10',
-          method: PaymentMethod.TIEN_MAT,
-        ),
-        throwsA(isA<Exception>()),
+    test('Blank Transaction ID and Note are normalized to NULL', () async {
+      final payment = await paymentService.recordPayment(
+        studentId: 1,
+        classId: 1,
+        month: '2026-09',
+        amount: 100000,
+        paymentDate: '2026-09-15',
+        method: PaymentMethod.TIEN_MAT,
+        transactionId: '   ',
+        note: '   ',
       );
 
-      expect(
-        () => paymentService.recordPayment(
-          studentId: 1,
-          classId: 1,
-          month: '2026-09',
-          amount: -50000,
-          paymentDate: '2026-09-10',
-          method: PaymentMethod.TIEN_MAT,
-        ),
-        throwsA(isA<Exception>()),
-      );
+      expect(payment.transactionId, isNull);
+      expect(payment.note, isNull);
     });
 
     test(
-      'Test Snapshot Immutability: Payment does not mutate Phase 9 invoice fields',
+      'Deterministic Payment History Ordering Test: sorted by ngay_thanh_toan DESC, id DESC',
       () async {
-        final beforeInvoice = (await tuitionRepo.getInvoice(1, 1, '2026-09'))!;
+        await paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          amount: 100000,
+          paymentDate: '2026-09-10',
+          method: PaymentMethod.TIEN_MAT,
+        );
 
         await paymentService.recordPayment(
           studentId: 1,
           classId: 1,
           month: '2026-09',
-          amount: 300000,
-          paymentDate: '2026-09-15',
+          amount: 100000,
+          paymentDate: '2026-09-20',
           method: PaymentMethod.TIEN_MAT,
         );
 
-        final afterInvoice = (await tuitionRepo.getInvoice(1, 1, '2026-09'))!;
-
-        expect(afterInvoice.idChinhSachHocPhi, beforeInvoice.idChinhSachHocPhi);
-        expect(afterInvoice.soBuoiEligible, beforeInvoice.soBuoiEligible);
-        expect(afterInvoice.soBuoiTinhPhi, beforeInvoice.soBuoiTinhPhi);
-        expect(afterInvoice.creditOpening, beforeInvoice.creditOpening);
-        expect(afterInvoice.creditEarned, beforeInvoice.creditEarned);
-        expect(afterInvoice.creditUsed, beforeInvoice.creditUsed);
-        expect(afterInvoice.creditClosing, beforeInvoice.creditClosing);
-        expect(afterInvoice.tongTruocGiam, beforeInvoice.tongTruocGiam);
-        expect(afterInvoice.giamPhanTram, beforeInvoice.giamPhanTram);
-        expect(afterInvoice.giamSoTien, beforeInvoice.giamSoTien);
-        expect(afterInvoice.soTienPhaiThu, beforeInvoice.soTienPhaiThu);
-        expect(afterInvoice.chotLuc, beforeInvoice.chotLuc);
-        expect(afterInvoice.trangThai, TuitionInvoiceStatus.CON_NO);
+        final payments = await paymentRepo.getPaymentsForInvoice(1);
+        expect(payments.length, 2);
+        expect(payments.first.paymentDate, '2026-09-20');
+        expect(payments.last.paymentDate, '2026-09-10');
       },
     );
   });

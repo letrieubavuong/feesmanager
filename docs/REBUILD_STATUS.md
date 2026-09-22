@@ -122,19 +122,23 @@
 
 ## Phase 10: Payment + Debt - COMPLETE
 - [x] Forward Database Migration (v11 -> v12) creating `thanh_toan` table with Foreign Keys (`ON DELETE RESTRICT`), `CHECK (so_tien > 0)`, `CHECK (phuong_thuc IN ('TIEN_MAT', 'CHUYEN_KHOAN', 'KHAC'))`, partial UNIQUE index on non-empty `ma_giao_dich`, and performance indexes.
+- [x] Real v11 -> v12 database migration test on real SQLite file (`test/repository/migration_v11_v12_test.dart`) asserting data preservation and `ON DELETE RESTRICT` foreign key enforcement.
 - [x] Payment domain models (`Payment`, `PaymentMethod`, `InvoicePaymentSummary`).
-- [x] Persistence in `PaymentRepository` including `insertInTxn`, `getPaymentsForInvoice`, `getTotalPaidForInvoice`, `findByTransactionId`.
-- [x] Single canonical owner `PaymentService`:
-  - `recordPayment` validates finalized invoice state, student/class/month matching, positive amount, non-empty transaction ID uniqueness, and overpayment prevention.
-  - Atomically inserts payment and updates invoice settlement status (`DA_CHOT` -> `CON_NO` -> `DA_THANH_TOAN`) in a single SQLite transaction (`_db.transaction`).
+- [x] Single canonical owner `PaymentSettlementRules` for all payment & settlement status calculations (`NHAP` -> `DA_CHOT` -> `CON_NO` -> `DA_THANH_TOAN`).
+- [x] Persistence in `PaymentRepository` with transaction-aware `InTxn` methods and `getPaymentsForInvoiceIds` batch lookups.
+- [x] In-Transaction Command Execution (`PaymentService.recordPayment`):
+  - All reads (invoice, payments, totalPaid, transaction ID check), validations, payment insertion, and invoice status update execute inside ONE single SQLite transaction (`_db.transaction`).
+  - Concurrent race-condition protection (400k + 400k on 600k invoice rejects overpayment; 300k + 300k settles to `DA_THANH_TOAN`).
+  - Deliberate transaction rollback verified with SQLite trigger test.
   - Derived debt formula: `remainingDebt = invoice.soTienPhaiThu - totalPaid` (never persisted as separate column).
+- [x] Fail-closed integrity checks: Mismatched student/class/month payment, overpayment, or corrupted status on disk throws exception.
 - [x] Snapshot Immutability: Phase 9 invoice snapshot fields (`soBuoiEligible`, `soBuoiTinhPhi`, `creditClosing`, `soTienPhaiThu`, etc.) remain 100% immutable upon payment.
-- [x] Live provider invalidations in `PaymentController` (`studentInvoiceProvider`, `invoicePaymentSummaryProvider`, `invoicePaymentsProvider`, `classMonthStudentsProvider`).
+- [x] Batch Read Model (`classMonthPaymentSummariesProvider`) eliminating N+1 UI queries.
 - [x] UI Integration in `ClassTuitionTab`:
   - Card displays "Phải thu", "Đã thanh toán", "Còn lại" and settlement status chips (`ĐÃ CHỐT`, `CÒN NỢ`, `ĐÃ THANH TOÁN`).
-  - Action "Ghi nhận thanh toán" opens dialog prefilled with remaining debt, method selection, payment date picker, transaction ID, and note fields.
+  - Action "Ghi nhận thanh toán" opens dialog prefilled with remaining debt, method selection, payment date picker with Flutter DatePicker UI, transaction ID, and note fields.
   - Action "Lịch sử thanh toán" opens deterministic payment history dialog.
-- [x] Comprehensive Tests (260 tests passing):
+- [x] Comprehensive Tests (261 tests passing):
     - `test/repository/migration_v11_v12_test.dart`
     - `test/payments/payment_service_test.dart`
     - `test/presentation/payment_ui_test.dart`
@@ -146,7 +150,7 @@
 - **Version**: 12
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
-- **Tests**: 260 tests passing
+- **Tests**: 261 tests passing
 - **Quality Gate**:
   - `dart analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (260 tests)
+  - `flutter test`: 100% Pass (261 tests)

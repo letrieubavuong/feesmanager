@@ -150,6 +150,135 @@ class _InvoicePaymentSummaryProviderElement
   (int, int, String) get arg => (origin as InvoicePaymentSummaryProvider).arg;
 }
 
+String _$classMonthPaymentSummariesHash() =>
+    r'086d1f894b50c4157bacdd407ab4b4656e76ce07';
+
+/// See also [classMonthPaymentSummaries].
+@ProviderFor(classMonthPaymentSummaries)
+const classMonthPaymentSummariesProvider = ClassMonthPaymentSummariesFamily();
+
+/// See also [classMonthPaymentSummaries].
+class ClassMonthPaymentSummariesFamily
+    extends Family<AsyncValue<Map<int, InvoicePaymentSummary>>> {
+  /// See also [classMonthPaymentSummaries].
+  const ClassMonthPaymentSummariesFamily();
+
+  /// See also [classMonthPaymentSummaries].
+  ClassMonthPaymentSummariesProvider call((int, String) arg) {
+    return ClassMonthPaymentSummariesProvider(arg);
+  }
+
+  @override
+  ClassMonthPaymentSummariesProvider getProviderOverride(
+    covariant ClassMonthPaymentSummariesProvider provider,
+  ) {
+    return call(provider.arg);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'classMonthPaymentSummariesProvider';
+}
+
+/// See also [classMonthPaymentSummaries].
+class ClassMonthPaymentSummariesProvider
+    extends AutoDisposeFutureProvider<Map<int, InvoicePaymentSummary>> {
+  /// See also [classMonthPaymentSummaries].
+  ClassMonthPaymentSummariesProvider((int, String) arg)
+    : this._internal(
+        (ref) => classMonthPaymentSummaries(
+          ref as ClassMonthPaymentSummariesRef,
+          arg,
+        ),
+        from: classMonthPaymentSummariesProvider,
+        name: r'classMonthPaymentSummariesProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$classMonthPaymentSummariesHash,
+        dependencies: ClassMonthPaymentSummariesFamily._dependencies,
+        allTransitiveDependencies:
+            ClassMonthPaymentSummariesFamily._allTransitiveDependencies,
+        arg: arg,
+      );
+
+  ClassMonthPaymentSummariesProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.arg,
+  }) : super.internal();
+
+  final (int, String) arg;
+
+  @override
+  Override overrideWith(
+    FutureOr<Map<int, InvoicePaymentSummary>> Function(
+      ClassMonthPaymentSummariesRef provider,
+    )
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ClassMonthPaymentSummariesProvider._internal(
+        (ref) => create(ref as ClassMonthPaymentSummariesRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        arg: arg,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<Map<int, InvoicePaymentSummary>>
+  createElement() {
+    return _ClassMonthPaymentSummariesProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ClassMonthPaymentSummariesProvider && other.arg == arg;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, arg.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin ClassMonthPaymentSummariesRef
+    on AutoDisposeFutureProviderRef<Map<int, InvoicePaymentSummary>> {
+  /// The parameter `arg` of this provider.
+  (int, String) get arg;
+}
+
+class _ClassMonthPaymentSummariesProviderElement
+    extends AutoDisposeFutureProviderElement<Map<int, InvoicePaymentSummary>>
+    with ClassMonthPaymentSummariesRef {
+  _ClassMonthPaymentSummariesProviderElement(super.provider);
+
+  @override
+  (int, String) get arg => (origin as ClassMonthPaymentSummariesProvider).arg;
+}
+
 String _$invoicePaymentsHash() => r'63fc2006ca1d63e5909e768e74edd409c865fd9e';
 
 /// See also [invoicePayments].
@@ -268,7 +397,7 @@ class _InvoicePaymentsProviderElement
   (int, int, String) get arg => (origin as InvoicePaymentsProvider).arg;
 }
 
-String _$paymentControllerHash() => r'e3d049c3ef39ab300b51eb86886decf84ff1625d';
+String _$paymentControllerHash() => r'dfce3f5c7ca6717f4c707101ba368608e0028283';
 
 /// See also [PaymentController].
 @ProviderFor(PaymentController)

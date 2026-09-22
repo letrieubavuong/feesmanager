@@ -1,5 +1,6 @@
 import '../../tuition/domain/tuition_invoice.dart';
 import 'payment.dart';
+import 'payment_settlement_rules.dart';
 
 class InvoicePaymentSummary {
   final TuitionInvoice invoice;
@@ -24,29 +25,9 @@ class InvoicePaymentSummary {
     required TuitionInvoice invoice,
     required List<Payment> payments,
   }) {
-    final amountDue = invoice.soTienPhaiThu;
-    final totalPaid = payments.fold<int>(0, (sum, p) => sum + p.amount);
-    final remainingDebt = amountDue > totalPaid ? amountDue - totalPaid : 0;
-
-    final TuitionInvoiceStatus derivedStatus;
-    if (invoice.trangThai == TuitionInvoiceStatus.NHAP) {
-      derivedStatus = TuitionInvoiceStatus.NHAP;
-    } else if (totalPaid == 0) {
-      derivedStatus = TuitionInvoiceStatus.DA_CHOT;
-    } else if (totalPaid >= amountDue) {
-      derivedStatus = TuitionInvoiceStatus.DA_THANH_TOAN;
-    } else {
-      derivedStatus = TuitionInvoiceStatus.CON_NO;
-    }
-
-    return InvoicePaymentSummary(
+    return PaymentSettlementRules.evaluate(
       invoice: invoice,
       payments: payments,
-      amountDue: amountDue,
-      totalPaid: totalPaid,
-      remainingDebt: remainingDebt,
-      paymentCount: payments.length,
-      settlementStatus: derivedStatus,
     );
   }
 }

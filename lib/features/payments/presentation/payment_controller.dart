@@ -18,6 +18,15 @@ Future<InvoicePaymentSummary?> invoicePaymentSummary(
 }
 
 @riverpod
+Future<Map<int, InvoicePaymentSummary>> classMonthPaymentSummaries(
+  ClassMonthPaymentSummariesRef ref,
+  (int classId, String month) arg,
+) async {
+  final service = await ref.watch(paymentServiceProvider.future);
+  return service.getPaymentSummariesForClassMonth(arg.$1, arg.$2);
+}
+
+@riverpod
 Future<List<Payment>> invoicePayments(
   InvoicePaymentsRef ref,
   (int studentId, int classId, String month) arg,
@@ -64,6 +73,7 @@ class PaymentController extends _$PaymentController {
       ref.invalidate(
         invoicePaymentSummaryProvider((studentId, classId, month)),
       );
+      ref.invalidate(classMonthPaymentSummariesProvider((classId, month)));
       ref.invalidate(invoicePaymentsProvider((studentId, classId, month)));
       ref.invalidate(classMonthStudentsProvider((classId, month)));
       ref.invalidate(classTuitionPoliciesProvider(classId));
