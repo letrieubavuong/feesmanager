@@ -18,12 +18,14 @@ void main() {
       dbPath = join(tempDir.path, 'test_migration_v9_v10.db');
     });
 
-    test('Migration v9 to v10 preserves canonical Phase 0-8 data', () async {
-      final dbV9 = await openDatabase(
-        dbPath,
-        version: 9,
-        onCreate: (db, version) async {
-          await db.execute('''
+    test(
+      'Migration v9 to v10 preserves canonical Phase 0-8 historical data',
+      () async {
+        final dbV9 = await openDatabase(
+          dbPath,
+          version: 9,
+          onCreate: (db, version) async {
+            await db.execute('''
             CREATE TABLE hoc_sinh (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               ho_ten TEXT NOT NULL,
@@ -47,7 +49,7 @@ void main() {
             )
           ''');
 
-          await db.execute('''
+            await db.execute('''
             CREATE TABLE lop (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               ten_lop TEXT NOT NULL,
@@ -61,7 +63,7 @@ void main() {
             )
           ''');
 
-          await db.execute('''
+            await db.execute('''
             CREATE TABLE buoi_hoc (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               id_lop INTEGER NOT NULL,
@@ -82,7 +84,7 @@ void main() {
             )
           ''');
 
-          await db.execute('''
+            await db.execute('''
             CREATE TABLE buoi_du_ledger (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               id_hoc_sinh INTEGER NOT NULL,
@@ -100,101 +102,103 @@ void main() {
               CHECK (ly_do IN ('VUOT_SO_BUOI_CHUAN', 'BU_TRU_NGHI_CO_PHEP', 'DIEU_CHINH_THU_CONG', 'MIGRATION'))
             )
           ''');
-        },
-        onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
-      );
+          },
+          onConfigure: (db) async =>
+              await db.execute('PRAGMA foreign_keys = ON'),
+        );
 
-      await dbV9.insert('hoc_sinh', {
-        'id': 11,
-        'ho_ten': 'S11',
-        'created_at': '2026-01-01',
-        'updated_at': '2026-01-01',
-      });
-      await dbV9.insert('lop', {
-        'id': 21,
-        'ten_lop': 'C21',
-        'created_at': '2026-01-01',
-        'updated_at': '2026-01-01',
-      });
-      await dbV9.insert('buoi_hoc', {
-        'id': 61,
-        'id_lop': 21,
-        'ngay': '2026-09-21',
-        'gio_bat_dau': '17:30',
-        'gio_ket_thuc': '19:00',
-        'loai': 'CHINH',
-        'created_at': '2026-01-01',
-        'updated_at': '2026-01-01',
-      });
+        await dbV9.insert('hoc_sinh', {
+          'id': 11,
+          'ho_ten': 'S11',
+          'created_at': '2026-01-01',
+          'updated_at': '2026-01-01',
+        });
+        await dbV9.insert('lop', {
+          'id': 21,
+          'ten_lop': 'C21',
+          'created_at': '2026-01-01',
+          'updated_at': '2026-01-01',
+        });
+        await dbV9.insert('buoi_hoc', {
+          'id': 61,
+          'id_lop': 21,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'created_at': '2026-01-01',
+          'updated_at': '2026-01-01',
+        });
 
-      // Populate v9 ledger rows
-      await dbV9.insert('buoi_du_ledger', {
-        'id': 100,
-        'id_hoc_sinh': 11,
-        'id_lop': 21,
-        'id_buoi_hoc': 61,
-        'ngay_hieu_luc': '2026-09-21',
-        'delta': 1,
-        'ly_do': 'VUOT_SO_BUOI_CHUAN',
-        'ghi_chu': 'Auto earned',
-        'created_at': '2026-09-21',
-      });
-      await dbV9.insert('buoi_du_ledger', {
-        'id': 101,
-        'id_hoc_sinh': 11,
-        'id_lop': 21,
-        'id_buoi_hoc': null,
-        'ngay_hieu_luc': '2026-09-22',
-        'delta': 2,
-        'ly_do': 'DIEU_CHINH_THU_CONG',
-        'ghi_chu': 'Manual add',
-        'created_at': '2026-09-22',
-      });
-      await dbV9.insert('buoi_du_ledger', {
-        'id': 102,
-        'id_hoc_sinh': 11,
-        'id_lop': 21,
-        'id_buoi_hoc': null,
-        'ngay_hieu_luc': '2026-09-23',
-        'delta': -1,
-        'ly_do': 'DIEU_CHINH_THU_CONG',
-        'ghi_chu': 'Manual subtract',
-        'created_at': '2026-09-23',
-      });
-      await dbV9.close();
+        // Populate v9 ledger rows
+        await dbV9.insert('buoi_du_ledger', {
+          'id': 100,
+          'id_hoc_sinh': 11,
+          'id_lop': 21,
+          'id_buoi_hoc': 61,
+          'ngay_hieu_luc': '2026-09-21',
+          'delta': 1,
+          'ly_do': 'VUOT_SO_BUOI_CHUAN',
+          'ghi_chu': 'Auto earned',
+          'created_at': '2026-09-21',
+        });
+        await dbV9.insert('buoi_du_ledger', {
+          'id': 101,
+          'id_hoc_sinh': 11,
+          'id_lop': 21,
+          'id_buoi_hoc': null,
+          'ngay_hieu_luc': '2026-09-22',
+          'delta': 2,
+          'ly_do': 'DIEU_CHINH_THU_CONG',
+          'ghi_chu': 'Manual add',
+          'created_at': '2026-09-22',
+        });
+        await dbV9.insert('buoi_du_ledger', {
+          'id': 102,
+          'id_hoc_sinh': 11,
+          'id_lop': 21,
+          'id_buoi_hoc': null,
+          'ngay_hieu_luc': '2026-09-23',
+          'delta': -1,
+          'ly_do': 'DIEU_CHINH_THU_CONG',
+          'ghi_chu': 'Manual subtract',
+          'created_at': '2026-09-23',
+        });
+        await dbV9.close();
 
-      final appDb = AppDatabase(dbName: dbPath);
-      final dbV10 = await appDb.database;
+        final appDb = AppDatabase(dbName: dbPath);
+        final dbV10 = await appDb.database;
 
-      expect(await dbV10.getVersion(), 10);
+        expect(await dbV10.getVersion(), 10);
 
-      // Verify all rows survive
-      final rows = await dbV10.query('buoi_du_ledger', orderBy: 'id ASC');
-      expect(rows.length, 3);
+        // Verify all rows survive
+        final rows = await dbV10.query('buoi_du_ledger', orderBy: 'id ASC');
+        expect(rows.length, 3);
 
-      expect(rows[0]['ly_do'], 'VUOT_SO_BUOI_CHUAN');
-      expect(rows[0]['delta'], 1);
-      expect(rows[0]['id_buoi_hoc'], 61);
-      expect(rows[0]['ngay_hieu_luc'], '2026-09-21');
-      expect(rows[0]['ghi_chu'], 'Auto earned');
+        expect(rows[0]['ly_do'], 'VUOT_SO_BUOI_CHUAN');
+        expect(rows[0]['delta'], 1);
+        expect(rows[0]['id_buoi_hoc'], 61);
+        expect(rows[0]['ngay_hieu_luc'], '2026-09-21');
+        expect(rows[0]['ghi_chu'], 'Auto earned');
 
-      expect(rows[1]['ly_do'], 'DIEU_CHINH_THU_CONG');
-      expect(rows[1]['delta'], 2);
-      expect(rows[1]['id_buoi_hoc'], null);
-      expect(rows[1]['ngay_hieu_luc'], '2026-09-22');
-      expect(rows[1]['ghi_chu'], 'Manual add');
+        expect(rows[1]['ly_do'], 'DIEU_CHINH_THU_CONG');
+        expect(rows[1]['delta'], 2);
+        expect(rows[1]['id_buoi_hoc'], null);
+        expect(rows[1]['ngay_hieu_luc'], '2026-09-22');
+        expect(rows[1]['ghi_chu'], 'Manual add');
 
-      expect(rows[2]['ly_do'], 'DIEU_CHINH_THU_CONG');
-      expect(rows[2]['delta'], -1);
-      expect(rows[2]['id_buoi_hoc'], null);
-      expect(rows[2]['ngay_hieu_luc'], '2026-09-23');
-      expect(rows[2]['ghi_chu'], 'Manual subtract');
+        expect(rows[2]['ly_do'], 'DIEU_CHINH_THU_CONG');
+        expect(rows[2]['delta'], -1);
+        expect(rows[2]['id_buoi_hoc'], null);
+        expect(rows[2]['ngay_hieu_luc'], '2026-09-23');
+        expect(rows[2]['ghi_chu'], 'Manual subtract');
 
-      final violations = await dbV10.rawQuery('PRAGMA foreign_key_check');
-      expect(violations, isEmpty);
+        final violations = await dbV10.rawQuery('PRAGMA foreign_key_check');
+        expect(violations, isEmpty);
 
-      await dbV10.close();
-    });
+        await dbV10.close();
+      },
+    );
 
     test(
       'Fresh install DB version is 10 and foreign_key_check clean',
@@ -218,7 +222,7 @@ void main() {
       },
     );
 
-    test('Raw SQLite reason-specific CHECK constraints in v10', () async {
+    test('Raw SQLite reason-specific CHECK constraints for buoi_du_ledger in v10', () async {
       final tempDbReg = join(
         Directory.systemTemp.path,
         'test_regression_v10.db',
