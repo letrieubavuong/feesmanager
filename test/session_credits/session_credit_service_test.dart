@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:tuition2027/features/attendance/data/attendance_repository.dart';
+import 'package:tuition2027/features/attendance/domain/attendance_state.dart';
 import 'package:tuition2027/features/classes/data/class_repository.dart';
 import 'package:tuition2027/features/classes/domain/class_service.dart';
 import 'package:tuition2027/features/memberships/data/membership_repository.dart';
@@ -664,6 +665,1118 @@ void main() {
           ledger.any((e) => e.lyDo == CreditLedgerReason.BU_TRU_NGHI_CO_PHEP),
           isFalse,
         );
+      },
+    );
+
+    test(
+      'DOI_CA counts student exactly once in eligible indexing and earns credit if 13th session',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // 7 schedules for 7 weekdays
+        for (int w = 1; w <= 7; w++) {
+          await db.insert('lich_hoc', {
+            'id': w,
+            'id_lop': 10,
+            'thu_trong_tuan': w,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'hieu_luc_tu': '2026-01-01',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        }
+        // Single shift assignment for Student 1 to schedule 7 (Sunday Shift A)
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': 7,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': 7,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Second shift on Sunday (weekday 7) effective only on 2026-09-13
+        await db.insert('lich_hoc', {
+          'id': 17,
+          'id_lop': 10,
+          'thu_trong_tuan': 7,
+          'gio_bat_dau': '19:30',
+          'gio_ket_thuc': '21:00',
+          'hieu_luc_tu': '2026-09-13',
+          'hieu_luc_den': '2026-09-13',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Create 12 CHINH DA_HOC sessions on shift 1..12
+        for (int i = 1; i <= 12; i++) {
+          final dateStr = '2026-09-${i.toString().padLeft(2, '0')}';
+          final w = DateTime.parse(dateStr).weekday;
+          await db.insert('buoi_hoc', {
+            'id': 100 + i,
+            'id_lop': 10,
+            'id_lich_hoc': w,
+            'ngay': dateStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'CHINH',
+            'trang_thai': 'DA_HOC',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        }
+
+        // On 2026-09-13 (Sunday): Shift A (1013, lich_hoc 7) & Shift B (2013, lich_hoc 17)
+        await db.insert('buoi_hoc', {
+          'id': 1013,
+          'id_lop': 10,
+          'id_lich_hoc': 7,
+          'ngay': '2026-09-13',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 2013,
+          'id_lop': 10,
+          'id_lich_hoc': 17,
+          'ngay': '2026-09-13',
+          'gio_bat_dau': '19:30',
+          'gio_ket_thuc': '21:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // DOI_CA from Shift A (1013) to Shift B (2013)
+        await db.insert('dieu_chinh_buoi_hoc', {
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 10,
+          'id_buoi_hoc_goc': 1013,
+          'id_buoi_hoc_tham_gia': 2013,
+          'loai': 'DOI_CA',
+          'created_at': nowStr,
+        });
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 2013,
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 10,
+          'trang_thai': 'CO_MAT',
+          'loai_tham_gia': 'DOI_CA',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        final preview = await creditService.previewMonth(1, 10, '2026-09');
+        // Eligible count = 13 (NOT 14!)
+        expect(preview.eligibleCount, 13);
+        expect(preview.candidates.length, 13);
+        final c13 = preview.candidates[12];
+        expect(c13.session.id, 2013);
+        expect(c13.isExtra, isTrue);
+        expect(c13.earnsCredit, isTrue);
+
+        await creditService.reconcileEarnedCreditsForStudentClassMonth(
+          1,
+          10,
+          '2026-09',
+        );
+        final ledger = await creditService.getLedger(1, 10);
+        expect(ledger.length, 1);
+        expect(ledger.first.idBuoiHoc, 2013);
+      },
+    );
+
+    test('Mid-month join excludes sessions before join date', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      // Membership starts on 2026-09-15
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-09-15',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      for (int w = 1; w <= 7; w++) {
+        await db.insert('lich_hoc', {
+          'id': w,
+          'id_lop': 10,
+          'thu_trong_tuan': w,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': w,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': w,
+          'tu_ngay': '2026-09-15',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      }
+
+      // 7 sessions before Sept 15, 7 sessions from Sept 15
+      for (int i = 1; i <= 7; i++) {
+        final dateStr = '2026-09-${i.toString().padLeft(2, '0')}';
+        final w = DateTime.parse(dateStr).weekday;
+        await db.insert('buoi_hoc', {
+          'id': 100 + i,
+          'id_lop': 10,
+          'id_lich_hoc': w,
+          'ngay': dateStr,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      }
+      for (int i = 15; i <= 21; i++) {
+        final dateStr = '2026-09-$i';
+        final w = DateTime.parse(dateStr).weekday;
+        await db.insert('buoi_hoc', {
+          'id': 100 + i,
+          'id_lop': 10,
+          'id_lich_hoc': w,
+          'ngay': dateStr,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      }
+
+      final preview = await creditService.previewMonth(1, 10, '2026-09');
+      expect(preview.eligibleCount, 7);
+      expect(preview.standardCount, 7);
+      expect(preview.extraCount, 0);
+    });
+
+    test('Membership gap excludes sessions inside inactive gap', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      // Active Sept 1..10, paused Sept 11..20, resumed Sept 21
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-09-01',
+        'den_ngay': '2026-09-10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 200,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-09-21',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      for (int w = 1; w <= 7; w++) {
+        await db.insert('lich_hoc', {
+          'id': w,
+          'id_lop': 10,
+          'thu_trong_tuan': w,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': w,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': w,
+          'tu_ngay': '2026-09-01',
+          'den_ngay': '2026-09-10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': 10 + w,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': w,
+          'tu_ngay': '2026-09-21',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      }
+
+      // Session on 09-05 (active), 09-15 (in gap), 09-25 (active)
+      await db.insert('buoi_hoc', {
+        'id': 101,
+        'id_lop': 10,
+        'id_lich_hoc': DateTime.parse('2026-09-05').weekday,
+        'ngay': '2026-09-05',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'trang_thai': 'DA_HOC',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('buoi_hoc', {
+        'id': 102,
+        'id_lop': 10,
+        'id_lich_hoc': DateTime.parse('2026-09-15').weekday,
+        'ngay': '2026-09-15',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'trang_thai': 'DA_HOC',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('buoi_hoc', {
+        'id': 103,
+        'id_lop': 10,
+        'id_lich_hoc': DateTime.parse('2026-09-25').weekday,
+        'ngay': '2026-09-25',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'trang_thai': 'DA_HOC',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      final preview = await creditService.previewMonth(1, 10, '2026-09');
+      expect(preview.eligibleCount, 2);
+      expect(
+        preview.candidates.map((c) => c.session.id).toList(),
+        equals([101, 103]),
+      );
+    });
+
+    test(
+      'Default 12 boundary explicit tests: 12 eligible vs 13 eligible',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        for (int w = 1; w <= 7; w++) {
+          await db.insert('lich_hoc', {
+            'id': w,
+            'id_lop': 10,
+            'thu_trong_tuan': w,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'hieu_luc_tu': '2026-01-01',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        }
+
+        for (int i = 1; i <= 12; i++) {
+          final dateStr = '2026-09-${i.toString().padLeft(2, '0')}';
+          await db.insert('buoi_hoc', {
+            'id': 100 + i,
+            'id_lop': 10,
+            'id_lich_hoc': DateTime.parse(dateStr).weekday,
+            'ngay': dateStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'CHINH',
+            'trang_thai': 'DA_HOC',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        }
+
+        var preview = await creditService.previewMonth(1, 10, '2026-09');
+        expect(preview.standardCount, 12);
+        expect(preview.extraCount, 0);
+
+        // Add 13th
+        await db.insert('buoi_hoc', {
+          'id': 113,
+          'id_lop': 10,
+          'id_lich_hoc': DateTime.parse('2026-09-13').weekday,
+          'ngay': '2026-09-13',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        preview = await creditService.previewMonth(1, 10, '2026-09');
+        expect(preview.standardCount, 12);
+        expect(preview.extraCount, 1);
+      },
+    );
+
+    test('Full extra attendance matrix for 13th session', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      for (int w = 1; w <= 7; w++) {
+        await db.insert('lich_hoc', {
+          'id': w,
+          'id_lop': 10,
+          'thu_trong_tuan': w,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      }
+
+      for (int i = 1; i <= 13; i++) {
+        final dateStr = '2026-09-${i.toString().padLeft(2, '0')}';
+        await db.insert('buoi_hoc', {
+          'id': 100 + i,
+          'id_lop': 10,
+          'id_lich_hoc': DateTime.parse(dateStr).weekday,
+          'ngay': dateStr,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      }
+
+      // Matrix states for session 113:
+      // 1. CO_MAT -> earns
+      await db.insert('diem_danh', {
+        'id_buoi_hoc': 113,
+        'id_hoc_sinh': 1,
+        'id_lop_goc': 10,
+        'trang_thai': 'CO_MAT',
+        'loai_tham_gia': 'CHINH',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      expect(
+        (await creditService.previewMonth(
+          1,
+          10,
+          '2026-09',
+        )).candidates.last.earnsCredit,
+        isTrue,
+      );
+
+      // 2. TRE -> earns
+      await db.update('diem_danh', {
+        'trang_thai': 'TRE',
+      }, where: 'id_buoi_hoc = 113 AND id_hoc_sinh = 1');
+      expect(
+        (await creditService.previewMonth(
+          1,
+          10,
+          '2026-09',
+        )).candidates.last.earnsCredit,
+        isTrue,
+      );
+
+      // 3. NGHI_CO_PHEP -> earns 0
+      await db.update('diem_danh', {
+        'trang_thai': 'NGHI_CO_PHEP',
+      }, where: 'id_buoi_hoc = 113 AND id_hoc_sinh = 1');
+      expect(
+        (await creditService.previewMonth(
+          1,
+          10,
+          '2026-09',
+        )).candidates.last.earnsCredit,
+        isFalse,
+      );
+
+      // 4. NGHI_KHONG_PHEP -> earns 0
+      await db.update('diem_danh', {
+        'trang_thai': 'NGHI_KHONG_PHEP',
+      }, where: 'id_buoi_hoc = 113 AND id_hoc_sinh = 1');
+      expect(
+        (await creditService.previewMonth(
+          1,
+          10,
+          '2026-09',
+        )).candidates.last.earnsCredit,
+        isFalse,
+      );
+
+      // 5. CHUA_DIEM_DANH (no row) -> earns 0
+      await db.delete(
+        'diem_danh',
+        where: 'id_buoi_hoc = 113 AND id_hoc_sinh = 1',
+      );
+      expect(
+        (await creditService.previewMonth(
+          1,
+          10,
+          '2026-09',
+        )).candidates.last.earnsCredit,
+        isFalse,
+      );
+    });
+
+    test(
+      'Missing attendance on earlier session does not shift 13th session candidate index',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        for (int w = 1; w <= 7; w++) {
+          await db.insert('lich_hoc', {
+            'id': w,
+            'id_lop': 10,
+            'thu_trong_tuan': w,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'hieu_luc_tu': '2026-01-01',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        }
+
+        for (int i = 1; i <= 13; i++) {
+          final dateStr = '2026-09-${i.toString().padLeft(2, '0')}';
+          await db.insert('buoi_hoc', {
+            'id': 100 + i,
+            'id_lop': 10,
+            'id_lich_hoc': DateTime.parse(dateStr).weekday,
+            'ngay': dateStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'CHINH',
+            'trang_thai': 'DA_HOC',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        }
+
+        // Session #5 has no diem_danh row (CHUA_DIEM_DANH). Session #13 = CO_MAT.
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 113,
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 10,
+          'trang_thai': 'CO_MAT',
+          'loai_tham_gia': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        final preview = await creditService.previewMonth(1, 10, '2026-09');
+        expect(preview.candidates[4].index, 5);
+        expect(
+          preview.candidates[4].attendanceState,
+          AttendanceState.CHUA_DIEM_DANH,
+        );
+
+        expect(preview.candidates[12].index, 13);
+        expect(preview.candidates[12].isExtra, isTrue);
+        expect(preview.candidates[12].earnsCredit, isTrue);
+      },
+    );
+
+    test(
+      'Session status filter: only CHINH DA_HOC enters candidate sequence',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-07',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 102,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-14',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 103,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'HUY',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 104,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-28',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'NGHI_LE',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        final preview = await creditService.previewMonth(1, 10, '2026-09');
+        expect(preview.eligibleCount, 1);
+        expect(preview.candidates.first.session.id, 101);
+      },
+    );
+
+    test(
+      'HOC_BU with HOC_BU attendance and PHAT_SINH with CO_MAT attendance are excluded',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 201,
+          'id_lop': 10,
+          'ngay': '2026-09-25',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'HOC_BU',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 201,
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 10,
+          'trang_thai': 'HOC_BU',
+          'loai_tham_gia': 'HOC_BU',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 202,
+          'id_lop': 10,
+          'ngay': '2026-09-26',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'PHAT_SINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 202,
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 10,
+          'trang_thai': 'CO_MAT',
+          'loai_tham_gia': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        final preview = await creditService.previewMonth(1, 10, '2026-09');
+        expect(preview.eligibleCount, 0);
+      },
+    );
+
+    test(
+      'Late finalization regression recomputes candidate sequence idempotently',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        for (int w = 1; w <= 7; w++) {
+          await db.insert('lich_hoc', {
+            'id': w,
+            'id_lop': 10,
+            'thu_trong_tuan': w,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'hieu_luc_tu': '2026-01-01',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        }
+
+        // Session #1 on 2026-09-01 is DU_KIEN
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'id_lich_hoc': DateTime.parse('2026-09-01').weekday,
+          'ngay': '2026-09-01',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Sessions #2..#13 on 2026-09-02..2026-09-13 are DA_HOC
+        for (int i = 2; i <= 13; i++) {
+          final dateStr = '2026-09-${i.toString().padLeft(2, '0')}';
+          await db.insert('buoi_hoc', {
+            'id': 100 + i,
+            'id_lop': 10,
+            'id_lich_hoc': DateTime.parse(dateStr).weekday,
+            'ngay': dateStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'CHINH',
+            'trang_thai': 'DA_HOC',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+          await db.insert('diem_danh', {
+            'id_buoi_hoc': 100 + i,
+            'id_hoc_sinh': 1,
+            'id_lop_goc': 10,
+            'trang_thai': 'CO_MAT',
+            'loai_tham_gia': 'CHINH',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        }
+
+        // Initial preview: 12 eligible sessions (102..113), 0 extra candidates
+        var preview = await creditService.previewMonth(1, 10, '2026-09');
+        expect(preview.eligibleCount, 12);
+        expect(preview.extraCount, 0);
+
+        // Now finalize session #1 on 2026-09-01
+        await db.update('buoi_hoc', {
+          'trang_thai': 'DA_HOC',
+        }, where: 'id = 101');
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 101,
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 10,
+          'trang_thai': 'CO_MAT',
+          'loai_tham_gia': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Re-run preview: 13 eligible sessions, session 101 is index 1, session 113 is index 13 (extra!)
+        preview = await creditService.previewMonth(1, 10, '2026-09');
+        expect(preview.eligibleCount, 13);
+        expect(preview.candidates.first.session.id, 101);
+        expect(preview.candidates.last.session.id, 113);
+        expect(preview.candidates.last.isExtra, isTrue);
+        expect(preview.candidates.last.earnsCredit, isTrue);
+
+        // Reconcile
+        await creditService.reconcileEarnedCreditsForStudentClassMonth(
+          1,
+          10,
+          '2026-09',
+        );
+        expect(await creditService.getBalance(1, 10), 1);
+      },
+    );
+
+    test(
+      'Class reconciliation atomicity & fail-closed on roster corruption',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('hoc_sinh', {
+          'id': 2,
+          'ho_ten': 'S2',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 200,
+          'id_hoc_sinh': 2,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Session 101 missing schedule (corrupted roster)
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'id_lich_hoc': null,
+          'ngay': '2026-09-01',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await expectLater(
+          creditService.reconcileEarnedCreditsForClassMonth(10, '2026-09'),
+          throwsA(isA<Exception>()),
+        );
+
+        final rows = await db.query('buoi_du_ledger');
+        expect(rows, isEmpty);
+      },
+    );
+
+    test(
+      'Class reconciliation success writes all missing entries for all students idempotently',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('hoc_sinh', {
+          'id': 2,
+          'ho_ten': 'S2',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 200,
+          'id_hoc_sinh': 2,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        for (int w = 1; w <= 7; w++) {
+          await db.insert('lich_hoc', {
+            'id': w,
+            'id_lop': 10,
+            'thu_trong_tuan': w,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'hieu_luc_tu': '2026-01-01',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        }
+
+        // 13 sessions for both students
+        for (int i = 1; i <= 13; i++) {
+          final dateStr = '2026-09-${i.toString().padLeft(2, '0')}';
+          await db.insert('buoi_hoc', {
+            'id': 100 + i,
+            'id_lop': 10,
+            'id_lich_hoc': DateTime.parse(dateStr).weekday,
+            'ngay': dateStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'CHINH',
+            'trang_thai': 'DA_HOC',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+          await db.insert('diem_danh', {
+            'id_buoi_hoc': 100 + i,
+            'id_hoc_sinh': 1,
+            'id_lop_goc': 10,
+            'trang_thai': 'CO_MAT',
+            'loai_tham_gia': 'CHINH',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+          await db.insert('diem_danh', {
+            'id_buoi_hoc': 100 + i,
+            'id_hoc_sinh': 2,
+            'id_lop_goc': 10,
+            'trang_thai': 'CO_MAT',
+            'loai_tham_gia': 'CHINH',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        }
+
+        await creditService.reconcileEarnedCreditsForClassMonth(10, '2026-09');
+
+        expect(await creditService.getBalance(1, 10), 1);
+        expect(await creditService.getBalance(2, 10), 1);
+
+        // Reconcile again -> 0 new rows
+        await creditService.reconcileEarnedCreditsForClassMonth(10, '2026-09');
+        final rows = await db.query('buoi_du_ledger');
+        expect(rows.length, 2);
+      },
+    );
+
+    test(
+      'Manual adjustment validation for invalid student, class or date',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Nonexistent student
+        await expectLater(
+          creditService.addManualAdjustment(
+            studentId: 999,
+            classId: 10,
+            delta: 1,
+            effectiveDate: '2026-09-21',
+            note: 'A',
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        // Nonexistent class
+        await expectLater(
+          creditService.addManualAdjustment(
+            studentId: 1,
+            classId: 999,
+            delta: 1,
+            effectiveDate: '2026-09-21',
+            note: 'A',
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        // Invalid dates
+        for (final invalidDate in [
+          '2026-02-30',
+          '2026-9-1',
+          '01/09/2026',
+          'abc',
+        ]) {
+          await expectLater(
+            creditService.addManualAdjustment(
+              studentId: 1,
+              classId: 10,
+              delta: 1,
+              effectiveDate: invalidDate,
+              note: 'A',
+            ),
+            throwsA(isA<Exception>()),
+          );
+        }
+
+        final rows = await db.query('buoi_du_ledger');
+        expect(rows, isEmpty);
       },
     );
   });

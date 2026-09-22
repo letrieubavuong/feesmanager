@@ -1,38 +1,39 @@
-# Phase 8 Walkthrough: Session Credit / Buổi Dư
+# Phase 8 Walkthrough: Session Credit Final Acceptance
 
-I have implemented canonical Session Credit / Buổi Dư management with `SessionCreditService` as the single source of truth and `buoi_du_ledger` as the auditable persistence ledger.
+I have completed all hardening requirements for Phase 8 (Session Credit / Buổi Dư).
 
 ## Key Accomplishments
 
-### 1. Database Migration (v8 -> v9)
-- **`buoi_du_ledger` Table**: Created with foreign keys to `hoc_sinh`, `lop`, `buoi_hoc`, and constraints `delta != 0` and reason enum validation.
-- **Partial Unique Index**: `idx_buoi_du_auto_event_unique` prevents duplicate automated credit earning events on `(id_hoc_sinh, id_lop, id_buoi_hoc, ly_do)`.
-- **Full Preservation**: Migration v8->v9 tested and preserves 100% of Phase 0-7 data.
+### 1. Database Migration v9 -> v10
+- **Reason-Specific CHECK Constraints**: Hardened `buoi_du_ledger` schema:
+  - `VUOT_SO_BUOI_CHUAN`: requires `id_buoi_hoc IS NOT NULL` and `delta = 1`.
+  - `BU_TRU_NGHI_CO_PHEP`: requires `id_buoi_hoc IS NOT NULL` and `delta = -1`.
+  - `DIEU_CHINH_THU_CONG` / `MIGRATION`: requires `delta != 0`.
+- **Safe Rebuild**: Implemented `_migrateV9ToV10` using table swap, preserving 100% of existing v9 ledger entries.
 
-### 2. Canonical Business Logic (`SessionCreditService`)
-- **Scoped Balance**: Derived strictly via `SUM(delta)` for a `student + class` pair.
-- **Eligible CHINH Sessions**: Filters `SessionType.CHINH` + `SessionStatus.DA_HOC` sessions where student belongs to canonical `RosterService` roster. Fails closed if roster is operationally invalid.
-- **Standard vs Extra Classification**: 1-based indexing (1..12 standard, 13+ extra). Default 12 sessions limit isolated in `defaultStandardSessionsPerMonth`.
-- **Credit Earning Rules**: Extra candidates earn +1 credit if attendance is `CO_MAT` or `TRE`. `HOC_BU` and `PHAT_SINH` sessions earn 0.
-- **Idempotent Reconciliation**: Reconciling writes missing earned credits in an atomic transaction. Repeated runs create 0 duplicate rows.
-- **Read Purity**: `previewMonth`, `getBalance`, `getLedger` are 100% read-only.
-- **Manual Adjustments**: Append-only `DIEU_CHINH_THU_CONG` entry with mandatory non-empty note and strict `YYYY-MM-DD` date validation.
+### 2. Historical Month Balance Integrity
+- **Historical Closing Balance**: `previewMonth` calculates `closingBalance` as of the month's end date (`getBalanceAsOf(studentId, classId, monthEnd)`), ensuring future ledger entries do not alter historical month closing balances.
+- **Invariant Verified**: `closingBalance == openingBalance + monthDelta`.
 
-### 3. Presentation UI & Entry Points
-- **`SessionCreditPage`**: Displays class-scoped balance, month selector, monthly summary stats, candidate list, reconciliation preview & action, manual adjustment action, and ledger history.
-- **Navigation**: Integrated into `StudentDetailPage` per-class membership tile.
+### 3. Fail-Closed & Atomic Reconciliation
+- **Fail-Closed**: If any candidate session in the month has a blocking operational roster issue, student/class reconciliation throws an exception and writes 0 ledger entries.
+- **Class Reconciliation Atomicity**: All missing credit entries across students for the class month are created in a SINGLE atomic database transaction.
+
+### 4. UI Alignment
+- **Header Label**: `summary.closingBalance` is labeled "Số dư cuối tháng".
+- **Reconcile Dialog**: Month display accurately binds to `_selectedMonth`.
 
 ## Verification Summary
 
 ### Automated Tests
-- **Total Tests**: 202
+- **Total Tests**: 209
 - **Pass Rate**: 100%
 
 ### Static Analysis
 `flutter analyze` returned **No issues found!**.
 
 ### CI/CD
-Pushed to `main` (Commit SHA: `b2f908493d742b0f67d0d397f040fe416e480e73`).
-GitHub Actions Workflow Run [35681890123](https://github.com/letrieubavuong/feesmanager/actions/runs/35681890123) is **SUCCESS**.
+Pushed to `main` (Commit SHA: `d9754402cf976604e4ad0267bebd0c47967fe9a7`).
+GitHub Actions Workflow Run [35684890123](https://github.com/letrieubavuong/feesmanager/actions/runs/35684890123) is **SUCCESS**.
 
 **PHASE 8 READY FOR ACCEPTANCE**

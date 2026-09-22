@@ -287,5 +287,54 @@ void main() {
       await db.close();
       await deleteDatabase(tempDbReg);
     });
+
+    test(
+      'Migration v9 to v10 fails clearly if v9 database contains an invalid row',
+      () async {
+        final invalidDbPath = join(
+          Directory.systemTemp.path,
+          'test_invalid_v9.db',
+        );
+        await deleteDatabase(invalidDbPath);
+
+        final dbV9 = await openDatabase(
+          invalidDbPath,
+          version: 9,
+          onCreate: (db, version) async {
+            await db.execute(
+              "CREATE TABLE hoc_sinh (id INTEGER PRIMARY KEY, ho_ten TEXT, created_at TEXT, updated_at TEXT)",
+            );
+            await db.execute(
+              "CREATE TABLE lop (id INTEGER PRIMARY KEY, ten_lop TEXT, created_at TEXT, updated_at TEXT)",
+            );
+            await db.execute(
+              "CREATE TABLE buoi_hoc (id INTEGER PRIMARY KEY, id_lop INTEGER, ngay TEXT, gio_bat_dau TEXT, gio_ket_thuc TEXT, loai TEXT, created_at TEXT, updated_at TEXT)",
+            );
+            await db.execute(
+              "CREATE TABLE buoi_du_ledger (id INTEGER PRIMARY KEY, id_hoc_sinh INTEGER, id_lop INTEGER, id_buoi_hoc INTEGER, ngay_hieu_luc TEXT, delta INTEGER, ly_do TEXT, ghi_chu TEXT, created_at TEXT)",
+            );
+          },
+        );
+
+        await dbV9.execute(
+          "INSERT INTO hoc_sinh VALUES (1, 'H', 'now', 'now')",
+        );
+        await dbV9.execute("INSERT INTO lop VALUES (1, 'L', 'now', 'now')");
+        await dbV9.execute(
+          "INSERT INTO buoi_hoc VALUES (1, 1, '2026-09-21', '17:30', '19:00', 'CHINH', 'now', 'now')",
+        );
+
+        // Insert invalid v9 row: VUOT_SO_BUOI_CHUAN with delta = -1 (which v9 allowed but v10 CHECK rejects)
+        await dbV9.execute(
+          "INSERT INTO buoi_du_ledger VALUES (1, 1, 1, 1, '2026-09-21', -1, 'VUOT_SO_BUOI_CHUAN', 'Invalid', 'now')",
+        );
+        await dbV9.close();
+
+        final appDb = AppDatabase(dbName: invalidDbPath);
+        await expectLater(appDb.database, throwsA(isA<DatabaseException>()));
+
+        await deleteDatabase(invalidDbPath);
+      },
+    );
   });
 }

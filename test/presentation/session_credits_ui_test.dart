@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tuition2027/features/classes/domain/class.dart';
 import 'package:tuition2027/features/classes/presentation/class_controller.dart';
 import 'package:tuition2027/features/session_credits/domain/credit_ledger_entry.dart';
+import 'package:tuition2027/features/session_credits/domain/credit_ledger_reason.dart';
 import 'package:tuition2027/features/session_credits/domain/monthly_credit_summary.dart';
 import 'package:tuition2027/features/session_credits/domain/session_credit_service.dart';
 import 'package:tuition2027/features/session_credits/presentation/session_credit_controller.dart';
@@ -137,10 +138,197 @@ void main() {
 
     expect(() => controller.reconcile(), throwsA(isA<Exception>()));
   });
+
+  testWidgets('SessionCreditPage month navigation updates month display', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sessionCreditControllerProvider(
+            1,
+            10,
+            '2026-09',
+          ).overrideWith(() => MockSessionCreditController(testSummary)),
+          sessionCreditControllerProvider(1, 10, '2026-10').overrideWith(
+            () => MockSessionCreditController(
+              testSummary.copyWith(month: '2026-10'),
+            ),
+          ),
+          studentDetailProvider(1).overrideWith((ref) async => testStudent),
+          classDetailProvider(10).overrideWith((ref) async => testClass),
+          sessionCreditServiceProvider.overrideWith(
+            (ref) => Future.value(MockSessionCreditService([])),
+          ),
+        ],
+        child: const MaterialApp(
+          home: SessionCreditPage(
+            studentId: 1,
+            classId: 10,
+            initialMonth: '2026-09',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tháng 09/2026'), findsOneWidget);
+
+    // Tap next month
+    await tester.tap(find.byIcon(Icons.chevron_right));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tháng 10/2026'), findsOneWidget);
+  });
+
+  testWidgets(
+    'SessionCreditPage reconcile execution calls controller reconcile',
+    (tester) async {
+      final controller = MockSessionCreditController(testSummary);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sessionCreditControllerProvider(
+              1,
+              10,
+              '2026-09',
+            ).overrideWith(() => controller),
+            studentDetailProvider(1).overrideWith((ref) async => testStudent),
+            classDetailProvider(10).overrideWith((ref) async => testClass),
+            sessionCreditServiceProvider.overrideWith(
+              (ref) => Future.value(MockSessionCreditService([])),
+            ),
+          ],
+          child: const MaterialApp(
+            home: SessionCreditPage(
+              studentId: 1,
+              classId: 10,
+              initialMonth: '2026-09',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap Đối soát
+      await tester.tap(find.text('Đối soát buổi dư tháng này'));
+      await tester.pumpAndSettle();
+
+      // Tap Confirm
+      await tester.tap(find.text('Xác nhận đối soát'));
+      await tester.pumpAndSettle();
+
+      expect(controller.reconcileCalls, 1);
+    },
+  );
+
+  testWidgets(
+    'SessionCreditPage negative balance renders true value without clamping',
+    (tester) async {
+      final negSummary = testSummary.copyWith(closingBalance: -1);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sessionCreditControllerProvider(
+              1,
+              10,
+              '2026-09',
+            ).overrideWith(() => MockSessionCreditController(negSummary)),
+            studentDetailProvider(1).overrideWith((ref) async => testStudent),
+            classDetailProvider(10).overrideWith((ref) async => testClass),
+            sessionCreditServiceProvider.overrideWith(
+              (ref) => Future.value(MockSessionCreditService([])),
+            ),
+          ],
+          child: const MaterialApp(
+            home: SessionCreditPage(
+              studentId: 1,
+              classId: 10,
+              initialMonth: '2026-09',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('-1 buổi'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'SessionCreditPage ledger history renders without edit or delete buttons',
+    (tester) async {
+      final entry = CreditLedgerEntry(
+        id: 1,
+        idHocSinh: 1,
+        idLop: 10,
+        ngayHieuLuc: '2026-09-10',
+        delta: 1,
+        lyDo: CreditLedgerReason.VUOT_SO_BUOI_CHUAN,
+        ghiChu: 'Auto earned',
+        createdAt: now,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sessionCreditControllerProvider(
+              1,
+              10,
+              '2026-09',
+            ).overrideWith(() => MockSessionCreditController(testSummary)),
+            studentDetailProvider(1).overrideWith((ref) async => testStudent),
+            classDetailProvider(10).overrideWith((ref) async => testClass),
+            sessionCreditServiceProvider.overrideWith(
+              (ref) => Future.value(MockSessionCreditService([entry])),
+            ),
+          ],
+          child: const MaterialApp(
+            home: SessionCreditPage(
+              studentId: 1,
+              classId: 10,
+              initialMonth: '2026-09',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Vượt số buổi chuẩn'), findsOneWidget);
+      expect(find.text('Edit'), findsNothing);
+      expect(find.text('Delete'), findsNothing);
+      expect(find.text('Sửa'), findsNothing);
+      expect(find.text('Xóa'), findsNothing);
+    },
+  );
+}
+
+extension on MonthlyCreditSummary {
+  MonthlyCreditSummary copyWith({String? month, int? closingBalance}) {
+    return MonthlyCreditSummary(
+      studentId: studentId,
+      classId: classId,
+      month: month ?? this.month,
+      standardSessionLimit: standardSessionLimit,
+      eligibleCount: eligibleCount,
+      standardCount: standardCount,
+      extraCount: extraCount,
+      potentialEarned: potentialEarned,
+      recordedEarned: recordedEarned,
+      openingBalance: openingBalance,
+      monthDelta: monthDelta,
+      closingBalance: closingBalance ?? this.closingBalance,
+      candidates: candidates,
+    );
+  }
 }
 
 class MockSessionCreditController extends SessionCreditController {
   final MonthlyCreditSummary summary;
+  int reconcileCalls = 0;
+
   MockSessionCreditController(this.summary);
 
   @override
@@ -149,6 +337,11 @@ class MockSessionCreditController extends SessionCreditController {
     int classId,
     String month,
   ) => summary;
+
+  @override
+  Future<void> reconcile() async {
+    reconcileCalls++;
+  }
 }
 
 class FailingSessionCreditController extends SessionCreditController {
