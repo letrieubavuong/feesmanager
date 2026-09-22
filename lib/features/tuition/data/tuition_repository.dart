@@ -55,4 +55,25 @@ class TuitionRepository {
     );
     return maps.map((m) => TuitionInvoice.fromMap(m)).toList();
   }
+
+  Future<bool> hasFinalizedInvoiceForClassFromMonth(
+    int classId,
+    String fromMonth, {
+    String? toMonth,
+  }) async {
+    final whereClause = toMonth != null
+        ? 'id_lop = ? AND trang_thai = ? AND thang >= ? AND thang <= ?'
+        : 'id_lop = ? AND trang_thai = ? AND thang >= ?';
+    final whereArgs = toMonth != null
+        ? [classId, TuitionInvoiceStatus.DA_CHOT.name, fromMonth, toMonth]
+        : [classId, TuitionInvoiceStatus.DA_CHOT.name, fromMonth];
+
+    final maps = await _db.query(
+      'hoc_phi_thang',
+      where: whereClause,
+      whereArgs: whereArgs,
+      limit: 1,
+    );
+    return maps.isNotEmpty;
+  }
 }

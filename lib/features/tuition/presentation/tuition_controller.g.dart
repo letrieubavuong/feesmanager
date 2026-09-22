@@ -474,7 +474,7 @@ class _TuitionPreviewControllerProviderElement
   String get month => (origin as TuitionPreviewControllerProvider).month;
 }
 
-String _$invoiceControllerHash() => r'96888a3cd8cc496703af1e77f431bc44a2c0d6aa';
+String _$invoiceControllerHash() => r'a475574bc0facf2c631ae42d69a9ff9cbfdfc8ef';
 
 /// See also [InvoiceController].
 @ProviderFor(InvoiceController)

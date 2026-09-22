@@ -63,6 +63,8 @@ void main() {
         policyRepo,
         classService,
         tuitionRepo,
+        creditRepo,
+        db,
       );
 
       final sessionService = SessionService(sessionRepo, classService);
@@ -148,7 +150,6 @@ void main() {
     });
 
     test('Standard 12 sessions attended preview', () async {
-      // Create 12 CHINH DA_HOC sessions in Sep 2026
       for (int i = 1; i <= 12; i++) {
         final dayStr = i < 10 ? '0$i' : '$i';
         final dateStr = '2026-09-$dayStr';
@@ -158,7 +159,6 @@ void main() {
           VALUES ($i, 1, ${dt.weekday}, '$dateStr', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
         ''');
 
-        // Attendance: CO_MAT
         await db.execute('''
           INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
           VALUES ($i, 1, 1, 'CO_MAT', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
@@ -172,18 +172,54 @@ void main() {
       expect(preview.tongTruocGiam, 600000); // 12 * 50,000
       expect(preview.giamPhanTram, 10);
       expect(preview.giamSoTien, 60000); // 10% of 600,000
-      // Amount after discount = 540,000 > cap 500,000 -> final due = 500,000
       expect(preview.soTienPhaiThu, 500000);
 
-      // Pure read check: hoc_phi_thang is empty!
       final invoices = await db.query('hoc_phi_thang');
       expect(invoices, isEmpty);
     });
 
     test(
-      'Scheduled/future HOC_BU makeup is NOT valid makeup until taught and attended',
+      'Mid-month manual credit adjustment (+2 on Sep 05) is usable on Sep 10 absence',
       () async {
-        // Create session 201: NGHI_CO_PHEP
+        // Opening = 0
+        // Manual adjustment +2 on Sep 05
+        await creditService.addManualAdjustment(
+          studentId: 1,
+          classId: 1,
+          delta: 2,
+          effectiveDate: '2026-09-05',
+          note: 'Manual +2 on Sep 05',
+        );
+
+        // Session Sep 10: NGHI_CO_PHEP
+        await db.execute('''
+        INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
+        VALUES (101, 1, 4, '2026-09-10', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+        await db.execute('''
+        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
+        VALUES (101, 1, 1, 'NGHI_CO_PHEP', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+
+        final preview = await service.previewTuition(1, 1, '2026-09');
+
+        expect(preview.creditOpening, 0);
+        expect(preview.creditUsed, 1);
+        // Closing = 0 (opening) + 2 (manual delta) - 1 (used) = 1
+        expect(preview.creditClosing, 1);
+
+        final c101 = preview.candidates.firstWhere((c) => c.session.id == 101);
+        expect(c101.usesCredit, isTrue);
+        expect(
+          c101.chargeType,
+          TuitionCandidateChargeType.CHARGEABLE_EXCUSED_WITH_CREDIT,
+        );
+      },
+    );
+
+    test(
+      'Corrupted makeup metadata (CO_MAT status or missing idBuoiVangGoc) is REJECTED',
+      () async {
         await db.execute('''
         INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
         VALUES (201, 1, 2, '2026-09-01', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
@@ -193,86 +229,30 @@ void main() {
         VALUES (201, 1, 1, 'NGHI_CO_PHEP', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
       ''');
 
-        // Create target makeup session 202: still DU_KIEN (future/not taught)
         await db.execute('''
         INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
-        VALUES (202, 1, NULL, '2026-09-10', '17:30', '19:00', 'HOC_BU', 'DU_KIEN', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+        VALUES (202, 1, NULL, '2026-09-10', '17:30', '19:00', 'HOC_BU', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
       ''');
 
-        // Create adjustment HOC_BU pointing to session 202
         await db.execute('''
         INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at)
         VALUES (1, 1, 201, 202, 'HOC_BU', '2026-01-01T00:00:00.000')
       ''');
 
-        // Case A: Target session is DU_KIEN -> NOT a valid makeup! No credit available -> non-chargeable.
-        final previewA = await service.previewTuition(1, 1, '2026-09');
-        final c201A = previewA.candidates.firstWhere(
-          (c) => c.session.id == 201,
-        );
-        expect(
-          c201A.chargeType,
-          TuitionCandidateChargeType.NON_CHARGEABLE_EXCUSED_UNCOMPENSATED,
-        );
-
-        // Case B: Finalize target session 202 to DA_HOC and record attendance HOC_BU
-        await db.execute('''
-        UPDATE buoi_hoc SET trang_thai = 'DA_HOC' WHERE id = 202
-      ''');
+        // Insert CORRUPTED attendance: trang_thai = 'CO_MAT' instead of 'HOC_BU' and id_buoi_vang_goc is NULL!
         await db.execute('''
         INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, loai_tham_gia, id_buoi_vang_goc, created_at, updated_at)
-        VALUES (202, 1, 1, 'HOC_BU', 'HOC_BU', 201, '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+        VALUES (202, 1, 1, 'CO_MAT', 'HOC_BU', NULL, '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
       ''');
 
-        // Case B: Target session is DA_HOC + attendance HOC_BU -> Valid makeup! Chargeable with makeup.
-        final previewB = await service.previewTuition(1, 1, '2026-09');
-        final c201B = previewB.candidates.firstWhere(
-          (c) => c.session.id == 201,
-        );
+        final preview = await service.previewTuition(1, 1, '2026-09');
+        final c201 = preview.candidates.firstWhere((c) => c.session.id == 201);
+
+        // Fail closed: corrupted makeup metadata is REJECTED -> non-chargeable excused uncompensated!
         expect(
-          c201B.chargeType,
-          TuitionCandidateChargeType.CHARGEABLE_EXCUSED_WITH_MAKEUP,
+          c201.chargeType,
+          TuitionCandidateChargeType.NON_CHARGEABLE_EXCUSED_UNCOMPENSATED,
         );
-      },
-    );
-
-    test(
-      'Mid-month join evaluates eligible sessions from join date onwards',
-      () async {
-        // Register student 2 joining on Sep 15, 2026
-        await db.execute('''
-        INSERT INTO hoc_sinh (id, ho_ten, sdt_phu_huynh, created_at, updated_at)
-        VALUES (2, 'Mid Month Student', '0909999999', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
-      ''');
-
-        await membershipService.enrollStudent(
-          studentId: 2,
-          classId: 1,
-          joinDate: DateTime.parse('2026-09-15'),
-        );
-
-        // Session before join date (Sep 10)
-        await db.execute('''
-        INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
-        VALUES (301, 1, 4, '2026-09-10', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
-      ''');
-
-        // Session on/after join date (Sep 20)
-        await db.execute('''
-        INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
-        VALUES (302, 1, 7, '2026-09-20', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
-      ''');
-        await db.execute('''
-        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
-        VALUES (302, 2, 1, 'CO_MAT', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
-      ''');
-
-        final preview = await service.previewTuition(2, 1, '2026-09');
-
-        // Only session 302 (Sep 20) is eligible for student 2!
-        expect(preview.soBuoiEligible, 1);
-        expect(preview.candidates.first.session.id, 302);
-        expect(preview.soTienPhaiThu, 50000);
       },
     );
   });

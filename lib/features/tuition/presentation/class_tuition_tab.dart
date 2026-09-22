@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../memberships/domain/membership.dart';
 import '../../memberships/presentation/membership_providers.dart';
+import '../../students/domain/student.dart';
 import '../../students/presentation/student_detail_page.dart';
 import '../domain/tuition_invoice.dart';
 import '../domain/tuition_policy.dart';
@@ -42,7 +42,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
       classTuitionPoliciesProvider(widget.classId),
     );
     final rosterAsync = ref.watch(
-      classMonthMembershipsProvider((widget.classId, _selectedMonth)),
+      classMonthStudentsProvider((widget.classId, _selectedMonth)),
     );
 
     return Scaffold(
@@ -211,11 +211,11 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
 
   Widget _buildStudentTuitionList(
     BuildContext context,
-    AsyncValue<List<ClassMembership>> rosterAsync,
+    AsyncValue<List<Student>> rosterAsync,
   ) {
     return rosterAsync.when(
-      data: (memberships) {
-        if (memberships.isEmpty) {
+      data: (students) {
+        if (students.isEmpty) {
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(16.0),
@@ -227,11 +227,11 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
         return ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: memberships.length,
+          itemCount: students.length,
           itemBuilder: (context, index) {
-            final m = memberships[index];
+            final student = students[index];
             return _StudentTuitionCard(
-              studentId: m.idHocSinh,
+              studentId: student.id!,
               classId: widget.classId,
               month: _selectedMonth,
             );

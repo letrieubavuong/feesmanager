@@ -67,6 +67,8 @@ void main() {
         policyRepo,
         classService,
         tuitionRepo,
+        creditRepo,
+        db,
       );
 
       final sessionService = SessionService(sessionRepo, classService);
@@ -255,6 +257,33 @@ void main() {
           fetchedSep?.soTienPhaiThu,
           50000,
         ); // Historical September invoice UNCHANGED!
+      },
+    );
+
+    test(
+      'Pause and rejoin student in same month produces unique student card and single invoice in batch finalization',
+      () async {
+        // Student 1 leaves on Sep 10 and rejoins on Sep 20 in same month
+        await membershipService.leaveClass(
+          studentId: 1,
+          classId: 1,
+          endDate: DateTime.parse('2026-09-10'),
+        );
+        await membershipService.enrollStudent(
+          studentId: 1,
+          classId: 1,
+          joinDate: DateTime.parse('2026-09-20'),
+        );
+
+        final uniqueStudentIds = await membershipService
+            .getUniqueStudentIdsForClassMonth(1, '2026-09');
+        expect(uniqueStudentIds.length, 1); // Exactly 1 unique student!
+
+        final batchInvoices = await invoiceService.finalizeClassInvoices(
+          1,
+          '2026-09',
+        );
+        expect(batchInvoices.length, 1); // Exactly 1 invoice created!
       },
     );
   });

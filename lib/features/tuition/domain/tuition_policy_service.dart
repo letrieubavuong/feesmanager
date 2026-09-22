@@ -1,10 +1,13 @@
 import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sqflite/sqflite.dart';
 import '../../../core/database/database_provider.dart';
 import '../../classes/domain/class_service.dart';
+import '../../session_credits/data/session_credit_repository.dart';
+import '../../session_credits/domain/credit_ledger_reason.dart';
+import '../../session_credits/domain/session_credit_service.dart';
 import '../data/tuition_policy_repository.dart';
 import '../data/tuition_repository.dart';
-import 'tuition_invoice.dart';
 import 'tuition_policy.dart';
 import 'tuition_service.dart';
 
@@ -22,8 +25,18 @@ class TuitionPolicyService {
   final TuitionPolicyRepository _repo;
   final ClassService _classService;
   final TuitionRepository _tuitionRepo;
+  final SessionCreditRepository _creditRepo;
+  final Database _db;
 
-  TuitionPolicyService(this._repo, this._classService, this._tuitionRepo);
+  SessionCreditRepository get creditRepository => _creditRepo;
+
+  TuitionPolicyService(
+    this._repo,
+    this._classService,
+    this._tuitionRepo,
+    this._creditRepo,
+    this._db,
+  );
 
   Future<TuitionPolicy?> getEffectivePolicy(int classId, DateTime date) {
     final dateStr = DateFormat('yyyy-MM-dd').format(date);
@@ -43,9 +56,10 @@ class TuitionPolicyService {
 
   Future<TuitionPolicy> createPolicy({
     required int classId,
-    required String effectiveFrom, // YYYY-MM-DD
-    String? effectiveTo, // YYYY-MM-DD
-    int standardSessionsPerMonth = 12,
+    required String effectiveFrom, // YYYY-MM-DD (must be YYYY-MM-01)
+    String? effectiveTo, // YYYY-MM-DD (must be last day of month)
+    int standardSessionsPerMonth =
+        TuitionPolicyDefaults.standardSessionsPerMonth,
     required int feePerSession,
     int? monthlyMaxFee,
     String? note,
@@ -54,10 +68,25 @@ class TuitionPolicyService {
     if (cls == null) throw Exception('Không tìm thấy lớp học');
 
     _validateIsoDate(effectiveFrom);
+    if (!effectiveFrom.endsWith('-01')) {
+      throw Exception(
+        'Ngày bắt đầu hiệu lực của chính sách học phí phải là ngày đầu tháng (YYYY-MM-01)',
+      );
+    }
+
     if (effectiveTo != null && effectiveTo.isNotEmpty) {
       _validateIsoDate(effectiveTo);
       if (effectiveTo.compareTo(effectiveFrom) < 0) {
         throw Exception('Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu');
+      }
+
+      final parsedTo = DateTime.parse(effectiveTo);
+      final lastDayDt = DateTime(parsedTo.year, parsedTo.month + 1, 0);
+      final lastDayStr = DateFormat('yyyy-MM-dd').format(lastDayDt);
+      if (effectiveTo != lastDayStr) {
+        throw Exception(
+          'Ngày kết thúc hiệu lực của chính sách học phí phải là ngày cuối tháng ($lastDayStr)',
+        );
       }
     } else {
       effectiveTo = null;
@@ -75,37 +104,69 @@ class TuitionPolicyService {
       throw Exception('Mức học phí tối đa tháng phải lớn hơn hoặc bằng 0');
     }
 
-    // Safety check: Block creating/editing policy if a finalized invoice exists in affected month range
+    // Safety check 1: Block creating/editing policy if a finalized invoice exists in affected month range
     final fromMonth = effectiveFrom.substring(0, 7);
-    final toMonth = effectiveTo != null
-        ? effectiveTo.substring(0, 7)
-        : '9999-12';
+    final toMonth = effectiveTo?.substring(0, 7);
 
-    final existingInvoices = await _tuitionRepo.getInvoicesForStudentClass(
-      0,
-      classId,
-    );
-    final allInvoicesForClass = await _tuitionRepo.getInvoicesForClassMonth(
-      classId,
-      fromMonth,
-    );
+    final hasFinalized = await _tuitionRepo
+        .hasFinalizedInvoiceForClassFromMonth(
+          classId,
+          fromMonth,
+          toMonth: toMonth,
+        );
 
-    if (allInvoicesForClass.any(
-          (i) => i.trangThai == TuitionInvoiceStatus.DA_CHOT,
-        ) ||
-        existingInvoices.any(
-          (i) =>
-              i.trangThai == TuitionInvoiceStatus.DA_CHOT &&
-              i.thang.compareTo(fromMonth) >= 0 &&
-              i.thang.compareTo(toMonth) <= 0,
-        )) {
+    if (hasFinalized) {
       throw Exception(
-        'Lớp đã có hóa đơn học phí đã chốt trong khoảng thời gian này. Không thể tạo hoặc sửa chính sách học phí quá khứ.',
+        'Lớp đã có hóa đơn học phí đã chốt trong khoảng thời gian bị ảnh hưởng. Không thể tạo hoặc sửa chính sách học phí quá khứ.',
       );
+    }
+
+    // Safety check 2: Protect existing credit ledger from retroactive N changes
+    // Query buoi_du_ledger for VUOT_SO_BUOI_CHUAN entries for this class in affected month range
+    final whereClause = toMonth != null
+        ? 'id_lop = ? AND ly_do = ? AND ngay_hieu_luc >= ? AND ngay_hieu_luc <= ?'
+        : 'id_lop = ? AND ly_do = ? AND ngay_hieu_luc >= ?';
+    final whereArgs = toMonth != null
+        ? [
+            classId,
+            CreditLedgerReason.VUOT_SO_BUOI_CHUAN.name,
+            '$fromMonth-01',
+            '$toMonth-31',
+          ]
+        : [
+            classId,
+            CreditLedgerReason.VUOT_SO_BUOI_CHUAN.name,
+            '$fromMonth-01',
+          ];
+
+    final existingCreditMaps = await _db.query(
+      'buoi_du_ledger',
+      where: whereClause,
+      whereArgs: whereArgs,
+      limit: 1,
+    );
+
+    if (existingCreditMaps.isNotEmpty) {
+      final sampleEntryDate =
+          existingCreditMaps.first['ngay_hieu_luc'] as String;
+      final oldEffective = await _repo.getEffectivePolicy(
+        classId,
+        sampleEntryDate,
+      );
+      final oldN =
+          oldEffective?.soBuoiChuanThang ??
+          TuitionPolicyDefaults.standardSessionsPerMonth;
+
+      if (oldN != standardSessionsPerMonth) {
+        throw Exception(
+          'Khoảng thời gian này đã có lịch sử cộng credit vượt chuẩn (buổi dư). Không thể thay đổi số buổi chuẩn N quá khứ.',
+        );
+      }
     }
 
     // Check existing policies for overlap
     final existingPolicies = await _repo.getPoliciesForClass(classId);
+    String? closeDateStr;
 
     for (final p in existingPolicies) {
       final pTo = p.hieuLucDen ?? '9999-12-31';
@@ -120,8 +181,7 @@ class TuitionPolicyService {
         if (p.hieuLucDen == null && p.hieuLucTu.compareTo(effectiveFrom) < 0) {
           final fromDt = DateTime.parse(effectiveFrom);
           final dayBefore = fromDt.subtract(const Duration(days: 1));
-          final closeDateStr = DateFormat('yyyy-MM-dd').format(dayBefore);
-          await _repo.closeOpenPolicy(classId, closeDateStr);
+          closeDateStr = DateFormat('yyyy-MM-dd').format(dayBefore);
         } else {
           throw Exception(
             'Khoảng thời gian hiệu lực trùng lặp với chính sách học phí đã có (${p.hieuLucTu} - ${p.hieuLucDen ?? "hiện tại"})',
@@ -143,8 +203,17 @@ class TuitionPolicyService {
       updatedAt: now,
     );
 
-    final id = await _repo.insert(policy);
-    return (await _repo.getById(id))!;
+    int? createdId;
+
+    // Single SQLite transaction for close-old + insert-new
+    await _db.transaction((txn) async {
+      if (closeDateStr != null) {
+        await _repo.closeOpenPolicyInTxn(txn, classId, closeDateStr);
+      }
+      createdId = await _repo.insertInTxn(txn, policy);
+    });
+
+    return (await _repo.getById(createdId!))!;
   }
 
   void _validateIsoDate(String date) {
@@ -167,5 +236,7 @@ Future<TuitionPolicyService> tuitionPolicyService(
   final repo = await ref.watch(tuitionPolicyRepositoryProvider.future);
   final classService = await ref.watch(classServiceProvider.future);
   final tuitionRepo = await ref.watch(tuitionRepositoryProvider.future);
-  return TuitionPolicyService(repo, classService, tuitionRepo);
+  final creditRepo = await ref.watch(sessionCreditRepositoryProvider.future);
+  final db = await ref.watch(databaseProvider.future);
+  return TuitionPolicyService(repo, classService, tuitionRepo, creditRepo, db);
 }

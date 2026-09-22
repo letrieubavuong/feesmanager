@@ -24,7 +24,7 @@ final tuitionPolicyRepositoryProvider =
 
 typedef TuitionPolicyRepositoryRef = FutureProviderRef<TuitionPolicyRepository>;
 String _$tuitionPolicyServiceHash() =>
-    r'1a3aa9d3dbefea9e931eaa86664f3e312e29469b';
+    r'99c362734679b02e79360c0324ce54064f15b2fd';
 
 /// See also [tuitionPolicyService].
 @ProviderFor(tuitionPolicyService)

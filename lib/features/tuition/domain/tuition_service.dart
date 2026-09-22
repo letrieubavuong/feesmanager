@@ -67,10 +67,12 @@ class TuitionService {
       );
     }
 
-    final N = policy.soBuoiChuanThang;
-
-    final eligibleSessions = await _creditService
-        .getEligibleSessionsForStudentClassMonth(studentId, classId, month);
+    // Single canonical owner: Consume previewMonth result from SessionCreditService
+    final creditSummary = await _creditService.previewMonth(
+      studentId,
+      classId,
+      month,
+    );
 
     // Fetch student class memberships active during month
     final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 0);
@@ -102,24 +104,13 @@ class TuitionService {
     }
     final discountPercent = discountPercentages.first;
 
-    // Calculate opening credit balance as of day before month start
-    final dayBeforeMonth = monthStart.subtract(const Duration(days: 1));
-    final openingDateStr = DateFormat('yyyy-MM-dd').format(dayBeforeMonth);
-    final creditOpening = await _creditService.getBalanceAsOf(
-      studentId,
-      classId,
-      openingDateStr,
-    );
-
-    int availableCredit = creditOpening;
-    int creditEarned = 0;
-
+    int proposedCreditUsed = 0;
     final candidateDetails = <TuitionSessionCandidateDetail>[];
 
-    for (int i = 0; i < eligibleSessions.length; i++) {
-      final session = eligibleSessions[i];
-      final index = i + 1; // 1-based index
-      final isStandard = index <= N;
+    for (final candidate in creditSummary.candidates) {
+      final session = candidate.session;
+      final index = candidate.index;
+      final isStandard = candidate.isStandard;
 
       final attRecord = await _attendanceRepo.getBySessionAndStudent(
         session.id!,
@@ -156,6 +147,7 @@ class TuitionService {
           final hasValidMakeup = await _hasValidMakeupAttendance(
             studentId,
             session.id!,
+            classId,
           );
 
           if (hasValidMakeup) {
@@ -163,18 +155,29 @@ class TuitionService {
                 TuitionCandidateChargeType.CHARGEABLE_EXCUSED_WITH_MAKEUP;
             isCharged = true;
             fee = policy.hocPhiMoiBuoi;
-          } else if (availableCredit > 0) {
-            chargeType =
-                TuitionCandidateChargeType.CHARGEABLE_EXCUSED_WITH_CREDIT;
-            isCharged = true;
-            usesCredit = true;
-            availableCredit--;
-            fee = policy.hocPhiMoiBuoi;
           } else {
-            chargeType =
-                TuitionCandidateChargeType.NON_CHARGEABLE_EXCUSED_UNCOMPENSATED;
-            isCharged = false;
-            fee = 0;
+            // Usable credit balance as-of this session date minus proposed credit used on/before this session
+            final rawBalanceAsOf = await _creditService.getBalanceAsOf(
+              studentId,
+              classId,
+              session.ngay,
+            );
+
+            final usableCreditAtDate = rawBalanceAsOf - proposedCreditUsed;
+
+            if (usableCreditAtDate > 0) {
+              chargeType =
+                  TuitionCandidateChargeType.CHARGEABLE_EXCUSED_WITH_CREDIT;
+              isCharged = true;
+              usesCredit = true;
+              proposedCreditUsed++;
+              fee = policy.hocPhiMoiBuoi;
+            } else {
+              chargeType = TuitionCandidateChargeType
+                  .NON_CHARGEABLE_EXCUSED_UNCOMPENSATED;
+              isCharged = false;
+              fee = 0;
+            }
           }
         } else {
           // Fallback
@@ -198,11 +201,6 @@ class TuitionService {
         );
       } else {
         // Extra session beyond N
-        final earnsCredit =
-            attState == AttendanceState.CO_MAT ||
-            attState == AttendanceState.TRE;
-        if (earnsCredit) creditEarned++;
-
         candidateDetails.add(
           TuitionSessionCandidateDetail(
             session: session,
@@ -219,10 +217,14 @@ class TuitionService {
       }
     }
 
-    final soBuoiEligible = eligibleSessions.length;
+    final soBuoiEligible = creditSummary.eligibleCount;
     final soBuoiTinhPhi = candidateDetails.where((c) => c.isCharged).length;
     final creditUsed = candidateDetails.where((c) => c.usesCredit).length;
-    final creditClosing = creditOpening + creditEarned - creditUsed;
+
+    final creditOpening = creditSummary.openingBalance;
+    final creditEarned = creditSummary.potentialEarned;
+    final creditClosing =
+        creditOpening + creditSummary.monthDelta + creditEarned - creditUsed;
 
     final tongTruocGiam = soBuoiTinhPhi * policy.hocPhiMoiBuoi;
     final giamPhanTram = discountPercent;
@@ -257,13 +259,18 @@ class TuitionService {
   Future<bool> _hasValidMakeupAttendance(
     int studentId,
     int originalSessionId,
+    int classId,
   ) async {
     final adjustment = await _adjustmentRepo.getByStudentAndOriginalSession(
       studentId,
       originalSessionId,
     );
 
-    if (adjustment == null || adjustment.loai != SessionAdjustmentType.HOC_BU) {
+    if (adjustment == null ||
+        adjustment.loai != SessionAdjustmentType.HOC_BU ||
+        adjustment.idLopGoc != classId ||
+        adjustment.idHocSinh != studentId ||
+        adjustment.idBuoiHocGoc != originalSessionId) {
       return false;
     }
 
@@ -272,7 +279,8 @@ class TuitionService {
 
     // Target session must exist and be DA_HOC (taught & finalized)
     if (targetSession == null ||
-        targetSession.trangThai != SessionStatus.DA_HOC) {
+        targetSession.trangThai != SessionStatus.DA_HOC ||
+        targetSession.loai != SessionType.HOC_BU) {
       return false;
     }
 
@@ -284,17 +292,13 @@ class TuitionService {
 
     if (targetAtt == null) return false;
 
-    // Target attendance status must be HOC_BU, CO_MAT, or TRE
-    final isAttended =
-        targetAtt.trangThai == AttendanceStatus.HOC_BU ||
-        targetAtt.trangThai == AttendanceStatus.CO_MAT ||
-        targetAtt.trangThai == AttendanceStatus.TRE;
-
-    if (!isAttended) return false;
-
-    // If id_buoi_vang_goc exists, it must match originalSessionId
-    if (targetAtt.idBuoiVangGoc != null &&
-        targetAtt.idBuoiVangGoc != originalSessionId) {
+    // Strict fail-closed makeup validation:
+    // MUST be AttendanceStatus.HOC_BU and AttendanceParticipationType.HOC_BU
+    // MUST have idBuoiVangGoc == originalSessionId and idLopGoc == classId
+    if (targetAtt.trangThai != AttendanceStatus.HOC_BU ||
+        targetAtt.loaiThamGia != AttendanceParticipationType.HOC_BU ||
+        targetAtt.idBuoiVangGoc != originalSessionId ||
+        targetAtt.idLopGoc != classId) {
       return false;
     }
 

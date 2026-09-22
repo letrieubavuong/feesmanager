@@ -139,6 +139,14 @@ class MembershipService {
     }).toList();
   }
 
+  Future<List<int>> getUniqueStudentIdsForClassMonth(
+    int classId,
+    String month, // YYYY-MM
+  ) async {
+    final memberships = await getMembershipsForClassMonth(classId, month);
+    return memberships.map((m) => m.idHocSinh).toSet().toList();
+  }
+
   Future<List<ClassMembership>> getRoster(int classId, {DateTime? date}) async {
     final referenceDate = date ?? DateTime.now();
     final dateFormat = DateFormat('yyyy-MM-dd');

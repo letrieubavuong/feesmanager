@@ -1,3 +1,7 @@
+class TuitionPolicyDefaults {
+  static const int standardSessionsPerMonth = 12;
+}
+
 class TuitionPolicy {
   final int? id;
   final int idLop;
@@ -15,7 +19,7 @@ class TuitionPolicy {
     required this.idLop,
     required this.hieuLucTu,
     this.hieuLucDen,
-    this.soBuoiChuanThang = 12,
+    this.soBuoiChuanThang = TuitionPolicyDefaults.standardSessionsPerMonth,
     required this.hocPhiMoiBuoi,
     this.hocPhiThangToiDa,
     this.ghiChu,
@@ -41,7 +45,9 @@ class TuitionPolicy {
     idLop: map['id_lop'] as int,
     hieuLucTu: map['hieu_luc_tu'] as String,
     hieuLucDen: map['hieu_luc_den'] as String?,
-    soBuoiChuanThang: map['so_buoi_chuan_thang'] as int? ?? 12,
+    soBuoiChuanThang:
+        map['so_buoi_chuan_thang'] as int? ??
+        TuitionPolicyDefaults.standardSessionsPerMonth,
     hocPhiMoiBuoi: map['hoc_phi_moi_buoi'] as int? ?? 0,
     hocPhiThangToiDa: map['hoc_phi_thang_toi_da'] as int?,
     ghiChu: map['ghi_chu'] as String?,

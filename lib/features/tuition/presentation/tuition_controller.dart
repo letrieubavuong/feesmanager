@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../memberships/presentation/membership_providers.dart';
 import '../domain/invoice_service.dart';
 import '../domain/tuition_invoice.dart';
 import '../domain/tuition_policy.dart';
@@ -68,6 +69,10 @@ class InvoiceController extends _$InvoiceController {
       ref.invalidate(
         tuitionPreviewControllerProvider(studentId, classId, month),
       );
+      ref.invalidate(classTuitionPoliciesProvider(classId));
+      ref.invalidate(classMonthMembershipsProvider((classId, month)));
+      ref.invalidate(classMonthStudentsProvider((classId, month)));
+      ref.invalidate(classRosterProvider);
     });
     if (state.hasError) {
       throw state.error!;
@@ -85,6 +90,9 @@ class InvoiceController extends _$InvoiceController {
       final service = await ref.read(invoiceServiceProvider.future);
       result = await service.finalizeClassInvoices(classId, month);
       ref.invalidate(classTuitionPoliciesProvider(classId));
+      ref.invalidate(classMonthMembershipsProvider((classId, month)));
+      ref.invalidate(classMonthStudentsProvider((classId, month)));
+      ref.invalidate(classRosterProvider);
     });
     if (state.hasError) {
       throw state.error!;

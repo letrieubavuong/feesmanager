@@ -10,6 +10,10 @@ class TuitionPolicyRepository {
     return await _db.insert('chinh_sach_hoc_phi', policy.toMap());
   }
 
+  Future<int> insertInTxn(Transaction txn, TuitionPolicy policy) async {
+    return await txn.insert('chinh_sach_hoc_phi', policy.toMap());
+  }
+
   Future<void> update(TuitionPolicy policy) async {
     await _db.update(
       'chinh_sach_hoc_phi',
@@ -21,6 +25,16 @@ class TuitionPolicyRepository {
 
   Future<TuitionPolicy?> getById(int id) async {
     final maps = await _db.query(
+      'chinh_sach_hoc_phi',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (maps.isEmpty) return null;
+    return TuitionPolicy.fromMap(maps.first);
+  }
+
+  Future<TuitionPolicy?> getByIdInTxn(Transaction txn, int id) async {
+    final maps = await txn.query(
       'chinh_sach_hoc_phi',
       where: 'id = ?',
       whereArgs: [id],
@@ -54,6 +68,22 @@ class TuitionPolicyRepository {
 
   Future<void> closeOpenPolicy(int classId, String closeDate) async {
     await _db.update(
+      'chinh_sach_hoc_phi',
+      {
+        'hieu_luc_den': closeDate,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'id_lop = ? AND hieu_luc_den IS NULL',
+      whereArgs: [classId],
+    );
+  }
+
+  Future<void> closeOpenPolicyInTxn(
+    Transaction txn,
+    int classId,
+    String closeDate,
+  ) async {
+    await txn.update(
       'chinh_sach_hoc_phi',
       {
         'hieu_luc_den': closeDate,

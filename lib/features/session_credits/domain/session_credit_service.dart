@@ -9,6 +9,7 @@ import '../../roster/domain/roster_service.dart';
 import '../../sessions/domain/class_session.dart';
 import '../../sessions/domain/session_service.dart';
 import '../../students/domain/student_service.dart';
+import '../../tuition/domain/tuition_policy.dart';
 import '../../tuition/domain/tuition_policy_service.dart';
 import '../data/session_credit_repository.dart';
 import 'credit_ledger_entry.dart';
@@ -27,7 +28,8 @@ Future<SessionCreditRepository> sessionCreditRepository(
 }
 
 class SessionCreditService {
-  static const int defaultStandardSessionsPerMonth = 12;
+  static const int defaultStandardSessionsPerMonth =
+      TuitionPolicyDefaults.standardSessionsPerMonth;
 
   final SessionCreditRepository _repo;
   final SessionService _sessionService;
