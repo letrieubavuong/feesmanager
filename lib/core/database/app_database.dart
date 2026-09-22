@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int _dbVersion = 8;
+  static const int _dbVersion = 9;
 
   final String dbName;
   Database? _database;
@@ -60,6 +60,9 @@ class AppDatabase {
     if (version >= 8) {
       await _migrateV7ToV8(db);
     }
+    if (version >= 9) {
+      await _migrateV8ToV9(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -83,6 +86,9 @@ class AppDatabase {
     }
     if (oldVersion < 8) {
       await _migrateV7ToV8(db);
+    }
+    if (oldVersion < 9) {
+      await _migrateV8ToV9(db);
     }
   }
 
@@ -480,6 +486,43 @@ class AppDatabase {
     );
     await db.execute(
       'CREATE INDEX idx_dieu_chinh_lop_goc ON dieu_chinh_buoi_hoc(id_lop_goc)',
+    );
+  }
+
+  Future<void> _migrateV8ToV9(Database db) async {
+    await db.execute('''
+      CREATE TABLE buoi_du_ledger (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_hoc_sinh INTEGER NOT NULL,
+        id_lop INTEGER NOT NULL,
+        id_buoi_hoc INTEGER NULL,
+        ngay_hieu_luc TEXT NOT NULL,
+        delta INTEGER NOT NULL,
+        ly_do TEXT NOT NULL,
+        ghi_chu TEXT NULL,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+        FOREIGN KEY (id_lop) REFERENCES lop (id),
+        FOREIGN KEY (id_buoi_hoc) REFERENCES buoi_hoc (id),
+        CHECK (delta != 0),
+        CHECK (ly_do IN ('VUOT_SO_BUOI_CHUAN', 'BU_TRU_NGHI_CO_PHEP', 'DIEU_CHINH_THU_CONG', 'MIGRATION'))
+      )
+    ''');
+
+    await db.execute('''
+      CREATE UNIQUE INDEX idx_buoi_du_auto_event_unique
+      ON buoi_du_ledger(id_hoc_sinh, id_lop, id_buoi_hoc, ly_do)
+      WHERE id_buoi_hoc IS NOT NULL AND ly_do IN ('VUOT_SO_BUOI_CHUAN', 'BU_TRU_NGHI_CO_PHEP')
+    ''');
+
+    await db.execute(
+      'CREATE INDEX idx_buoi_du_student_class_date ON buoi_du_ledger(id_hoc_sinh, id_lop, ngay_hieu_luc)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_buoi_du_class_date ON buoi_du_ledger(id_lop, ngay_hieu_luc)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_buoi_du_session ON buoi_du_ledger(id_buoi_hoc)',
     );
   }
 }

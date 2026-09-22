@@ -5,11 +5,11 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 class TestDbHelperV6 {
   static Future<Database> createLatest() async {
     final tempDir = await Directory.systemTemp.createTemp('db_test');
-    final dbPath = join(tempDir.path, 'test_v8.db');
+    final dbPath = join(tempDir.path, 'test_v9.db');
 
     final db = await openDatabase(
       dbPath,
-      version: 8,
+      version: 9,
       onCreate: (db, version) async {
         await db.execute('''
         CREATE TABLE hoc_sinh (
@@ -196,6 +196,31 @@ class TestDbHelperV6 {
           CREATE UNIQUE INDEX idx_dieu_chinh_doi_ca_unique 
           ON dieu_chinh_buoi_hoc(id_hoc_sinh, id_buoi_hoc_goc) 
           WHERE loai = 'DOI_CA' AND id_buoi_hoc_goc IS NOT NULL
+        ''');
+
+        await db.execute('''
+          CREATE TABLE buoi_du_ledger (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_hoc_sinh INTEGER NOT NULL,
+            id_lop INTEGER NOT NULL,
+            id_buoi_hoc INTEGER NULL,
+            ngay_hieu_luc TEXT NOT NULL,
+            delta INTEGER NOT NULL,
+            ly_do TEXT NOT NULL,
+            ghi_chu TEXT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+            FOREIGN KEY (id_lop) REFERENCES lop (id),
+            FOREIGN KEY (id_buoi_hoc) REFERENCES buoi_hoc (id),
+            CHECK (delta != 0),
+            CHECK (ly_do IN ('VUOT_SO_BUOI_CHUAN', 'BU_TRU_NGHI_CO_PHEP', 'DIEU_CHINH_THU_CONG', 'MIGRATION'))
+          )
+        ''');
+
+        await db.execute('''
+          CREATE UNIQUE INDEX idx_buoi_du_auto_event_unique
+          ON buoi_du_ledger(id_hoc_sinh, id_lop, id_buoi_hoc, ly_do)
+          WHERE id_buoi_hoc IS NOT NULL AND ly_do IN ('VUOT_SO_BUOI_CHUAN', 'BU_TRU_NGHI_CO_PHEP')
         ''');
       },
       onConfigure: (db) async {

@@ -1,13 +1,12 @@
-# Task Management
+# Task Management - Phase 8: Session Credit / Buổi Dư
 
-- [x] Researching Project and Requirements
-    - [x] List files in project and docs directory
-    - [x] Read `pubspec.yaml`
-    - [x] Read mandatory documentation
-- [x] Fix GitHub Actions (Task 1)
-- [x] Fix `closeAssignment()` logic and add test (Task 2)
-- [x] Implement Phase 3 Widget Tests (Task 3)
-- [x] Run Local Quality Gate (Task 5)
-- [x] Update documentation and `REBUILD_STATUS` (Task 4)
-- [x] Push and Verify CI (Task 6)
-- [x] Final Report (Task 8)
+- [x] Research Phase 8 Requirements & Formulate Plan
+  - [x] Read AGENTS.md, TUITION2027_DOMAIN_CONSTITUTION.md, DATABASE_SCHEMA.md, ARCHITECTURE.md, REBUILD_STATUS.md
+  - [x] Create implementation_plan.artifact.md
+- [/] Implement Database Migration v8 -> v9 (`buoi_du_ledger`)
+- [ ] Implement Session Credits Domain Models & Repository
+- [ ] Implement SessionCreditService & Canonical Logic
+- [ ] Implement Session Credit Controller & Presentation UI
+- [ ] Add Comprehensive Test Suite (Migration v8->v9, Domain, Repository, Widget)
+- [ ] Quality Gate & CI Verification (`dart format`, `build_runner`, `flutter analyze`, `flutter test`)
+- [ ] Update Documentation & Commit/Push to Main

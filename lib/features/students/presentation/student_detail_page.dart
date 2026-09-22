@@ -13,6 +13,7 @@ import 'package:tuition2027/core/utils/date_formatter.dart';
 import '../../schedule/domain/student_shift_assignment.dart';
 import '../../schedule/domain/schedule_service.dart';
 import '../../schedule/domain/class_schedule.dart';
+import '../../session_credits/presentation/session_credit_page.dart';
 
 part 'student_detail_page.g.dart';
 
@@ -276,21 +277,39 @@ class StudentDetailPage extends ConsumerWidget {
               ),
           ],
         ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: isActive
-                ? Colors.green.withValues(alpha: 0.1)
-                : Colors.grey.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            isActive ? 'Đang học' : 'Đã nghỉ',
-            style: TextStyle(
-              color: isActive ? Colors.green : Colors.grey,
-              fontSize: 12,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => SessionCreditPage(
+                      studentId: studentId,
+                      classId: m.idLop,
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Buổi dư', style: TextStyle(fontSize: 12)),
             ),
-          ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? Colors.green.withValues(alpha: 0.1)
+                    : Colors.grey.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                isActive ? 'Đang học' : 'Đã nghỉ',
+                style: TextStyle(
+                  color: isActive ? Colors.green : Colors.grey,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

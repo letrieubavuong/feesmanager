@@ -100,19 +100,33 @@
 - [x] Data safety & dirty draft protection: roster-changing actions (`Đổi ca`, `Thêm học sinh`, `Hủy điều chỉnh`) blocked if unsaved attendance changes exist.
 - [x] `Xếp học bù` action restricted to finalized (`DA_HOC`) original sessions.
 - [x] Mobile UI for Leave management and Session Adjustments with complete navigation entry points.
-- [x] Comprehensive Tests (190 tests passing):
-    - `test/leave/leave_request_service_test.dart`
-    - `test/session_adjustments/session_adjustment_service_test.dart`
-    - `test/presentation/phase7_ui_test.dart`
-    - `test/repository/migration_v7_v8_test.dart`
+- [x] Comprehensive Tests (190 tests passing).
 
-## Phase 8: Session Credit - NOT STARTED
+## Phase 8: Session Credit - COMPLETE
+- [x] Database Migration (v8 -> v9) with `buoi_du_ledger` table and partial unique index.
+- [x] Credit Ledger domain models (`CreditLedgerEntry`, `CreditLedgerReason`).
+- [x] Canonical `SessionCreditService` as single owner of credit rules and balance calculations.
+- [x] Monthly eligible CHINH session calculation using canonical `RosterService`.
+- [x] Standard (1..12) vs Extra (13+) session indexing classification.
+- [x] Extra session credit earning rules (`CO_MAT`/`TRE` -> +1, others -> 0).
+- [x] Exclusion of `HOC_BU` and `PHAT_SINH` sessions from automatic extra credit earning.
+- [x] Idempotent credit reconciliation (`reconcileEarnedCreditsForStudentClassMonth`).
+- [x] Class-scoped credit balance derivation (`SUM(delta)` per student + class).
+- [x] Historical balance query (`getBalanceAsOf`).
+- [x] Manual credit adjustment with mandatory reason note (`DIEU_CHINH_THU_CONG`).
+- [x] Mobile-friendly Session Credit UI (`SessionCreditPage`) reachable from Student Detail.
+- [x] Comprehensive Tests (202 tests passing):
+    - `test/session_credits/session_credit_service_test.dart`
+    - `test/presentation/session_credits_ui_test.dart`
+    - `test/repository/migration_v8_v9_test.dart`
+
+## Phase 9: Tuition Policy + Invoice - NOT STARTED
 
 ---
 
 ## Technical Details
 - **Database**: `tuition_next.db`
-- **Version**: 8
+- **Version**: 9
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
 - **Tests**:
@@ -133,10 +147,13 @@
   - `test/presentation/attendance_ui_test.dart`
   - `test/leave/leave_request_service_test.dart`
   - `test/session_adjustments/session_adjustment_service_test.dart`
+  - `test/session_credits/session_credit_service_test.dart`
   - `test/presentation/phase7_ui_test.dart`
+  - `test/presentation/session_credits_ui_test.dart`
   - `test/repository/migration_v5_v6_test.dart`
   - `test/repository/migration_v6_v7_test.dart`
   - `test/repository/migration_v7_v8_test.dart`
+  - `test/repository/migration_v8_v9_test.dart`
 - **Quality Gate**:
   - `dart analyze`: Clean (No issues found!)
-  - `flutter test`: 100% Pass (190 tests)
+  - `flutter test`: 100% Pass (202 tests)
