@@ -218,7 +218,7 @@ void main() {
       },
     );
 
-    test('Raw SQLite reason-specific CHECK constraints for buoi_du_ledger in v10', () async {
+    test('Raw SQLite reason-specific CHECK constraints in v10', () async {
       final tempDbReg = join(
         Directory.systemTemp.path,
         'test_regression_v10.db',
