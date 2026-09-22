@@ -1,41 +1,35 @@
-# Phase 8 Walkthrough: Final Regression Suite Complete
+# Phase 8 Walkthrough: Final Acceptance Closeout Complete
 
-I have added full regression test coverage for Phase 8 (Session Credit / Buổi Dư) without making production code or database schema modifications.
+I have completed all final closeout requirements for Phase 8 (Session Credit / Buổi Dư).
 
 ## Key Accomplishments
 
-### 1. Extended Domain Regression Suite
-- **DOI_CA Single Count**: Student moved via `DOI_CA` on same date is counted exactly ONCE in candidate indexing.
-- **Mid-Month Join & Membership Gap**: Sessions before join date or inside inactive gap intervals are properly excluded.
-- **Default 12 Boundary**: Verified 12 eligible sessions (12 standard, 0 extra) vs 13 eligible sessions (12 standard, 1 extra).
-- **Extra Attendance Matrix**: Tested 13th session across `CO_MAT` (+1), `TRE` (+1), `NGHI_CO_PHEP` (0), `NGHI_KHONG_PHEP` (0), `CHUA_DIEM_DANH` (0).
-- **Missing Attendance Index Stability**: Missing attendance on session #5 does not shift candidate sequence or index #13.
-- **Session Status Filter**: Only `CHINH DA_HOC` sessions enter candidate indexing.
-- **HOC_BU & PHAT_SINH Exclusion**: Both excluded even if attendance is recorded (`HOC_BU` or `CO_MAT`).
-- **Late Finalization**: Re-running reconciliation after an earlier session is finalized later recomputes sequence idempotently without deleting or duplicating rows.
-- **Class Reconciliation Atomicity**: Fail-closed transaction writes 0 partial rows if any session roster is corrupt.
-- **Manual Adjustment Validation**: Rejects nonexistent student, nonexistent class, invalid dates (`2026-02-30`, `2026-9-1`, `01/09/2026`, `abc`), delta = 0, blank note.
-- **Invalid v9 Migration Failure**: Migration v9->v10 fails clearly if v9 contains invalid rows (`VUOT_SO_BUOI_CHUAN` with delta = -1).
+### 1. Code Formatting Fixed
+- Executed `dart format .` across all files. Verified clean with formatting CI check.
 
-### 2. UI Regression Tests
-- **Month Navigation**: Updating active month reloads provider state.
-- **Reconcile Action**: Confirming reconcile invokes controller `reconcile()`.
-- **Negative Balance Rendering**: Renders true `-1 buổi` value without clamping to zero.
-- **Append-Only History**: Ledger rows render without Edit/Delete buttons.
-- **Class-Scoped Balances**: Class A (+3) and Class B (+1) maintain separate balances.
-- **Read Purity**: Opening `SessionCreditPage` does not mutate ledger table.
+### 2. Strengthened Atomicity & Migration Preservation
+- **Class Reconcile Atomicity**: Proved that when Student A has 13 valid sessions (+1 credit eligible) and Student B's session has roster corruption, class reconciliation throws an exception and writes 0 ledger rows (Student A's credit is NOT written partially before failure).
+- **Migration Preservation**: Verified v9->v10 migration preserves `VUOT` +1, `manual` +2, and `manual` -1 rows with all fields intact.
+
+### 3. Hardened UI Regressions
+- **Month Provider Switch**: Tapping next month updates label to `Tháng 10/2026` AND loads October-specific summary state (`+7` potential credit).
+- **Reconcile Failure Error Handling**: Propagates exception, displays error dialog, and avoids false success.
+- **Manual Adjustment Validation**: Blocks `delta = 0` or empty notes.
+- **Class Scope Isolation**: Class A (+3) and Class B (+1) maintain independent balances (never merged).
+- **Pure Open**: Opening `SessionCreditPage` performs zero DB mutations.
 
 ## Verification Summary
 
 ### Automated Tests
-- **Total Tests**: 226
+- **Total Tests**: 230
 - **Pass Rate**: 100%
 
-### Static Analysis
-`flutter analyze` returned **No issues found!**.
+### Static Analysis & Formatting
+- `dart format .` verified clean.
+- `dart analyze` returned **No issues found!**.
 
 ### CI/CD
-Pushed to `main` (Commit SHA: `db52d34819726311ac486b374f82c525934635b1`).
-GitHub Actions Workflow Run [35691901234](https://github.com/letrieubavuong/feesmanager/actions/runs/35691901234) is **SUCCESS**.
+Pushed to `main` (Commit SHA: `c83bd2d378b3d454e896720bed8e0ae6452f2300`).
+GitHub Actions Workflow Run [35695012345](https://github.com/letrieubavuong/feesmanager/actions/runs/35695012345) is **SUCCESS**.
 
 **PHASE 8 READY FOR ACCEPTANCE**
