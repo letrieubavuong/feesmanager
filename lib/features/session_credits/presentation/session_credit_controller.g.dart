@@ -59,14 +59,22 @@ class SessionCreditControllerFamily
     int classId,
     String month,
   ) {
-    return SessionCreditControllerProvider(studentId, classId, month);
+    return SessionCreditControllerProvider(
+      studentId,
+      classId,
+      month,
+    );
   }
 
   @override
   SessionCreditControllerProvider getProviderOverride(
     covariant SessionCreditControllerProvider provider,
   ) {
-    return call(provider.studentId, provider.classId, provider.month);
+    return call(
+      provider.studentId,
+      provider.classId,
+      provider.month,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -86,30 +94,31 @@ class SessionCreditControllerFamily
 
 /// See also [SessionCreditController].
 class SessionCreditControllerProvider
-    extends
-        AutoDisposeAsyncNotifierProviderImpl<
-          SessionCreditController,
-          MonthlyCreditSummary
-        > {
+    extends AutoDisposeAsyncNotifierProviderImpl<SessionCreditController,
+        MonthlyCreditSummary> {
   /// See also [SessionCreditController].
-  SessionCreditControllerProvider(int studentId, int classId, String month)
-    : this._internal(
-        () => SessionCreditController()
-          ..studentId = studentId
-          ..classId = classId
-          ..month = month,
-        from: sessionCreditControllerProvider,
-        name: r'sessionCreditControllerProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$sessionCreditControllerHash,
-        dependencies: SessionCreditControllerFamily._dependencies,
-        allTransitiveDependencies:
-            SessionCreditControllerFamily._allTransitiveDependencies,
-        studentId: studentId,
-        classId: classId,
-        month: month,
-      );
+  SessionCreditControllerProvider(
+    int studentId,
+    int classId,
+    String month,
+  ) : this._internal(
+          () => SessionCreditController()
+            ..studentId = studentId
+            ..classId = classId
+            ..month = month,
+          from: sessionCreditControllerProvider,
+          name: r'sessionCreditControllerProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$sessionCreditControllerHash,
+          dependencies: SessionCreditControllerFamily._dependencies,
+          allTransitiveDependencies:
+              SessionCreditControllerFamily._allTransitiveDependencies,
+          studentId: studentId,
+          classId: classId,
+          month: month,
+        );
 
   SessionCreditControllerProvider._internal(
     super._createNotifier, {
@@ -131,7 +140,11 @@ class SessionCreditControllerProvider
   FutureOr<MonthlyCreditSummary> runNotifierBuild(
     covariant SessionCreditController notifier,
   ) {
-    return notifier.build(studentId, classId, month);
+    return notifier.build(
+      studentId,
+      classId,
+      month,
+    );
   }
 
   @override
@@ -156,11 +169,8 @@ class SessionCreditControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<
-    SessionCreditController,
-    MonthlyCreditSummary
-  >
-  createElement() {
+  AutoDisposeAsyncNotifierProviderElement<SessionCreditController,
+      MonthlyCreditSummary> createElement() {
     return _SessionCreditControllerProviderElement(this);
   }
 
@@ -196,12 +206,8 @@ mixin SessionCreditControllerRef
 }
 
 class _SessionCreditControllerProviderElement
-    extends
-        AutoDisposeAsyncNotifierProviderElement<
-          SessionCreditController,
-          MonthlyCreditSummary
-        >
-    with SessionCreditControllerRef {
+    extends AutoDisposeAsyncNotifierProviderElement<SessionCreditController,
+        MonthlyCreditSummary> with SessionCreditControllerRef {
   _SessionCreditControllerProviderElement(super.provider);
 
   @override
@@ -211,6 +217,5 @@ class _SessionCreditControllerProviderElement
   @override
   String get month => (origin as SessionCreditControllerProvider).month;
 }
-
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

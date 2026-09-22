@@ -1593,12 +1593,51 @@ void main() {
           'updated_at': nowStr,
         });
 
-        // Session 101 missing schedule (corrupted roster)
+        for (int w = 1; w <= 7; w++) {
+          await db.insert('lich_hoc', {
+            'id': w,
+            'id_lop': 10,
+            'thu_trong_tuan': w,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'hieu_luc_tu': '2026-01-01',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        }
+
+        // Student 1 has 13 valid eligible sessions, 13th = CO_MAT (would earn +1)
+        for (int i = 1; i <= 13; i++) {
+          final dateStr = '2026-09-${i.toString().padLeft(2, '0')}';
+          await db.insert('buoi_hoc', {
+            'id': 100 + i,
+            'id_lop': 10,
+            'id_lich_hoc': DateTime.parse(dateStr).weekday,
+            'ngay': dateStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'CHINH',
+            'trang_thai': 'DA_HOC',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+          await db.insert('diem_danh', {
+            'id_buoi_hoc': 100 + i,
+            'id_hoc_sinh': 1,
+            'id_lop_goc': 10,
+            'trang_thai': 'CO_MAT',
+            'loai_tham_gia': 'CHINH',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        }
+
+        // Session 200 is CHINH + DA_HOC on 2026-09-20 but missing schedule (corrupted roster)
         await db.insert('buoi_hoc', {
-          'id': 101,
+          'id': 200,
           'id_lop': 10,
           'id_lich_hoc': null,
-          'ngay': '2026-09-01',
+          'ngay': '2026-09-20',
           'gio_bat_dau': '17:30',
           'gio_ket_thuc': '19:00',
           'loai': 'CHINH',
@@ -1607,13 +1646,16 @@ void main() {
           'updated_at': nowStr,
         });
 
+        final countBefore = (await db.query('buoi_du_ledger')).length;
+
         await expectLater(
           creditService.reconcileEarnedCreditsForClassMonth(10, '2026-09'),
           throwsA(isA<Exception>()),
         );
 
-        final rows = await db.query('buoi_du_ledger');
-        expect(rows, isEmpty);
+        final countAfter = (await db.query('buoi_du_ledger')).length;
+        expect(countAfter, equals(countBefore));
+        expect(await creditService.getBalance(1, 10), 0);
       },
     );
 

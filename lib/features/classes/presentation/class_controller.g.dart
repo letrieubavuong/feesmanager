@@ -39,15 +39,21 @@ class ClassDetailFamily extends Family<AsyncValue<ClassEntity?>> {
   const ClassDetailFamily();
 
   /// See also [classDetail].
-  ClassDetailProvider call(int id) {
-    return ClassDetailProvider(id);
+  ClassDetailProvider call(
+    int id,
+  ) {
+    return ClassDetailProvider(
+      id,
+    );
   }
 
   @override
   ClassDetailProvider getProviderOverride(
     covariant ClassDetailProvider provider,
   ) {
-    return call(provider.id);
+    return call(
+      provider.id,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -68,18 +74,24 @@ class ClassDetailFamily extends Family<AsyncValue<ClassEntity?>> {
 /// See also [classDetail].
 class ClassDetailProvider extends AutoDisposeFutureProvider<ClassEntity?> {
   /// See also [classDetail].
-  ClassDetailProvider(int id)
-    : this._internal(
-        (ref) => classDetail(ref as ClassDetailRef, id),
-        from: classDetailProvider,
-        name: r'classDetailProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$classDetailHash,
-        dependencies: ClassDetailFamily._dependencies,
-        allTransitiveDependencies: ClassDetailFamily._allTransitiveDependencies,
-        id: id,
-      );
+  ClassDetailProvider(
+    int id,
+  ) : this._internal(
+          (ref) => classDetail(
+            ref as ClassDetailRef,
+            id,
+          ),
+          from: classDetailProvider,
+          name: r'classDetailProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$classDetailHash,
+          dependencies: ClassDetailFamily._dependencies,
+          allTransitiveDependencies:
+              ClassDetailFamily._allTransitiveDependencies,
+          id: id,
+        );
 
   ClassDetailProvider._internal(
     super._createNotifier, {
@@ -136,8 +148,7 @@ mixin ClassDetailRef on AutoDisposeFutureProviderRef<ClassEntity?> {
 }
 
 class _ClassDetailProviderElement
-    extends AutoDisposeFutureProviderElement<ClassEntity?>
-    with ClassDetailRef {
+    extends AutoDisposeFutureProviderElement<ClassEntity?> with ClassDetailRef {
   _ClassDetailProviderElement(super.provider);
 
   @override
@@ -149,19 +160,16 @@ String _$classListControllerHash() =>
 
 /// See also [ClassListController].
 @ProviderFor(ClassListController)
-final classListControllerProvider =
-    AutoDisposeAsyncNotifierProvider<
-      ClassListController,
-      List<ClassEntity>
-    >.internal(
-      ClassListController.new,
-      name: r'classListControllerProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$classListControllerHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final classListControllerProvider = AutoDisposeAsyncNotifierProvider<
+    ClassListController, List<ClassEntity>>.internal(
+  ClassListController.new,
+  name: r'classListControllerProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$classListControllerHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$ClassListController = AutoDisposeAsyncNotifier<List<ClassEntity>>;
 String _$classFormControllerHash() =>
@@ -171,14 +179,14 @@ String _$classFormControllerHash() =>
 @ProviderFor(ClassFormController)
 final classFormControllerProvider =
     AutoDisposeAsyncNotifierProvider<ClassFormController, void>.internal(
-      ClassFormController.new,
-      name: r'classFormControllerProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$classFormControllerHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  ClassFormController.new,
+  name: r'classFormControllerProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$classFormControllerHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$ClassFormController = AutoDisposeAsyncNotifier<void>;
 // ignore_for_file: type=lint

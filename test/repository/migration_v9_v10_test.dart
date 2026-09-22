@@ -150,6 +150,17 @@ void main() {
         'ghi_chu': 'Manual add',
         'created_at': '2026-09-22',
       });
+      await dbV9.insert('buoi_du_ledger', {
+        'id': 102,
+        'id_hoc_sinh': 11,
+        'id_lop': 21,
+        'id_buoi_hoc': null,
+        'ngay_hieu_luc': '2026-09-23',
+        'delta': -1,
+        'ly_do': 'DIEU_CHINH_THU_CONG',
+        'ghi_chu': 'Manual subtract',
+        'created_at': '2026-09-23',
+      });
       await dbV9.close();
 
       final appDb = AppDatabase(dbName: dbPath);
@@ -159,11 +170,25 @@ void main() {
 
       // Verify all rows survive
       final rows = await dbV10.query('buoi_du_ledger', orderBy: 'id ASC');
-      expect(rows.length, 2);
+      expect(rows.length, 3);
+
       expect(rows[0]['ly_do'], 'VUOT_SO_BUOI_CHUAN');
       expect(rows[0]['delta'], 1);
+      expect(rows[0]['id_buoi_hoc'], 61);
+      expect(rows[0]['ngay_hieu_luc'], '2026-09-21');
+      expect(rows[0]['ghi_chu'], 'Auto earned');
+
       expect(rows[1]['ly_do'], 'DIEU_CHINH_THU_CONG');
       expect(rows[1]['delta'], 2);
+      expect(rows[1]['id_buoi_hoc'], null);
+      expect(rows[1]['ngay_hieu_luc'], '2026-09-22');
+      expect(rows[1]['ghi_chu'], 'Manual add');
+
+      expect(rows[2]['ly_do'], 'DIEU_CHINH_THU_CONG');
+      expect(rows[2]['delta'], -1);
+      expect(rows[2]['id_buoi_hoc'], null);
+      expect(rows[2]['ngay_hieu_luc'], '2026-09-23');
+      expect(rows[2]['ghi_chu'], 'Manual subtract');
 
       final violations = await dbV10.rawQuery('PRAGMA foreign_key_check');
       expect(violations, isEmpty);

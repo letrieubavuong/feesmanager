@@ -34,7 +34,9 @@ abstract class _$ClassAssignmentController
     extends BuildlessAutoDisposeAsyncNotifier<List<StudentShiftAssignment>> {
   late final int classId;
 
-  FutureOr<List<StudentShiftAssignment>> build(int classId);
+  FutureOr<List<StudentShiftAssignment>> build(
+    int classId,
+  );
 }
 
 /// See also [ClassAssignmentController].
@@ -48,15 +50,21 @@ class ClassAssignmentControllerFamily
   const ClassAssignmentControllerFamily();
 
   /// See also [ClassAssignmentController].
-  ClassAssignmentControllerProvider call(int classId) {
-    return ClassAssignmentControllerProvider(classId);
+  ClassAssignmentControllerProvider call(
+    int classId,
+  ) {
+    return ClassAssignmentControllerProvider(
+      classId,
+    );
   }
 
   @override
   ClassAssignmentControllerProvider getProviderOverride(
     covariant ClassAssignmentControllerProvider provider,
   ) {
-    return call(provider.classId);
+    return call(
+      provider.classId,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -76,25 +84,24 @@ class ClassAssignmentControllerFamily
 
 /// See also [ClassAssignmentController].
 class ClassAssignmentControllerProvider
-    extends
-        AutoDisposeAsyncNotifierProviderImpl<
-          ClassAssignmentController,
-          List<StudentShiftAssignment>
-        > {
+    extends AutoDisposeAsyncNotifierProviderImpl<ClassAssignmentController,
+        List<StudentShiftAssignment>> {
   /// See also [ClassAssignmentController].
-  ClassAssignmentControllerProvider(int classId)
-    : this._internal(
-        () => ClassAssignmentController()..classId = classId,
-        from: classAssignmentControllerProvider,
-        name: r'classAssignmentControllerProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$classAssignmentControllerHash,
-        dependencies: ClassAssignmentControllerFamily._dependencies,
-        allTransitiveDependencies:
-            ClassAssignmentControllerFamily._allTransitiveDependencies,
-        classId: classId,
-      );
+  ClassAssignmentControllerProvider(
+    int classId,
+  ) : this._internal(
+          () => ClassAssignmentController()..classId = classId,
+          from: classAssignmentControllerProvider,
+          name: r'classAssignmentControllerProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$classAssignmentControllerHash,
+          dependencies: ClassAssignmentControllerFamily._dependencies,
+          allTransitiveDependencies:
+              ClassAssignmentControllerFamily._allTransitiveDependencies,
+          classId: classId,
+        );
 
   ClassAssignmentControllerProvider._internal(
     super._createNotifier, {
@@ -112,7 +119,9 @@ class ClassAssignmentControllerProvider
   FutureOr<List<StudentShiftAssignment>> runNotifierBuild(
     covariant ClassAssignmentController notifier,
   ) {
-    return notifier.build(classId);
+    return notifier.build(
+      classId,
+    );
   }
 
   @override
@@ -132,11 +141,8 @@ class ClassAssignmentControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<
-    ClassAssignmentController,
-    List<StudentShiftAssignment>
-  >
-  createElement() {
+  AutoDisposeAsyncNotifierProviderElement<ClassAssignmentController,
+      List<StudentShiftAssignment>> createElement() {
     return _ClassAssignmentControllerProviderElement(this);
   }
 
@@ -162,17 +168,12 @@ mixin ClassAssignmentControllerRef
 }
 
 class _ClassAssignmentControllerProviderElement
-    extends
-        AutoDisposeAsyncNotifierProviderElement<
-          ClassAssignmentController,
-          List<StudentShiftAssignment>
-        >
-    with ClassAssignmentControllerRef {
+    extends AutoDisposeAsyncNotifierProviderElement<ClassAssignmentController,
+        List<StudentShiftAssignment>> with ClassAssignmentControllerRef {
   _ClassAssignmentControllerProviderElement(super.provider);
 
   @override
   int get classId => (origin as ClassAssignmentControllerProvider).classId;
 }
-
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

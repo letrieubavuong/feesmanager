@@ -13,17 +13,17 @@ String _$sessionAdjustmentRepositoryHash() =>
 @ProviderFor(sessionAdjustmentRepository)
 final sessionAdjustmentRepositoryProvider =
     FutureProvider<SessionAdjustmentRepository>.internal(
-      sessionAdjustmentRepository,
-      name: r'sessionAdjustmentRepositoryProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$sessionAdjustmentRepositoryHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  sessionAdjustmentRepository,
+  name: r'sessionAdjustmentRepositoryProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$sessionAdjustmentRepositoryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
-typedef SessionAdjustmentRepositoryRef =
-    FutureProviderRef<SessionAdjustmentRepository>;
+typedef SessionAdjustmentRepositoryRef
+    = FutureProviderRef<SessionAdjustmentRepository>;
 String _$sessionAdjustmentServiceHash() =>
     r'7c8e913441cc7f388d0bbc957696fb7146125acb';
 
@@ -31,16 +31,16 @@ String _$sessionAdjustmentServiceHash() =>
 @ProviderFor(sessionAdjustmentService)
 final sessionAdjustmentServiceProvider =
     FutureProvider<SessionAdjustmentService>.internal(
-      sessionAdjustmentService,
-      name: r'sessionAdjustmentServiceProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$sessionAdjustmentServiceHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  sessionAdjustmentService,
+  name: r'sessionAdjustmentServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$sessionAdjustmentServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
-typedef SessionAdjustmentServiceRef =
-    FutureProviderRef<SessionAdjustmentService>;
+typedef SessionAdjustmentServiceRef
+    = FutureProviderRef<SessionAdjustmentService>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

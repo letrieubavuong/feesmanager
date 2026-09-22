@@ -115,7 +115,7 @@
 - [x] Historical month balance accuracy (`openingBalance`, `monthDelta`, `closingBalance` as-of month end).
 - [x] Manual credit adjustment with mandatory reason note (`DIEU_CHINH_THU_CONG`).
 - [x] Mobile-friendly Session Credit UI (`SessionCreditPage`) with active month selector and "Số dư cuối tháng" header label.
-- [x] Comprehensive Tests (226 tests passing):
+- [x] Comprehensive Tests (230 tests passing):
     - `test/session_credits/session_credit_service_test.dart`
     - `test/presentation/session_credits_ui_test.dart`
     - `test/repository/migration_v8_v9_test.dart`
@@ -158,4 +158,4 @@
   - `test/repository/migration_v9_v10_test.dart`
 - **Quality Gate**:
   - `dart analyze`: Clean (No issues found!)
-  - `flutter test`: 100% Pass (226 tests)
+  - `flutter test`: 100% Pass (230 tests)

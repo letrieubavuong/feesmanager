@@ -139,9 +139,101 @@ void main() {
     expect(() => controller.reconcile(), throwsA(isA<Exception>()));
   });
 
-  testWidgets('SessionCreditPage month navigation updates month display', (
+  testWidgets(
+    'SessionCreditPage month navigation updates month display and loads month-specific summary provider',
+    (tester) async {
+      const septSummary = testSummary;
+      final octSummary = testSummary.copyWith(
+        month: '2026-10',
+        potentialEarned: 7,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sessionCreditControllerProvider(
+              1,
+              10,
+              '2026-09',
+            ).overrideWith(() => MockSessionCreditController(septSummary)),
+            sessionCreditControllerProvider(
+              1,
+              10,
+              '2026-10',
+            ).overrideWith(() => MockSessionCreditController(octSummary)),
+            studentDetailProvider(1).overrideWith((ref) async => testStudent),
+            classDetailProvider(10).overrideWith((ref) async => testClass),
+            sessionCreditServiceProvider.overrideWith(
+              (ref) => Future.value(MockSessionCreditService([])),
+            ),
+          ],
+          child: const MaterialApp(
+            home: SessionCreditPage(
+              studentId: 1,
+              classId: 10,
+              initialMonth: '2026-09',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tháng 09/2026'), findsOneWidget);
+      expect(find.text('+2'), findsOneWidget); // Sept potentialEarned = 2
+
+      // Tap next month
+      await tester.tap(find.byIcon(Icons.chevron_right));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tháng 10/2026'), findsOneWidget);
+      expect(find.text('+7'), findsOneWidget); // Oct potentialEarned = 7
+    },
+  );
+
+  testWidgets(
+    'SessionCreditPage reconcile failure displays error message without false success',
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sessionCreditControllerProvider(
+              1,
+              10,
+              '2026-09',
+            ).overrideWith(() => FailingSessionCreditController(testSummary)),
+            studentDetailProvider(1).overrideWith((ref) async => testStudent),
+            classDetailProvider(10).overrideWith((ref) async => testClass),
+            sessionCreditServiceProvider.overrideWith(
+              (ref) => Future.value(MockSessionCreditService([])),
+            ),
+          ],
+          child: const MaterialApp(
+            home: SessionCreditPage(
+              studentId: 1,
+              classId: 10,
+              initialMonth: '2026-09',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Đối soát buổi dư tháng này'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Xác nhận đối soát'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Lỗi').first, findsOneWidget);
+      expect(find.textContaining('Reconcile failed').first, findsOneWidget);
+    },
+  );
+
+  testWidgets('SessionCreditPage manual adjustment validation and execution', (
     tester,
   ) async {
+    final mockService = MockSessionCreditService([]);
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -150,15 +242,10 @@ void main() {
             10,
             '2026-09',
           ).overrideWith(() => MockSessionCreditController(testSummary)),
-          sessionCreditControllerProvider(1, 10, '2026-10').overrideWith(
-            () => MockSessionCreditController(
-              testSummary.copyWith(month: '2026-10'),
-            ),
-          ),
           studentDetailProvider(1).overrideWith((ref) async => testStudent),
           classDetailProvider(10).overrideWith((ref) async => testClass),
           sessionCreditServiceProvider.overrideWith(
-            (ref) => Future.value(MockSessionCreditService([])),
+            (ref) => Future.value(mockService),
           ),
         ],
         child: const MaterialApp(
@@ -172,14 +259,122 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Tháng 09/2026'), findsOneWidget);
-
-    // Tap next month
-    await tester.tap(find.byIcon(Icons.chevron_right));
+    // Open Manual Adjustment dialog
+    await tester.tap(find.text('Điều chỉnh thủ công'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Tháng 10/2026'), findsOneWidget);
+    expect(find.text('Điều chỉnh credit thủ công'), findsOneWidget);
+
+    // Enter delta = 0
+    final textFields = find.byType(TextField);
+    await tester.enterText(textFields.at(0), '0');
+    await tester.enterText(textFields.at(2), 'Ghi chú');
+    await tester.tap(find.text('Lưu điều chỉnh'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('Số lượng điều chỉnh phải khác 0').first,
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Đóng'));
+    await tester.pumpAndSettle();
+
+    // Enter blank note with delta = 1
+    await tester.enterText(textFields.at(0), '1');
+    await tester.enterText(textFields.at(2), '   ');
+    await tester.tap(find.text('Lưu điều chỉnh'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Vui lòng nhập ghi chú').first, findsOneWidget);
+    await tester.tap(find.text('Đóng'));
+    await tester.pumpAndSettle();
+
+    // Enter valid +1 adjustment
+    await tester.enterText(textFields.at(0), '1');
+    await tester.enterText(textFields.at(2), 'Thưởng học sinh');
+    await tester.tap(find.text('Lưu điều chỉnh'));
+    await tester.pumpAndSettle();
+
+    expect(mockService.addManualCalls, 1);
+    expect(mockService.lastDelta, 1);
   });
+
+  testWidgets(
+    'SessionCreditPage class scope displays Class A closing balance',
+    (tester) async {
+      final classASummary = testSummary.copyWith(closingBalance: 3);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sessionCreditControllerProvider(
+              1,
+              10,
+              '2026-09',
+            ).overrideWith(() => MockSessionCreditController(classASummary)),
+            studentDetailProvider(1).overrideWith((ref) async => testStudent),
+            classDetailProvider(10).overrideWith((ref) async => testClass),
+            sessionCreditServiceProvider.overrideWith(
+              (ref) => Future.value(MockSessionCreditService([])),
+            ),
+          ],
+          child: const MaterialApp(
+            home: SessionCreditPage(
+              studentId: 1,
+              classId: 10,
+              initialMonth: '2026-09',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('+3 buổi'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'SessionCreditPage class scope displays Class B closing balance independently',
+    (tester) async {
+      final classBSummary = testSummary.copyWith(
+        classId: 20,
+        closingBalance: 1,
+      );
+      final testClassB = ClassEntity(
+        id: 20,
+        tenLop: 'Class 20B',
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sessionCreditControllerProvider(
+              1,
+              20,
+              '2026-09',
+            ).overrideWith(() => MockSessionCreditController(classBSummary)),
+            studentDetailProvider(1).overrideWith((ref) async => testStudent),
+            classDetailProvider(20).overrideWith((ref) async => testClassB),
+            sessionCreditServiceProvider.overrideWith(
+              (ref) => Future.value(MockSessionCreditService([])),
+            ),
+          ],
+          child: const MaterialApp(
+            home: SessionCreditPage(
+              studentId: 1,
+              classId: 20,
+              initialMonth: '2026-09',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('+1 buổi'), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'SessionCreditPage reconcile execution calls controller reconcile',
@@ -306,16 +501,21 @@ void main() {
 }
 
 extension on MonthlyCreditSummary {
-  MonthlyCreditSummary copyWith({String? month, int? closingBalance}) {
+  MonthlyCreditSummary copyWith({
+    String? month,
+    int? classId,
+    int? potentialEarned,
+    int? closingBalance,
+  }) {
     return MonthlyCreditSummary(
       studentId: studentId,
-      classId: classId,
+      classId: classId ?? this.classId,
       month: month ?? this.month,
       standardSessionLimit: standardSessionLimit,
       eligibleCount: eligibleCount,
       standardCount: standardCount,
       extraCount: extraCount,
-      potentialEarned: potentialEarned,
+      potentialEarned: potentialEarned ?? this.potentialEarned,
       recordedEarned: recordedEarned,
       openingBalance: openingBalance,
       monthDelta: monthDelta,
@@ -364,11 +564,29 @@ class FailingSessionCreditController extends SessionCreditController {
 
 class MockSessionCreditService implements SessionCreditService {
   final List<CreditLedgerEntry> entries;
+  int addManualCalls = 0;
+  int? lastDelta;
+
   MockSessionCreditService(this.entries);
 
   @override
   Future<List<CreditLedgerEntry>> getLedger(int studentId, int classId) async =>
       entries;
+
+  @override
+  Future<void> addManualAdjustment({
+    required int studentId,
+    required int classId,
+    required int delta,
+    required String effectiveDate,
+    required String note,
+  }) async {
+    if (note.trim().isEmpty) {
+      throw Exception('Vui lòng nhập ghi chú nguyên nhân điều chỉnh thủ công');
+    }
+    addManualCalls++;
+    lastDelta = delta;
+  }
 
   @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
