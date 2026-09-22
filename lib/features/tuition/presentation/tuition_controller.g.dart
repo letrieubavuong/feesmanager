@@ -415,6 +415,23 @@ class _StudentInvoiceProviderElement
   String get month => (origin as StudentInvoiceProvider).month;
 }
 
+String _$tuitionPolicyControllerHash() =>
+    r'3aac76bd61c64bad9b15029a6e799ee8ae731218';
+
+/// See also [TuitionPolicyController].
+@ProviderFor(TuitionPolicyController)
+final tuitionPolicyControllerProvider =
+    AutoDisposeAsyncNotifierProvider<TuitionPolicyController, void>.internal(
+      TuitionPolicyController.new,
+      name: r'tuitionPolicyControllerProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$tuitionPolicyControllerHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$TuitionPolicyController = AutoDisposeAsyncNotifier<void>;
 String _$tuitionPreviewControllerHash() =>
     r'2108cbb0fcdd65bba0d5dab5620358affb1fb458';
 

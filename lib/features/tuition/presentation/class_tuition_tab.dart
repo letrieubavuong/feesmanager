@@ -6,7 +6,6 @@ import '../../students/domain/student.dart';
 import '../../students/presentation/student_detail_page.dart';
 import '../domain/tuition_invoice.dart';
 import '../domain/tuition_policy.dart';
-import '../domain/tuition_policy_service.dart';
 import '../domain/tuition_preview.dart';
 import 'tuition_controller.dart';
 
@@ -366,25 +365,17 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                   }
                 }
 
-                final service = await ref.read(
-                  tuitionPolicyServiceProvider.future,
-                );
-                await service.createPolicy(
-                  classId: widget.classId,
-                  effectiveFrom: fromController.text.trim(),
-                  feePerSession: fee,
-                  standardSessionsPerMonth: standard,
-                  monthlyMaxFee: cap,
-                  note: noteController.text.trim(),
-                );
+                await ref
+                    .read(tuitionPolicyControllerProvider.notifier)
+                    .createPolicy(
+                      classId: widget.classId,
+                      effectiveFrom: fromController.text.trim(),
+                      feePerSession: fee,
+                      standardSessionsPerMonth: standard,
+                      monthlyMaxFee: cap,
+                      note: noteController.text.trim(),
+                    );
 
-                ref.invalidate(classTuitionPoliciesProvider(widget.classId));
-                ref.invalidate(
-                  classMonthMembershipsProvider((
-                    widget.classId,
-                    _selectedMonth,
-                  )),
-                );
                 if (dialogCtx.mounted) Navigator.pop(dialogCtx);
               } catch (e) {
                 if (dialogCtx.mounted) {
@@ -423,13 +414,6 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                       classId: widget.classId,
                       month: _selectedMonth,
                     );
-                ref.invalidate(classTuitionPoliciesProvider(widget.classId));
-                ref.invalidate(
-                  classMonthMembershipsProvider((
-                    widget.classId,
-                    _selectedMonth,
-                  )),
-                );
                 if (dialogCtx.mounted) {
                   Navigator.pop(dialogCtx);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -481,7 +465,7 @@ class _StudentTuitionCard extends ConsumerWidget {
         if (student == null) return const SizedBox.shrink();
 
         final invoice = invoiceAsync.value;
-        final isFinalized = invoice?.trangThai == TuitionInvoiceStatus.DA_CHOT;
+        final isFinalized = invoice?.trangThai.isFinalizedSnapshot == true;
 
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 6),
@@ -521,6 +505,20 @@ class _StudentTuitionCard extends ConsumerWidget {
         ? DateFormat('HH:mm dd/MM/yyyy').format(invoice.chotLuc!)
         : 'Đã chốt';
 
+    final statusLabel = switch (invoice.trangThai) {
+      TuitionInvoiceStatus.DA_CHOT => 'ĐÃ CHỐT',
+      TuitionInvoiceStatus.DA_THANH_TOAN => 'ĐÃ THANH TOÁN',
+      TuitionInvoiceStatus.CON_NO => 'CÒN NỢ',
+      TuitionInvoiceStatus.NHAP => 'NHÁP',
+    };
+
+    final statusColor = switch (invoice.trangThai) {
+      TuitionInvoiceStatus.DA_CHOT => Colors.teal,
+      TuitionInvoiceStatus.DA_THANH_TOAN => Colors.green.shade700,
+      TuitionInvoiceStatus.CON_NO => Colors.red.shade700,
+      TuitionInvoiceStatus.NHAP => Colors.grey,
+    };
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -531,16 +529,16 @@ class _StudentTuitionCard extends ConsumerWidget {
               studentName,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            const Chip(
+            Chip(
               label: Text(
-                'ĐÃ CHỐT',
-                style: TextStyle(
+                statusLabel,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              backgroundColor: Colors.teal,
+              backgroundColor: statusColor,
             ),
           ],
         ),

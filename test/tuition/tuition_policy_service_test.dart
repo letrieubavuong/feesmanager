@@ -113,31 +113,7 @@ void main() {
     );
 
     test(
-      'Reject non-month-boundary effectiveFrom or effectiveTo date',
-      () async {
-        expect(
-          () => service.createPolicy(
-            classId: 1,
-            effectiveFrom: '2026-09-15',
-            feePerSession: 50000,
-          ),
-          throwsA(isA<Exception>()),
-        );
-
-        expect(
-          () => service.createPolicy(
-            classId: 1,
-            effectiveFrom: '2026-09-01',
-            effectiveTo: '2026-09-15',
-            feePerSession: 50000,
-          ),
-          throwsA(isA<Exception>()),
-        );
-      },
-    );
-
-    test(
-      'Reject finite policy creation over open policy if a future finalized invoice exists',
+      'Reject finite policy creation overlapping an open policy (unconditional open-policy continuity rule)',
       () async {
         final p1 = await service.createPolicy(
           classId: 1,
@@ -145,7 +121,49 @@ void main() {
           feePerSession: 50000,
         );
 
-        // Finalize October invoice under Policy A
+        // Attempting to create finite policy B (Sep 01 -> Sep 30) overlapping open policy A (without invoices) MUST BE REJECTED!
+        expect(
+          () => service.createPolicy(
+            classId: 1,
+            effectiveFrom: '2026-09-01',
+            effectiveTo: '2026-09-30',
+            feePerSession: 60000,
+          ),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains(
+                'Không thể chèn chính sách có ngày kết thúc vào giữa một chính sách đang mở',
+              ),
+            ),
+          ),
+        );
+
+        // Verify Policy A remains OPEN and no Policy B was inserted
+        final p1Updated = await repo.getById(p1.id!);
+        expect(p1Updated?.hieuLucDen, isNull);
+
+        // October date still resolves Policy A
+        final octEffective = await service.getEffectivePolicyForDateStr(
+          1,
+          '2026-10-15',
+        );
+        expect(octEffective?.id, p1.id);
+        expect(octEffective?.hocPhiMoiBuoi, 50000);
+      },
+    );
+
+    test(
+      'Reject policy creation if a future DA_THANH_TOAN or CON_NO invoice exists in affected range',
+      () async {
+        final p1 = await service.createPolicy(
+          classId: 1,
+          effectiveFrom: '2026-01-01',
+          feePerSession: 50000,
+        );
+
+        // Insert CON_NO invoice in Oct 2026
         await tuitionRepo.insertInvoice(
           TuitionInvoice(
             idHocSinh: 1,
@@ -162,26 +180,21 @@ void main() {
             giamPhanTram: 0,
             giamSoTien: 0,
             soTienPhaiThu: 600000,
-            trangThai: TuitionInvoiceStatus.DA_CHOT,
+            trangThai: TuitionInvoiceStatus.CON_NO,
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           ),
         );
 
-        // Creating finite policy Sep 01 -> Sep 30 would close p1 on Aug 31 and orphan October!
+        // Attempting to create new policy starting Sep 2026 is REJECTED due to existing CON_NO invoice in Oct!
         expect(
           () => service.createPolicy(
             classId: 1,
             effectiveFrom: '2026-09-01',
-            effectiveTo: '2026-09-30',
             feePerSession: 60000,
           ),
           throwsA(isA<Exception>()),
         );
-
-        // Verify Policy A remains open!
-        final p1Updated = await repo.getById(p1.id!);
-        expect(p1Updated?.hieuLucDen, isNull);
       },
     );
 

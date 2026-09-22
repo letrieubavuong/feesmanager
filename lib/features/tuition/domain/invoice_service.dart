@@ -48,7 +48,7 @@ class InvoiceService {
   ) async {
     final existingInvoice = await getInvoice(studentId, classId, month);
     if (existingInvoice != null &&
-        existingInvoice.trangThai == TuitionInvoiceStatus.DA_CHOT) {
+        existingInvoice.trangThai.isFinalizedSnapshot) {
       throw Exception(
         'Hóa đơn học phí tháng $month của học sinh đã được chốt. Không thể chốt lại.',
       );
@@ -145,9 +145,7 @@ class InvoiceService {
     String month,
   ) async {
     final existingInvoices = await getInvoicesForClassMonth(classId, month);
-    if (existingInvoices.any(
-      (i) => i.trangThai == TuitionInvoiceStatus.DA_CHOT,
-    )) {
+    if (existingInvoices.any((i) => i.trangThai.isFinalizedSnapshot)) {
       throw Exception(
         'Đã có học sinh trong lớp được chốt học phí tháng $month. Không thể chốt hàng loạt.',
       );

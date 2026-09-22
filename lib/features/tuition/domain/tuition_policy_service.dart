@@ -177,18 +177,13 @@ class TuitionPolicyService {
           newTo.compareTo(p.hieuLucTu) >= 0;
 
       if (overlap) {
-        // If existing policy is open and starts before new policy, close it day before effectiveFrom
+        // If existing policy is open and starts before new policy:
         if (p.hieuLucDen == null && p.hieuLucTu.compareTo(effectiveFrom) < 0) {
-          // If new policy is finite, closing old policy would leave a gap from effectiveTo+1 onwards.
-          // Check if ANY finalized invoice exists anywhere from fromMonth onwards.
+          // Rule: Finite policy MUST NOT destroy open-policy continuity into the future!
           if (effectiveTo != null) {
-            final hasFutureFinalized = await _tuitionRepo
-                .hasFinalizedInvoiceForClassFromMonth(classId, fromMonth);
-            if (hasFutureFinalized) {
-              throw Exception(
-                'Lớp đã có hóa đơn học phí đã chốt trong khoảng thời gian bị ảnh hưởng. Không thể đóng chính sách mở bằng một chính sách có ngày kết thúc.',
-              );
-            }
+            throw Exception(
+              'Không thể chèn chính sách có ngày kết thúc vào giữa một chính sách đang mở vì sẽ tạo khoảng trống hiệu lực sau ngày kết thúc.',
+            );
           }
 
           final fromDt = DateTime.parse(effectiveFrom);

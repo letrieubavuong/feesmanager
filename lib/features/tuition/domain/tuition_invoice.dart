@@ -2,6 +2,13 @@
 
 enum TuitionInvoiceStatus { NHAP, DA_CHOT, DA_THANH_TOAN, CON_NO }
 
+extension TuitionInvoiceStatusX on TuitionInvoiceStatus {
+  bool get isFinalizedSnapshot =>
+      this == TuitionInvoiceStatus.DA_CHOT ||
+      this == TuitionInvoiceStatus.DA_THANH_TOAN ||
+      this == TuitionInvoiceStatus.CON_NO;
+}
+
 class TuitionInvoice {
   final int? id;
   final int idHocSinh;

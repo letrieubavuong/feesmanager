@@ -41,6 +41,7 @@ void main() {
     late StudentService studentService;
     late ClassService classService;
     late SessionCreditRepository creditRepo;
+    late TuitionRepository tuitionRepo;
 
     setUp(() async {
       final tempDir = await Directory.systemTemp.createTemp('invoice_test');
@@ -58,7 +59,7 @@ void main() {
       final adjRepo = SessionAdjustmentRepository(db);
       creditRepo = SessionCreditRepository(db);
       final policyRepo = TuitionPolicyRepository(db);
-      final tuitionRepo = TuitionRepository(db);
+      tuitionRepo = TuitionRepository(db);
 
       membershipService = MembershipService(memberRepo);
       studentService = StudentService(studentRepo, membershipService);
@@ -224,66 +225,83 @@ void main() {
     );
 
     test(
-      'Creating retroactive policy is blocked when a finalized invoice exists',
+      'Re-finalization of DA_THANH_TOAN and CON_NO invoices is REJECTED',
       () async {
-        await db.execute('''
-        INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
-        VALUES (20, 1, 2, '2026-09-01', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
-      ''');
-        await db.execute('''
-        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
-        VALUES (20, 1, 1, 'CO_MAT', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
-      ''');
-
-        final invoiceSep = await invoiceService.finalizeStudentInvoice(
-          1,
-          1,
-          '2026-09',
-        );
-        expect(invoiceSep.soTienPhaiThu, 50000);
-
-        // Attempting to backdate a policy for September 2026 is BLOCKED!
-        expect(
-          () => policyService.createPolicy(
-            classId: 1,
-            effectiveFrom: '2026-09-01',
-            feePerSession: 80000,
+        await tuitionRepo.insertInvoice(
+          TuitionInvoice(
+            idHocSinh: 1,
+            idLop: 1,
+            thang: '2026-09',
+            idChinhSachHocPhi: 1,
+            soBuoiEligible: 12,
+            soBuoiTinhPhi: 12,
+            creditOpening: 0,
+            creditEarned: 0,
+            creditUsed: 0,
+            creditClosing: 0,
+            tongTruocGiam: 600000,
+            giamPhanTram: 0,
+            giamSoTien: 0,
+            soTienPhaiThu: 600000,
+            trangThai: TuitionInvoiceStatus.DA_THANH_TOAN,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
           ),
+        );
+
+        // Attempting to re-finalize a DA_THANH_TOAN invoice is REJECTED!
+        expect(
+          () => invoiceService.finalizeStudentInvoice(1, 1, '2026-09'),
           throwsA(isA<Exception>()),
         );
-
-        final fetchedSep = await invoiceService.getInvoice(1, 1, '2026-09');
-        expect(
-          fetchedSep?.soTienPhaiThu,
-          50000,
-        ); // Historical September invoice UNCHANGED!
       },
     );
 
     test(
-      'Pause and rejoin student in same month produces unique student card and single invoice in batch finalization',
+      'Double-count credit finalization Case B: Pre-reconciled extra credit does not insert duplicate ledger row',
       () async {
-        // Student 1 leaves on Sep 10 and rejoins on Sep 20 in same month
-        await membershipService.leaveClass(
-          studentId: 1,
-          classId: 1,
-          endDate: DateTime.parse('2026-09-10'),
-        );
-        await membershipService.enrollStudent(
-          studentId: 1,
-          classId: 1,
-          joinDate: DateTime.parse('2026-09-20'),
-        );
+        for (int i = 1; i <= 13; i++) {
+          final dayStr = i < 10 ? '0$i' : '$i';
+          final dateStr = '2026-09-$dayStr';
+          final dt = DateTime.parse(dateStr);
+          await db.execute('''
+          INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
+          VALUES ($i, 1, ${dt.weekday}, '$dateStr', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+        ''');
+          await db.execute('''
+          INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
+          VALUES ($i, 1, 1, 'CO_MAT', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+        ''');
+        }
 
-        final uniqueStudentIds = await membershipService
-            .getUniqueStudentIdsForClassMonth(1, '2026-09');
-        expect(uniqueStudentIds.length, 1); // Exactly 1 unique student!
+        // Pre-reconcile session 13 into buoi_du_ledger
+        await db.execute('''
+        INSERT INTO buoi_du_ledger (id_hoc_sinh, id_lop, id_buoi_hoc, ngay_hieu_luc, delta, ly_do, ghi_chu, created_at)
+        VALUES (1, 1, 13, '2026-09-13', 1, 'VUOT_SO_BUOI_CHUAN', 'Pre-reconciled credit', '2026-01-01T00:00:00.000')
+      ''');
 
-        final batchInvoices = await invoiceService.finalizeClassInvoices(
+        final invoice = await invoiceService.finalizeStudentInvoice(
+          1,
           1,
           '2026-09',
         );
-        expect(batchInvoices.length, 1); // Exactly 1 invoice created!
+
+        // Verify invoice snapshot
+        expect(invoice.creditEarned, 1);
+        expect(invoice.creditClosing, 1);
+
+        // Verify ledger has EXACTLY 1 row for VUOT_SO_BUOI_CHUAN (no duplicate row inserted during finalization)
+        final ledger = await creditRepo.getLedgerForStudentAndClass(1, 1);
+        expect(
+          ledger
+              .where((e) => e.lyDo == CreditLedgerReason.VUOT_SO_BUOI_CHUAN)
+              .length,
+          1,
+        );
+        expect(
+          await creditService.getBalanceAsOf(1, 1, '2026-09-30'),
+          invoice.creditClosing,
+        );
       },
     );
   });

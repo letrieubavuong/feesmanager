@@ -29,6 +29,46 @@ Future<TuitionPolicy?> effectiveTuitionPolicy(
 }
 
 @riverpod
+class TuitionPolicyController extends _$TuitionPolicyController {
+  @override
+  FutureOr<void> build() {}
+
+  Future<TuitionPolicy> createPolicy({
+    required int classId,
+    required String effectiveFrom,
+    String? effectiveTo,
+    int standardSessionsPerMonth =
+        TuitionPolicyDefaults.standardSessionsPerMonth,
+    required int feePerSession,
+    int? monthlyMaxFee,
+    String? note,
+  }) async {
+    state = const AsyncLoading();
+    late TuitionPolicy result;
+    state = await AsyncValue.guard(() async {
+      final service = await ref.read(tuitionPolicyServiceProvider.future);
+      result = await service.createPolicy(
+        classId: classId,
+        effectiveFrom: effectiveFrom,
+        effectiveTo: effectiveTo,
+        standardSessionsPerMonth: standardSessionsPerMonth,
+        feePerSession: feePerSession,
+        monthlyMaxFee: monthlyMaxFee,
+        note: note,
+      );
+
+      ref.invalidate(classTuitionPoliciesProvider(classId));
+      ref.invalidate(effectiveTuitionPolicyProvider);
+      ref.invalidate(tuitionPreviewControllerProvider);
+    });
+    if (state.hasError) {
+      throw state.error!;
+    }
+    return result;
+  }
+}
+
+@riverpod
 class TuitionPreviewController extends _$TuitionPreviewController {
   @override
   FutureOr<TuitionPreview> build(

@@ -62,11 +62,11 @@ class TuitionRepository {
     String? toMonth,
   }) async {
     final whereClause = toMonth != null
-        ? 'id_lop = ? AND trang_thai = ? AND thang >= ? AND thang <= ?'
-        : 'id_lop = ? AND trang_thai = ? AND thang >= ?';
+        ? "id_lop = ? AND trang_thai != 'NHAP' AND thang >= ? AND thang <= ?"
+        : "id_lop = ? AND trang_thai != 'NHAP' AND thang >= ?";
     final whereArgs = toMonth != null
-        ? [classId, TuitionInvoiceStatus.DA_CHOT.name, fromMonth, toMonth]
-        : [classId, TuitionInvoiceStatus.DA_CHOT.name, fromMonth];
+        ? [classId, fromMonth, toMonth]
+        : [classId, fromMonth];
 
     final maps = await _db.query(
       'hoc_phi_thang',
