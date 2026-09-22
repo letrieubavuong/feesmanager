@@ -994,5 +994,299 @@ void main() {
         equals({1, 2}),
       );
     });
+
+    test(
+      'Live DOI_CA mutation and removal refresh canonical roster immediately',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lich_hoc', {
+          'id': 2,
+          'id_lop': 10,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '19:30',
+          'gio_ket_thuc': '21:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': 50,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 102,
+          'id_lop': 10,
+          'id_lich_hoc': 2,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '19:30',
+          'gio_ket_thuc': '21:00',
+          'loai': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // 1. Initial rosters
+        expect(
+          (await rosterService.getRosterForSession(
+            101,
+          )).participants.any((p) => p.student.id == 1),
+          isTrue,
+        );
+        expect(
+          (await rosterService.getRosterForSession(
+            102,
+          )).participants.any((p) => p.student.id == 1),
+          isFalse,
+        );
+
+        // 2. Create DOI_CA
+        final adjId = await adjustmentService.createDoiCa(
+          studentId: 1,
+          originalSessionId: 101,
+          targetSessionId: 102,
+        );
+
+        // 3. Immediately refreshed
+        expect(
+          (await rosterService.getRosterForSession(
+            101,
+          )).participants.any((p) => p.student.id == 1),
+          isFalse,
+        );
+        expect(
+          (await rosterService.getRosterForSession(
+            102,
+          )).participants.any((p) => p.student.id == 1),
+          isTrue,
+        );
+
+        // 4. Remove adjustment
+        await adjustmentService.removeAdjustment(adjId);
+
+        // 5. Immediately restored
+        expect(
+          (await rosterService.getRosterForSession(
+            101,
+          )).participants.any((p) => p.student.id == 1),
+          isTrue,
+        );
+        expect(
+          (await rosterService.getRosterForSession(
+            102,
+          )).participants.any((p) => p.student.id == 1),
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'Live PHAT_SINH removal restores empty manual session roster',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 105,
+          'id_lop': 10,
+          'ngay': '2026-09-25',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'PHAT_SINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        final adjId = await adjustmentService.createPhatSinh(
+          studentId: 1,
+          originalClassId: 10,
+          targetSessionId: 105,
+        );
+        expect(
+          (await rosterService.getRosterForSession(105)).participants.length,
+          1,
+        );
+
+        await adjustmentService.removeAdjustment(adjId);
+        final psRoster = await rosterService.getRosterForSession(105);
+        expect(psRoster.participants, isEmpty);
+        expect(psRoster.requiresOneOffAdjustments, isTrue);
+      },
+    );
+
+    test(
+      'HOC_BU bulk action save persists correct trang_thai, loai_tham_gia and id_buoi_vang_goc for all students',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('hoc_sinh', {
+          'id': 2,
+          'ho_ten': 'S2',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 200,
+          'id_hoc_sinh': 2,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Original CHINH session DA_HOC where both were absent
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 101,
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 10,
+          'trang_thai': 'NGHI_CO_PHEP',
+          'loai_tham_gia': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 101,
+          'id_hoc_sinh': 2,
+          'id_lop_goc': 10,
+          'trang_thai': 'NGHI_KHONG_PHEP',
+          'loai_tham_gia': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Target HOC_BU session
+        await db.insert('buoi_hoc', {
+          'id': 102,
+          'id_lop': 10,
+          'ngay': '2026-09-22',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'HOC_BU',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await adjustmentService.createHocBu(
+          studentId: 1,
+          originalSessionId: 101,
+          targetSessionId: 102,
+        );
+        await adjustmentService.createHocBu(
+          studentId: 2,
+          originalSessionId: 101,
+          targetSessionId: 102,
+        );
+
+        // Bulk Save HOC_BU for both
+        await attendanceService.saveDraft(102, {
+          1: AttendanceState.HOC_BU,
+          2: AttendanceState.HOC_BU,
+        });
+
+        final rows = await db.query('diem_danh', where: 'id_buoi_hoc = 102');
+        expect(rows.length, 2);
+        for (final r in rows) {
+          expect(r['trang_thai'], 'HOC_BU');
+          expect(r['loai_tham_gia'], 'HOC_BU');
+          expect(r['id_buoi_vang_goc'], 101);
+        }
+      },
+    );
   });
 }

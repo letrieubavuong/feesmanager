@@ -894,6 +894,198 @@ void main() {
       expect(find.widgetWithText(ChoiceChip, 'Học bù'), findsNothing);
     },
   );
+
+  testWidgets('Dirty draft blocks PHAT_SINH Thêm học sinh button', (
+    tester,
+  ) async {
+    final psSession = testSession.copyWith(loai: SessionType.PHAT_SINH);
+    final psMember = RosterMember(
+      student: testStudent,
+      membership: testMembership,
+      adjustment: SessionAdjustment(
+        id: 1,
+        idHocSinh: 101,
+        idLopGoc: 1,
+        idBuoiHocThamGia: 1,
+        loai: SessionAdjustmentType.PHAT_SINH,
+        createdAt: now,
+      ),
+      source: RosterInclusionSource.PHAT_SINH,
+    );
+
+    final sheet = AttendanceSheet(
+      session: psSession,
+      members: [
+        AttendanceSheetMember(
+          rosterMember: psMember,
+          state: AttendanceState.CHUA_DIEM_DANH,
+        ),
+      ],
+      issues: [],
+      isRosterValid: true,
+    );
+
+    final controller = MockAttendanceController(sheet);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          attendanceControllerProvider(1).overrideWith(() => controller),
+        ],
+        child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Create a dirty draft by tapping "Có mặt"
+    await tester.tap(find.text('Có mặt'));
+    await tester.pumpAndSettle();
+    expect(controller.hasDirtyDraft, isTrue);
+
+    // Tap "Thêm học sinh" button
+    await tester.tap(find.text('Thêm học sinh'));
+    await tester.pumpAndSettle();
+
+    // Verify dirty draft dialog is shown and dialog for adding student is blocked
+    expect(find.text('Có thay đổi điểm danh chưa lưu'), findsOneWidget);
+  });
+
+  testWidgets('Dirty draft blocks Hủy điều chỉnh button', (tester) async {
+    final psSession = testSession.copyWith(loai: SessionType.PHAT_SINH);
+    final psMember = RosterMember(
+      student: testStudent,
+      membership: testMembership,
+      adjustment: SessionAdjustment(
+        id: 1,
+        idHocSinh: 101,
+        idLopGoc: 1,
+        idBuoiHocThamGia: 1,
+        loai: SessionAdjustmentType.PHAT_SINH,
+        createdAt: now,
+      ),
+      source: RosterInclusionSource.PHAT_SINH,
+    );
+
+    final sheet = AttendanceSheet(
+      session: psSession,
+      members: [
+        AttendanceSheetMember(
+          rosterMember: psMember,
+          state: AttendanceState.CHUA_DIEM_DANH,
+        ),
+      ],
+      issues: [],
+      isRosterValid: true,
+    );
+
+    final controller = MockAttendanceController(sheet);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          attendanceControllerProvider(1).overrideWith(() => controller),
+        ],
+        child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Create a dirty draft by tapping "Có mặt"
+    await tester.tap(find.text('Có mặt'));
+    await tester.pumpAndSettle();
+    expect(controller.hasDirtyDraft, isTrue);
+
+    // Tap "Hủy điều chỉnh" icon button
+    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.pumpAndSettle();
+
+    // Verify dirty draft dialog is shown and adjustment is NOT removed
+    expect(find.text('Có thay đổi điểm danh chưa lưu'), findsOneWidget);
+  });
+
+  testWidgets(
+    'HOC_BU session Học bù hết bulk action marks all HOC_BU members',
+    (tester) async {
+      final student2 = Student(
+        id: 102,
+        hoTen: 'Student 2',
+        createdAt: now,
+        updatedAt: now,
+      );
+      final membership2 = ClassMembership(
+        idHocSinh: 102,
+        idLop: 1,
+        tuNgay: '2026-01-01',
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      final hbSession = testSession.copyWith(loai: SessionType.HOC_BU);
+      final hbMember1 = RosterMember(
+        student: testStudent,
+        membership: testMembership,
+        adjustment: SessionAdjustment(
+          id: 1,
+          idHocSinh: 101,
+          idLopGoc: 1,
+          idBuoiHocThamGia: 1,
+          idBuoiHocGoc: 99,
+          loai: SessionAdjustmentType.HOC_BU,
+          createdAt: now,
+        ),
+        source: RosterInclusionSource.HOC_BU,
+      );
+      final hbMember2 = RosterMember(
+        student: student2,
+        membership: membership2,
+        adjustment: SessionAdjustment(
+          id: 2,
+          idHocSinh: 102,
+          idLopGoc: 1,
+          idBuoiHocThamGia: 1,
+          idBuoiHocGoc: 99,
+          loai: SessionAdjustmentType.HOC_BU,
+          createdAt: now,
+        ),
+        source: RosterInclusionSource.HOC_BU,
+      );
+
+      final sheet = AttendanceSheet(
+        session: hbSession,
+        members: [
+          AttendanceSheetMember(
+            rosterMember: hbMember1,
+            state: AttendanceState.CHUA_DIEM_DANH,
+          ),
+          AttendanceSheetMember(
+            rosterMember: hbMember2,
+            state: AttendanceState.CHUA_DIEM_DANH,
+          ),
+        ],
+        issues: [],
+        isRosterValid: true,
+      );
+
+      final controller = MockAttendanceController(sheet);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            attendanceControllerProvider(1).overrideWith(() => controller),
+          ],
+          child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap "Học bù hết"
+      await tester.tap(find.text('Học bù hết'));
+      await tester.pumpAndSettle();
+
+      expect(controller.effectiveStateFor(101), AttendanceState.HOC_BU);
+      expect(controller.effectiveStateFor(102), AttendanceState.HOC_BU);
+    },
+  );
 }
 
 class MockAttendanceController extends AttendanceController {
