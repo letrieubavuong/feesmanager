@@ -30,6 +30,18 @@ class StudentRepository {
     return Student.fromMap(maps.first);
   }
 
+  Future<List<Student>> getByIds(List<int> ids) async {
+    if (ids.isEmpty) return [];
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final List<Map<String, dynamic>> maps = await _db.query(
+      'hoc_sinh',
+      where: 'id IN ($placeholders)',
+      whereArgs: ids,
+      orderBy: 'ho_ten ASC',
+    );
+    return maps.map((m) => Student.fromMap(m)).toList();
+  }
+
   Future<List<Student>> getAll({bool includeArchived = false}) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'hoc_sinh',

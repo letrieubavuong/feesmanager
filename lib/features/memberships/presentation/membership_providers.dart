@@ -37,10 +37,5 @@ final classMonthStudentsProvider =
       final studentIds = await membershipService
           .getUniqueStudentIdsForClassMonth(arg.$1, arg.$2);
 
-      final students = <Student>[];
-      for (final id in studentIds) {
-        final student = await studentService.getStudentById(id);
-        if (student != null) students.add(student);
-      }
-      return students;
+      return studentService.getStudentsByIds(studentIds);
     });

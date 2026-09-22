@@ -6,7 +6,6 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:tuition2027/core/database/app_database.dart';
 import 'package:tuition2027/core/database/database_provider.dart';
-import 'package:tuition2027/features/memberships/domain/membership.dart';
 import 'package:tuition2027/features/memberships/presentation/membership_providers.dart';
 import 'package:tuition2027/features/students/domain/student.dart';
 import 'package:tuition2027/features/students/presentation/student_detail_page.dart';
@@ -65,67 +64,67 @@ void main() {
       await db.close();
     });
 
-    testWidgets('ClassTuitionTab renders policy card and month selector', (
-      tester,
-    ) async {
-      final testPolicy = TuitionPolicy(
-        id: 1,
-        idLop: 1,
-        hieuLucTu: '2026-01-01',
-        hocPhiMoiBuoi: 50000,
-        soBuoiChuanThang: 12,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+    testWidgets(
+      'ClassTuitionTab renders policy card, student card, and draft chip',
+      (tester) async {
+        final testPolicy = TuitionPolicy(
+          id: 1,
+          idLop: 1,
+          hieuLucTu: '2026-01-01',
+          hocPhiMoiBuoi: 50000,
+          soBuoiChuanThang: 12,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
 
-      final testStudent = Student(
-        id: 1,
-        hoTen: 'Student UI Test',
-        sdtPhuHuynh: '0901234567',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+        final testStudent = Student(
+          id: 1,
+          hoTen: 'Student UI Test',
+          sdtPhuHuynh: '0901234567',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
 
-      final testMembership = ClassMembership(
-        id: 1,
-        idHocSinh: 1,
-        idLop: 1,
-        tuNgay: '2026-01-01',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+        final nowMonth = DateTime.now().toString().substring(0, 7);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWith((ref) async => db),
-            classTuitionPoliciesProvider(
-              1,
-            ).overrideWith((ref) async => [testPolicy]),
-            classRosterProvider((
-              1,
-              DateTime.parse('2026-09-01'),
-            )).overrideWith((ref) async => [testMembership]),
-            studentDetailProvider(1).overrideWith((ref) async => testStudent),
-            tuitionPreviewControllerProvider(
-              1,
-              1,
-              '2026-09',
-            ).overrideWith(() => _FakeTuitionPreviewController()),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: ClassTuitionTab(classId: 1)),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWith((ref) async => db),
+              classTuitionPoliciesProvider(
+                1,
+              ).overrideWith((ref) async => [testPolicy]),
+              effectiveTuitionPolicyProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => testPolicy),
+              classMonthStudentsProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => [testStudent]),
+              studentDetailProvider(1).overrideWith((ref) async => testStudent),
+              tuitionPreviewControllerProvider(
+                1,
+                1,
+                nowMonth,
+              ).overrideWith(() => _FakeTuitionPreviewController()),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(body: ClassTuitionTab(classId: 1)),
+            ),
           ),
-        ),
-      );
+        );
 
-      for (int i = 0; i < 5; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+        for (int i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
 
-      expect(find.text('Chính sách học phí'), findsOneWidget);
-      expect(find.textContaining('Học phí: 50,000đ / buổi'), findsOneWidget);
-      expect(find.text('Danh sách học phí học sinh'), findsOneWidget);
-    });
+        expect(find.text('Chính sách học phí'), findsOneWidget);
+        expect(find.textContaining('Học phí: 50,000đ / buổi'), findsOneWidget);
+        expect(find.text('Danh sách học phí học sinh'), findsOneWidget);
+        expect(find.text('Student UI Test'), findsOneWidget);
+        expect(find.text('NHÁP'), findsOneWidget);
+      },
+    );
   });
 }

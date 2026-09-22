@@ -19,6 +19,16 @@ Future<List<TuitionPolicy>> classTuitionPolicies(
 }
 
 @riverpod
+Future<TuitionPolicy?> effectiveTuitionPolicy(
+  EffectiveTuitionPolicyRef ref,
+  (int classId, String month) arg,
+) async {
+  final service = await ref.watch(tuitionPolicyServiceProvider.future);
+  final dateStr = '${arg.$2}-01';
+  return service.getEffectivePolicyForDateStr(arg.$1, dateStr);
+}
+
+@riverpod
 class TuitionPreviewController extends _$TuitionPreviewController {
   @override
   FutureOr<TuitionPreview> build(
@@ -70,6 +80,7 @@ class InvoiceController extends _$InvoiceController {
         tuitionPreviewControllerProvider(studentId, classId, month),
       );
       ref.invalidate(classTuitionPoliciesProvider(classId));
+      ref.invalidate(effectiveTuitionPolicyProvider((classId, month)));
       ref.invalidate(classMonthMembershipsProvider((classId, month)));
       ref.invalidate(classMonthStudentsProvider((classId, month)));
       ref.invalidate(classRosterProvider);
@@ -89,7 +100,26 @@ class InvoiceController extends _$InvoiceController {
     state = await AsyncValue.guard(() async {
       final service = await ref.read(invoiceServiceProvider.future);
       result = await service.finalizeClassInvoices(classId, month);
+
+      for (final invoice in result) {
+        ref.invalidate(
+          studentInvoiceProvider(
+            invoice.idHocSinh,
+            invoice.idLop,
+            invoice.thang,
+          ),
+        );
+        ref.invalidate(
+          tuitionPreviewControllerProvider(
+            invoice.idHocSinh,
+            invoice.idLop,
+            invoice.thang,
+          ),
+        );
+      }
+
       ref.invalidate(classTuitionPoliciesProvider(classId));
+      ref.invalidate(effectiveTuitionPolicyProvider((classId, month)));
       ref.invalidate(classMonthMembershipsProvider((classId, month)));
       ref.invalidate(classMonthStudentsProvider((classId, month)));
       ref.invalidate(classRosterProvider);

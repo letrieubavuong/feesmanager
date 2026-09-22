@@ -223,8 +223,17 @@ class TuitionService {
 
     final creditOpening = creditSummary.openingBalance;
     final creditEarned = creditSummary.potentialEarned;
+
+    if (creditSummary.recordedEarned > creditSummary.potentialEarned) {
+      throw Exception(
+        'Lỗi bất biến sổ cái: Số buổi dư đã ghi nhận (${creditSummary.recordedEarned}) vượt quá số buổi dư đủ điều kiện (${creditSummary.potentialEarned})',
+      );
+    }
+
+    final missingEarned =
+        creditSummary.potentialEarned - creditSummary.recordedEarned;
     final creditClosing =
-        creditOpening + creditSummary.monthDelta + creditEarned - creditUsed;
+        creditSummary.closingBalance + missingEarned - creditUsed;
 
     final tongTruocGiam = soBuoiTinhPhi * policy.hocPhiMoiBuoi;
     final giamPhanTram = discountPercent;

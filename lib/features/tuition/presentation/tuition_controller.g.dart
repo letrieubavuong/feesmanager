@@ -150,6 +150,128 @@ class _ClassTuitionPoliciesProviderElement
   int get classId => (origin as ClassTuitionPoliciesProvider).classId;
 }
 
+String _$effectiveTuitionPolicyHash() =>
+    r'44a14ca0297f60e5429cc05539b260cebf5a5ec5';
+
+/// See also [effectiveTuitionPolicy].
+@ProviderFor(effectiveTuitionPolicy)
+const effectiveTuitionPolicyProvider = EffectiveTuitionPolicyFamily();
+
+/// See also [effectiveTuitionPolicy].
+class EffectiveTuitionPolicyFamily extends Family<AsyncValue<TuitionPolicy?>> {
+  /// See also [effectiveTuitionPolicy].
+  const EffectiveTuitionPolicyFamily();
+
+  /// See also [effectiveTuitionPolicy].
+  EffectiveTuitionPolicyProvider call((int, String) arg) {
+    return EffectiveTuitionPolicyProvider(arg);
+  }
+
+  @override
+  EffectiveTuitionPolicyProvider getProviderOverride(
+    covariant EffectiveTuitionPolicyProvider provider,
+  ) {
+    return call(provider.arg);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'effectiveTuitionPolicyProvider';
+}
+
+/// See also [effectiveTuitionPolicy].
+class EffectiveTuitionPolicyProvider
+    extends AutoDisposeFutureProvider<TuitionPolicy?> {
+  /// See also [effectiveTuitionPolicy].
+  EffectiveTuitionPolicyProvider((int, String) arg)
+    : this._internal(
+        (ref) => effectiveTuitionPolicy(ref as EffectiveTuitionPolicyRef, arg),
+        from: effectiveTuitionPolicyProvider,
+        name: r'effectiveTuitionPolicyProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$effectiveTuitionPolicyHash,
+        dependencies: EffectiveTuitionPolicyFamily._dependencies,
+        allTransitiveDependencies:
+            EffectiveTuitionPolicyFamily._allTransitiveDependencies,
+        arg: arg,
+      );
+
+  EffectiveTuitionPolicyProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.arg,
+  }) : super.internal();
+
+  final (int, String) arg;
+
+  @override
+  Override overrideWith(
+    FutureOr<TuitionPolicy?> Function(EffectiveTuitionPolicyRef provider)
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: EffectiveTuitionPolicyProvider._internal(
+        (ref) => create(ref as EffectiveTuitionPolicyRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        arg: arg,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<TuitionPolicy?> createElement() {
+    return _EffectiveTuitionPolicyProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EffectiveTuitionPolicyProvider && other.arg == arg;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, arg.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin EffectiveTuitionPolicyRef
+    on AutoDisposeFutureProviderRef<TuitionPolicy?> {
+  /// The parameter `arg` of this provider.
+  (int, String) get arg;
+}
+
+class _EffectiveTuitionPolicyProviderElement
+    extends AutoDisposeFutureProviderElement<TuitionPolicy?>
+    with EffectiveTuitionPolicyRef {
+  _EffectiveTuitionPolicyProviderElement(super.provider);
+
+  @override
+  (int, String) get arg => (origin as EffectiveTuitionPolicyProvider).arg;
+}
+
 String _$studentInvoiceHash() => r'cd475ed1892e9a8ad12a70c1fcb7832761a0d175';
 
 /// See also [studentInvoice].
@@ -474,7 +596,7 @@ class _TuitionPreviewControllerProviderElement
   String get month => (origin as TuitionPreviewControllerProvider).month;
 }
 
-String _$invoiceControllerHash() => r'a475574bc0facf2c631ae42d69a9ff9cbfdfc8ef';
+String _$invoiceControllerHash() => r'f53a05bf3e746bb85820c6009f42a31f2e3c1eec';
 
 /// See also [InvoiceController].
 @ProviderFor(InvoiceController)

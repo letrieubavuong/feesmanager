@@ -69,6 +69,10 @@ class StudentService {
   Future<Student?> getStudentById(int id) {
     return _repository.getById(id);
   }
+
+  Future<List<Student>> getStudentsByIds(List<int> ids) {
+    return _repository.getByIds(ids);
+  }
 }
 
 @Riverpod(keepAlive: true)

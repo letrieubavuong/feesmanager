@@ -137,21 +137,21 @@ void main() {
     );
 
     test(
-      'Reject policy creation if a future finalized invoice exists in affected range',
+      'Reject finite policy creation over open policy if a future finalized invoice exists',
       () async {
-        await service.createPolicy(
+        final p1 = await service.createPolicy(
           classId: 1,
           effectiveFrom: '2026-01-01',
           feePerSession: 50000,
         );
 
-        // Insert DA_CHOT invoice in Oct 2026
+        // Finalize October invoice under Policy A
         await tuitionRepo.insertInvoice(
           TuitionInvoice(
             idHocSinh: 1,
             idLop: 1,
             thang: '2026-10',
-            idChinhSachHocPhi: 1,
+            idChinhSachHocPhi: p1.id!,
             soBuoiEligible: 12,
             soBuoiTinhPhi: 12,
             creditOpening: 0,
@@ -168,15 +168,20 @@ void main() {
           ),
         );
 
-        // Attempting to backdate or insert policy starting Sep 2026 is REJECTED!
+        // Creating finite policy Sep 01 -> Sep 30 would close p1 on Aug 31 and orphan October!
         expect(
           () => service.createPolicy(
             classId: 1,
             effectiveFrom: '2026-09-01',
+            effectiveTo: '2026-09-30',
             feePerSession: 60000,
           ),
           throwsA(isA<Exception>()),
         );
+
+        // Verify Policy A remains open!
+        final p1Updated = await repo.getById(p1.id!);
+        expect(p1Updated?.hieuLucDen, isNull);
       },
     );
 

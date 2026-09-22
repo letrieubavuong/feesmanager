@@ -41,6 +41,9 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     final policiesAsync = ref.watch(
       classTuitionPoliciesProvider(widget.classId),
     );
+    final effectivePolicyAsync = ref.watch(
+      effectiveTuitionPolicyProvider((widget.classId, _selectedMonth)),
+    );
     final rosterAsync = ref.watch(
       classMonthStudentsProvider((widget.classId, _selectedMonth)),
     );
@@ -53,7 +56,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
           children: [
             _buildMonthSelector(context),
             const SizedBox(height: 16),
-            _buildPolicyHeader(context, policiesAsync),
+            _buildPolicyHeader(context, effectivePolicyAsync, policiesAsync),
             const SizedBox(height: 16),
             _buildClassFinalizeHeader(context),
             const SizedBox(height: 16),
@@ -95,19 +98,13 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
 
   Widget _buildPolicyHeader(
     BuildContext context,
+    AsyncValue<TuitionPolicy?> effectivePolicyAsync,
     AsyncValue<List<TuitionPolicy>> policiesAsync,
   ) {
-    return policiesAsync.when(
-      data: (policies) {
-        final dateStr = '$_selectedMonth-01';
-        final activePolicy = policies.cast<TuitionPolicy?>().firstWhere(
-          (p) =>
-              p != null &&
-              p.hieuLucTu.compareTo(dateStr) <= 0 &&
-              (p.hieuLucDen == null || p.hieuLucDen!.compareTo(dateStr) >= 0),
-          orElse: () => null,
-        );
+    final policies = policiesAsync.value ?? [];
 
+    return effectivePolicyAsync.when(
+      data: (activePolicy) {
         return Card(
           elevation: 2,
           color: activePolicy == null

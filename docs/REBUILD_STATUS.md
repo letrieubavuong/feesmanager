@@ -35,11 +35,6 @@
 - [x] Presentation hardening (no direct repository calls).
 - [x] Standardized Vietnamese weekday formatting.
 - [x] GitHub Actions CI workflow implemented.
-- [x] Comprehensive Tests:
-    - `test/schedule/schedule_service_test.dart`
-    - `test/schedule/assignment_service_test.dart`
-    - `test/repository/real_migration_test.dart`
-    - `test/presentation/schedule_assignment_ui_test.dart`
 - [x] Quality Gate: 54 tests passing.
 
 ## Phase 4: Session Generation - COMPLETE
@@ -50,11 +45,7 @@
 - [x] Status management (Dự kiến, Hủy, Nghỉ lễ) with confirmation.
 - [x] Class Detail UI integration with "Buổi học" tab and range filter.
 - [x] Canonical session identity/conflict protection by class + date + start time.
-- [x] Comprehensive Tests (88 tests passing):
-    - `test/sessions/session_generation_service_test.dart`
-    - `test/sessions/session_service_test.dart`
-    - `test/presentation/sessions_ui_test.dart`
-    - `test/repository/migration_v5_v6_test.dart`
+- [x] Comprehensive Tests (88 tests passing).
 
 ## Phase 5: Canonical Session Roster - COMPLETE
 - [x] Roster domain/read models (`RosterMember`, `RosterResult`).
@@ -63,10 +54,7 @@
 - [x] Integrity diagnostics (missing schedule, unassigned students, multiple assignments).
 - [x] Historical integrity preserved (archived students/classes included).
 - [x] Read-only Roster UI integrated into Session management.
-- [x] Comprehensive Tests (116 tests passing):
-    - `test/roster/roster_service_test.dart`
-    - `test/presentation/session_roster_ui_test.dart`
-    - `test/roster/integrity_corrupted_data_test.dart`
+- [x] Comprehensive Tests (116 tests passing).
 
 ## Phase 6: Attendance - COMPLETE
 - [x] Database Migration (v6 -> v7) with canonical `diem_danh` table.
@@ -78,10 +66,7 @@
 - [x] Status protection: DA_HOC sessions are immutable for generic status changes.
 - [x] Bulk action "Mark All Present" and "Undo" support.
 - [x] Mobile-friendly Attendance UI with ChoiceChips.
-- [x] Comprehensive Tests (147 tests passing):
-    - `test/attendance/attendance_service_test.dart`
-    - `test/presentation/attendance_ui_test.dart`
-    - `test/repository/migration_v6_v7_test.dart`
+- [x] Comprehensive Tests (147 tests passing).
 
 ## Phase 7: Leave / Shift Change / Makeup - COMPLETE
 - [x] Database Migration (v7 -> v8) with `don_nghi_hoc` and `dieu_chinh_buoi_hoc` tables.
@@ -120,12 +105,18 @@
 ## Phase 9: Tuition Policy + Invoice - COMPLETE
 - [x] Forward Database Migration (v10 -> v11) creating `chinh_sach_hoc_phi` and `hoc_phi_thang` tables with strict `CHECK` constraints, Foreign Keys, and partial UNIQUE indexes.
 - [x] Tuition Policy domain, repository, service (`TuitionPolicyService`), and providers.
-- [x] Standard session count `N` dynamically resolved from effective policy with fallback to 12.
-- [x] Pure read `TuitionService` calculating `TuitionPreview` with full Domain Constitution Section 24 compliance (`CO_MAT`/`TRE`/`NGHI_KHONG_PHEP` chargeable; `NGHI_CO_PHEP` with makeup/credit chargeable; `NGHI_CO_PHEP` without makeup/credit uncharged; extra sessions fee = 0; discount %; monthly cap).
-- [x] Atomic `InvoiceService` snapshotting `hoc_phi_thang` (`DA_CHOT`) and consuming approved absence credits (`BU_TRU_NGHI_CO_PHEP`) in a single SQLite transaction.
-- [x] Re-finalization protection (prevent silent rewriting of finalized invoices) and historical invoice immutability.
-- [x] Mobile UI integration: Class Detail "Học phí" tab (`ClassTuitionTab`) & Global Tuition page (`GlobalTuitionPage`).
-- [x] Comprehensive Tests (241 tests passing):
+- [x] Standard session count `N` dynamically resolved from effective policy with fallback to `TuitionPolicyDefaults.standardSessionsPerMonth = 12`.
+- [x] Single canonical ownership for N & credit candidates in `SessionCreditService`.
+- [x] Canonical formula for `creditClosing` in `TuitionService` preventing double-counting of pre-reconciled ledger entries.
+- [x] Month-boundary policy enforcement (`YYYY-MM-01` start, last day of month end).
+- [x] Protection of open policies against finite policy overrides when future finalized invoices exist.
+- [x] Protection of existing credit ledger entries from retroactive $N$ policy changes.
+- [x] Fail-closed strict makeup attendance validation (`_hasValidMakeupAttendance`).
+- [x] Batch student lookup in `StudentRepository` (`getByIds`) eliminating N+1 query overhead.
+- [x] Unique student class-month population (`getUniqueStudentIdsForClassMonth`) ensuring pause/rejoin students appear once.
+- [x] Canonical `effectiveTuitionPolicyProvider` replacing duplicate UI filtering.
+- [x] Complete UI provider invalidation across all student invoices & previews upon batch finalization.
+- [x] Comprehensive Tests (245 tests passing):
     - `test/repository/migration_v10_v11_test.dart`
     - `test/tuition/tuition_policy_service_test.dart`
     - `test/tuition/tuition_service_test.dart`
@@ -139,7 +130,7 @@
 - **Version**: 11
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
-- **Tests**: 241 tests passing
+- **Tests**: 245 tests passing
 - **Quality Gate**:
   - `dart analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (241 tests)
+  - `flutter test`: 100% Pass (245 tests)
