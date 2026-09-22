@@ -1,12 +1,10 @@
-# Task Management - Phase 8: Session Credit / Buổi Dư
+# Task Management - Phase 8 Hardening: Session Credit / Buổi Dư
 
-- [x] Research Phase 8 Requirements & Formulate Plan
-  - [x] Read AGENTS.md, TUITION2027_DOMAIN_CONSTITUTION.md, DATABASE_SCHEMA.md, ARCHITECTURE.md, REBUILD_STATUS.md
-  - [x] Create implementation_plan.artifact.md
-- [/] Implement Database Migration v8 -> v9 (`buoi_du_ledger`)
-- [ ] Implement Session Credits Domain Models & Repository
-- [ ] Implement SessionCreditService & Canonical Logic
-- [ ] Implement Session Credit Controller & Presentation UI
-- [ ] Add Comprehensive Test Suite (Migration v8->v9, Domain, Repository, Widget)
+- [/] Research Phase 8 Hardening Requirements & Formulate Plan
+- [ ] Implement Forward Database Migration v9 -> v10 (`_migrateV9ToV10`) with reason-specific CHECK constraints
+- [ ] Fix Historical Month `closingBalance` in `SessionCreditService`
+- [ ] Hardened Atomic Fail-Closed Reconciliation (`reconcileEarnedCreditsForStudentClassMonth` & `reconcileEarnedCreditsForClassMonth`)
+- [ ] Update Presentation UI (UI Month Selector Fix & "Số dư cuối tháng" Label)
+- [ ] Add Comprehensive Test Suite (v9->v10 Migration, FK/CHECK Constraints, Historical Balance, UI Integration)
 - [ ] Quality Gate & CI Verification (`dart format`, `build_runner`, `flutter analyze`, `flutter test`)
 - [ ] Update Documentation & Commit/Push to Main

@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int _dbVersion = 9;
+  static const int _dbVersion = 10;
 
   final String dbName;
   Database? _database;
@@ -63,6 +63,9 @@ class AppDatabase {
     if (version >= 9) {
       await _migrateV8ToV9(db);
     }
+    if (version >= 10) {
+      await _migrateV9ToV10(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -89,6 +92,9 @@ class AppDatabase {
     }
     if (oldVersion < 9) {
       await _migrateV8ToV9(db);
+    }
+    if (oldVersion < 10) {
+      await _migrateV9ToV10(db);
     }
   }
 
@@ -524,5 +530,95 @@ class AppDatabase {
     await db.execute(
       'CREATE INDEX idx_buoi_du_session ON buoi_du_ledger(id_buoi_hoc)',
     );
+  }
+
+  Future<void> _migrateV9ToV10(Database db) async {
+    await db.execute('PRAGMA foreign_keys = OFF');
+    try {
+      await db.transaction((txn) async {
+        // 1. Create new table with hardened reason-specific CHECK constraints
+        await txn.execute('''
+          CREATE TABLE buoi_du_ledger_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_hoc_sinh INTEGER NOT NULL,
+            id_lop INTEGER NOT NULL,
+            id_buoi_hoc INTEGER NULL,
+            ngay_hieu_luc TEXT NOT NULL,
+            delta INTEGER NOT NULL,
+            ly_do TEXT NOT NULL,
+            ghi_chu TEXT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+            FOREIGN KEY (id_lop) REFERENCES lop (id),
+            FOREIGN KEY (id_buoi_hoc) REFERENCES buoi_hoc (id),
+            CHECK (delta != 0),
+            CHECK (
+              ly_do IN (
+                'VUOT_SO_BUOI_CHUAN',
+                'BU_TRU_NGHI_CO_PHEP',
+                'DIEU_CHINH_THU_CONG',
+                'MIGRATION'
+              )
+            ),
+            CHECK (
+                 (
+                   ly_do = 'VUOT_SO_BUOI_CHUAN'
+                   AND id_buoi_hoc IS NOT NULL
+                   AND delta = 1
+                 )
+              OR (
+                   ly_do = 'BU_TRU_NGHI_CO_PHEP'
+                   AND id_buoi_hoc IS NOT NULL
+                   AND delta = -1
+                 )
+              OR (
+                   ly_do = 'DIEU_CHINH_THU_CONG'
+                   AND delta != 0
+                 )
+              OR (
+                   ly_do = 'MIGRATION'
+                   AND delta != 0
+                 )
+            )
+          )
+        ''');
+
+        // 2. Copy existing valid data
+        await txn.execute('''
+          INSERT INTO buoi_du_ledger_new (
+            id, id_hoc_sinh, id_lop, id_buoi_hoc, ngay_hieu_luc,
+            delta, ly_do, ghi_chu, created_at
+          )
+          SELECT 
+            id, id_hoc_sinh, id_lop, id_buoi_hoc, ngay_hieu_luc,
+            delta, ly_do, ghi_chu, created_at
+          FROM buoi_du_ledger
+        ''');
+
+        // 3. Drop old table and rename new
+        await txn.execute('DROP TABLE buoi_du_ledger');
+        await txn.execute(
+          'ALTER TABLE buoi_du_ledger_new RENAME TO buoi_du_ledger',
+        );
+
+        // 4. Recreate indexes
+        await txn.execute('''
+          CREATE UNIQUE INDEX idx_buoi_du_auto_event_unique
+          ON buoi_du_ledger(id_hoc_sinh, id_lop, id_buoi_hoc, ly_do)
+          WHERE id_buoi_hoc IS NOT NULL AND ly_do IN ('VUOT_SO_BUOI_CHUAN', 'BU_TRU_NGHI_CO_PHEP')
+        ''');
+        await txn.execute(
+          'CREATE INDEX idx_buoi_du_student_class_date ON buoi_du_ledger(id_hoc_sinh, id_lop, ngay_hieu_luc)',
+        );
+        await txn.execute(
+          'CREATE INDEX idx_buoi_du_class_date ON buoi_du_ledger(id_lop, ngay_hieu_luc)',
+        );
+        await txn.execute(
+          'CREATE INDEX idx_buoi_du_session ON buoi_du_ledger(id_buoi_hoc)',
+        );
+      });
+    } finally {
+      await db.execute('PRAGMA foreign_keys = ON');
+    }
   }
 }

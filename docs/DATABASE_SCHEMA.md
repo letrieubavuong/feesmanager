@@ -386,10 +386,10 @@ Suggested columns:
 
 Reasons:
 
-- `VUOT_SO_BUOI_CHUAN`
-- `BU_TRU_NGHI_CO_PHEP`
-- `DIEU_CHINH_THU_CONG`
-- `MIGRATION`
+- `VUOT_SO_BUOI_CHUAN` (requires `id_buoi_hoc NOT NULL` and `delta = 1`)
+- `BU_TRU_NGHI_CO_PHEP` (requires `id_buoi_hoc NOT NULL` and `delta = -1`)
+- `DIEU_CHINH_THU_CONG` (requires `delta != 0`)
+- `MIGRATION` (requires `delta != 0`)
 
 Balance:
 

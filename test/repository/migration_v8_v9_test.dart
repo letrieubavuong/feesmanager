@@ -289,40 +289,40 @@ void main() {
       await dbV8.close();
 
       final appDb = AppDatabase(dbName: dbPath);
-      final dbV9 = await appDb.database;
+      final dbV10 = await appDb.database;
 
-      expect(await dbV9.getVersion(), 9);
+      expect(await dbV10.getVersion(), 10);
 
       // Assert all Phase 0-7 rows survive
-      final hs = await dbV9.query('hoc_sinh', where: 'id = 11');
+      final hs = await dbV10.query('hoc_sinh', where: 'id = 11');
       expect(hs.first['ho_ten'], 'Student 11');
 
-      final cls = await dbV9.query('lop', where: 'id = 21');
+      final cls = await dbV10.query('lop', where: 'id = 21');
       expect(cls.first['ten_lop'], 'Class 21');
 
-      final tgl = await dbV9.query('tham_gia_lop', where: 'id = 31');
+      final tgl = await dbV10.query('tham_gia_lop', where: 'id = 31');
       expect(tgl.first['id_hoc_sinh'], 11);
 
-      final lh = await dbV9.query('lich_hoc', where: 'id = 41');
+      final lh = await dbV10.query('lich_hoc', where: 'id = 41');
       expect(lh.first['id_lop'], 21);
 
-      final pc = await dbV9.query('phan_ca_hoc_sinh', where: 'id = 51');
+      final pc = await dbV10.query('phan_ca_hoc_sinh', where: 'id = 51');
       expect(pc.first['id_hoc_sinh'], 11);
 
-      final bh = await dbV9.query('buoi_hoc', where: 'id = 61');
+      final bh = await dbV10.query('buoi_hoc', where: 'id = 61');
       expect(bh.first['id_lop'], 21);
 
-      final dd = await dbV9.query('diem_danh', where: 'id = 71');
+      final dd = await dbV10.query('diem_danh', where: 'id = 71');
       expect(dd.first['trang_thai'], 'CO_MAT');
 
-      final dnh = await dbV9.query('don_nghi_hoc', where: 'id = 81');
+      final dnh = await dbV10.query('don_nghi_hoc', where: 'id = 81');
       expect(dnh.first['trang_thai'], 'DA_DUYET');
 
-      final dch = await dbV9.query('dieu_chinh_buoi_hoc', where: 'id = 91');
+      final dch = await dbV10.query('dieu_chinh_buoi_hoc', where: 'id = 91');
       expect(dch.first['loai'], 'PHAT_SINH');
 
       // Verify buoi_du_ledger table exists and has correct FKs
-      final fkList = await dbV9.rawQuery(
+      final fkList = await dbV10.rawQuery(
         'PRAGMA foreign_key_list(buoi_du_ledger)',
       );
       final fks = fkList
@@ -342,25 +342,25 @@ void main() {
         isTrue,
       );
 
-      final violations = await dbV9.rawQuery('PRAGMA foreign_key_check');
+      final violations = await dbV10.rawQuery('PRAGMA foreign_key_check');
       expect(violations, isEmpty);
 
-      await dbV9.close();
+      await dbV10.close();
     });
 
     test(
-      'Fresh install DB version is 9 and foreign_key_check is clean',
+      'Fresh install DB version is 10 and foreign_key_check is clean',
       () async {
         final freshDbPath = join(
           Directory.systemTemp.path,
-          'test_fresh_v9_install.db',
+          'test_fresh_v10_install.db',
         );
         await deleteDatabase(freshDbPath);
 
         final appDb = AppDatabase(dbName: freshDbPath);
         final db = await appDb.database;
 
-        expect(await db.getVersion(), 9);
+        expect(await db.getVersion(), 10);
 
         final tables = await db.rawQuery(
           "SELECT name FROM sqlite_master WHERE type='table'",
@@ -397,24 +397,23 @@ void main() {
         "INSERT INTO buoi_hoc (id, id_lop, ngay, gio_bat_dau, gio_ket_thuc, loai, created_at, updated_at) VALUES (1, 1, '2026-09-21', '17:30', '19:00', 'CHINH', 'now', 'now')",
       );
 
-      // Valid reasons
-      final validReasons = [
-        'VUOT_SO_BUOI_CHUAN',
-        'BU_TRU_NGHI_CO_PHEP',
-        'DIEU_CHINH_THU_CONG',
-        'MIGRATION',
-      ];
-      for (int i = 0; i < validReasons.length; i++) {
-        final reason = validReasons[i];
-        final session =
-            (reason == 'DIEU_CHINH_THU_CONG' || reason == 'MIGRATION')
-            ? null
-            : 1;
-        await db.execute(
-          "INSERT INTO buoi_du_ledger (id, id_hoc_sinh, id_lop, id_buoi_hoc, ngay_hieu_luc, delta, ly_do, created_at) VALUES (?, 1, 1, ?, '2026-09-21', 1, ?, 'now')",
-          [i + 10, session, reason],
-        );
-      }
+      // Valid entries according to hardened constraints:
+      // VUOT_SO_BUOI_CHUAN: delta = 1, id_buoi_hoc = 1
+      await db.execute(
+        "INSERT INTO buoi_du_ledger (id, id_hoc_sinh, id_lop, id_buoi_hoc, ngay_hieu_luc, delta, ly_do, created_at) VALUES (10, 1, 1, 1, '2026-09-21', 1, 'VUOT_SO_BUOI_CHUAN', 'now')",
+      );
+      // BU_TRU_NGHI_CO_PHEP: delta = -1, id_buoi_hoc = 1
+      await db.execute(
+        "INSERT INTO buoi_du_ledger (id, id_hoc_sinh, id_lop, id_buoi_hoc, ngay_hieu_luc, delta, ly_do, created_at) VALUES (11, 1, 1, 1, '2026-09-21', -1, 'BU_TRU_NGHI_CO_PHEP', 'now')",
+      );
+      // DIEU_CHINH_THU_CONG: delta != 0, id_buoi_hoc = null
+      await db.execute(
+        "INSERT INTO buoi_du_ledger (id, id_hoc_sinh, id_lop, id_buoi_hoc, ngay_hieu_luc, delta, ly_do, created_at) VALUES (12, 1, 1, NULL, '2026-09-21', 2, 'DIEU_CHINH_THU_CONG', 'now')",
+      );
+      // MIGRATION: delta != 0, id_buoi_hoc = null
+      await db.execute(
+        "INSERT INTO buoi_du_ledger (id, id_hoc_sinh, id_lop, id_buoi_hoc, ngay_hieu_luc, delta, ly_do, created_at) VALUES (13, 1, 1, NULL, '2026-09-21', -1, 'MIGRATION', 'now')",
+      );
 
       // Reject invalid reason
       expect(

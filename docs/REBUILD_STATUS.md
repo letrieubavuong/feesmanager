@@ -103,22 +103,23 @@
 - [x] Comprehensive Tests (190 tests passing).
 
 ## Phase 8: Session Credit - COMPLETE
-- [x] Database Migration (v8 -> v9) with `buoi_du_ledger` table and partial unique index.
+- [x] Forward Database Migration (v9 -> v10) with hardened reason-specific `CHECK` constraints on `buoi_du_ledger`.
 - [x] Credit Ledger domain models (`CreditLedgerEntry`, `CreditLedgerReason`).
 - [x] Canonical `SessionCreditService` as single owner of credit rules and balance calculations.
 - [x] Monthly eligible CHINH session calculation using canonical `RosterService`.
 - [x] Standard (1..12) vs Extra (13+) session indexing classification.
 - [x] Extra session credit earning rules (`CO_MAT`/`TRE` -> +1, others -> 0).
 - [x] Exclusion of `HOC_BU` and `PHAT_SINH` sessions from automatic extra credit earning.
-- [x] Idempotent credit reconciliation (`reconcileEarnedCreditsForStudentClassMonth`).
+- [x] Idempotent credit reconciliation (`reconcileEarnedCreditsForStudentClassMonth` & `reconcileEarnedCreditsForClassMonth` fail-closed atomic transaction).
 - [x] Class-scoped credit balance derivation (`SUM(delta)` per student + class).
-- [x] Historical balance query (`getBalanceAsOf`).
+- [x] Historical month balance accuracy (`openingBalance`, `monthDelta`, `closingBalance` as-of month end).
 - [x] Manual credit adjustment with mandatory reason note (`DIEU_CHINH_THU_CONG`).
-- [x] Mobile-friendly Session Credit UI (`SessionCreditPage`) reachable from Student Detail.
-- [x] Comprehensive Tests (202 tests passing):
+- [x] Mobile-friendly Session Credit UI (`SessionCreditPage`) with active month selector and "Số dư cuối tháng" header label.
+- [x] Comprehensive Tests (209 tests passing):
     - `test/session_credits/session_credit_service_test.dart`
     - `test/presentation/session_credits_ui_test.dart`
     - `test/repository/migration_v8_v9_test.dart`
+    - `test/repository/migration_v9_v10_test.dart`
 
 ## Phase 9: Tuition Policy + Invoice - NOT STARTED
 
@@ -126,7 +127,7 @@
 
 ## Technical Details
 - **Database**: `tuition_next.db`
-- **Version**: 9
+- **Version**: 10
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
 - **Tests**:
@@ -154,6 +155,7 @@
   - `test/repository/migration_v6_v7_test.dart`
   - `test/repository/migration_v7_v8_test.dart`
   - `test/repository/migration_v8_v9_test.dart`
+  - `test/repository/migration_v9_v10_test.dart`
 - **Quality Gate**:
   - `dart analyze`: Clean (No issues found!)
-  - `flutter test`: 100% Pass (202 tests)
+  - `flutter test`: 100% Pass (209 tests)

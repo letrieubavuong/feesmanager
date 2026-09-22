@@ -148,7 +148,10 @@ class _SessionCreditPageState extends ConsumerState<SessionCreditPage> {
               ),
               child: Column(
                 children: [
-                  const Text('Số dư credit', style: TextStyle(fontSize: 12)),
+                  const Text(
+                    'Số dư cuối tháng',
+                    style: TextStyle(fontSize: 12),
+                  ),
                   Text(
                     '${closingBalance >= 0 ? '+' : ''}$closingBalance buổi',
                     style: TextStyle(
@@ -297,7 +300,7 @@ class _SessionCreditPageState extends ConsumerState<SessionCreditPage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Tháng: ${widget.initialMonth ?? _selectedMonth}'),
+            Text('Tháng: $_selectedMonth'),
             const SizedBox(height: 8),
             Text('Số buổi đủ điều kiện: ${summary.eligibleCount}'),
             Text('Số buổi chuẩn: ${summary.standardCount}'),

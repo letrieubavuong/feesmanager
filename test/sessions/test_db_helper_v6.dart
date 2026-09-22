@@ -5,11 +5,11 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 class TestDbHelperV6 {
   static Future<Database> createLatest() async {
     final tempDir = await Directory.systemTemp.createTemp('db_test');
-    final dbPath = join(tempDir.path, 'test_v9.db');
+    final dbPath = join(tempDir.path, 'test_v10.db');
 
     final db = await openDatabase(
       dbPath,
-      version: 9,
+      version: 10,
       onCreate: (db, version) async {
         await db.execute('''
         CREATE TABLE hoc_sinh (
@@ -213,7 +213,34 @@ class TestDbHelperV6 {
             FOREIGN KEY (id_lop) REFERENCES lop (id),
             FOREIGN KEY (id_buoi_hoc) REFERENCES buoi_hoc (id),
             CHECK (delta != 0),
-            CHECK (ly_do IN ('VUOT_SO_BUOI_CHUAN', 'BU_TRU_NGHI_CO_PHEP', 'DIEU_CHINH_THU_CONG', 'MIGRATION'))
+            CHECK (
+              ly_do IN (
+                'VUOT_SO_BUOI_CHUAN',
+                'BU_TRU_NGHI_CO_PHEP',
+                'DIEU_CHINH_THU_CONG',
+                'MIGRATION'
+              )
+            ),
+            CHECK (
+                 (
+                   ly_do = 'VUOT_SO_BUOI_CHUAN'
+                   AND id_buoi_hoc IS NOT NULL
+                   AND delta = 1
+                 )
+              OR (
+                   ly_do = 'BU_TRU_NGHI_CO_PHEP'
+                   AND id_buoi_hoc IS NOT NULL
+                   AND delta = -1
+                 )
+              OR (
+                   ly_do = 'DIEU_CHINH_THU_CONG'
+                   AND delta != 0
+                 )
+              OR (
+                   ly_do = 'MIGRATION'
+                   AND delta != 0
+                 )
+            )
           )
         ''');
 

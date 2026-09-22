@@ -172,6 +172,10 @@ class SessionCreditService {
     final dayBeforeMonth = monthStart.subtract(const Duration(days: 1));
     final openingDateStr = DateFormat('yyyy-MM-dd').format(dayBeforeMonth);
 
+    // Calculate closing balance as of month end
+    final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 0);
+    final monthEndDateStr = DateFormat('yyyy-MM-dd').format(monthEnd);
+
     final openingBalance = await _repo.getBalanceAsOf(
       studentId,
       classId,
@@ -185,7 +189,11 @@ class SessionCreditService {
     );
 
     final monthDelta = monthLedger.fold<int>(0, (sum, e) => sum + e.delta);
-    final closingBalance = await _repo.getBalance(studentId, classId);
+    final closingBalance = await _repo.getBalanceAsOf(
+      studentId,
+      classId,
+      monthEndDateStr,
+    );
 
     final standardCount = candidates.where((c) => c.isStandard).length;
     final extraCount = candidates.where((c) => c.isExtra).length;
@@ -257,24 +265,60 @@ class SessionCreditService {
       toDate,
     );
 
+    final candidateSessions = classSessions
+        .where(
+          (s) =>
+              s.loai == SessionType.CHINH &&
+              s.trangThai == SessionStatus.DA_HOC,
+        )
+        .toList();
+
+    // Fail closed if ANY candidate session has a blocking roster issue!
+    for (final s in candidateSessions) {
+      final roster = await _rosterService.getRosterForSession(s.id!);
+      if (!roster.isOperationallyValid) {
+        throw Exception(
+          'Buổi học (${s.ngay} ${s.gioBatDau}) có lỗi Roster không hợp lệ. Không thể đối soát credit cả lớp.',
+        );
+      }
+    }
+
     final studentIds = <int>{};
-    for (final s in classSessions) {
-      if (s.loai == SessionType.CHINH && s.trangThai == SessionStatus.DA_HOC) {
-        final roster = await _rosterService.getRosterForSession(s.id!);
-        if (roster.isOperationallyValid) {
-          for (final p in roster.participants) {
-            if (p.student.id != null) studentIds.add(p.student.id!);
-          }
+    for (final s in candidateSessions) {
+      final roster = await _rosterService.getRosterForSession(s.id!);
+      for (final p in roster.participants) {
+        if (p.student.id != null) studentIds.add(p.student.id!);
+      }
+    }
+
+    final allToCreate = <CreditLedgerEntry>[];
+    final now = DateTime.now();
+
+    for (final studentId in studentIds) {
+      final summary = await previewMonth(studentId, classId, month);
+      for (final candidate in summary.candidates) {
+        if (candidate.isExtra &&
+            candidate.earnsCredit &&
+            candidate.existingEarnedLedgerEntry == null) {
+          allToCreate.add(
+            CreditLedgerEntry(
+              idHocSinh: studentId,
+              idLop: classId,
+              idBuoiHoc: candidate.session.id,
+              ngayHieuLuc: candidate.session.ngay,
+              delta: 1,
+              lyDo: CreditLedgerReason.VUOT_SO_BUOI_CHUAN,
+              ghiChu:
+                  'Cộng credit tự động cho buổi học vượt chuẩn thứ ${candidate.index} (${candidate.session.ngay})',
+              createdAt: now,
+            ),
+          );
         }
       }
     }
 
-    for (final studentId in studentIds) {
-      await reconcileEarnedCreditsForStudentClassMonth(
-        studentId,
-        classId,
-        month,
-      );
+    if (allToCreate.isNotEmpty) {
+      await _repo.addLedgerEntriesInTransaction(allToCreate);
     }
   }
 

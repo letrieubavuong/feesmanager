@@ -468,5 +468,203 @@ void main() {
       expect(await creditService.getBalanceAsOf(1, 10, '2026-09-30'), 2);
       expect(await creditService.getBalanceAsOf(1, 10, '2026-10-01'), 1);
     });
+
+    test(
+      'Historical month closingBalance ignores entries after selected month',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await creditService.addManualAdjustment(
+          studentId: 1,
+          classId: 10,
+          delta: 1,
+          effectiveDate: '2026-08-31',
+          note: 'August',
+        );
+        await creditService.addManualAdjustment(
+          studentId: 1,
+          classId: 10,
+          delta: 1,
+          effectiveDate: '2026-09-10',
+          note: 'Sept 1',
+        );
+        await creditService.addManualAdjustment(
+          studentId: 1,
+          classId: 10,
+          delta: 1,
+          effectiveDate: '2026-09-20',
+          note: 'Sept 2',
+        );
+        await creditService.addManualAdjustment(
+          studentId: 1,
+          classId: 10,
+          delta: -1,
+          effectiveDate: '2026-10-01',
+          note: 'October',
+        );
+
+        final summary = await creditService.previewMonth(1, 10, '2026-09');
+        expect(summary.openingBalance, 1);
+        expect(summary.monthDelta, 2);
+        expect(
+          summary.closingBalance,
+          3,
+        ); // October -1 does NOT lower September closing balance!
+        expect(
+          summary.closingBalance,
+          summary.openingBalance + summary.monthDelta,
+        );
+      },
+    );
+
+    test(
+      'Reconciliation fails closed on blocking canonical roster issue without writing partial ledger',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Session without schedule link (causes SESSION_SCHEDULE_MISSING issue)
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'id_lich_hoc': null,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await expectLater(
+          creditService.previewMonth(1, 10, '2026-09'),
+          throwsA(isA<Exception>()),
+        );
+
+        await expectLater(
+          creditService.reconcileEarnedCreditsForStudentClassMonth(
+            1,
+            10,
+            '2026-09',
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        await expectLater(
+          creditService.reconcileEarnedCreditsForClassMonth(10, '2026-09'),
+          throwsA(isA<Exception>()),
+        );
+
+        final ledger = await db.query('buoi_du_ledger');
+        expect(ledger, isEmpty);
+      },
+    );
+
+    test(
+      'Strict month string format validation rejects invalid formats',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        for (final invalidMonth in [
+          '2026-9',
+          '09/2026',
+          '2026-00',
+          '2026-13',
+          'abc',
+        ]) {
+          await expectLater(
+            creditService.previewMonth(1, 10, invalidMonth),
+            throwsA(isA<Exception>()),
+          );
+        }
+      },
+    );
+
+    test(
+      'Reconciliation does NOT auto-consume credits for approved leave in Phase 8',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await creditService.addManualAdjustment(
+          studentId: 1,
+          classId: 10,
+          delta: 5,
+          effectiveDate: '2026-09-01',
+          note: 'Initial credit',
+        );
+
+        await creditService.reconcileEarnedCreditsForStudentClassMonth(
+          1,
+          10,
+          '2026-09',
+        );
+
+        final ledger = await creditService.getLedger(1, 10);
+        expect(
+          ledger.any((e) => e.lyDo == CreditLedgerReason.BU_TRU_NGHI_CO_PHEP),
+          isFalse,
+        );
+      },
+    );
   });
 }

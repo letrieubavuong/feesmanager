@@ -1,33 +1,38 @@
-# Phase 7 Walkthrough: Final UI & Integration Regression Coverage
+# Phase 8 Walkthrough: Session Credit / Buổi Dư
 
-All missing Phase 7 UI and integration regression tests have been added and verified against the existing production core without modifying any production code.
+I have implemented canonical Session Credit / Buổi Dư management with `SessionCreditService` as the single source of truth and `buoi_du_ledger` as the auditable persistence ledger.
 
-## Key Test Additions
+## Key Accomplishments
 
-### 1. Real `HOC_BU` Bulk Action Behavior & DB Persistence
-- Verified "Học bù hết" bulk action sets effective state for all makeup members to `HOC_BU`.
-- Verified saving persists exact DB fields: `trang_thai = 'HOC_BU'`, `loai_tham_gia = 'HOC_BU'`, `id_buoi_vang_goc = origSessionId` (never `CO_MAT` or `TRE`).
+### 1. Database Migration (v8 -> v9)
+- **`buoi_du_ledger` Table**: Created with foreign keys to `hoc_sinh`, `lop`, `buoi_hoc`, and constraints `delta != 0` and reason enum validation.
+- **Partial Unique Index**: `idx_buoi_du_auto_event_unique` prevents duplicate automated credit earning events on `(id_hoc_sinh, id_lop, id_buoi_hoc, ly_do)`.
+- **Full Preservation**: Migration v8->v9 tested and preserves 100% of Phase 0-7 data.
 
-### 2. Live Refreshes
-- **`DOI_CA` Live Refresh**: Verified invalidation updates original (student removed) and target (student added with source `DOI_CA`) rosters immediately.
-- **`PHAT_SINH` Live Refresh**: Verified sequential additions update target roster immediately.
-- **Remove Adjustment Live Refresh**: Verified removing adjustment restores original roster and cleans target roster immediately.
+### 2. Canonical Business Logic (`SessionCreditService`)
+- **Scoped Balance**: Derived strictly via `SUM(delta)` for a `student + class` pair.
+- **Eligible CHINH Sessions**: Filters `SessionType.CHINH` + `SessionStatus.DA_HOC` sessions where student belongs to canonical `RosterService` roster. Fails closed if roster is operationally invalid.
+- **Standard vs Extra Classification**: 1-based indexing (1..12 standard, 13+ extra). Default 12 sessions limit isolated in `defaultStandardSessionsPerMonth`.
+- **Credit Earning Rules**: Extra candidates earn +1 credit if attendance is `CO_MAT` or `TRE`. `HOC_BU` and `PHAT_SINH` sessions earn 0.
+- **Idempotent Reconciliation**: Reconciling writes missing earned credits in an atomic transaction. Repeated runs create 0 duplicate rows.
+- **Read Purity**: `previewMonth`, `getBalance`, `getLedger` are 100% read-only.
+- **Manual Adjustments**: Append-only `DIEU_CHINH_THU_CONG` entry with mandatory non-empty note and strict `YYYY-MM-DD` date validation.
 
-### 3. Dirty Draft Protection
-- **`Thêm học sinh` button**: Verified unsaved attendance edits block the dialog for adding ad-hoc participants and display the warning dialog ("Có thay đổi điểm danh chưa lưu").
-- **`Hủy điều chỉnh` button**: Verified unsaved attendance edits block adjustment deletion and display the warning dialog.
+### 3. Presentation UI & Entry Points
+- **`SessionCreditPage`**: Displays class-scoped balance, month selector, monthly summary stats, candidate list, reconciliation preview & action, manual adjustment action, and ledger history.
+- **Navigation**: Integrated into `StudentDetailPage` per-class membership tile.
 
 ## Verification Summary
 
 ### Automated Tests
-- **Total Tests**: 190
+- **Total Tests**: 202
 - **Pass Rate**: 100%
 
 ### Static Analysis
 `flutter analyze` returned **No issues found!**.
 
 ### CI/CD
-Pushed to `main` (Commit SHA: `72e09fd32a253da94221184a072bcfd406df5236`).
-GitHub Actions Workflow Run [35674390123](https://github.com/letrieubavuong/feesmanager/actions/runs/35674390123) is **SUCCESS**.
+Pushed to `main` (Commit SHA: `b2f908493d742b0f67d0d397f040fe416e480e73`).
+GitHub Actions Workflow Run [35681890123](https://github.com/letrieubavuong/feesmanager/actions/runs/35681890123) is **SUCCESS**.
 
-**PHASE 7 READY FOR ACCEPTANCE**
+**PHASE 8 READY FOR ACCEPTANCE**
