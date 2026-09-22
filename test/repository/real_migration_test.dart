@@ -75,7 +75,7 @@ void main() {
       final appDb = AppDatabase(dbName: dbPath);
       final dbLatest = await appDb.database;
 
-      expect(await dbLatest.getVersion(), 10);
+      expect(await dbLatest.getVersion(), 11);
 
       final tables = await dbLatest.rawQuery(
         "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('lich_hoc', 'phan_ca_hoc_sinh', 'buoi_hoc', 'diem_danh')",
@@ -115,7 +115,7 @@ void main() {
       final appDb = AppDatabase(dbName: dbPath);
       final db = await appDb.database;
 
-      expect(await db.getVersion(), 10);
+      expect(await db.getVersion(), 11);
 
       final violations = await db.rawQuery('PRAGMA foreign_key_check');
       expect(violations.isEmpty, isTrue);

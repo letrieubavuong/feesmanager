@@ -34,9 +34,7 @@ abstract class _$ClassSessionController
     extends BuildlessAutoDisposeAsyncNotifier<List<ClassSession>> {
   late final int classId;
 
-  FutureOr<List<ClassSession>> build(
-    int classId,
-  );
+  FutureOr<List<ClassSession>> build(int classId);
 }
 
 /// See also [ClassSessionController].
@@ -50,21 +48,15 @@ class ClassSessionControllerFamily
   const ClassSessionControllerFamily();
 
   /// See also [ClassSessionController].
-  ClassSessionControllerProvider call(
-    int classId,
-  ) {
-    return ClassSessionControllerProvider(
-      classId,
-    );
+  ClassSessionControllerProvider call(int classId) {
+    return ClassSessionControllerProvider(classId);
   }
 
   @override
   ClassSessionControllerProvider getProviderOverride(
     covariant ClassSessionControllerProvider provider,
   ) {
-    return call(
-      provider.classId,
-    );
+    return call(provider.classId);
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -84,24 +76,25 @@ class ClassSessionControllerFamily
 
 /// See also [ClassSessionController].
 class ClassSessionControllerProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<ClassSessionController,
-        List<ClassSession>> {
+    extends
+        AutoDisposeAsyncNotifierProviderImpl<
+          ClassSessionController,
+          List<ClassSession>
+        > {
   /// See also [ClassSessionController].
-  ClassSessionControllerProvider(
-    int classId,
-  ) : this._internal(
-          () => ClassSessionController()..classId = classId,
-          from: classSessionControllerProvider,
-          name: r'classSessionControllerProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$classSessionControllerHash,
-          dependencies: ClassSessionControllerFamily._dependencies,
-          allTransitiveDependencies:
-              ClassSessionControllerFamily._allTransitiveDependencies,
-          classId: classId,
-        );
+  ClassSessionControllerProvider(int classId)
+    : this._internal(
+        () => ClassSessionController()..classId = classId,
+        from: classSessionControllerProvider,
+        name: r'classSessionControllerProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$classSessionControllerHash,
+        dependencies: ClassSessionControllerFamily._dependencies,
+        allTransitiveDependencies:
+            ClassSessionControllerFamily._allTransitiveDependencies,
+        classId: classId,
+      );
 
   ClassSessionControllerProvider._internal(
     super._createNotifier, {
@@ -119,9 +112,7 @@ class ClassSessionControllerProvider
   FutureOr<List<ClassSession>> runNotifierBuild(
     covariant ClassSessionController notifier,
   ) {
-    return notifier.build(
-      classId,
-    );
+    return notifier.build(classId);
   }
 
   @override
@@ -141,8 +132,11 @@ class ClassSessionControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<ClassSessionController,
-      List<ClassSession>> createElement() {
+  AutoDisposeAsyncNotifierProviderElement<
+    ClassSessionController,
+    List<ClassSession>
+  >
+  createElement() {
     return _ClassSessionControllerProviderElement(this);
   }
 
@@ -167,8 +161,12 @@ mixin ClassSessionControllerRef
 }
 
 class _ClassSessionControllerProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<ClassSessionController,
-        List<ClassSession>> with ClassSessionControllerRef {
+    extends
+        AutoDisposeAsyncNotifierProviderElement<
+          ClassSessionController,
+          List<ClassSession>
+        >
+    with ClassSessionControllerRef {
   _ClassSessionControllerProviderElement(super.provider);
 
   @override

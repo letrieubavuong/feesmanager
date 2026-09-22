@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int _dbVersion = 10;
+  static const int _dbVersion = 11;
 
   final String dbName;
   Database? _database;
@@ -66,6 +66,9 @@ class AppDatabase {
     if (version >= 10) {
       await _migrateV9ToV10(db);
     }
+    if (version >= 11) {
+      await _migrateV10ToV11(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -95,6 +98,9 @@ class AppDatabase {
     }
     if (oldVersion < 10) {
       await _migrateV9ToV10(db);
+    }
+    if (oldVersion < 11) {
+      await _migrateV10ToV11(db);
     }
   }
 
@@ -620,5 +626,85 @@ class AppDatabase {
     } finally {
       await db.execute('PRAGMA foreign_keys = ON');
     }
+  }
+
+  Future<void> _migrateV10ToV11(Database db) async {
+    // 1. Create table chinh_sach_hoc_phi
+    await db.execute('''
+      CREATE TABLE chinh_sach_hoc_phi (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_lop INTEGER NOT NULL,
+        hieu_luc_tu TEXT NOT NULL,
+        hieu_luc_den TEXT NULL,
+        so_buoi_chuan_thang INTEGER NOT NULL DEFAULT 12,
+        hoc_phi_moi_buoi INTEGER NOT NULL DEFAULT 0,
+        hoc_phi_thang_toi_da INTEGER NULL,
+        ghi_chu TEXT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (id_lop) REFERENCES lop (id),
+        UNIQUE (id_lop, hieu_luc_tu),
+        CHECK (so_buoi_chuan_thang > 0),
+        CHECK (hoc_phi_moi_buoi >= 0),
+        CHECK (hoc_phi_thang_toi_da IS NULL OR hoc_phi_thang_toi_da >= 0),
+        CHECK (hieu_luc_den IS NULL OR hieu_luc_den >= hieu_luc_tu)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE UNIQUE INDEX idx_chinh_sach_open_interval 
+      ON chinh_sach_hoc_phi(id_lop) 
+      WHERE hieu_luc_den IS NULL
+    ''');
+
+    await db.execute(
+      'CREATE INDEX idx_chinh_sach_lop_dates ON chinh_sach_hoc_phi(id_lop, hieu_luc_tu, hieu_luc_den)',
+    );
+
+    // 2. Create table hoc_phi_thang
+    await db.execute('''
+      CREATE TABLE hoc_phi_thang (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_hoc_sinh INTEGER NOT NULL,
+        id_lop INTEGER NOT NULL,
+        thang TEXT NOT NULL,
+        id_chinh_sach_hoc_phi INTEGER NOT NULL,
+        so_buoi_eligible INTEGER NOT NULL,
+        so_buoi_tinh_phi INTEGER NOT NULL,
+        credit_opening INTEGER NOT NULL,
+        credit_earned INTEGER NOT NULL,
+        credit_used INTEGER NOT NULL,
+        credit_closing INTEGER NOT NULL,
+        tong_truoc_giam INTEGER NOT NULL,
+        giam_phan_tram INTEGER NOT NULL DEFAULT 0,
+        giam_so_tien INTEGER NOT NULL DEFAULT 0,
+        so_tien_phai_thu INTEGER NOT NULL,
+        trang_thai TEXT NOT NULL,
+        chot_luc TEXT NULL,
+        ghi_chu TEXT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+        FOREIGN KEY (id_lop) REFERENCES lop (id),
+        FOREIGN KEY (id_chinh_sach_hoc_phi) REFERENCES chinh_sach_hoc_phi (id),
+        UNIQUE (id_hoc_sinh, id_lop, thang),
+        CHECK (so_buoi_eligible >= 0),
+        CHECK (so_buoi_tinh_phi >= 0),
+        CHECK (giam_phan_tram BETWEEN 0 AND 100),
+        CHECK (giam_so_tien >= 0),
+        CHECK (so_tien_phai_thu >= 0),
+        CHECK (trang_thai IN ('NHAP', 'DA_CHOT', 'DA_THANH_TOAN', 'CON_NO'))
+      )
+    ''');
+
+    await db.execute(
+      'CREATE INDEX idx_hoc_phi_thang_student_class ON hoc_phi_thang(id_hoc_sinh, id_lop, thang)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_hoc_phi_thang_class_month ON hoc_phi_thang(id_lop, thang)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_hoc_phi_thang_status ON hoc_phi_thang(trang_thai)',
+    );
   }
 }

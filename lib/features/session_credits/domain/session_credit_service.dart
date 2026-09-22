@@ -9,6 +9,7 @@ import '../../roster/domain/roster_service.dart';
 import '../../sessions/domain/class_session.dart';
 import '../../sessions/domain/session_service.dart';
 import '../../students/domain/student_service.dart';
+import '../../tuition/domain/tuition_policy_service.dart';
 import '../data/session_credit_repository.dart';
 import 'credit_ledger_entry.dart';
 import 'credit_ledger_reason.dart';
@@ -34,6 +35,7 @@ class SessionCreditService {
   final AttendanceRepository _attendanceRepo;
   final StudentService _studentService;
   final ClassService _classService;
+  final TuitionPolicyService? _policyService;
 
   SessionCreditService(
     this._repo,
@@ -41,8 +43,9 @@ class SessionCreditService {
     this._rosterService,
     this._attendanceRepo,
     this._studentService,
-    this._classService,
-  );
+    this._classService, [
+    this._policyService,
+  ]);
 
   Future<int> getBalance(int studentId, int classId) =>
       _repo.getBalance(studentId, classId);
@@ -114,6 +117,19 @@ class SessionCreditService {
   ) async {
     _validateIsoMonth(month);
 
+    int standardLimit = defaultStandardSessionsPerMonth;
+    if (_policyService != null) {
+      final monthStart = DateTime.parse('$month-01');
+      final monthStartStr = DateFormat('yyyy-MM-dd').format(monthStart);
+      final policy = await _policyService.getEffectivePolicyForDateStr(
+        classId,
+        monthStartStr,
+      );
+      if (policy != null) {
+        standardLimit = policy.soBuoiChuanThang;
+      }
+    }
+
     final eligibleSessions = await getEligibleSessionsForStudentClassMonth(
       studentId,
       classId,
@@ -127,8 +143,8 @@ class SessionCreditService {
     for (int i = 0; i < eligibleSessions.length; i++) {
       final session = eligibleSessions[i];
       final index = i + 1; // 1-based
-      final isStandard = index <= defaultStandardSessionsPerMonth;
-      final isExtra = index > defaultStandardSessionsPerMonth;
+      final isStandard = index <= standardLimit;
+      final isExtra = index > standardLimit;
 
       final attRecord = await _attendanceRepo.getBySessionAndStudent(
         session.id!,
@@ -202,7 +218,7 @@ class SessionCreditService {
       studentId: studentId,
       classId: classId,
       month: month,
-      standardSessionLimit: defaultStandardSessionsPerMonth,
+      standardSessionLimit: standardLimit,
       eligibleCount: eligibleSessions.length,
       standardCount: standardCount,
       extraCount: extraCount,
@@ -389,6 +405,7 @@ Future<SessionCreditService> sessionCreditService(
   final attendanceRepo = await ref.watch(attendanceRepositoryProvider.future);
   final studentService = await ref.watch(studentServiceProvider.future);
   final classService = await ref.watch(classServiceProvider.future);
+  final policyService = await ref.watch(tuitionPolicyServiceProvider.future);
 
   return SessionCreditService(
     repo,
@@ -397,5 +414,6 @@ Future<SessionCreditService> sessionCreditService(
     attendanceRepo,
     studentService,
     classService,
+    policyService,
   );
 }

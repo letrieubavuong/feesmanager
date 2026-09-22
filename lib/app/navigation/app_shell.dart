@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../features/students/presentation/student_list_page.dart';
 import '../../features/classes/presentation/class_list_page.dart';
+import '../../features/tuition/presentation/global_tuition_page.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -47,7 +48,7 @@ class _AppShellState extends State<AppShell> {
       label: 'Học phí',
       icon: Icons.payments_outlined,
       selectedIcon: Icons.payments,
-      content: PlaceholderPage(title: 'Học phí'),
+      content: GlobalTuitionPage(),
     ),
     NavigationItem(
       label: 'Báo cáo',

@@ -15,6 +15,7 @@ import '../../schedule/presentation/schedule_tab.dart';
 import '../../schedule/presentation/assignment_tab.dart';
 import '../../sessions/presentation/session_tab.dart';
 import '../../leave/presentation/leave_request_page.dart';
+import '../../tuition/presentation/class_tuition_tab.dart';
 
 class ClassDetailPage extends ConsumerStatefulWidget {
   final int classId;
@@ -116,7 +117,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                             ScheduleTab(classId: widget.classId),
                             AssignmentTab(classId: widget.classId),
                             SessionTab(classId: widget.classId),
-                            _buildPlaceholder('Học phí'),
+                            ClassTuitionTab(classId: widget.classId),
                           ],
                         ),
                       ),
@@ -242,23 +243,6 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Lỗi: $e')),
-    );
-  }
-
-  Widget _buildPlaceholder(String title) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.construction, size: 48, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text(
-            'Chức năng $title',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const Text('Sẽ được triển khai ở phase sau.'),
-        ],
-      ),
     );
   }
 

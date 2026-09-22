@@ -13,31 +13,31 @@ String _$sessionCreditRepositoryHash() =>
 @ProviderFor(sessionCreditRepository)
 final sessionCreditRepositoryProvider =
     FutureProvider<SessionCreditRepository>.internal(
-  sessionCreditRepository,
-  name: r'sessionCreditRepositoryProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$sessionCreditRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+      sessionCreditRepository,
+      name: r'sessionCreditRepositoryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$sessionCreditRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 typedef SessionCreditRepositoryRef = FutureProviderRef<SessionCreditRepository>;
 String _$sessionCreditServiceHash() =>
-    r'd8f8ceab80b773d8259f054cc703f7cd5c896a89';
+    r'926469c9dbe5265d113e2611ccfe9db327219124';
 
 /// See also [sessionCreditService].
 @ProviderFor(sessionCreditService)
 final sessionCreditServiceProvider =
     FutureProvider<SessionCreditService>.internal(
-  sessionCreditService,
-  name: r'sessionCreditServiceProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$sessionCreditServiceHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+      sessionCreditService,
+      name: r'sessionCreditServiceProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$sessionCreditServiceHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 typedef SessionCreditServiceRef = FutureProviderRef<SessionCreditService>;
 // ignore_for_file: type=lint

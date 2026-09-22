@@ -115,47 +115,31 @@
 - [x] Historical month balance accuracy (`openingBalance`, `monthDelta`, `closingBalance` as-of month end).
 - [x] Manual credit adjustment with mandatory reason note (`DIEU_CHINH_THU_CONG`).
 - [x] Mobile-friendly Session Credit UI (`SessionCreditPage`) with active month selector and "Số dư cuối tháng" header label.
-- [x] Comprehensive Tests (230 tests passing):
-    - `test/session_credits/session_credit_service_test.dart`
-    - `test/presentation/session_credits_ui_test.dart`
-    - `test/repository/migration_v8_v9_test.dart`
-    - `test/repository/migration_v9_v10_test.dart`
+- [x] Comprehensive Tests (230 tests passing).
 
-## Phase 9: Tuition Policy + Invoice - NOT STARTED
+## Phase 9: Tuition Policy + Invoice - COMPLETE
+- [x] Forward Database Migration (v10 -> v11) creating `chinh_sach_hoc_phi` and `hoc_phi_thang` tables with strict `CHECK` constraints, Foreign Keys, and partial UNIQUE indexes.
+- [x] Tuition Policy domain, repository, service (`TuitionPolicyService`), and providers.
+- [x] Standard session count `N` dynamically resolved from effective policy with fallback to 12.
+- [x] Pure read `TuitionService` calculating `TuitionPreview` with full Domain Constitution Section 24 compliance (`CO_MAT`/`TRE`/`NGHI_KHONG_PHEP` chargeable; `NGHI_CO_PHEP` with makeup/credit chargeable; `NGHI_CO_PHEP` without makeup/credit uncharged; extra sessions fee = 0; discount %; monthly cap).
+- [x] Atomic `InvoiceService` snapshotting `hoc_phi_thang` (`DA_CHOT`) and consuming approved absence credits (`BU_TRU_NGHI_CO_PHEP`) in a single SQLite transaction.
+- [x] Re-finalization protection (prevent silent rewriting of finalized invoices) and historical invoice immutability.
+- [x] Mobile UI integration: Class Detail "Học phí" tab (`ClassTuitionTab`) & Global Tuition page (`GlobalTuitionPage`).
+- [x] Comprehensive Tests (241 tests passing):
+    - `test/repository/migration_v10_v11_test.dart`
+    - `test/tuition/tuition_policy_service_test.dart`
+    - `test/tuition/tuition_service_test.dart`
+    - `test/tuition/invoice_service_test.dart`
+    - `test/presentation/tuition_ui_test.dart`
 
 ---
 
 ## Technical Details
 - **Database**: `tuition_next.db`
-- **Version**: 10
+- **Version**: 11
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
-- **Tests**:
-  - `test/unit/phone_normalizer_test.dart`
-  - `test/repository/student_repository_test.dart`
-  - `test/repository/membership_logic_test.dart`
-  - `test/schedule/schedule_service_test.dart`
-  - `test/schedule/assignment_service_test.dart`
-  - `test/repository/real_migration_test.dart`
-  - `test/presentation/schedule_assignment_ui_test.dart`
-  - `test/sessions/session_generation_service_test.dart`
-  - `test/sessions/session_service_test.dart`
-  - `test/presentation/sessions_ui_test.dart`
-  - `test/roster/roster_service_test.dart`
-  - `test/presentation/session_roster_ui_test.dart`
-  - `test/roster/integrity_corrupted_data_test.dart`
-  - `test/attendance/attendance_service_test.dart`
-  - `test/presentation/attendance_ui_test.dart`
-  - `test/leave/leave_request_service_test.dart`
-  - `test/session_adjustments/session_adjustment_service_test.dart`
-  - `test/session_credits/session_credit_service_test.dart`
-  - `test/presentation/phase7_ui_test.dart`
-  - `test/presentation/session_credits_ui_test.dart`
-  - `test/repository/migration_v5_v6_test.dart`
-  - `test/repository/migration_v6_v7_test.dart`
-  - `test/repository/migration_v7_v8_test.dart`
-  - `test/repository/migration_v8_v9_test.dart`
-  - `test/repository/migration_v9_v10_test.dart`
+- **Tests**: 241 tests passing
 - **Quality Gate**:
-  - `dart analyze`: Clean (No issues found!)
-  - `flutter test`: 100% Pass (230 tests)
+  - `dart analyze`: Clean (0 errors, 0 warnings)
+  - `flutter test`: 100% Pass (241 tests)

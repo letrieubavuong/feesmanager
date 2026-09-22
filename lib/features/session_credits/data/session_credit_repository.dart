@@ -22,6 +22,15 @@ class SessionCreditRepository {
     });
   }
 
+  Future<void> addLedgerEntriesInTxn(
+    Transaction txn,
+    List<CreditLedgerEntry> entries,
+  ) async {
+    for (final entry in entries) {
+      await txn.insert('buoi_du_ledger', entry.toMap());
+    }
+  }
+
   Future<List<CreditLedgerEntry>> getLedgerForStudentAndClass(
     int studentId,
     int classId,
