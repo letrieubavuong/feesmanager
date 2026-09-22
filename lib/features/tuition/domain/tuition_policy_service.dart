@@ -3,7 +3,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/database/database_provider.dart';
 import '../../classes/domain/class_service.dart';
 import '../data/tuition_policy_repository.dart';
+import '../data/tuition_repository.dart';
+import 'tuition_invoice.dart';
 import 'tuition_policy.dart';
+import 'tuition_service.dart';
 
 part 'tuition_policy_service.g.dart';
 
@@ -18,8 +21,9 @@ Future<TuitionPolicyRepository> tuitionPolicyRepository(
 class TuitionPolicyService {
   final TuitionPolicyRepository _repo;
   final ClassService _classService;
+  final TuitionRepository _tuitionRepo;
 
-  TuitionPolicyService(this._repo, this._classService);
+  TuitionPolicyService(this._repo, this._classService, this._tuitionRepo);
 
   Future<TuitionPolicy?> getEffectivePolicy(int classId, DateTime date) {
     final dateStr = DateFormat('yyyy-MM-dd').format(date);
@@ -69,6 +73,35 @@ class TuitionPolicyService {
 
     if (monthlyMaxFee != null && monthlyMaxFee < 0) {
       throw Exception('Mức học phí tối đa tháng phải lớn hơn hoặc bằng 0');
+    }
+
+    // Safety check: Block creating/editing policy if a finalized invoice exists in affected month range
+    final fromMonth = effectiveFrom.substring(0, 7);
+    final toMonth = effectiveTo != null
+        ? effectiveTo.substring(0, 7)
+        : '9999-12';
+
+    final existingInvoices = await _tuitionRepo.getInvoicesForStudentClass(
+      0,
+      classId,
+    );
+    final allInvoicesForClass = await _tuitionRepo.getInvoicesForClassMonth(
+      classId,
+      fromMonth,
+    );
+
+    if (allInvoicesForClass.any(
+          (i) => i.trangThai == TuitionInvoiceStatus.DA_CHOT,
+        ) ||
+        existingInvoices.any(
+          (i) =>
+              i.trangThai == TuitionInvoiceStatus.DA_CHOT &&
+              i.thang.compareTo(fromMonth) >= 0 &&
+              i.thang.compareTo(toMonth) <= 0,
+        )) {
+      throw Exception(
+        'Lớp đã có hóa đơn học phí đã chốt trong khoảng thời gian này. Không thể tạo hoặc sửa chính sách học phí quá khứ.',
+      );
     }
 
     // Check existing policies for overlap
@@ -133,5 +166,6 @@ Future<TuitionPolicyService> tuitionPolicyService(
 ) async {
   final repo = await ref.watch(tuitionPolicyRepositoryProvider.future);
   final classService = await ref.watch(classServiceProvider.future);
-  return TuitionPolicyService(repo, classService);
+  final tuitionRepo = await ref.watch(tuitionRepositoryProvider.future);
+  return TuitionPolicyService(repo, classService, tuitionRepo);
 }

@@ -122,6 +122,23 @@ class MembershipService {
     return all.where((m) => m.idLop == classId).toList();
   }
 
+  Future<List<ClassMembership>> getMembershipsForClassMonth(
+    int classId,
+    String month, // YYYY-MM
+  ) async {
+    final monthStart = '$month-01';
+    final parsedStart = DateTime.parse(monthStart);
+    final monthEndDt = DateTime(parsedStart.year, parsedStart.month + 1, 0);
+    final monthEnd = DateFormat('yyyy-MM-dd').format(monthEndDt);
+
+    final all = await _repository.getByClass(classId);
+    return all.where((m) {
+      final den = m.denNgay ?? '9999-12-31';
+      return m.tuNgay.compareTo(monthEnd) <= 0 &&
+          den.compareTo(monthStart) >= 0;
+    }).toList();
+  }
+
   Future<List<ClassMembership>> getRoster(int classId, {DateTime? date}) async {
     final referenceDate = date ?? DateTime.now();
     final dateFormat = DateFormat('yyyy-MM-dd');

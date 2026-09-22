@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 enum TuitionInvoiceStatus { NHAP, DA_CHOT, DA_THANH_TOAN, CON_NO }
 
 class TuitionInvoice {

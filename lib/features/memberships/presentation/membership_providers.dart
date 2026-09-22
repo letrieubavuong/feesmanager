@@ -15,3 +15,12 @@ final classRosterProvider =
       final service = await ref.watch(membershipServiceProvider.future);
       return service.getRoster(arg.$1, date: arg.$2);
     });
+
+final classMonthMembershipsProvider =
+    FutureProvider.family<List<ClassMembership>, (int, String)>((
+      ref,
+      arg,
+    ) async {
+      final service = await ref.watch(membershipServiceProvider.future);
+      return service.getMembershipsForClassMonth(arg.$1, arg.$2);
+    });

@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 import '../../sessions/domain/class_session.dart';
 import '../../attendance/domain/attendance_state.dart';
 import 'tuition_policy.dart';

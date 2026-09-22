@@ -231,13 +231,13 @@ class SessionCreditService {
     );
   }
 
-  Future<void> reconcileEarnedCreditsForStudentClassMonth(
+  Future<List<CreditLedgerEntry>>
+  getMissingEarnedCreditEntriesForStudentClassMonth(
     int studentId,
     int classId,
     String month,
   ) async {
     final summary = await previewMonth(studentId, classId, month);
-
     final toCreate = <CreditLedgerEntry>[];
     final now = DateTime.now();
 
@@ -260,7 +260,19 @@ class SessionCreditService {
         );
       }
     }
+    return toCreate;
+  }
 
+  Future<void> reconcileEarnedCreditsForStudentClassMonth(
+    int studentId,
+    int classId,
+    String month,
+  ) async {
+    final toCreate = await getMissingEarnedCreditEntriesForStudentClassMonth(
+      studentId,
+      classId,
+      month,
+    );
     if (toCreate.isNotEmpty) {
       await _repo.addLedgerEntriesInTransaction(toCreate);
     }
@@ -308,29 +320,14 @@ class SessionCreditService {
     }
 
     final allToCreate = <CreditLedgerEntry>[];
-    final now = DateTime.now();
 
     for (final studentId in studentIds) {
-      final summary = await previewMonth(studentId, classId, month);
-      for (final candidate in summary.candidates) {
-        if (candidate.isExtra &&
-            candidate.earnsCredit &&
-            candidate.existingEarnedLedgerEntry == null) {
-          allToCreate.add(
-            CreditLedgerEntry(
-              idHocSinh: studentId,
-              idLop: classId,
-              idBuoiHoc: candidate.session.id,
-              ngayHieuLuc: candidate.session.ngay,
-              delta: 1,
-              lyDo: CreditLedgerReason.VUOT_SO_BUOI_CHUAN,
-              ghiChu:
-                  'Cộng credit tự động cho buổi học vượt chuẩn thứ ${candidate.index} (${candidate.session.ngay})',
-              createdAt: now,
-            ),
-          );
-        }
-      }
+      final missing = await getMissingEarnedCreditEntriesForStudentClassMonth(
+        studentId,
+        classId,
+        month,
+      );
+      allToCreate.addAll(missing);
     }
 
     if (allToCreate.isNotEmpty) {

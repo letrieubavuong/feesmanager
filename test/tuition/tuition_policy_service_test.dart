@@ -8,6 +8,7 @@ import 'package:tuition2027/features/classes/domain/class_service.dart';
 import 'package:tuition2027/features/memberships/data/membership_repository.dart';
 import 'package:tuition2027/features/memberships/domain/membership_service.dart';
 import 'package:tuition2027/features/tuition/data/tuition_policy_repository.dart';
+import 'package:tuition2027/features/tuition/data/tuition_repository.dart';
 import 'package:tuition2027/features/tuition/domain/tuition_policy_service.dart';
 
 void main() {
@@ -28,10 +29,11 @@ void main() {
 
       final classRepo = ClassRepository(db);
       final memberRepo = MembershipRepository(db);
+      final tuitionRepo = TuitionRepository(db);
       final membershipService = MembershipService(memberRepo);
       classService = ClassService(classRepo, membershipService);
       repo = TuitionPolicyRepository(db);
-      service = TuitionPolicyService(repo, classService);
+      service = TuitionPolicyService(repo, classService, tuitionRepo);
 
       await db.execute('''
         INSERT INTO lop (id, ten_lop, mon_hoc, created_at, updated_at)

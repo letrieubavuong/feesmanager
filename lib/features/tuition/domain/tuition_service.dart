@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/database/database_provider.dart';
 import '../../attendance/data/attendance_repository.dart';
+import '../../attendance/domain/attendance_record.dart';
 import '../../attendance/domain/attendance_service.dart';
 import '../../attendance/domain/attendance_state.dart';
 import '../../memberships/domain/membership_service.dart';
@@ -9,6 +10,9 @@ import '../../session_adjustments/data/session_adjustment_repository.dart';
 import '../../session_adjustments/domain/session_adjustment.dart';
 import '../../session_adjustments/domain/session_adjustment_service.dart';
 import '../../session_credits/domain/session_credit_service.dart';
+import '../../sessions/data/session_repository.dart';
+import '../../sessions/domain/class_session.dart';
+import '../../sessions/domain/session_service.dart';
 import '../data/tuition_repository.dart';
 import 'tuition_policy_service.dart';
 import 'tuition_preview.dart';
@@ -28,6 +32,7 @@ class TuitionService {
   final MembershipService _membershipService;
   final AttendanceRepository _attendanceRepo;
   final SessionAdjustmentRepository _adjustmentRepo;
+  final SessionRepository _sessionRepo;
 
   TuitionRepository get tuitionRepository => _tuitionRepo;
 
@@ -38,6 +43,7 @@ class TuitionService {
     this._membershipService,
     this._attendanceRepo,
     this._adjustmentRepo,
+    this._sessionRepo,
   );
 
   Future<TuitionPreview> previewTuition(
@@ -146,13 +152,11 @@ class TuitionService {
           isCharged = true;
           fee = policy.hocPhiMoiBuoi;
         } else if (attState == AttendanceState.NGHI_CO_PHEP) {
-          // Check if valid makeup session exists
-          final makeupAdjustment = await _adjustmentRepo
-              .getByStudentAndOriginalSession(studentId, session.id!);
-
-          final hasValidMakeup =
-              makeupAdjustment != null &&
-              makeupAdjustment.loai == SessionAdjustmentType.HOC_BU;
+          // Check if valid completed makeup session exists
+          final hasValidMakeup = await _hasValidMakeupAttendance(
+            studentId,
+            session.id!,
+          );
 
           if (hasValidMakeup) {
             chargeType =
@@ -250,6 +254,53 @@ class TuitionService {
     );
   }
 
+  Future<bool> _hasValidMakeupAttendance(
+    int studentId,
+    int originalSessionId,
+  ) async {
+    final adjustment = await _adjustmentRepo.getByStudentAndOriginalSession(
+      studentId,
+      originalSessionId,
+    );
+
+    if (adjustment == null || adjustment.loai != SessionAdjustmentType.HOC_BU) {
+      return false;
+    }
+
+    final targetSessionId = adjustment.idBuoiHocThamGia;
+    final targetSession = await _sessionRepo.getById(targetSessionId);
+
+    // Target session must exist and be DA_HOC (taught & finalized)
+    if (targetSession == null ||
+        targetSession.trangThai != SessionStatus.DA_HOC) {
+      return false;
+    }
+
+    // Attendance record in target session
+    final targetAtt = await _attendanceRepo.getBySessionAndStudent(
+      targetSessionId,
+      studentId,
+    );
+
+    if (targetAtt == null) return false;
+
+    // Target attendance status must be HOC_BU, CO_MAT, or TRE
+    final isAttended =
+        targetAtt.trangThai == AttendanceStatus.HOC_BU ||
+        targetAtt.trangThai == AttendanceStatus.CO_MAT ||
+        targetAtt.trangThai == AttendanceStatus.TRE;
+
+    if (!isAttended) return false;
+
+    // If id_buoi_vang_goc exists, it must match originalSessionId
+    if (targetAtt.idBuoiVangGoc != null &&
+        targetAtt.idBuoiVangGoc != originalSessionId) {
+      return false;
+    }
+
+    return true;
+  }
+
   void _validateIsoMonth(String month) {
     final monthRegExp = RegExp(r'^\d{4}-(0[1-9]|1[0-2])$');
     if (!monthRegExp.hasMatch(month)) {
@@ -268,6 +319,7 @@ Future<TuitionService> tuitionService(TuitionServiceRef ref) async {
   final adjustmentRepo = await ref.watch(
     sessionAdjustmentRepositoryProvider.future,
   );
+  final sessionRepo = await ref.watch(sessionRepositoryProvider.future);
 
   return TuitionService(
     repo,
@@ -276,5 +328,6 @@ Future<TuitionService> tuitionService(TuitionServiceRef ref) async {
     membershipService,
     attendanceRepo,
     adjustmentRepo,
+    sessionRepo,
   );
 }

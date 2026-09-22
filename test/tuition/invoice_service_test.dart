@@ -63,7 +63,11 @@ void main() {
       membershipService = MembershipService(memberRepo);
       studentService = StudentService(studentRepo, membershipService);
       classService = ClassService(classRepo, membershipService);
-      policyService = TuitionPolicyService(policyRepo, classService);
+      policyService = TuitionPolicyService(
+        policyRepo,
+        classService,
+        tuitionRepo,
+      );
 
       final sessionService = SessionService(sessionRepo, classService);
       final scheduleService = ScheduleDomainService(
@@ -98,6 +102,7 @@ void main() {
         membershipService,
         attRepo,
         adjRepo,
+        sessionRepo,
       );
 
       invoiceService = InvoiceService(
@@ -217,7 +222,7 @@ void main() {
     );
 
     test(
-      'Historical finalized invoice remains unchanged when future policy changes',
+      'Creating retroactive policy is blocked when a finalized invoice exists',
       () async {
         await db.execute('''
         INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
@@ -235,11 +240,14 @@ void main() {
         );
         expect(invoiceSep.soTienPhaiThu, 50000);
 
-        // Change future price to 100,000 from Oct 2026
-        await policyService.createPolicy(
-          classId: 1,
-          effectiveFrom: '2026-10-01',
-          feePerSession: 100000,
+        // Attempting to backdate a policy for September 2026 is BLOCKED!
+        expect(
+          () => policyService.createPolicy(
+            classId: 1,
+            effectiveFrom: '2026-09-01',
+            feePerSession: 80000,
+          ),
+          throwsA(isA<Exception>()),
         );
 
         final fetchedSep = await invoiceService.getInvoice(1, 1, '2026-09');

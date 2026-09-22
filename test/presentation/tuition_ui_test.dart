@@ -119,7 +119,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      for (int i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
       expect(find.text('Chính sách học phí'), findsOneWidget);
       expect(find.textContaining('Học phí: 50,000đ / buổi'), findsOneWidget);

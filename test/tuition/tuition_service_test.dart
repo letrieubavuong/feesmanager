@@ -14,8 +14,6 @@ import 'package:tuition2027/features/schedule/data/schedule_repository.dart';
 import 'package:tuition2027/features/schedule/domain/schedule_service.dart';
 import 'package:tuition2027/features/session_adjustments/data/session_adjustment_repository.dart';
 import 'package:tuition2027/features/session_credits/data/session_credit_repository.dart';
-import 'package:tuition2027/features/session_credits/domain/credit_ledger_entry.dart';
-import 'package:tuition2027/features/session_credits/domain/credit_ledger_reason.dart';
 import 'package:tuition2027/features/session_credits/domain/session_credit_service.dart';
 import 'package:tuition2027/features/sessions/data/session_repository.dart';
 import 'package:tuition2027/features/sessions/domain/session_service.dart';
@@ -61,7 +59,11 @@ void main() {
       membershipService = MembershipService(memberRepo);
       studentService = StudentService(studentRepo, membershipService);
       classService = ClassService(classRepo, membershipService);
-      policyService = TuitionPolicyService(policyRepo, classService);
+      policyService = TuitionPolicyService(
+        policyRepo,
+        classService,
+        tuitionRepo,
+      );
 
       final sessionService = SessionService(sessionRepo, classService);
       final scheduleService = ScheduleDomainService(
@@ -96,6 +98,7 @@ void main() {
         membershipService,
         attRepo,
         adjRepo,
+        sessionRepo,
       );
 
       // Seed Student & Class
@@ -178,61 +181,98 @@ void main() {
     });
 
     test(
-      'NGHI_CO_PHEP consumes credit if available, non-chargeable if no credit',
+      'Scheduled/future HOC_BU makeup is NOT valid makeup until taught and attended',
       () async {
-        // Add +1 opening credit
-        final creditRepo = SessionCreditRepository(db);
-        await creditRepo.addLedgerEntry(
-          CreditLedgerEntry(
-            idHocSinh: 1,
-            idLop: 1,
-            idBuoiHoc: null,
-            ngayHieuLuc: '2026-08-15',
-            delta: 1,
-            lyDo: CreditLedgerReason.MIGRATION,
-            ghiChu: 'Opening credit',
-            createdAt: DateTime.now(),
-          ),
+        // Create session 201: NGHI_CO_PHEP
+        await db.execute('''
+        INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
+        VALUES (201, 1, 2, '2026-09-01', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+        await db.execute('''
+        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
+        VALUES (201, 1, 1, 'NGHI_CO_PHEP', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+
+        // Create target makeup session 202: still DU_KIEN (future/not taught)
+        await db.execute('''
+        INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
+        VALUES (202, 1, NULL, '2026-09-10', '17:30', '19:00', 'HOC_BU', 'DU_KIEN', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+
+        // Create adjustment HOC_BU pointing to session 202
+        await db.execute('''
+        INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at)
+        VALUES (1, 1, 201, 202, 'HOC_BU', '2026-01-01T00:00:00.000')
+      ''');
+
+        // Case A: Target session is DU_KIEN -> NOT a valid makeup! No credit available -> non-chargeable.
+        final previewA = await service.previewTuition(1, 1, '2026-09');
+        final c201A = previewA.candidates.firstWhere(
+          (c) => c.session.id == 201,
         );
-
-        // Create 2 sessions: 1 CO_MAT, 1 NGHI_CO_PHEP
-        await db.execute('''
-        INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
-        VALUES (101, 1, 2, '2026-09-01', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
-      ''');
-        await db.execute('''
-        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
-        VALUES (101, 1, 1, 'CO_MAT', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
-      ''');
-
-        await db.execute('''
-        INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
-        VALUES (102, 1, 3, '2026-09-02', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
-      ''');
-        await db.execute('''
-        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
-        VALUES (102, 1, 1, 'NGHI_CO_PHEP', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
-      ''');
-
-        final preview = await service.previewTuition(1, 1, '2026-09');
-
-        expect(preview.soBuoiEligible, 2);
-        expect(preview.creditOpening, 1);
-        expect(preview.creditUsed, 1); // Spent 1 credit for NGHI_CO_PHEP
-        expect(preview.creditClosing, 0);
-        expect(preview.soBuoiTinhPhi, 2); // Both chargeable
-        expect(preview.tongTruocGiam, 100000);
-        expect(preview.giamPhanTram, 10);
-        expect(preview.giamSoTien, 10000);
-        expect(preview.soTienPhaiThu, 90000);
-
-        // Verify candidates
-        final c102 = preview.candidates.firstWhere((c) => c.session.id == 102);
-        expect(c102.usesCredit, isTrue);
         expect(
-          c102.chargeType,
-          TuitionCandidateChargeType.CHARGEABLE_EXCUSED_WITH_CREDIT,
+          c201A.chargeType,
+          TuitionCandidateChargeType.NON_CHARGEABLE_EXCUSED_UNCOMPENSATED,
         );
+
+        // Case B: Finalize target session 202 to DA_HOC and record attendance HOC_BU
+        await db.execute('''
+        UPDATE buoi_hoc SET trang_thai = 'DA_HOC' WHERE id = 202
+      ''');
+        await db.execute('''
+        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, loai_tham_gia, id_buoi_vang_goc, created_at, updated_at)
+        VALUES (202, 1, 1, 'HOC_BU', 'HOC_BU', 201, '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+
+        // Case B: Target session is DA_HOC + attendance HOC_BU -> Valid makeup! Chargeable with makeup.
+        final previewB = await service.previewTuition(1, 1, '2026-09');
+        final c201B = previewB.candidates.firstWhere(
+          (c) => c.session.id == 201,
+        );
+        expect(
+          c201B.chargeType,
+          TuitionCandidateChargeType.CHARGEABLE_EXCUSED_WITH_MAKEUP,
+        );
+      },
+    );
+
+    test(
+      'Mid-month join evaluates eligible sessions from join date onwards',
+      () async {
+        // Register student 2 joining on Sep 15, 2026
+        await db.execute('''
+        INSERT INTO hoc_sinh (id, ho_ten, sdt_phu_huynh, created_at, updated_at)
+        VALUES (2, 'Mid Month Student', '0909999999', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+
+        await membershipService.enrollStudent(
+          studentId: 2,
+          classId: 1,
+          joinDate: DateTime.parse('2026-09-15'),
+        );
+
+        // Session before join date (Sep 10)
+        await db.execute('''
+        INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
+        VALUES (301, 1, 4, '2026-09-10', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+
+        // Session on/after join date (Sep 20)
+        await db.execute('''
+        INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
+        VALUES (302, 1, 7, '2026-09-20', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+        await db.execute('''
+        INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
+        VALUES (302, 2, 1, 'CO_MAT', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+
+        final preview = await service.previewTuition(2, 1, '2026-09');
+
+        // Only session 302 (Sep 20) is eligible for student 2!
+        expect(preview.soBuoiEligible, 1);
+        expect(preview.candidates.first.session.id, 302);
+        expect(preview.soTienPhaiThu, 50000);
       },
     );
   });

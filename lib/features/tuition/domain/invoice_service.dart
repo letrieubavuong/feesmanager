@@ -54,27 +54,28 @@ class InvoiceService {
       );
     }
 
-    // Reconcile extra earned credits for month
-    await _creditService.reconcileEarnedCreditsForStudentClassMonth(
-      studentId,
-      classId,
-      month,
-    );
+    // 1. Calculate missing extra earned credit entries (pure read plan)
+    final missingEarnedEntries = await _creditService
+        .getMissingEarnedCreditEntriesForStudentClassMonth(
+          studentId,
+          classId,
+          month,
+        );
 
-    // Calculate preview
+    // 2. Calculate preview (pure read plan)
     final preview = await _tuitionService.previewTuition(
       studentId,
       classId,
       month,
     );
 
-    // Prepare credit consumption ledger entries
-    final creditLedgerEntriesToCreate = <CreditLedgerEntry>[];
+    // 3. Prepare credit consumption ledger entries
+    final creditConsumptionEntries = <CreditLedgerEntry>[];
     final now = DateTime.now();
 
     for (final c in preview.candidates) {
       if (c.usesCredit) {
-        creditLedgerEntriesToCreate.add(
+        creditConsumptionEntries.add(
           CreditLedgerEntry(
             idHocSinh: studentId,
             idLop: classId,
@@ -90,19 +91,21 @@ class InvoiceService {
       }
     }
 
-    // Execute atomic SQLite transaction
+    // 4. Execute ALL mutations in ONE single atomic SQLite transaction
     TuitionInvoice? createdInvoice;
 
     await _db.transaction((txn) async {
-      // 1. Consume credits if needed
-      if (creditLedgerEntriesToCreate.isNotEmpty) {
-        await _creditRepo.addLedgerEntriesInTxn(
-          txn,
-          creditLedgerEntriesToCreate,
-        );
+      // 4a. Apply extra earned credits
+      if (missingEarnedEntries.isNotEmpty) {
+        await _creditRepo.addLedgerEntriesInTxn(txn, missingEarnedEntries);
       }
 
-      // 2. Build invoice snapshot
+      // 4b. Apply credit consumption
+      if (creditConsumptionEntries.isNotEmpty) {
+        await _creditRepo.addLedgerEntriesInTxn(txn, creditConsumptionEntries);
+      }
+
+      // 4c. Insert invoice snapshot
       final invoice = TuitionInvoice(
         idHocSinh: studentId,
         idLop: classId,
@@ -150,21 +153,31 @@ class InvoiceService {
       );
     }
 
-    // Reconcile extra earned credits for class month
-    await _creditService.reconcileEarnedCreditsForClassMonth(classId, month);
+    // Get active memberships in class for month (including mid-month joins)
+    final classMonthMemberships = await _membershipService
+        .getMembershipsForClassMonth(classId, month);
 
-    // Get active memberships in class
-    final memberships = await _membershipService.getRoster(
-      classId,
-      date: DateTime.parse('$month-01'),
-    );
+    final studentIds = classMonthMemberships.map((m) => m.idHocSinh).toSet();
 
-    final studentIds = memberships.map((m) => m.idHocSinh).toSet();
-    final previews = <TuitionPreview>[];
+    final studentPlans = <_StudentFinalizationPlan>[];
 
     for (final sid in studentIds) {
-      final p = await _tuitionService.previewTuition(sid, classId, month);
-      previews.add(p);
+      final missingEarned = await _creditService
+          .getMissingEarnedCreditEntriesForStudentClassMonth(
+            sid,
+            classId,
+            month,
+          );
+
+      final preview = await _tuitionService.previewTuition(sid, classId, month);
+
+      studentPlans.add(
+        _StudentFinalizationPlan(
+          studentId: sid,
+          missingEarnedEntries: missingEarned,
+          preview: preview,
+        ),
+      );
     }
 
     final finalizedInvoices = <TuitionInvoice>[];
@@ -173,14 +186,21 @@ class InvoiceService {
     await _db.transaction((txn) async {
       final now = DateTime.now();
 
-      for (final preview in previews) {
-        final creditLedgerEntriesToCreate = <CreditLedgerEntry>[];
+      for (final plan in studentPlans) {
+        if (plan.missingEarnedEntries.isNotEmpty) {
+          await _creditRepo.addLedgerEntriesInTxn(
+            txn,
+            plan.missingEarnedEntries,
+          );
+        }
 
-        for (final c in preview.candidates) {
+        final creditConsumptionEntries = <CreditLedgerEntry>[];
+
+        for (final c in plan.preview.candidates) {
           if (c.usesCredit) {
-            creditLedgerEntriesToCreate.add(
+            creditConsumptionEntries.add(
               CreditLedgerEntry(
-                idHocSinh: preview.studentId,
+                idHocSinh: plan.studentId,
                 idLop: classId,
                 idBuoiHoc: c.session.id,
                 ngayHieuLuc: c.session.ngay,
@@ -194,28 +214,28 @@ class InvoiceService {
           }
         }
 
-        if (creditLedgerEntriesToCreate.isNotEmpty) {
+        if (creditConsumptionEntries.isNotEmpty) {
           await _creditRepo.addLedgerEntriesInTxn(
             txn,
-            creditLedgerEntriesToCreate,
+            creditConsumptionEntries,
           );
         }
 
         final invoice = TuitionInvoice(
-          idHocSinh: preview.studentId,
+          idHocSinh: plan.studentId,
           idLop: classId,
           thang: month,
-          idChinhSachHocPhi: preview.policy.id!,
-          soBuoiEligible: preview.soBuoiEligible,
-          soBuoiTinhPhi: preview.soBuoiTinhPhi,
-          creditOpening: preview.creditOpening,
-          creditEarned: preview.creditEarned,
-          creditUsed: preview.creditUsed,
-          creditClosing: preview.creditClosing,
-          tongTruocGiam: preview.tongTruocGiam,
-          giamPhanTram: preview.giamPhanTram,
-          giamSoTien: preview.giamSoTien,
-          soTienPhaiThu: preview.soTienPhaiThu,
+          idChinhSachHocPhi: plan.preview.policy.id!,
+          soBuoiEligible: plan.preview.soBuoiEligible,
+          soBuoiTinhPhi: plan.preview.soBuoiTinhPhi,
+          creditOpening: plan.preview.creditOpening,
+          creditEarned: plan.preview.creditEarned,
+          creditUsed: plan.preview.creditUsed,
+          creditClosing: plan.preview.creditClosing,
+          tongTruocGiam: plan.preview.tongTruocGiam,
+          giamPhanTram: plan.preview.giamPhanTram,
+          giamSoTien: plan.preview.giamSoTien,
+          soTienPhaiThu: plan.preview.soTienPhaiThu,
           trangThai: TuitionInvoiceStatus.DA_CHOT,
           chotLuc: now,
           ghiChu: 'Chốt học phí cả lớp tháng $month',
@@ -235,6 +255,18 @@ class InvoiceService {
 
     return finalizedInvoices;
   }
+}
+
+class _StudentFinalizationPlan {
+  final int studentId;
+  final List<CreditLedgerEntry> missingEarnedEntries;
+  final TuitionPreview preview;
+
+  _StudentFinalizationPlan({
+    required this.studentId,
+    required this.missingEarnedEntries,
+    required this.preview,
+  });
 }
 
 @Riverpod(keepAlive: true)

@@ -7,6 +7,7 @@ import '../../students/presentation/student_detail_page.dart';
 import '../domain/tuition_invoice.dart';
 import '../domain/tuition_policy.dart';
 import '../domain/tuition_policy_service.dart';
+import '../domain/tuition_preview.dart';
 import 'tuition_controller.dart';
 
 class ClassTuitionTab extends ConsumerStatefulWidget {
@@ -40,9 +41,8 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     final policiesAsync = ref.watch(
       classTuitionPoliciesProvider(widget.classId),
     );
-    final referenceDate = DateTime.parse('$_selectedMonth-01');
     final rosterAsync = ref.watch(
-      classRosterProvider((widget.classId, referenceDate)),
+      classMonthMembershipsProvider((widget.classId, _selectedMonth)),
     );
 
     return Scaffold(
@@ -131,10 +131,21 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                             : Colors.teal.shade900,
                       ),
                     ),
-                    ElevatedButton.icon(
-                      onPressed: () => _showCreatePolicyDialog(context),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text('Thêm / Đổi CS'),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () =>
+                              _showPolicyHistoryDialog(context, policies),
+                          icon: const Icon(Icons.history, size: 16),
+                          label: const Text('Lịch sử CS'),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () => _showCreatePolicyDialog(context),
+                          icon: const Icon(Icons.add, size: 16),
+                          label: const Text('Thêm CS'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -208,7 +219,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(16.0),
-              child: Text('Lớp không có học sinh nào.'),
+              child: Text('Lớp không có học sinh nào trong tháng này.'),
             ),
           );
         }
@@ -229,6 +240,50 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Text('Lỗi tải danh sách học sinh: $e'),
+    );
+  }
+
+  void _showPolicyHistoryDialog(
+    BuildContext context,
+    List<TuitionPolicy> policies,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Lịch sử chính sách học phí'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: policies.isEmpty
+              ? const Text('Chưa có chính sách nào.')
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: policies.length,
+                  itemBuilder: (ctx, i) {
+                    final p = policies[i];
+                    return ListTile(
+                      title: Text(
+                        '${NumberFormat('#,###').format(p.hocPhiMoiBuoi)}đ/buổi (N=${p.soBuoiChuanThang})',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        'Từ ${p.hieuLucTu}${p.hieuLucDen != null ? ' đến ${p.hieuLucDen}' : ' (Hiện tại)'}',
+                      ),
+                      trailing: p.hocPhiThangToiDa != null
+                          ? Text(
+                              'Cap: ${NumberFormat('#,###').format(p.hocPhiThangToiDa)}đ',
+                            )
+                          : null,
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -293,11 +348,26 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
           ElevatedButton(
             onPressed: () async {
               try {
-                final fee = int.tryParse(feeController.text.trim()) ?? 0;
-                final standard =
-                    int.tryParse(standardController.text.trim()) ?? 12;
+                final feeText = feeController.text.trim();
+                final fee = int.tryParse(feeText);
+                if (fee == null || fee < 0) {
+                  throw Exception('Học phí mỗi buổi không hợp lệ');
+                }
+
+                final standardText = standardController.text.trim();
+                final standard = int.tryParse(standardText);
+                if (standard == null || standard <= 0) {
+                  throw Exception('Số buổi chuẩn tháng phải lớn hơn 0');
+                }
+
                 final capStr = capController.text.trim();
-                final cap = capStr.isNotEmpty ? int.tryParse(capStr) : null;
+                int? cap;
+                if (capStr.isNotEmpty) {
+                  cap = int.tryParse(capStr);
+                  if (cap == null || cap < 0) {
+                    throw Exception('Trần học phí tháng không hợp lệ');
+                  }
+                }
 
                 final service = await ref.read(
                   tuitionPolicyServiceProvider.future,
@@ -312,6 +382,12 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                 );
 
                 ref.invalidate(classTuitionPoliciesProvider(widget.classId));
+                ref.invalidate(
+                  classMonthMembershipsProvider((
+                    widget.classId,
+                    _selectedMonth,
+                  )),
+                );
                 if (dialogCtx.mounted) Navigator.pop(dialogCtx);
               } catch (e) {
                 if (dialogCtx.mounted) {
@@ -351,6 +427,12 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                       month: _selectedMonth,
                     );
                 ref.invalidate(classTuitionPoliciesProvider(widget.classId));
+                ref.invalidate(
+                  classMonthMembershipsProvider((
+                    widget.classId,
+                    _selectedMonth,
+                  )),
+                );
                 if (dialogCtx.mounted) {
                   Navigator.pop(dialogCtx);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -401,130 +483,203 @@ class _StudentTuitionCard extends ConsumerWidget {
       data: (student) {
         if (student == null) return const SizedBox.shrink();
 
+        final invoice = invoiceAsync.value;
+        final isFinalized = invoice?.trangThai == TuitionInvoiceStatus.DA_CHOT;
+
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 6),
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: previewAsync.when(
-              data: (preview) {
-                final isFinalized =
-                    invoiceAsync.value?.trangThai ==
-                    TuitionInvoiceStatus.DA_CHOT;
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          student.hoTen,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Chip(
-                          label: Text(
-                            isFinalized ? 'ĐÃ CHỐT' : 'NHÁP',
-                            style: TextStyle(
-                              color: isFinalized
-                                  ? Colors.white
-                                  : Colors.black87,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          backgroundColor: isFinalized
-                              ? Colors.teal
-                              : Colors.grey.shade300,
-                        ),
-                      ],
+            child: isFinalized
+                ? _buildFinalizedInvoiceSnapshot(
+                    context,
+                    student.hoTen,
+                    invoice!,
+                  )
+                : previewAsync.when(
+                    data: (preview) => _buildDraftPreviewCard(
+                      context,
+                      ref,
+                      student.hoTen,
+                      preview,
                     ),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Số buổi eligible: ${preview.soBuoiEligible} (Tính phí: ${preview.soBuoiTinhPhi})',
-                          ),
-                        ),
-                        Text(
-                          'Phải thu: ${NumberFormat('#,###').format(preview.soTienPhaiThu)}đ',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.teal,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (preview.giamPhanTram > 0)
-                      Text(
-                        'Miễn giảm: ${preview.giamPhanTram}% (-${NumberFormat('#,###').format(preview.giamSoTien)}đ)',
-                        style: TextStyle(
-                          color: Colors.orange.shade800,
-                          fontSize: 12,
-                        ),
-                      ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Credit sổ cái: Đầu ${preview.creditOpening} | Đã cộng +${preview.creditEarned} | Đã dùng -${preview.creditUsed} | Cuối ${preview.creditClosing}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    if (!isFinalized)
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            try {
-                              await ref
-                                  .read(invoiceControllerProvider.notifier)
-                                  .finalizeStudentInvoice(
-                                    studentId: studentId,
-                                    classId: classId,
-                                    month: month,
-                                  );
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Đã chốt học phí cho ${student.hoTen}!',
-                                    ),
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Lỗi: $e')),
-                                );
-                              }
-                            }
-                          },
-                          icon: const Icon(
-                            Icons.check_circle_outline,
-                            size: 16,
-                          ),
-                          label: const Text('Chốt học phí'),
-                        ),
-                      ),
-                  ],
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Text('Chưa thể xem trước học phí: $e'),
-            ),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Text('Chưa thể xem trước học phí: $e'),
+                  ),
           ),
         );
       },
       loading: () => const SizedBox.shrink(),
       error: (e, _) => Text('Lỗi học sinh: $e'),
+    );
+  }
+
+  Widget _buildFinalizedInvoiceSnapshot(
+    BuildContext context,
+    String studentName,
+    TuitionInvoice invoice,
+  ) {
+    final formattedDate = invoice.chotLuc != null
+        ? DateFormat('HH:mm dd/MM/yyyy').format(invoice.chotLuc!)
+        : 'Đã chốt';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              studentName,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const Chip(
+              label: Text(
+                'ĐÃ CHỐT',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              backgroundColor: Colors.teal,
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                'Số buổi eligible: ${invoice.soBuoiEligible} (Tính phí: ${invoice.soBuoiTinhPhi})',
+              ),
+            ),
+            Text(
+              'Phải thu: ${NumberFormat('#,###').format(invoice.soTienPhaiThu)}đ',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal,
+              ),
+            ),
+          ],
+        ),
+        if (invoice.giamPhanTram > 0)
+          Text(
+            'Miễn giảm: ${invoice.giamPhanTram}% (-${NumberFormat('#,###').format(invoice.giamSoTien)}đ)',
+            style: TextStyle(color: Colors.orange.shade800, fontSize: 12),
+          ),
+        const SizedBox(height: 4),
+        Text(
+          'Credit sổ cái snapshot: Đầu ${invoice.creditOpening} | Đã cộng +${invoice.creditEarned} | Đã dùng -${invoice.creditUsed} | Cuối ${invoice.creditClosing}',
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Thời điểm chốt: $formattedDate',
+          style: TextStyle(
+            fontSize: 11,
+            fontStyle: FontStyle.italic,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDraftPreviewCard(
+    BuildContext context,
+    WidgetRef ref,
+    String studentName,
+    TuitionPreview preview,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              studentName,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            Chip(
+              label: const Text(
+                'NHÁP',
+                style: TextStyle(
+                  color: Colors.black87,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              backgroundColor: Colors.grey.shade300,
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                'Số buổi eligible: ${preview.soBuoiEligible} (Tính phí: ${preview.soBuoiTinhPhi})',
+              ),
+            ),
+            Text(
+              'Phải thu: ${NumberFormat('#,###').format(preview.soTienPhaiThu)}đ',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal,
+              ),
+            ),
+          ],
+        ),
+        if (preview.giamPhanTram > 0)
+          Text(
+            'Miễn giảm: ${preview.giamPhanTram}% (-${NumberFormat('#,###').format(preview.giamSoTien)}đ)',
+            style: TextStyle(color: Colors.orange.shade800, fontSize: 12),
+          ),
+        const SizedBox(height: 4),
+        Text(
+          'Credit sổ cái: Đầu ${preview.creditOpening} | Đã cộng +${preview.creditEarned} | Đã dùng -${preview.creditUsed} | Cuối ${preview.creditClosing}',
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: OutlinedButton.icon(
+            onPressed: () async {
+              try {
+                await ref
+                    .read(invoiceControllerProvider.notifier)
+                    .finalizeStudentInvoice(
+                      studentId: studentId,
+                      classId: classId,
+                      month: month,
+                    );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Đã chốt học phí cho $studentName!'),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+                }
+              }
+            },
+            icon: const Icon(Icons.check_circle_outline, size: 16),
+            label: const Text('Chốt học phí'),
+          ),
+        ),
+      ],
     );
   }
 }
