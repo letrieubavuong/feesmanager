@@ -111,6 +111,10 @@ void main() {
                 1,
                 nowMonth,
               )).overrideWith((ref) async => testSummary),
+              classMonthPaymentSummariesProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => {1: testSummary}),
             ],
             child: const MaterialApp(
               home: Scaffold(body: ClassTuitionTab(classId: 1)),
@@ -206,6 +210,10 @@ void main() {
                 1,
                 nowMonth,
               )).overrideWith((ref) async => testSummary),
+              classMonthPaymentSummariesProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => {1: testSummary}),
             ],
             child: const MaterialApp(
               home: Scaffold(body: ClassTuitionTab(classId: 1)),

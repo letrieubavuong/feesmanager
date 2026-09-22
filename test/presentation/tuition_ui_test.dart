@@ -7,6 +7,9 @@ import 'package:path/path.dart';
 import 'package:tuition2027/core/database/app_database.dart';
 import 'package:tuition2027/core/database/database_provider.dart';
 import 'package:tuition2027/features/memberships/presentation/membership_providers.dart';
+import 'package:tuition2027/features/payments/domain/invoice_payment_summary.dart';
+import 'package:tuition2027/features/payments/domain/payment.dart';
+import 'package:tuition2027/features/payments/domain/payment_method.dart';
 import 'package:tuition2027/features/payments/presentation/payment_controller.dart';
 import 'package:tuition2027/features/students/domain/student.dart';
 import 'package:tuition2027/features/students/presentation/student_detail_page.dart';
@@ -110,11 +113,10 @@ void main() {
                 1,
                 nowMonth,
               ).overrideWith(() => _FakeTuitionPreviewController()),
-              invoicePaymentSummaryProvider((
-                1,
+              classMonthPaymentSummariesProvider((
                 1,
                 nowMonth,
-              )).overrideWith((ref) async => null),
+              )).overrideWith((ref) async => {}),
             ],
             child: const MaterialApp(
               home: Scaffold(body: ClassTuitionTab(classId: 1)),
@@ -145,11 +147,13 @@ void main() {
           updatedAt: DateTime.now(),
         );
 
+        final nowMonth = DateTime.now().toString().substring(0, 7);
+
         final testInvoice = TuitionInvoice(
           id: 1,
           idHocSinh: 1,
           idLop: 1,
-          thang: DateTime.now().toString().substring(0, 7),
+          thang: nowMonth,
           idChinhSachHocPhi: 1,
           soBuoiEligible: 12,
           soBuoiTinhPhi: 12,
@@ -166,7 +170,10 @@ void main() {
           updatedAt: DateTime.now(),
         );
 
-        final nowMonth = DateTime.now().toString().substring(0, 7);
+        final testSummary = InvoicePaymentSummary.calculate(
+          invoice: testInvoice,
+          payments: [],
+        );
 
         await tester.pumpWidget(
           ProviderScope(
@@ -187,11 +194,10 @@ void main() {
                 1,
                 nowMonth,
               ).overrideWith((ref) async => testInvoice),
-              invoicePaymentSummaryProvider((
-                1,
+              classMonthPaymentSummariesProvider((
                 1,
                 nowMonth,
-              )).overrideWith((ref) async => null),
+              )).overrideWith((ref) async => {1: testSummary}),
             ],
             child: const MaterialApp(
               home: Scaffold(body: ClassTuitionTab(classId: 1)),
@@ -219,11 +225,13 @@ void main() {
           updatedAt: DateTime.now(),
         );
 
+        final nowMonth = DateTime.now().toString().substring(0, 7);
+
         final testInvoice = TuitionInvoice(
           id: 1,
           idHocSinh: 1,
           idLop: 1,
-          thang: DateTime.now().toString().substring(0, 7),
+          thang: nowMonth,
           idChinhSachHocPhi: 1,
           soBuoiEligible: 12,
           soBuoiTinhPhi: 12,
@@ -240,7 +248,22 @@ void main() {
           updatedAt: DateTime.now(),
         );
 
-        final nowMonth = DateTime.now().toString().substring(0, 7);
+        final testPayment = Payment(
+          id: 1,
+          studentId: 1,
+          classId: 1,
+          invoiceId: 1,
+          month: nowMonth,
+          amount: 600000,
+          paymentDate: '$nowMonth-10',
+          method: PaymentMethod.CHUYEN_KHOAN,
+          createdAt: DateTime.now(),
+        );
+
+        final testSummary = InvoicePaymentSummary.calculate(
+          invoice: testInvoice,
+          payments: [testPayment],
+        );
 
         await tester.pumpWidget(
           ProviderScope(
@@ -261,11 +284,10 @@ void main() {
                 1,
                 nowMonth,
               ).overrideWith((ref) async => testInvoice),
-              invoicePaymentSummaryProvider((
-                1,
+              classMonthPaymentSummariesProvider((
                 1,
                 nowMonth,
-              )).overrideWith((ref) async => null),
+              )).overrideWith((ref) async => {1: testSummary}),
             ],
             child: const MaterialApp(
               home: Scaffold(body: ClassTuitionTab(classId: 1)),
@@ -293,11 +315,13 @@ void main() {
           updatedAt: DateTime.now(),
         );
 
+        final nowMonth = DateTime.now().toString().substring(0, 7);
+
         final testInvoice = TuitionInvoice(
           id: 1,
           idHocSinh: 1,
           idLop: 1,
-          thang: DateTime.now().toString().substring(0, 7),
+          thang: nowMonth,
           idChinhSachHocPhi: 1,
           soBuoiEligible: 12,
           soBuoiTinhPhi: 12,
@@ -314,7 +338,22 @@ void main() {
           updatedAt: DateTime.now(),
         );
 
-        final nowMonth = DateTime.now().toString().substring(0, 7);
+        final testPayment = Payment(
+          id: 1,
+          studentId: 1,
+          classId: 1,
+          invoiceId: 1,
+          month: nowMonth,
+          amount: 300000,
+          paymentDate: '$nowMonth-10',
+          method: PaymentMethod.TIEN_MAT,
+          createdAt: DateTime.now(),
+        );
+
+        final testSummary = InvoicePaymentSummary.calculate(
+          invoice: testInvoice,
+          payments: [testPayment],
+        );
 
         await tester.pumpWidget(
           ProviderScope(
@@ -335,11 +374,10 @@ void main() {
                 1,
                 nowMonth,
               ).overrideWith((ref) async => testInvoice),
-              invoicePaymentSummaryProvider((
-                1,
+              classMonthPaymentSummariesProvider((
                 1,
                 nowMonth,
-              )).overrideWith((ref) async => null),
+              )).overrideWith((ref) async => {1: testSummary}),
             ],
             child: const MaterialApp(
               home: Scaffold(body: ClassTuitionTab(classId: 1)),

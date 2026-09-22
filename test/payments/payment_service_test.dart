@@ -268,40 +268,128 @@ void main() {
     );
 
     test(
-      'Concurrent Payment Race-Condition Protection: 400k + 400k on 600k invoice',
+      'Real Concurrent Payment Test: 400k + 400k on 600k invoice with Future.wait',
       () async {
-        // Execute 1st payment: 400k
-        await paymentService.recordPayment(
-          studentId: 1,
-          classId: 1,
-          month: '2026-09',
-          amount: 400000,
-          paymentDate: '2026-09-10',
-          method: PaymentMethod.TIEN_MAT,
-        );
+        // Launch truly concurrent payment requests using Future.wait
+        int successCount = 0;
+        int errorCount = 0;
 
-        // 2nd payment attempts 400k on remaining 200k debt -> REJECTED!
-        expect(
-          () => paymentService.recordPayment(
-            studentId: 1,
-            classId: 1,
-            month: '2026-09',
-            amount: 400000,
-            paymentDate: '2026-09-10',
-            method: PaymentMethod.TIEN_MAT,
-          ),
-          throwsA(isA<Exception>()),
-        );
+        await Future.wait([
+          paymentService
+              .recordPayment(
+                studentId: 1,
+                classId: 1,
+                month: '2026-09',
+                amount: 400000,
+                paymentDate: '2026-09-10',
+                method: PaymentMethod.TIEN_MAT,
+              )
+              .then((_) => successCount++)
+              .catchError((_) => errorCount++),
+          paymentService
+              .recordPayment(
+                studentId: 1,
+                classId: 1,
+                month: '2026-09',
+                amount: 400000,
+                paymentDate: '2026-09-10',
+                method: PaymentMethod.TIEN_MAT,
+              )
+              .then((_) => successCount++)
+              .catchError((_) => errorCount++),
+        ]);
+
+        expect(successCount, 1);
+        expect(errorCount, 1);
 
         final summary = await paymentService.getPaymentSummary(1, 1, '2026-09');
         expect(summary?.totalPaid, 400000);
         expect(summary?.remainingDebt, 200000);
         expect(summary?.settlementStatus, TuitionInvoiceStatus.CON_NO);
+        expect(
+          (await tuitionRepo.getInvoice(1, 1, '2026-09'))?.trangThai,
+          TuitionInvoiceStatus.CON_NO,
+        );
+      },
+    );
+
+    test(
+      'Real Concurrent Payment Test: 300k + 300k on 600k invoice with Future.wait',
+      () async {
+        await Future.wait([
+          paymentService.recordPayment(
+            studentId: 1,
+            classId: 1,
+            month: '2026-09',
+            amount: 300000,
+            paymentDate: '2026-09-10',
+            method: PaymentMethod.TIEN_MAT,
+          ),
+          paymentService.recordPayment(
+            studentId: 1,
+            classId: 1,
+            month: '2026-09',
+            amount: 300000,
+            paymentDate: '2026-09-10',
+            method: PaymentMethod.CHUYEN_KHOAN,
+          ),
+        ]);
+
+        final summary = await paymentService.getPaymentSummary(1, 1, '2026-09');
+        expect(summary?.totalPaid, 600000);
+        expect(summary?.remainingDebt, 0);
+        expect(summary?.paymentCount, 2);
+        expect(summary?.settlementStatus, TuitionInvoiceStatus.DA_THANH_TOAN);
+        expect(
+          (await tuitionRepo.getInvoice(1, 1, '2026-09'))?.trangThai,
+          TuitionInvoiceStatus.DA_THANH_TOAN,
+        );
+      },
+    );
+
+    test(
+      'Real Concurrent Duplicate Transaction ID Test with Future.wait',
+      () async {
+        int successCount = 0;
+        int errorCount = 0;
+
+        await Future.wait([
+          paymentService
+              .recordPayment(
+                studentId: 1,
+                classId: 1,
+                month: '2026-09',
+                amount: 200000,
+                paymentDate: '2026-09-10',
+                method: PaymentMethod.CHUYEN_KHOAN,
+                transactionId: 'BANK_DUP_001',
+              )
+              .then((_) => successCount++)
+              .catchError((_) => errorCount++),
+          paymentService
+              .recordPayment(
+                studentId: 1,
+                classId: 1,
+                month: '2026-09',
+                amount: 200000,
+                paymentDate: '2026-09-10',
+                method: PaymentMethod.CHUYEN_KHOAN,
+                transactionId: 'BANK_DUP_001',
+              )
+              .then((_) => successCount++)
+              .catchError((_) => errorCount++),
+        ]);
+
+        expect(successCount, 1);
+        expect(errorCount, 1);
+
+        final summary = await paymentService.getPaymentSummary(1, 1, '2026-09');
+        expect(summary?.totalPaid, 200000);
+        expect(summary?.paymentCount, 1);
       },
     );
 
     test('Deliberate Rollback Test using SQLite Trigger', () async {
-      // Create trigger to force failure BEFORE UPDATE ON hoc_phi_thang
       await db.execute('''
         CREATE TRIGGER force_rollback_test
         BEFORE UPDATE ON hoc_phi_thang
@@ -339,7 +427,28 @@ void main() {
         VALUES (1, 1, 1, '2026-09', 700000, '2026-09-15', 'TIEN_MAT', '2026-09-15T10:00:00')
       ''');
 
-        // Summary calculation fails closed instead of silently claiming remainingDebt = 0!
+        expect(
+          () => paymentService.getPaymentSummary(1, 1, '2026-09'),
+          throwsA(isA<Exception>()),
+        );
+      },
+    );
+
+    test(
+      'Fail Closed on Mismatched Student/Class/Month in Payment Row',
+      () async {
+        // Seed Student 2 so FK passes
+        await db.execute('''
+        INSERT INTO hoc_sinh (id, ho_ten, sdt_phu_huynh, created_at, updated_at)
+        VALUES (2, 'Student 2', '0901234568', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+
+        // Direct raw DB insertion of payment linked to invoice 1 but with mismatched student ID 2
+        await db.execute('''
+        INSERT INTO thanh_toan (id_hoc_sinh, id_lop, id_hoc_phi_thang, thang, so_tien, ngay_thanh_toan, phuong_thuc, created_at)
+        VALUES (2, 1, 1, '2026-09', 100000, '2026-09-15', 'TIEN_MAT', '2026-09-15T10:00:00')
+      ''');
+
         expect(
           () => paymentService.getPaymentSummary(1, 1, '2026-09'),
           throwsA(isA<Exception>()),
@@ -355,6 +464,50 @@ void main() {
 
       expect(
         () => paymentService.getPaymentSummary(1, 1, '2026-09'),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('Test F: Payment on NHAP draft invoice is REJECTED', () async {
+      // Insert an actual NHAP invoice in DB
+      await db.execute('''
+        INSERT INTO hoc_phi_thang (id, id_hoc_sinh, id_lop, thang, id_chinh_sach_hoc_phi, so_buoi_eligible, so_buoi_tinh_phi, credit_opening, credit_earned, credit_used, credit_closing, tong_truoc_giam, so_tien_phai_thu, trang_thai, created_at, updated_at)
+        VALUES (99, 1, 1, '2026-10', 1, 12, 12, 0, 0, 0, 0, 600000, 600000, 'NHAP', '2026-10-01', '2026-10-01')
+      ''');
+
+      expect(
+        () => paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-10',
+          amount: 100000,
+          paymentDate: '2026-10-01',
+          method: PaymentMethod.TIEN_MAT,
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('Zero-Due Invoice Test: soTienPhaiThu = 0', () async {
+      await db.execute('''
+        INSERT INTO hoc_phi_thang (id, id_hoc_sinh, id_lop, thang, id_chinh_sach_hoc_phi, so_buoi_eligible, so_buoi_tinh_phi, credit_opening, credit_earned, credit_used, credit_closing, tong_truoc_giam, so_tien_phai_thu, trang_thai, created_at, updated_at)
+        VALUES (88, 1, 1, '2026-11', 1, 0, 0, 0, 0, 0, 0, 0, 0, 'DA_CHOT', '2026-11-01', '2026-11-01')
+      ''');
+
+      final summary = await paymentService.getPaymentSummary(1, 1, '2026-11');
+      expect(summary?.amountDue, 0);
+      expect(summary?.totalPaid, 0);
+      expect(summary?.remainingDebt, 0);
+
+      expect(
+        () => paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-11',
+          amount: 50000,
+          paymentDate: '2026-11-01',
+          method: PaymentMethod.TIEN_MAT,
+        ),
         throwsA(isA<Exception>()),
       );
     });

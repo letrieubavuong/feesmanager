@@ -128,17 +128,17 @@
 - [x] Persistence in `PaymentRepository` with transaction-aware `InTxn` methods and `getPaymentsForInvoiceIds` batch lookups.
 - [x] In-Transaction Command Execution (`PaymentService.recordPayment`):
   - All reads (invoice, payments, totalPaid, transaction ID check), validations, payment insertion, and invoice status update execute inside ONE single SQLite transaction (`_db.transaction`).
-  - Concurrent race-condition protection (400k + 400k on 600k invoice rejects overpayment; 300k + 300k settles to `DA_THANH_TOAN`).
+  - True concurrent race-condition protection tested with `Future.wait` (400k + 400k on 600k invoice rejects overpayment; 300k + 300k settles to `DA_THANH_TOAN`).
   - Deliberate transaction rollback verified with SQLite trigger test.
   - Derived debt formula: `remainingDebt = invoice.soTienPhaiThu - totalPaid` (never persisted as separate column).
-- [x] Fail-closed integrity checks: Mismatched student/class/month payment, overpayment, or corrupted status on disk throws exception.
+- [x] Fail-closed integrity checks: Mismatched student/class/month payment, overpayment, or corrupted status on disk throws exception. Missing summaries on finalized cards fail closed without fabricating zero debt.
 - [x] Snapshot Immutability: Phase 9 invoice snapshot fields (`soBuoiEligible`, `soBuoiTinhPhi`, `creditClosing`, `soTienPhaiThu`, etc.) remain 100% immutable upon payment.
-- [x] Batch Read Model (`classMonthPaymentSummariesProvider`) eliminating N+1 UI queries.
+- [x] Batch Read Model (`classMonthPaymentSummariesProvider` & `classMonthInvoicesProvider`) watched ONCE in `ClassTuitionTab` eliminating N+1 UI queries.
 - [x] UI Integration in `ClassTuitionTab`:
   - Card displays "Phải thu", "Đã thanh toán", "Còn lại" and settlement status chips (`ĐÃ CHỐT`, `CÒN NỢ`, `ĐÃ THANH TOÁN`).
   - Action "Ghi nhận thanh toán" opens dialog prefilled with remaining debt, method selection, payment date picker with Flutter DatePicker UI, transaction ID, and note fields.
   - Action "Lịch sử thanh toán" opens deterministic payment history dialog.
-- [x] Comprehensive Tests (261 tests passing):
+- [x] Comprehensive Tests (266 tests passing):
     - `test/repository/migration_v11_v12_test.dart`
     - `test/payments/payment_service_test.dart`
     - `test/presentation/payment_ui_test.dart`
@@ -150,7 +150,7 @@
 - **Version**: 12
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
-- **Tests**: 261 tests passing
+- **Tests**: 266 tests passing
 - **Quality Gate**:
   - `dart analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (261 tests)
+  - `flutter test`: 100% Pass (266 tests)

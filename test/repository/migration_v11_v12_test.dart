@@ -114,9 +114,15 @@ void main() {
         // Assert version is 12
         expect(await dbV12.getVersion(), 12);
 
-        // Assert Phase 0-9 data preserved
+        // Assert Phase 0-9 data preserved (students, classes, policies, invoices)
         final hs = await dbV12.query('hoc_sinh', where: 'id = 101');
         expect(hs.first['ho_ten'], 'Student 101');
+
+        final policy = await dbV12.query(
+          'chinh_sach_hoc_phi',
+          where: 'id = 301',
+        );
+        expect(policy.first['hoc_phi_moi_buoi'], 50000);
 
         final invoice = await dbV12.query('hoc_phi_thang', where: 'id = 401');
         expect(invoice.first['so_tien_phai_thu'], 600000);
@@ -127,11 +133,42 @@ void main() {
         );
         expect(tables, isNotEmpty);
 
+        // Assert indexes created
+        final indexes = await dbV12.rawQuery(
+          "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='thanh_toan'",
+        );
+        final indexNames = indexes.map((i) => i['name'] as String).toSet();
+        expect(indexNames.contains('idx_thanh_toan_ma_giao_dich'), isTrue);
+        expect(indexNames.contains('idx_thanh_toan_invoice'), isTrue);
+        expect(
+          indexNames.contains('idx_thanh_toan_student_class_month'),
+          isTrue,
+        );
+        expect(indexNames.contains('idx_thanh_toan_ngay'), isTrue);
+
         // Insert valid payment in v12
         await dbV12.execute('''
         INSERT INTO thanh_toan (id_hoc_sinh, id_lop, id_hoc_phi_thang, thang, so_tien, ngay_thanh_toan, phuong_thuc, ma_giao_dich, created_at)
         VALUES (101, 201, 401, '2026-09', 300000, '2026-09-15', 'CHUYEN_KHOAN', 'BANK_TX_001', '2026-09-15T10:00:00')
       ''');
+
+        // Assert CHECK constraint: so_tien > 0
+        expect(
+          () => dbV12.execute('''
+          INSERT INTO thanh_toan (id_hoc_sinh, id_lop, id_hoc_phi_thang, thang, so_tien, ngay_thanh_toan, phuong_thuc, created_at)
+          VALUES (101, 201, 401, '2026-09', 0, '2026-09-15', 'TIEN_MAT', '2026-09-15T10:00:00')
+        '''),
+          throwsA(isA<DatabaseException>()),
+        );
+
+        // Assert CHECK constraint: phuong_thuc IN ('TIEN_MAT', 'CHUYEN_KHOAN', 'KHAC')
+        expect(
+          () => dbV12.execute('''
+          INSERT INTO thanh_toan (id_hoc_sinh, id_lop, id_hoc_phi_thang, thang, so_tien, ngay_thanh_toan, phuong_thuc, created_at)
+          VALUES (101, 201, 401, '2026-09', 100000, '2026-09-15', 'INVALID', '2026-09-15T10:00:00')
+        '''),
+          throwsA(isA<DatabaseException>()),
+        );
 
         // Assert ON DELETE RESTRICT on student deletion
         expect(

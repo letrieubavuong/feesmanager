@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../memberships/presentation/membership_providers.dart';
+import '../../payments/presentation/payment_controller.dart';
 import '../domain/invoice_service.dart';
 import '../domain/tuition_invoice.dart';
 import '../domain/tuition_policy.dart';
@@ -26,6 +27,15 @@ Future<TuitionPolicy?> effectiveTuitionPolicy(
   final service = await ref.watch(tuitionPolicyServiceProvider.future);
   final dateStr = '${arg.$2}-01';
   return service.getEffectivePolicyForDateStr(arg.$1, dateStr);
+}
+
+@riverpod
+Future<List<TuitionInvoice>> classMonthInvoices(
+  ClassMonthInvoicesRef ref,
+  (int classId, String month) arg,
+) async {
+  final service = await ref.watch(invoiceServiceProvider.future);
+  return service.getInvoicesForClassMonth(arg.$1, arg.$2);
 }
 
 @riverpod
@@ -119,6 +129,11 @@ class InvoiceController extends _$InvoiceController {
       ref.invalidate(
         tuitionPreviewControllerProvider(studentId, classId, month),
       );
+      ref.invalidate(classMonthInvoicesProvider((classId, month)));
+      ref.invalidate(classMonthPaymentSummariesProvider((classId, month)));
+      ref.invalidate(
+        invoicePaymentSummaryProvider((studentId, classId, month)),
+      );
       ref.invalidate(classTuitionPoliciesProvider(classId));
       ref.invalidate(effectiveTuitionPolicyProvider((classId, month)));
       ref.invalidate(classMonthMembershipsProvider((classId, month)));
@@ -156,8 +171,17 @@ class InvoiceController extends _$InvoiceController {
             invoice.thang,
           ),
         );
+        ref.invalidate(
+          invoicePaymentSummaryProvider((
+            invoice.idHocSinh,
+            invoice.idLop,
+            invoice.thang,
+          )),
+        );
       }
 
+      ref.invalidate(classMonthInvoicesProvider((classId, month)));
+      ref.invalidate(classMonthPaymentSummariesProvider((classId, month)));
       ref.invalidate(classTuitionPoliciesProvider(classId));
       ref.invalidate(effectiveTuitionPolicyProvider((classId, month)));
       ref.invalidate(classMonthMembershipsProvider((classId, month)));

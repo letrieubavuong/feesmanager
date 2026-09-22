@@ -50,6 +50,9 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     final rosterAsync = ref.watch(
       classMonthStudentsProvider((widget.classId, _selectedMonth)),
     );
+    final paymentSummariesAsync = ref.watch(
+      classMonthPaymentSummariesProvider((widget.classId, _selectedMonth)),
+    );
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -63,7 +66,11 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
             const SizedBox(height: 16),
             _buildClassFinalizeHeader(context),
             const SizedBox(height: 16),
-            _buildStudentTuitionList(context, rosterAsync),
+            _buildStudentTuitionList(
+              context,
+              rosterAsync,
+              paymentSummariesAsync,
+            ),
           ],
         ),
       ),
@@ -212,6 +219,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
   Widget _buildStudentTuitionList(
     BuildContext context,
     AsyncValue<List<Student>> rosterAsync,
+    AsyncValue<Map<int, InvoicePaymentSummary>> paymentSummariesAsync,
   ) {
     return rosterAsync.when(
       data: (students) {
@@ -234,6 +242,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
               studentId: student.id!,
               classId: widget.classId,
               month: _selectedMonth,
+              paymentSummariesAsync: paymentSummariesAsync,
             );
           },
         );
@@ -447,11 +456,13 @@ class _StudentTuitionCard extends ConsumerWidget {
   final int studentId;
   final int classId;
   final String month;
+  final AsyncValue<Map<int, InvoicePaymentSummary>> paymentSummariesAsync;
 
   const _StudentTuitionCard({
     required this.studentId,
     required this.classId,
     required this.month,
+    required this.paymentSummariesAsync,
   });
 
   @override
@@ -462,9 +473,6 @@ class _StudentTuitionCard extends ConsumerWidget {
     );
     final invoiceAsync = ref.watch(
       studentInvoiceProvider(studentId, classId, month),
-    );
-    final paymentSummaryAsync = ref.watch(
-      invoicePaymentSummaryProvider((studentId, classId, month)),
     );
 
     return studentAsync.when(
@@ -484,7 +492,7 @@ class _StudentTuitionCard extends ConsumerWidget {
                     ref,
                     student.hoTen,
                     invoice!,
-                    paymentSummaryAsync,
+                    paymentSummariesAsync,
                   )
                 : previewAsync.when(
                     data: (preview) => _buildDraftPreviewCard(
@@ -510,9 +518,9 @@ class _StudentTuitionCard extends ConsumerWidget {
     WidgetRef ref,
     String studentName,
     TuitionInvoice invoice,
-    AsyncValue<InvoicePaymentSummary?> summaryAsync,
+    AsyncValue<Map<int, InvoicePaymentSummary>> summariesAsync,
   ) {
-    return summaryAsync.when(
+    return summariesAsync.when(
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: 8.0),
         child: Text(
@@ -524,10 +532,31 @@ class _StudentTuitionCard extends ConsumerWidget {
         'Lỗi dữ liệu thanh toán: $e',
         style: const TextStyle(color: Colors.red, fontSize: 12),
       ),
-      data: (summary) {
-        final totalPaid = summary?.totalPaid ?? 0;
-        final remainingDebt = summary?.remainingDebt ?? invoice.soTienPhaiThu;
-        final settlementStatus = summary?.settlementStatus ?? invoice.trangThai;
+      data: (summaries) {
+        final summary = summaries[studentId];
+        if (summary == null) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                studentName,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Lỗi dữ liệu thanh toán: Không tìm thấy tổng hợp thanh toán cho hóa đơn này.',
+                style: TextStyle(color: Colors.red, fontSize: 12),
+              ),
+            ],
+          );
+        }
+
+        final totalPaid = summary.totalPaid;
+        final remainingDebt = summary.remainingDebt;
+        final settlementStatus = summary.settlementStatus;
 
         final statusLabel = switch (settlementStatus) {
           TuitionInvoiceStatus.DA_CHOT => 'ĐÃ CHỐT',
@@ -618,16 +647,14 @@ class _StudentTuitionCard extends ConsumerWidget {
               spacing: 8,
               alignment: WrapAlignment.end,
               children: [
-                if (summary != null && summary.payments.isNotEmpty)
+                if (summary.payments.isNotEmpty)
                   OutlinedButton.icon(
                     onPressed: () =>
                         _showPaymentHistoryDialog(context, summary.payments),
                     icon: const Icon(Icons.history, size: 16),
                     label: const Text('Lịch sử TT'),
                   ),
-                if (summary != null &&
-                    remainingDebt > 0 &&
-                    invoice.soTienPhaiThu > 0)
+                if (remainingDebt > 0 && invoice.soTienPhaiThu > 0)
                   ElevatedButton.icon(
                     onPressed: () =>
                         _showRecordPaymentDialog(context, ref, remainingDebt),

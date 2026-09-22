@@ -272,6 +272,129 @@ class _EffectiveTuitionPolicyProviderElement
   (int, String) get arg => (origin as EffectiveTuitionPolicyProvider).arg;
 }
 
+String _$classMonthInvoicesHash() =>
+    r'51198f967f68607d9b757d6be1e93226f383a4cb';
+
+/// See also [classMonthInvoices].
+@ProviderFor(classMonthInvoices)
+const classMonthInvoicesProvider = ClassMonthInvoicesFamily();
+
+/// See also [classMonthInvoices].
+class ClassMonthInvoicesFamily
+    extends Family<AsyncValue<List<TuitionInvoice>>> {
+  /// See also [classMonthInvoices].
+  const ClassMonthInvoicesFamily();
+
+  /// See also [classMonthInvoices].
+  ClassMonthInvoicesProvider call((int, String) arg) {
+    return ClassMonthInvoicesProvider(arg);
+  }
+
+  @override
+  ClassMonthInvoicesProvider getProviderOverride(
+    covariant ClassMonthInvoicesProvider provider,
+  ) {
+    return call(provider.arg);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'classMonthInvoicesProvider';
+}
+
+/// See also [classMonthInvoices].
+class ClassMonthInvoicesProvider
+    extends AutoDisposeFutureProvider<List<TuitionInvoice>> {
+  /// See also [classMonthInvoices].
+  ClassMonthInvoicesProvider((int, String) arg)
+    : this._internal(
+        (ref) => classMonthInvoices(ref as ClassMonthInvoicesRef, arg),
+        from: classMonthInvoicesProvider,
+        name: r'classMonthInvoicesProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$classMonthInvoicesHash,
+        dependencies: ClassMonthInvoicesFamily._dependencies,
+        allTransitiveDependencies:
+            ClassMonthInvoicesFamily._allTransitiveDependencies,
+        arg: arg,
+      );
+
+  ClassMonthInvoicesProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.arg,
+  }) : super.internal();
+
+  final (int, String) arg;
+
+  @override
+  Override overrideWith(
+    FutureOr<List<TuitionInvoice>> Function(ClassMonthInvoicesRef provider)
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ClassMonthInvoicesProvider._internal(
+        (ref) => create(ref as ClassMonthInvoicesRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        arg: arg,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<List<TuitionInvoice>> createElement() {
+    return _ClassMonthInvoicesProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ClassMonthInvoicesProvider && other.arg == arg;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, arg.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin ClassMonthInvoicesRef
+    on AutoDisposeFutureProviderRef<List<TuitionInvoice>> {
+  /// The parameter `arg` of this provider.
+  (int, String) get arg;
+}
+
+class _ClassMonthInvoicesProviderElement
+    extends AutoDisposeFutureProviderElement<List<TuitionInvoice>>
+    with ClassMonthInvoicesRef {
+  _ClassMonthInvoicesProviderElement(super.provider);
+
+  @override
+  (int, String) get arg => (origin as ClassMonthInvoicesProvider).arg;
+}
+
 String _$studentInvoiceHash() => r'cd475ed1892e9a8ad12a70c1fcb7832761a0d175';
 
 /// See also [studentInvoice].
@@ -613,7 +736,7 @@ class _TuitionPreviewControllerProviderElement
   String get month => (origin as TuitionPreviewControllerProvider).month;
 }
 
-String _$invoiceControllerHash() => r'f53a05bf3e746bb85820c6009f42a31f2e3c1eec';
+String _$invoiceControllerHash() => r'26c0b55db0537ac74fc5518c0d72a6f0ad080c94';
 
 /// See also [InvoiceController].
 @ProviderFor(InvoiceController)
