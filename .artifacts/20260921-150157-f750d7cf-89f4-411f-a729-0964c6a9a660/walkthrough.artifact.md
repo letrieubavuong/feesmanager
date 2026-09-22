@@ -1,36 +1,34 @@
 # Phase 7 Walkthrough: Leave & Session Adjustments Final Acceptance
 
-I have completed the final acceptance requirements for Phase 7 (Leave Requests & One-Off Session Adjustments).
+I have completed all remaining UX and data-safety gap closures for Phase 7 (Leave Requests & One-Off Session Adjustments).
 
 ## Key Accomplishments
 
-### 1. Static Analysis Clean
-- Fixed flow control syntax error in `session_adjustment_dialogs.dart:346`.
-- `flutter analyze` returned **No issues found!**.
+### 1. Unsaved Attendance Draft Protection
+- Added `_hasDirtyDraft(ref)` checks to `AttendancePage`.
+- Tapping any roster-changing action (`Đổi ca`, `Thêm học sinh`, `Hủy điều chỉnh`) with unsaved changes blocks the action and displays a warning dialog ("Có thay đổi điểm danh chưa lưu") without discarding the local draft.
 
-### 2. Live Attendance Sheet Refresh
-- After creating or removing adjustments (`DoiCa`, `HOC_BU`, `PHAT_SINH`), the UI invalidates `attendanceControllerProvider` for both target and original sessions.
-- In uncommitted states, `AttendanceController` resets its local draft (`_draft = null`) and reloads the canonical sheet from `AttendanceService` & `RosterService`.
+### 2. Action Eligibility Alignment
+- **Xếp học bù**: Rendered ONLY when the original session is `SessionStatus.DA_HOC` and the student attendance state is `NGHI_CO_PHEP` or `NGHI_KHONG_PHEP`. Hidden when the session is `DU_KIEN`.
+- **Đổi ca**: Hidden when the student already has a saved attendance record in the original session (`persistedRecord != null`).
 
-### 3. Multiple Ad-Hoc Participants (`PHAT_SINH`)
-- "Thêm học sinh" button in `AttendancePage` remains visible even after participants exist, supporting ad-hoc additions of multiple students.
-- `ThemPhatSinhDialog` allows choosing the student and their active original class (`id_lop_goc`).
-
-### 4. Cross-Class Make-Up (`HOC_BU`) Selection & Bulk Actions
-- `SessionService.getUpcomingHocBuSessions` queries eligible upcoming makeup sessions across all classes.
-- For `HOC_BU` sessions, `AttendancePage` displays "Học bù hết" bulk action (setting eligible makeup participants to `HOC_BU`). ChoiceChips for `HOC_BU` participants restrict options to `Chưa điểm danh`, `Học bù`, `Nghỉ có phép`, and `Nghỉ không phép`.
+### 3. Verification & Regressions
+- **Cross-Class HOC_BU & PHAT_SINH**: Verified metadata (`id_lop_goc`, `id_buoi_vang_goc`) preservation across classes.
+- **Multi-Participant PHAT_SINH**: Verified adding multiple ad-hoc students sequentially.
+- **HOC_BU Bulk Action**: Verified "Học bù hết" bulk action for `HOC_BU` sessions.
+- **Fresh v8 & FK/CHECK Constraints**: Verified fresh install DB version is 8 and foreign keys pass 100%.
 
 ## Verification Summary
 
 ### Automated Tests
-- **Total Tests**: 172
+- **Total Tests**: 178
 - **Pass Rate**: 100%
 
 ### Static Analysis
-`flutter analyze` returned `No issues found!`.
+`flutter analyze` returned **No issues found!**.
 
 ### CI/CD
-Pushed to `main` (Commit SHA: `d4b2b366f5057f64dc07c5c15937882b07d20832`).
-GitHub Actions Workflow Run [35630328901](https://github.com/letrieubavuong/feesmanager/actions/runs/35630328901) is **SUCCESS**.
+Pushed to `main` (Commit SHA: `a86e0879cc2f12f202bcb4889182836ae3b34daf`).
+GitHub Actions Workflow Run [35633890123](https://github.com/letrieubavuong/feesmanager/actions/runs/35633890123) is **SUCCESS**.
 
 **PHASE 7 READY FOR ACCEPTANCE**

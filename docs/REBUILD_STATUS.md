@@ -100,7 +100,7 @@
 - [x] Data safety & dirty draft protection: roster-changing actions (`Đổi ca`, `Thêm học sinh`, `Hủy điều chỉnh`) blocked if unsaved attendance changes exist.
 - [x] `Xếp học bù` action restricted to finalized (`DA_HOC`) original sessions.
 - [x] Mobile UI for Leave management and Session Adjustments with complete navigation entry points.
-- [x] Comprehensive Tests (178 tests passing):
+- [x] Comprehensive Tests (184 tests passing):
     - `test/leave/leave_request_service_test.dart`
     - `test/session_adjustments/session_adjustment_service_test.dart`
     - `test/presentation/phase7_ui_test.dart`
@@ -139,4 +139,4 @@
   - `test/repository/migration_v7_v8_test.dart`
 - **Quality Gate**:
   - `dart analyze`: Clean (No issues found!)
-  - `flutter test`: 100% Pass (178 tests)
+  - `flutter test`: 100% Pass (184 tests)

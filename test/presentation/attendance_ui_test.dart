@@ -12,6 +12,7 @@ import 'package:tuition2027/features/students/domain/student.dart';
 import 'package:tuition2027/features/memberships/domain/membership.dart';
 import 'package:tuition2027/features/roster/domain/roster_member.dart';
 import 'package:tuition2027/features/roster/domain/roster_result.dart';
+import 'package:tuition2027/features/session_adjustments/domain/session_adjustment.dart';
 import 'package:tuition2027/features/sessions/presentation/session_tab.dart';
 import 'package:tuition2027/features/sessions/presentation/session_controller.dart';
 
@@ -736,6 +737,161 @@ void main() {
         find.textContaining('Vui lòng Lưu nháp hoặc Hoàn tác'),
         findsOneWidget,
       );
+    },
+  );
+
+  testWidgets(
+    'HOC_BU session shows Học bù hết bulk action and HOC_BU choice chips',
+    (tester) async {
+      final hbSession = testSession.copyWith(loai: SessionType.HOC_BU);
+      final hbRosterMember = RosterMember(
+        student: testStudent,
+        membership: testMembership,
+        adjustment: SessionAdjustment(
+          id: 1,
+          idHocSinh: 101,
+          idLopGoc: 1,
+          idBuoiHocThamGia: 1,
+          loai: SessionAdjustmentType.HOC_BU,
+          createdAt: now,
+        ),
+        source: RosterInclusionSource.HOC_BU,
+      );
+
+      final sheet = AttendanceSheet(
+        session: hbSession,
+        members: [
+          AttendanceSheetMember(
+            rosterMember: hbRosterMember,
+            state: AttendanceState.CHUA_DIEM_DANH,
+          ),
+        ],
+        issues: [],
+        isRosterValid: true,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            attendanceControllerProvider(
+              1,
+            ).overrideWith(() => MockAttendanceController(sheet)),
+          ],
+          child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify "Học bù hết" button is present and "Có mặt hết" is absent
+      expect(find.text('Học bù hết'), findsOneWidget);
+      expect(find.text('Có mặt hết'), findsNothing);
+
+      // Verify Choice Chips: "Học bù", "Nghỉ có phép", "Nghỉ không phép" present
+      expect(find.widgetWithText(ChoiceChip, 'Học bù'), findsOneWidget);
+      expect(find.widgetWithText(ChoiceChip, 'Nghỉ có phép'), findsOneWidget);
+      expect(
+        find.widgetWithText(ChoiceChip, 'Nghỉ không phép'),
+        findsOneWidget,
+      );
+
+      // Verify Choice Chips: "Có mặt", "Trễ" ABSENT
+      expect(find.widgetWithText(ChoiceChip, 'Có mặt'), findsNothing);
+      expect(find.widgetWithText(ChoiceChip, 'Trễ'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'DOI_CA participant shows normal Choice Chips without Học bù chip',
+    (tester) async {
+      final doiCaMember = RosterMember(
+        student: testStudent,
+        membership: testMembership,
+        adjustment: SessionAdjustment(
+          id: 1,
+          idHocSinh: 101,
+          idLopGoc: 1,
+          idBuoiHocThamGia: 1,
+          loai: SessionAdjustmentType.DOI_CA,
+          createdAt: now,
+        ),
+        source: RosterInclusionSource.DOI_CA,
+      );
+
+      final sheet = AttendanceSheet(
+        session: testSession,
+        members: [
+          AttendanceSheetMember(
+            rosterMember: doiCaMember,
+            state: AttendanceState.CHUA_DIEM_DANH,
+          ),
+        ],
+        issues: [],
+        isRosterValid: true,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            attendanceControllerProvider(
+              1,
+            ).overrideWith(() => MockAttendanceController(sheet)),
+          ],
+          child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(ChoiceChip, 'Có mặt'), findsOneWidget);
+      expect(find.widgetWithText(ChoiceChip, 'Trễ'), findsOneWidget);
+      expect(find.widgetWithText(ChoiceChip, 'Học bù'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'PHAT_SINH participant shows normal Choice Chips without Học bù chip',
+    (tester) async {
+      final psSession = testSession.copyWith(loai: SessionType.PHAT_SINH);
+      final psMember = RosterMember(
+        student: testStudent,
+        membership: testMembership,
+        adjustment: SessionAdjustment(
+          id: 1,
+          idHocSinh: 101,
+          idLopGoc: 1,
+          idBuoiHocThamGia: 1,
+          loai: SessionAdjustmentType.PHAT_SINH,
+          createdAt: now,
+        ),
+        source: RosterInclusionSource.PHAT_SINH,
+      );
+
+      final sheet = AttendanceSheet(
+        session: psSession,
+        members: [
+          AttendanceSheetMember(
+            rosterMember: psMember,
+            state: AttendanceState.CHUA_DIEM_DANH,
+          ),
+        ],
+        issues: [],
+        isRosterValid: true,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            attendanceControllerProvider(
+              1,
+            ).overrideWith(() => MockAttendanceController(sheet)),
+          ],
+          child: const MaterialApp(home: AttendancePage(sessionId: 1)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(ChoiceChip, 'Có mặt'), findsOneWidget);
+      expect(find.widgetWithText(ChoiceChip, 'Trễ'), findsOneWidget);
+      expect(find.widgetWithText(ChoiceChip, 'Học bù'), findsNothing);
     },
   );
 }

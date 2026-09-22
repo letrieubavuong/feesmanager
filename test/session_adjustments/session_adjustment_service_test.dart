@@ -11,6 +11,7 @@ import 'package:tuition2027/features/memberships/domain/membership_service.dart'
 import 'package:tuition2027/features/memberships/data/membership_repository.dart';
 import 'package:tuition2027/features/roster/domain/roster_service.dart';
 import 'package:tuition2027/features/roster/domain/roster_result.dart';
+import 'package:tuition2027/features/roster/domain/roster_member.dart';
 import 'package:tuition2027/features/schedule/domain/schedule_service.dart';
 import 'package:tuition2027/features/schedule/data/schedule_repository.dart';
 import 'package:tuition2027/features/schedule/data/assignment_repository.dart';
@@ -749,5 +750,249 @@ void main() {
         );
       },
     );
+
+    test(
+      'Cross-class HOC_BU adjustment and attendance metadata regression',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'Class A',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 20,
+          'ten_lop': 'Class B',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Original CHINH session in Class A
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 101,
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 10,
+          'trang_thai': 'NGHI_CO_PHEP',
+          'loai_tham_gia': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Target HOC_BU session in Class B
+        await db.insert('buoi_hoc', {
+          'id': 201,
+          'id_lop': 20,
+          'ngay': '2026-09-22',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'HOC_BU',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Create cross-class HOC_BU
+        await adjustmentService.createHocBu(
+          studentId: 1,
+          originalSessionId: 101,
+          targetSessionId: 201,
+        );
+
+        final targetRoster = await rosterService.getRosterForSession(201);
+        expect(targetRoster.participants.length, 1);
+        expect(
+          targetRoster.participants.first.source,
+          RosterInclusionSource.HOC_BU,
+        );
+
+        // Save make-up attendance in Class B session 201
+        await attendanceService.saveDraft(201, {1: AttendanceState.HOC_BU});
+
+        final ddRow = (await db.query(
+          'diem_danh',
+          where: 'id_buoi_hoc = 201 AND id_hoc_sinh = 1',
+        )).first;
+        expect(ddRow['trang_thai'], 'HOC_BU');
+        expect(ddRow['loai_tham_gia'], 'HOC_BU');
+        expect(ddRow['id_lop_goc'], 10);
+        expect(ddRow['id_buoi_vang_goc'], 101);
+      },
+    );
+
+    test(
+      'Cross-class PHAT_SINH adjustment and attendance metadata regression',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'Class A',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 20,
+          'ten_lop': 'Class B',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Target PHAT_SINH session in Class B
+        await db.insert('buoi_hoc', {
+          'id': 202,
+          'id_lop': 20,
+          'ngay': '2026-09-25',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'PHAT_SINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Create cross-class PHAT_SINH with student's original Class A (10)
+        await adjustmentService.createPhatSinh(
+          studentId: 1,
+          originalClassId: 10,
+          targetSessionId: 202,
+        );
+
+        final targetRoster = await rosterService.getRosterForSession(202);
+        expect(targetRoster.participants.length, 1);
+        expect(
+          targetRoster.participants.first.source,
+          RosterInclusionSource.PHAT_SINH,
+        );
+
+        // Save normal attendance
+        await attendanceService.saveDraft(202, {1: AttendanceState.CO_MAT});
+
+        final ddRow = (await db.query(
+          'diem_danh',
+          where: 'id_buoi_hoc = 202 AND id_hoc_sinh = 1',
+        )).first;
+        expect(ddRow['trang_thai'], 'CO_MAT');
+        expect(ddRow['loai_tham_gia'], 'CHINH');
+        expect(ddRow['id_lop_goc'], 10);
+        expect(ddRow['id_buoi_vang_goc'], isNull);
+      },
+    );
+
+    test('PHAT_SINH multi-participant sequential additions', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('hoc_sinh', {
+        'id': 2,
+        'ho_ten': 'S2',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'Class A',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 200,
+        'id_hoc_sinh': 2,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.insert('buoi_hoc', {
+        'id': 105,
+        'id_lop': 10,
+        'ngay': '2026-09-25',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'PHAT_SINH',
+        'trang_thai': 'DU_KIEN',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      // Initially empty
+      var psRoster = await rosterService.getRosterForSession(105);
+      expect(psRoster.participants, isEmpty);
+      expect(psRoster.requiresOneOffAdjustments, isTrue);
+
+      // Add Student 1
+      await adjustmentService.createPhatSinh(
+        studentId: 1,
+        originalClassId: 10,
+        targetSessionId: 105,
+      );
+      psRoster = await rosterService.getRosterForSession(105);
+      expect(psRoster.participants.length, 1);
+      expect(psRoster.requiresOneOffAdjustments, isFalse);
+
+      // Add Student 2
+      await adjustmentService.createPhatSinh(
+        studentId: 2,
+        originalClassId: 10,
+        targetSessionId: 105,
+      );
+      psRoster = await rosterService.getRosterForSession(105);
+      expect(psRoster.participants.length, 2);
+      expect(
+        psRoster.participants.map((p) => p.student.id).toSet(),
+        equals({1, 2}),
+      );
+    });
   });
 }

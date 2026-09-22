@@ -400,6 +400,66 @@ void main() {
         throwsA(isA<DatabaseException>()),
       );
 
+      // Reject HOC_BU with null id_buoi_hoc_goc
+      expect(
+        () => db.execute(
+          "INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at) VALUES (1, 1, NULL, 2, 'HOC_BU', 'now')",
+        ),
+        throwsA(isA<DatabaseException>()),
+      );
+
+      // Accept PHAT_SINH with null id_buoi_hoc_goc
+      await db.execute(
+        "INSERT INTO dieu_chinh_buoi_hoc (id, id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at) VALUES (999, 1, 1, NULL, 2, 'PHAT_SINH', 'now')",
+      );
+      final psCheck = await db.query('dieu_chinh_buoi_hoc', where: 'id = 999');
+      expect(psCheck, isNotEmpty);
+      await db.delete('dieu_chinh_buoi_hoc', where: 'id = 999');
+
+      // Isolated FK failures
+      // Leave invalid student
+      expect(
+        () => db.execute(
+          "INSERT INTO don_nghi_hoc (id_hoc_sinh, id_lop, tu_ngay, den_ngay, trang_thai, created_at, updated_at) VALUES (99999, 1, '2026-09-21', '2026-09-21', 'CHO_DUYET', 'now', 'now')",
+        ),
+        throwsA(isA<DatabaseException>()),
+      );
+      // Leave invalid class
+      expect(
+        () => db.execute(
+          "INSERT INTO don_nghi_hoc (id_hoc_sinh, id_lop, tu_ngay, den_ngay, trang_thai, created_at, updated_at) VALUES (1, 99999, '2026-09-21', '2026-09-21', 'CHO_DUYET', 'now', 'now')",
+        ),
+        throwsA(isA<DatabaseException>()),
+      );
+      // Adj invalid student
+      expect(
+        () => db.execute(
+          "INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at) VALUES (99999, 1, 1, 2, 'DOI_CA', 'now')",
+        ),
+        throwsA(isA<DatabaseException>()),
+      );
+      // Adj invalid orig class
+      expect(
+        () => db.execute(
+          "INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at) VALUES (1, 99999, 1, 2, 'DOI_CA', 'now')",
+        ),
+        throwsA(isA<DatabaseException>()),
+      );
+      // Adj invalid orig session
+      expect(
+        () => db.execute(
+          "INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at) VALUES (1, 1, 99999, 2, 'DOI_CA', 'now')",
+        ),
+        throwsA(isA<DatabaseException>()),
+      );
+      // Adj invalid target session
+      expect(
+        () => db.execute(
+          "INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at) VALUES (1, 1, 1, 99999, 'DOI_CA', 'now')",
+        ),
+        throwsA(isA<DatabaseException>()),
+      );
+
       // Duplicate DOI_CA for same student & orig session rejected by partial unique index
       await db.execute(
         "INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at) VALUES (99, 'Dup', 'now', 'now')",
