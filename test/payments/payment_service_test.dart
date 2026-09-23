@@ -204,6 +204,46 @@ void main() {
     });
 
     test(
+      'Phase 9 Snapshot Immutability Test: All snapshot fields remain unchanged after payment',
+      () async {
+        final invoiceBefore = await tuitionRepo.getInvoice(1, 1, '2026-09');
+        expect(invoiceBefore, isNotNull);
+
+        await paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          amount: 300000,
+          paymentDate: '2026-09-15',
+          method: PaymentMethod.TIEN_MAT,
+        );
+
+        final invoiceAfter = await tuitionRepo.getInvoice(1, 1, '2026-09');
+        expect(invoiceAfter, isNotNull);
+
+        // Assert that ALL Phase 9 snapshot fields remain 100% unchanged
+        expect(
+          invoiceAfter!.idChinhSachHocPhi,
+          invoiceBefore!.idChinhSachHocPhi,
+        );
+        expect(invoiceAfter.soBuoiEligible, invoiceBefore.soBuoiEligible);
+        expect(invoiceAfter.soBuoiTinhPhi, invoiceBefore.soBuoiTinhPhi);
+        expect(invoiceAfter.creditOpening, invoiceBefore.creditOpening);
+        expect(invoiceAfter.creditEarned, invoiceBefore.creditEarned);
+        expect(invoiceAfter.creditUsed, invoiceBefore.creditUsed);
+        expect(invoiceAfter.creditClosing, invoiceBefore.creditClosing);
+        expect(invoiceAfter.tongTruocGiam, invoiceBefore.tongTruocGiam);
+        expect(invoiceAfter.giamPhanTram, invoiceBefore.giamPhanTram);
+        expect(invoiceAfter.giamSoTien, invoiceBefore.giamSoTien);
+        expect(invoiceAfter.soTienPhaiThu, invoiceBefore.soTienPhaiThu);
+        expect(invoiceAfter.chotLuc, invoiceBefore.chotLuc);
+
+        // Only settlement status changed to CON_NO
+        expect(invoiceAfter.trangThai, TuitionInvoiceStatus.CON_NO);
+      },
+    );
+
+    test(
       'Test B: Split payments settle invoice correctly and verify persisted status',
       () async {
         // Payment 1: 300k
@@ -268,9 +308,148 @@ void main() {
     );
 
     test(
+      'Sequential Overpayment Test: 500k paid then attempt 150k on 600k invoice is rejected',
+      () async {
+        await paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          amount: 500000,
+          paymentDate: '2026-09-10',
+          method: PaymentMethod.TIEN_MAT,
+        );
+
+        expect(
+          () => paymentService.recordPayment(
+            studentId: 1,
+            classId: 1,
+            month: '2026-09',
+            amount: 150000,
+            paymentDate: '2026-09-15',
+            method: PaymentMethod.TIEN_MAT,
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        final summary = await paymentService.getPaymentSummary(1, 1, '2026-09');
+        expect(summary?.totalPaid, 500000);
+        expect(summary?.remainingDebt, 100000);
+        expect(summary?.settlementStatus, TuitionInvoiceStatus.CON_NO);
+      },
+    );
+
+    test('DA_THANH_TOAN Invoice Further Payment Rejection', () async {
+      await paymentService.recordPayment(
+        studentId: 1,
+        classId: 1,
+        month: '2026-09',
+        amount: 600000,
+        paymentDate: '2026-09-10',
+        method: PaymentMethod.TIEN_MAT,
+      );
+
+      expect(
+        () => paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          amount: 50000,
+          paymentDate: '2026-09-15',
+          method: PaymentMethod.TIEN_MAT,
+        ),
+        throwsA(isA<Exception>()),
+      );
+
+      final summary = await paymentService.getPaymentSummary(1, 1, '2026-09');
+      expect(summary?.totalPaid, 600000);
+      expect(summary?.remainingDebt, 0);
+      expect(summary?.settlementStatus, TuitionInvoiceStatus.DA_THANH_TOAN);
+    });
+
+    test(
+      'Multiple Cash Payments with NULL / Blank Transaction ID Allowed',
+      () async {
+        await paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          amount: 100000,
+          paymentDate: '2026-09-10',
+          method: PaymentMethod.TIEN_MAT,
+          transactionId: null,
+        );
+
+        await paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          amount: 200000,
+          paymentDate: '2026-09-11',
+          method: PaymentMethod.TIEN_MAT,
+          transactionId: '   ',
+        );
+
+        final summary = await paymentService.getPaymentSummary(1, 1, '2026-09');
+        expect(summary?.totalPaid, 300000);
+        expect(summary?.paymentCount, 2);
+      },
+    );
+
+    test('Invalid Amount (<= 0) Rejection', () async {
+      expect(
+        () => paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          amount: 0,
+          paymentDate: '2026-09-10',
+          method: PaymentMethod.TIEN_MAT,
+        ),
+        throwsA(isA<Exception>()),
+      );
+
+      expect(
+        () => paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          amount: -50000,
+          paymentDate: '2026-09-10',
+          method: PaymentMethod.TIEN_MAT,
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('Malformed Month Format Rejection', () async {
+      expect(
+        () => paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-13',
+          amount: 100000,
+          paymentDate: '2026-09-10',
+          method: PaymentMethod.TIEN_MAT,
+        ),
+        throwsA(isA<Exception>()),
+      );
+
+      expect(
+        () => paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: 'invalid-month',
+          amount: 100000,
+          paymentDate: '2026-09-10',
+          method: PaymentMethod.TIEN_MAT,
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test(
       'Real Concurrent Payment Test: 400k + 400k on 600k invoice with Future.wait',
       () async {
-        // Launch truly concurrent payment requests using Future.wait
         int successCount = 0;
         int errorCount = 0;
 

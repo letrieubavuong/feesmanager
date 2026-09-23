@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -101,6 +102,10 @@ void main() {
                 nowMonth,
               )).overrideWith((ref) async => [testStudent]),
               studentDetailProvider(1).overrideWith((ref) async => testStudent),
+              classMonthInvoicesProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => [testInvoice]),
               studentInvoiceProvider(
                 1,
                 1,
@@ -200,6 +205,10 @@ void main() {
                 nowMonth,
               )).overrideWith((ref) async => [testStudent]),
               studentDetailProvider(1).overrideWith((ref) async => testStudent),
+              classMonthInvoicesProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => [testInvoice]),
               studentInvoiceProvider(
                 1,
                 1,
@@ -228,6 +237,155 @@ void main() {
         expect(find.text('ĐÃ THANH TOÁN'), findsOneWidget);
         expect(find.text('Thanh toán'), findsNothing);
         expect(find.text('Lịch sử TT'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Finalized invoice + payment summary provider LOADING state hides Thanh toán button',
+      (tester) async {
+        final testStudent = Student(
+          id: 1,
+          hoTen: 'Loading Student',
+          sdtPhuHuynh: '0901234567',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        final nowMonth = DateTime.now().toString().substring(0, 7);
+
+        final testInvoice = TuitionInvoice(
+          id: 1,
+          idHocSinh: 1,
+          idLop: 1,
+          thang: nowMonth,
+          idChinhSachHocPhi: 1,
+          soBuoiEligible: 12,
+          soBuoiTinhPhi: 12,
+          creditOpening: 0,
+          creditEarned: 0,
+          creditUsed: 0,
+          creditClosing: 0,
+          tongTruocGiam: 600000,
+          giamPhanTram: 0,
+          giamSoTien: 0,
+          soTienPhaiThu: 600000,
+          trangThai: TuitionInvoiceStatus.DA_CHOT,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        final completer = Completer<Map<int, InvoicePaymentSummary>>();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWith((ref) async => db),
+              classTuitionPoliciesProvider(1).overrideWith((ref) async => []),
+              effectiveTuitionPolicyProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => null),
+              classMonthStudentsProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => [testStudent]),
+              studentDetailProvider(1).overrideWith((ref) async => testStudent),
+              classMonthInvoicesProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => [testInvoice]),
+              classMonthPaymentSummariesProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) => completer.future),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(body: ClassTuitionTab(classId: 1)),
+            ),
+          ),
+        );
+
+        for (int i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        expect(find.text('Đang tải dữ liệu thanh toán...'), findsOneWidget);
+        expect(find.text('Thanh toán'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Finalized invoice + payment summary provider ERROR state fails closed without Thanh toán button',
+      (tester) async {
+        final testStudent = Student(
+          id: 1,
+          hoTen: 'Error Student',
+          sdtPhuHuynh: '0901234567',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        final nowMonth = DateTime.now().toString().substring(0, 7);
+
+        final testInvoice = TuitionInvoice(
+          id: 1,
+          idHocSinh: 1,
+          idLop: 1,
+          thang: nowMonth,
+          idChinhSachHocPhi: 1,
+          soBuoiEligible: 12,
+          soBuoiTinhPhi: 12,
+          creditOpening: 0,
+          creditEarned: 0,
+          creditUsed: 0,
+          creditClosing: 0,
+          tongTruocGiam: 600000,
+          giamPhanTram: 0,
+          giamSoTien: 0,
+          soTienPhaiThu: 600000,
+          trangThai: TuitionInvoiceStatus.DA_CHOT,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWith((ref) async => db),
+              classTuitionPoliciesProvider(1).overrideWith((ref) async => []),
+              effectiveTuitionPolicyProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => null),
+              classMonthStudentsProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => [testStudent]),
+              studentDetailProvider(1).overrideWith((ref) async => testStudent),
+              classMonthInvoicesProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => [testInvoice]),
+              classMonthPaymentSummariesProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) => Future.error('DB Error')),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(body: ClassTuitionTab(classId: 1)),
+            ),
+          ),
+        );
+
+        for (int i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        expect(
+          find.textContaining('Lỗi dữ liệu thanh toán: DB Error'),
+          findsOneWidget,
+        );
+        expect(find.text('Thanh toán'), findsNothing);
       },
     );
   });

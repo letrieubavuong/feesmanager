@@ -50,6 +50,9 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     final rosterAsync = ref.watch(
       classMonthStudentsProvider((widget.classId, _selectedMonth)),
     );
+    final invoicesAsync = ref.watch(
+      classMonthInvoicesProvider((widget.classId, _selectedMonth)),
+    );
     final paymentSummariesAsync = ref.watch(
       classMonthPaymentSummariesProvider((widget.classId, _selectedMonth)),
     );
@@ -69,6 +72,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
             _buildStudentTuitionList(
               context,
               rosterAsync,
+              invoicesAsync,
               paymentSummariesAsync,
             ),
           ],
@@ -219,6 +223,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
   Widget _buildStudentTuitionList(
     BuildContext context,
     AsyncValue<List<Student>> rosterAsync,
+    AsyncValue<List<TuitionInvoice>> invoicesAsync,
     AsyncValue<Map<int, InvoicePaymentSummary>> paymentSummariesAsync,
   ) {
     return rosterAsync.when(
@@ -242,6 +247,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
               studentId: student.id!,
               classId: widget.classId,
               month: _selectedMonth,
+              invoicesAsync: invoicesAsync,
               paymentSummariesAsync: paymentSummariesAsync,
             );
           },
@@ -456,12 +462,14 @@ class _StudentTuitionCard extends ConsumerWidget {
   final int studentId;
   final int classId;
   final String month;
+  final AsyncValue<List<TuitionInvoice>> invoicesAsync;
   final AsyncValue<Map<int, InvoicePaymentSummary>> paymentSummariesAsync;
 
   const _StudentTuitionCard({
     required this.studentId,
     required this.classId,
     required this.month,
+    required this.invoicesAsync,
     required this.paymentSummariesAsync,
   });
 
@@ -471,15 +479,17 @@ class _StudentTuitionCard extends ConsumerWidget {
     final previewAsync = ref.watch(
       tuitionPreviewControllerProvider(studentId, classId, month),
     );
-    final invoiceAsync = ref.watch(
-      studentInvoiceProvider(studentId, classId, month),
-    );
 
     return studentAsync.when(
       data: (student) {
         if (student == null) return const SizedBox.shrink();
 
-        final invoice = invoiceAsync.value;
+        final invoices = invoicesAsync.value ?? [];
+        final invoice = invoices.cast<TuitionInvoice?>().firstWhere(
+          (i) => i != null && i.idHocSinh == studentId,
+          orElse: () => null,
+        );
+
         final isFinalized = invoice?.trangThai.isFinalizedSnapshot == true;
 
         return Card(

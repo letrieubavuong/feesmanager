@@ -113,6 +113,10 @@ void main() {
                 1,
                 nowMonth,
               ).overrideWith(() => _FakeTuitionPreviewController()),
+              classMonthInvoicesProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => []),
               classMonthPaymentSummariesProvider((
                 1,
                 nowMonth,
@@ -189,6 +193,10 @@ void main() {
                 nowMonth,
               )).overrideWith((ref) async => [testStudent]),
               studentDetailProvider(1).overrideWith((ref) async => testStudent),
+              classMonthInvoicesProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => [testInvoice]),
               studentInvoiceProvider(
                 1,
                 1,
@@ -279,6 +287,10 @@ void main() {
                 nowMonth,
               )).overrideWith((ref) async => [testStudent]),
               studentDetailProvider(1).overrideWith((ref) async => testStudent),
+              classMonthInvoicesProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => [testInvoice]),
               studentInvoiceProvider(
                 1,
                 1,
@@ -369,6 +381,10 @@ void main() {
                 nowMonth,
               )).overrideWith((ref) async => [testStudent]),
               studentDetailProvider(1).overrideWith((ref) async => testStudent),
+              classMonthInvoicesProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => [testInvoice]),
               studentInvoiceProvider(
                 1,
                 1,
