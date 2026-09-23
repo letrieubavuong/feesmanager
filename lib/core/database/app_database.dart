@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int _dbVersion = 12;
+  static const int _dbVersion = 13;
 
   final String dbName;
   Database? _database;
@@ -72,6 +72,9 @@ class AppDatabase {
     if (version >= 12) {
       await _migrateV11ToV12(db);
     }
+    if (version >= 13) {
+      await _migrateV12ToV13(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -107,6 +110,9 @@ class AppDatabase {
     }
     if (oldVersion < 12) {
       await _migrateV11ToV12(db);
+    }
+    if (oldVersion < 13) {
+      await _migrateV12ToV13(db);
     }
   }
 
@@ -750,6 +756,50 @@ class AppDatabase {
     );
     await db.execute(
       'CREATE INDEX idx_thanh_toan_ngay ON thanh_toan (ngay_thanh_toan)',
+    );
+  }
+
+  Future<void> _migrateV12ToV13(Database db) async {
+    await db.execute('''
+      CREATE TABLE rang_buoc_lich_hoc_sinh (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_hoc_sinh INTEGER NOT NULL,
+        loai TEXT NOT NULL,
+        kieu TEXT NOT NULL,
+        thu_trong_tuan INTEGER NULL,
+        ngay_cu_the TEXT NULL,
+        gio_bat_dau TEXT NOT NULL,
+        gio_ket_thuc TEXT NOT NULL,
+        hieu_luc_tu TEXT NULL,
+        hieu_luc_den TEXT NULL,
+        travel_buffer_phut INTEGER NOT NULL DEFAULT 0,
+        ten_nguon TEXT NULL,
+        ghi_chu TEXT NULL,
+        trang_thai TEXT NOT NULL DEFAULT 'HOAT_DONG',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id) ON DELETE RESTRICT,
+        CHECK (loai IN ('HARD_BLOCK', 'SOFT_PREFERENCE', 'OTHER_CENTER')),
+        CHECK (kieu IN ('DINH_KY', 'MOT_LAN')),
+        CHECK (
+          (kieu = 'DINH_KY' AND thu_trong_tuan IS NOT NULL AND thu_trong_tuan BETWEEN 1 AND 7 AND ngay_cu_the IS NULL AND hieu_luc_tu IS NOT NULL)
+          OR
+          (kieu = 'MOT_LAN' AND ngay_cu_the IS NOT NULL AND thu_trong_tuan IS NULL)
+        ),
+        CHECK (gio_ket_thuc > gio_bat_dau),
+        CHECK (travel_buffer_phut >= 0),
+        CHECK (trang_thai IN ('HOAT_DONG', 'DA_HUY'))
+      )
+    ''');
+
+    await db.execute(
+      'CREATE INDEX idx_rang_buoc_student_status ON rang_buoc_lich_hoc_sinh(id_hoc_sinh, trang_thai)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_rang_buoc_student_weekday ON rang_buoc_lich_hoc_sinh(id_hoc_sinh, thu_trong_tuan, hieu_luc_tu, hieu_luc_den)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_rang_buoc_student_date ON rang_buoc_lich_hoc_sinh(id_hoc_sinh, ngay_cu_the)',
     );
   }
 }

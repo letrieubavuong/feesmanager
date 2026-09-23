@@ -136,23 +136,35 @@
 - [x] Batch Read Model (`classMonthPaymentSummariesProvider` & `classMonthInvoicesProvider`) watched ONCE in `ClassTuitionTab` eliminating both invoice and payment summary N+1 UI queries.
 - [x] Live Provider Invalidation in `PaymentController`:
   - `PaymentController.recordPayment` invalidates `classMonthInvoicesProvider`, `studentInvoiceProvider`, `invoicePaymentSummaryProvider`, `classMonthPaymentSummariesProvider`, and `invoicePaymentsProvider` to trigger instant live UI refresh across all views.
-- [x] UI Integration in `ClassTuitionTab`:
-  - Card displays "Phải thu", "Đã thanh toán", "Còn lại" and settlement status chips (`ĐÃ CHỐT`, `CÒN NỢ`, `ĐÃ THANH TOÁN`).
-  - Action "Ghi nhận thanh toán" opens dialog prefilled with remaining debt, method selection, payment date picker with Flutter DatePicker UI, transaction ID, and note fields.
-  - Action "Lịch sử thanh toán" opens deterministic payment history dialog.
-- [x] Comprehensive Tests (277 tests passing):
-    - `test/repository/migration_v11_v12_test.dart`
-    - `test/payments/payment_service_test.dart`
-    - `test/presentation/payment_ui_test.dart`
+- [x] Comprehensive Tests (277 tests passing).
+
+## Phase 11: Schedule Conflicts & Availability Constraints - COMPLETE
+- [x] Forward Database Migration (v12 -> v13) creating `rang_buoc_lich_hoc_sinh` table with Foreign Keys (`ON DELETE RESTRICT`), strict `CHECK` constraints on types (`loai`), occurrence shape (`kieu`), time order (`gio_ket_thuc > gio_bat_dau`), non-negative travel buffer, status (`HOAT_DONG`, `DA_HUY`), and performance indexes.
+- [x] Real v12 -> v13 database migration test on real SQLite file (`test/repository/migration_v12_v13_test.dart`) asserting data preservation, FK RESTRICT, `CHECK` constraints, and clean `PRAGMA foreign_key_check`.
+- [x] Constraint domain & data models (`ScheduleConstraint`, `ConstraintType`, `OccurrenceType`, `ConstraintStatus`, `ScheduleConstraintRepository`).
+- [x] Single Canonical Owner `ScheduleConflictService`:
+  - Classifies time overlaps: `EXACT_OVERLAP`, `CONTAINED_OVERLAP`, `PARTIAL_OVERLAP`.
+  - Evaluates student constraints: `HARD_BLOCK` (hard conflict), `SOFT_PREFERENCE` (soft warning), `OTHER_CENTER` (hard conflict on overlap, soft warning on `TRAVEL_BUFFER` gap).
+  - Evaluates one-off session commitments and excludes `DOI_CA` original session to avoid false self-conflicts.
+- [x] Consumer Refactoring:
+  - `ScheduleDomainService`: Consumes `ScheduleConflictService` for `assignStudent` and `changeRecurringShift`.
+  - `SessionAdjustmentService`: Consumes `ScheduleConflictService` before creating `DOI_CA`, `HOC_BU`, or `PHAT_SINH`.
+- [x] Student Constraint Management UI in `StudentDetailPage` (view, create, cancel without hard deletion).
+- [x] Real-time Conflict Previews (`ScheduleConflictBanner`) integrated into `AssignStudentDialog`, `ChangeShiftDialog`, `_showDoiCaDialog`, `_showHocBuDialog`, and `_showPhatSinhDialog` (disables Save button on hard conflicts).
+- [x] Comprehensive Tests (289 tests passing):
+    - `test/repository/migration_v12_v13_test.dart`
+    - `test/schedule_conflicts/schedule_conflict_service_test.dart`
+    - `test/schedule/assignment_service_test.dart`
+    - `test/presentation/schedule_assignment_ui_test.dart`
 
 ---
 
 ## Technical Details
 - **Database**: `tuition_next.db`
-- **Version**: 12
+- **Version**: 13
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
-- **Tests**: 277 tests passing
+- **Tests**: 289 tests passing
 - **Quality Gate**:
   - `dart analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (277 tests)
+  - `flutter test`: 100% Pass (289 tests)

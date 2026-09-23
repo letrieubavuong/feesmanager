@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 class StudentShiftAssignment {
   final int? id;
   final int idHocSinh;
@@ -22,6 +24,13 @@ class StudentShiftAssignment {
     required this.createdAt,
     required this.updatedAt,
   });
+
+  bool isActiveOn(DateTime date) {
+    final dateStr = DateFormat('yyyy-MM-dd').format(date);
+    if (dateStr.compareTo(tuNgay) < 0) return false;
+    if (denNgay != null && dateStr.compareTo(denNgay!) > 0) return false;
+    return true;
+  }
 
   Map<String, dynamic> toMap() {
     return {

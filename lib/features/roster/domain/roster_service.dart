@@ -451,10 +451,17 @@ class RosterService {
     final unassignedMembers = <Student>[];
     final referenceDate = DateTime.parse(session.ngay);
 
-    final effectiveSchedules = await _scheduleService.getSchedulesForClass(
+    final allSchedules = await _scheduleService.getSchedulesForClass(
       session.idLop,
-      date: referenceDate,
     );
+    final effectiveSchedules = allSchedules
+        .where(
+          (s) =>
+              s.hieuLucTu.compareTo(session.ngay) <= 0 &&
+              (s.hieuLucDen == null ||
+                  s.hieuLucDen!.compareTo(session.ngay) >= 0),
+        )
+        .toList();
     final schedulesForSessionDay = effectiveSchedules
         .where((s) => s.thuTrongTuan == referenceDate.weekday)
         .toList();

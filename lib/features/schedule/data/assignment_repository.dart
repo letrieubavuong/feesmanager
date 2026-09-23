@@ -47,6 +47,23 @@ class AssignmentRepository {
     );
   }
 
+  Future<List<StudentShiftAssignment>> getActiveForClass(
+    int classId,
+    String dateStr,
+  ) async {
+    final List<Map<String, dynamic>> maps = await _db.query(
+      'phan_ca_hoc_sinh',
+      where:
+          'id_lop = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+      whereArgs: [classId, dateStr, dateStr],
+      orderBy: 'tu_ngay DESC',
+    );
+    return List.generate(
+      maps.length,
+      (i) => StudentShiftAssignment.fromMap(maps[i]),
+    );
+  }
+
   Future<List<StudentShiftAssignment>> getBySchedule(int scheduleId) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'phan_ca_hoc_sinh',

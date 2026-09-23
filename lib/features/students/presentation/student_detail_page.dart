@@ -6,6 +6,9 @@ import '../domain/student_service.dart';
 import '../../memberships/domain/membership.dart';
 import '../../memberships/domain/membership_service.dart';
 import '../../classes/presentation/class_controller.dart';
+import '../../schedule_conflicts/domain/schedule_constraint.dart';
+import '../../schedule_conflicts/presentation/schedule_conflict_providers.dart';
+import '../../schedule_conflicts/presentation/schedule_constraint_dialogs.dart';
 import 'student_form_page.dart';
 import 'student_controller.dart';
 
@@ -115,6 +118,9 @@ class StudentDetailPage extends ConsumerWidget {
                 _buildMembershipSection(context, ref, student.id!),
                 const SizedBox(height: 16),
                 _buildScheduleSection(context, ref, student.id!),
+                const SizedBox(height: 16),
+                _buildConstraintSection(context, ref, student.id!),
+                const SizedBox(height: 16),
                 _buildPlaceholderSection(context, 'Lịch sử điểm danh'),
                 _buildPlaceholderSection(context, 'Học phí & Thanh toán'),
               ],
@@ -196,6 +202,126 @@ class StudentDetailPage extends ConsumerWidget {
           error: (e, _) => Text('Lỗi tải lịch: $e'),
         ),
       ],
+    );
+  }
+
+  Widget _buildConstraintSection(
+    BuildContext context,
+    WidgetRef ref,
+    int studentId,
+  ) {
+    final constraintsAsync = ref.watch(studentConstraintsProvider(studentId));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildSectionTitle(context, 'Ràng buộc lịch'),
+            ElevatedButton.icon(
+              onPressed: () => showAddConstraintDialog(context, ref, studentId),
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Thêm ràng buộc'),
+            ),
+          ],
+        ),
+        constraintsAsync.when(
+          data: (constraints) {
+            if (constraints.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  'Chưa có ràng buộc lịch.',
+                  style: TextStyle(fontStyle: FontStyle.italic),
+                ),
+              );
+            }
+            return Column(
+              children: constraints
+                  .map((c) => _buildConstraintTile(context, ref, c, studentId))
+                  .toList(),
+            );
+          },
+          loading: () => const CircularProgressIndicator(),
+          error: (e, _) => Text('Lỗi tải ràng buộc: $e'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConstraintTile(
+    BuildContext context,
+    WidgetRef ref,
+    ScheduleConstraint c,
+    int studentId,
+  ) {
+    final isCancelled = c.status == ConstraintStatus.DA_HUY;
+
+    final subtitleText = c.occurrenceType == OccurrenceType.DINH_KY
+        ? 'Thứ ${c.weekday} (${c.startTime} - ${c.endTime}) | Từ ${c.effectiveFrom}${c.effectiveTo != null ? " đến ${c.effectiveTo}" : ""}'
+        : 'Ngày ${c.specificDate} (${c.startTime} - ${c.endTime})';
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      color: isCancelled ? Colors.grey.shade100 : null,
+      child: ListTile(
+        leading: Icon(
+          c.type == ConstraintType.HARD_BLOCK
+              ? Icons.block
+              : c.type == ConstraintType.OTHER_CENTER
+              ? Icons.domain
+              : Icons.star_border,
+          color: isCancelled
+              ? Colors.grey
+              : (c.type == ConstraintType.HARD_BLOCK
+                    ? Colors.red
+                    : Colors.orange),
+        ),
+        title: Text(
+          '${c.type.displayName}${c.sourceName != null ? " - ${c.sourceName}" : ""}',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            decoration: isCancelled ? TextDecoration.lineThrough : null,
+          ),
+        ),
+        subtitle: Text(subtitleText),
+        trailing: !isCancelled
+            ? TextButton(
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Xác nhận hủy ràng buộc'),
+                      content: const Text(
+                        'Bạn có chắc chắn muốn hủy ràng buộc lịch này?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Không'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Hủy ràng buộc'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true && c.id != null) {
+                    await ref
+                        .read(scheduleConstraintControllerProvider.notifier)
+                        .cancelConstraint(c.id!, studentId);
+                  }
+                },
+                child: const Text('Hủy', style: TextStyle(color: Colors.red)),
+              )
+            : const Text(
+                'Đã hủy',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+      ),
     );
   }
 
@@ -285,7 +411,7 @@ class StudentDetailPage extends ConsumerWidget {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => SessionCreditPage(
-                      studentId: studentId,
+                      studentId: m.idHocSinh,
                       classId: m.idLop,
                     ),
                   ),
@@ -315,7 +441,7 @@ class StudentDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, student) {
+  Widget _buildHeader(BuildContext context, Student student) {
     return Row(
       children: [
         CircleAvatar(

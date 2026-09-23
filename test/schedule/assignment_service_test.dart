@@ -144,7 +144,7 @@ void main() {
           isA<Exception>().having(
             (e) => e.toString(),
             'message',
-            contains('Membership'),
+            contains('tham gia lớp'),
           ),
         ),
       );

@@ -6,6 +6,8 @@ import '../../attendance/domain/attendance_service.dart';
 import '../../classes/domain/class_service.dart';
 import '../../memberships/domain/membership_service.dart';
 import '../../roster/domain/roster_service.dart';
+import '../../schedule_conflicts/domain/schedule_conflict_service.dart';
+import '../../schedule_conflicts/presentation/schedule_conflict_providers.dart';
 import '../../sessions/domain/class_session.dart';
 import '../../sessions/domain/session_service.dart';
 import '../../students/domain/student_service.dart';
@@ -30,6 +32,7 @@ class SessionAdjustmentService {
   final MembershipService _membershipService;
   final AttendanceRepository _attendanceRepo;
   final RosterService _rosterService;
+  final ScheduleConflictService? _conflictService;
 
   SessionAdjustmentService(
     this._repo,
@@ -38,8 +41,9 @@ class SessionAdjustmentService {
     this._sessionService,
     this._membershipService,
     this._attendanceRepo,
-    this._rosterService,
-  );
+    this._rosterService, [
+    this._conflictService,
+  ]);
 
   Future<int> createDoiCa({
     required int studentId,
@@ -125,21 +129,19 @@ class SessionAdjustmentService {
       );
     }
 
-    // Check existing adjustments
-    final existingTarget = await _repo.getByStudentAndTargetSession(
-      studentId,
-      targetSessionId,
-    );
-    if (existingTarget != null) {
-      throw Exception('Học sinh đã có điều chỉnh tham gia cho buổi học đích');
-    }
-
-    final existingOrig = await _repo.getByStudentAndOriginalSession(
-      studentId,
-      originalSessionId,
-    );
-    if (existingOrig != null) {
-      throw Exception('Học sinh đã có điều chỉnh đổi ca cho buổi học gốc');
+    // Check schedule conflicts
+    final conflictSvc = _conflictService;
+    if (conflictSvc != null) {
+      final conflictResult = await conflictSvc.evaluateOneOffCandidate(
+        studentId: studentId,
+        targetDate: targetSession.ngay,
+        startTime: targetSession.gioBatDau,
+        endTime: targetSession.gioKetThuc,
+        excludeSessionId: originalSessionId,
+      );
+      if (!conflictResult.canAssign) {
+        throw Exception(conflictResult.hardConflicts.first.message);
+      }
     }
 
     final adjustment = SessionAdjustment(
@@ -233,6 +235,20 @@ class SessionAdjustmentService {
       throw Exception('Học sinh đã được xếp vào buổi học bù này');
     }
 
+    // Check schedule conflicts
+    final conflictSvc = _conflictService;
+    if (conflictSvc != null) {
+      final conflictResult = await conflictSvc.evaluateOneOffCandidate(
+        studentId: studentId,
+        targetDate: targetSession.ngay,
+        startTime: targetSession.gioBatDau,
+        endTime: targetSession.gioKetThuc,
+      );
+      if (!conflictResult.canAssign) {
+        throw Exception(conflictResult.hardConflicts.first.message);
+      }
+    }
+
     final adjustment = SessionAdjustment(
       idHocSinh: studentId,
       idLopGoc: origSession.idLop,
@@ -281,7 +297,7 @@ class SessionAdjustmentService {
 
     if (!validMembership) {
       throw Exception(
-        'Học sinh không có thời gian học hợp lệ tại lớp gốc vào ngày này',
+        'Học sinh không có quá trình học hợp lệ tại lớp gốc vào ngày học phát sinh',
       );
     }
 
@@ -290,9 +306,21 @@ class SessionAdjustmentService {
       targetSessionId,
     );
     if (existingTarget != null) {
-      throw Exception(
-        'Học sinh đã có danh sách tham gia buổi học phát sinh này',
+      throw Exception('Học sinh đã được xếp vào buổi học phát sinh này');
+    }
+
+    // Check schedule conflicts
+    final conflictSvc = _conflictService;
+    if (conflictSvc != null) {
+      final conflictResult = await conflictSvc.evaluateOneOffCandidate(
+        studentId: studentId,
+        targetDate: targetSession.ngay,
+        startTime: targetSession.gioBatDau,
+        endTime: targetSession.gioKetThuc,
       );
+      if (!conflictResult.canAssign) {
+        throw Exception(conflictResult.hardConflicts.first.message);
+      }
     }
 
     final adjustment = SessionAdjustment(
@@ -369,6 +397,9 @@ Future<SessionAdjustmentService> sessionAdjustmentService(
   final membershipService = await ref.watch(membershipServiceProvider.future);
   final attendanceRepo = await ref.watch(attendanceRepositoryProvider.future);
   final rosterService = await ref.watch(rosterServiceProvider.future);
+  final conflictService = await ref.watch(
+    scheduleConflictServiceProvider.future,
+  );
 
   return SessionAdjustmentService(
     repo,
@@ -378,5 +409,6 @@ Future<SessionAdjustmentService> sessionAdjustmentService(
     membershipService,
     attendanceRepo,
     rosterService,
+    conflictService,
   );
 }

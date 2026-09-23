@@ -25,7 +25,7 @@ final sessionAdjustmentRepositoryProvider =
 typedef SessionAdjustmentRepositoryRef =
     FutureProviderRef<SessionAdjustmentRepository>;
 String _$sessionAdjustmentServiceHash() =>
-    r'7c8e913441cc7f388d0bbc957696fb7146125acb';
+    r'e937b3f172010eb75430fdeb2feb0a978be56993';
 
 /// See also [sessionAdjustmentService].
 @ProviderFor(sessionAdjustmentService)

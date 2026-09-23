@@ -250,11 +250,10 @@ class AttendancePage extends ConsumerWidget {
                       _showDirtyDraftDialog(context);
                       return;
                     }
-                    SessionAdjustmentDialogs.showThemPhatSinhDialog(
-                      context,
-                      ref,
+                    SessionAdjustmentDialogs.showPhatSinhDialog(
+                      context: context,
+                      ref: ref,
                       targetSessionId: sessionId,
-                      classId: sheet.session.idLop,
                     );
                   },
                   icon: const Icon(Icons.person_add, size: 18),
@@ -446,24 +445,21 @@ class AttendancePage extends ConsumerWidget {
                       return;
                     }
                     SessionAdjustmentDialogs.showDoiCaDialog(
-                      context,
-                      ref,
+                      context: context,
+                      ref: ref,
                       studentId: student.id!,
                       originalSessionId: sessionId,
-                      classId: sheet.session.idLop,
-                      sessionDate: sheet.session.ngay,
                     );
                   },
                   child: const Text('Đổi ca', style: TextStyle(fontSize: 12)),
                 ),
               if (isMissedOriginal)
                 TextButton(
-                  onPressed: () => SessionAdjustmentDialogs.showXepHocBuDialog(
-                    context,
-                    ref,
+                  onPressed: () => SessionAdjustmentDialogs.showHocBuDialog(
+                    context: context,
+                    ref: ref,
                     studentId: student.id!,
                     originalSessionId: sessionId,
-                    classId: sheet.session.idLop,
                   ),
                   child: const Text(
                     'Xếp học bù',

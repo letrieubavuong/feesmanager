@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:tuition2027/features/schedule/presentation/schedule_controller.dart';
-import 'package:tuition2027/features/schedule/presentation/assignment_controller.dart';
-import 'package:tuition2027/features/schedule/domain/schedule_service.dart';
-import 'package:tuition2027/features/schedule/domain/class_schedule.dart';
-import 'package:tuition2027/features/schedule/domain/student_shift_assignment.dart';
-import 'package:tuition2027/features/students/domain/student.dart';
-import 'package:tuition2027/core/utils/date_formatter.dart';
-import 'package:tuition2027/features/students/presentation/student_detail_page.dart';
+import '../../../core/utils/date_formatter.dart';
+import '../../memberships/presentation/membership_providers.dart';
+import '../../schedule_conflicts/presentation/schedule_conflict_banner.dart';
+import '../../schedule_conflicts/presentation/schedule_conflict_providers.dart';
+import '../../students/domain/student.dart';
+import '../../students/presentation/student_detail_page.dart';
+import '../domain/class_schedule.dart';
+import '../domain/schedule_service.dart';
+import '../domain/student_shift_assignment.dart';
+import 'assignment_controller.dart';
+import 'schedule_controller.dart';
 
 class AssignmentTab extends ConsumerWidget {
   final int classId;
+
   const AssignmentTab({super.key, required this.classId});
 
   @override
@@ -22,168 +26,237 @@ class AssignmentTab extends ConsumerWidget {
     );
 
     return Scaffold(
-      body: assignmentsAsync.when(
-        data: (assignments) {
-          return schedulesAsync.when(
-            data: (schedules) {
-              final activeSchedules = schedules
-                  .where((s) => s.isEffectiveOn(DateTime.now()))
-                  .toList();
-              if (activeSchedules.isEmpty) {
-                return const Center(
-                  child: Text('Cần tạo lịch học trước khi phân ca.'),
-                );
-              }
-
-              return ListView.builder(
-                itemCount: activeSchedules.length,
-                itemBuilder: (context, index) {
-                  final s = activeSchedules[index];
-                  final shiftAssignments = assignments
-                      .where((a) => a.idLichHoc == s.id && (a.denNgay == null))
-                      .toList();
-
-                  return ExpansionTile(
-                    leading: CircleAvatar(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader(
+              context,
+              'Các ca học của lớp',
+              'Quản lý học sinh phân ca theo từng ca học định kỳ',
+            ),
+            const SizedBox(height: 16),
+            schedulesAsync.when(
+              data: (schedules) {
+                if (schedules.isEmpty) {
+                  return const Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
                       child: Text(
-                        s.thuTrongTuan == 7 ? 'CN' : 'T${s.thuTrongTuan + 1}',
+                        'Lớp chưa có lịch học định kỳ. Vui lòng tạo lịch học ở tab Lịch học trước.',
                       ),
                     ),
-                    title: Text(
-                      '${DateFormatter.formatVietnameseWeekday(s.thuTrongTuan)}: ${s.gioBatDau} - ${s.gioKetThuc}',
-                    ),
-                    subtitle: Text('${shiftAssignments.length} học sinh'),
-                    children: [
-                      ...shiftAssignments.map(
-                        (a) => ListTile(
-                          leading: const Icon(Icons.person, size: 16),
-                          title: Consumer(
-                            builder: (context, ref, _) {
-                              final studentAsync = ref.watch(
-                                studentDetailProvider(a.idHocSinh),
-                              );
-                              return studentAsync.when(
-                                data: (st) => Text(st?.hoTen ?? 'Unknown'),
-                                loading: () => const Text('...'),
-                                error: (_, __) => const Text('Error'),
-                              );
-                            },
-                          ),
-                          subtitle: Text(
-                            'Từ: ${DateFormatter.formatShortDate(a.tuNgay)}',
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.swap_horiz, size: 20),
-                                tooltip: 'Đổi ca',
-                                onPressed: () =>
-                                    _showChangeShiftDialog(context, ref, a, s),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.close,
-                                  size: 20,
-                                  color: Colors.red,
-                                ),
-                                tooltip: 'Kết thúc ca',
-                                onPressed: () =>
-                                    _showCloseAssignmentDialog(context, ref, a),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.add, color: Colors.blue),
-                        title: const Text(
-                          'Phân học sinh vào ca này',
-                          style: TextStyle(color: Colors.blue),
-                        ),
-                        onTap: () => _showAssignDialog(context, ref, s),
-                      ),
-                    ],
                   );
-                },
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Lỗi tải lịch: $e')),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Lỗi tải phân ca: $e')),
+                }
+
+                return Column(
+                  children: schedules.map((schedule) {
+                    return _buildScheduleAssignmentCard(
+                      context,
+                      ref,
+                      schedule,
+                      assignmentsAsync,
+                    );
+                  }).toList(),
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('Lỗi tải lịch học: $e'),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  void _showAssignDialog(BuildContext context, WidgetRef ref, ClassSchedule s) {
-    showDialog(
-      context: context,
-      builder: (context) =>
-          AssignStudentDialog(classId: classId, scheduleId: s.id!),
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title,
+    String subtitle,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+        ),
+      ],
     );
   }
 
-  void _showCloseAssignmentDialog(
+  Widget _buildScheduleAssignmentCard(
     BuildContext context,
     WidgetRef ref,
-    StudentShiftAssignment a,
+    ClassSchedule schedule,
+    AsyncValue<List<StudentShiftAssignment>> assignmentsAsync,
   ) {
-    DateTime endDate = DateTime.now();
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Kết thúc phân ca'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Học sinh sẽ nghỉ ca này từ sau ngày:'),
-              ListTile(
-                title: Text(DateFormat('dd/MM/yyyy').format(endDate)),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: endDate,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null) setDialogState(() => endDate = picked);
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Hủy'),
-            ),
-            TextButton(
-              onPressed: () async {
-                try {
-                  await ref
-                      .read(classAssignmentControllerProvider(classId).notifier)
-                      .close(assignmentId: a.id!, endDate: endDate);
-                  if (context.mounted) Navigator.pop(context);
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          e.toString().replaceAll('Exception: ', ''),
-                        ),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.access_time, color: Colors.teal),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${DateFormatter.formatVietnameseWeekday(schedule.thuTrongTuan)}: ${schedule.gioBatDau} - ${schedule.gioKetThuc}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AssignStudentDialog(
+                        classId: classId,
+                        scheduleId: schedule.id!,
                       ),
                     );
-                  }
+                  },
+                  icon: const Icon(Icons.person_add, size: 16),
+                  label: const Text('Phân ca HS'),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            assignmentsAsync.when(
+              data: (assignments) {
+                final activeAssignmentsForThisSchedule = assignments
+                    .where(
+                      (a) =>
+                          a.idLichHoc == schedule.id &&
+                          a.isActiveOn(DateTime.now()),
+                    )
+                    .toList();
+
+                if (activeAssignmentsForThisSchedule.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'Chưa có học sinh nào phân ca ở khung giờ này.',
+                      style: TextStyle(
+                        fontStyle: FontStyle.italic,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  );
                 }
+
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: activeAssignmentsForThisSchedule.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final assignment = activeAssignmentsForThisSchedule[index];
+                    return _buildStudentAssignmentTile(
+                      context,
+                      ref,
+                      assignment,
+                      schedule,
+                    );
+                  },
+                );
               },
-              child: const Text('Xác nhận'),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('Lỗi tải danh sách phân ca: $e'),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStudentAssignmentTile(
+    BuildContext context,
+    WidgetRef ref,
+    StudentShiftAssignment a,
+    ClassSchedule currentSchedule,
+  ) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: CircleAvatar(
+        backgroundColor: Colors.teal.shade50,
+        child: const Icon(Icons.person, color: Colors.teal),
+      ),
+      title: Consumer(
+        builder: (context, ref, _) {
+          final studentAsync = ref.watch(studentDetailProvider(a.idHocSinh));
+          return studentAsync.when(
+            data: (s) => Text(
+              s?.hoTen ?? 'Chưa rõ tên',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            loading: () => const Text('Đang tải...'),
+            error: (_, __) => const Text('Lỗi'),
+          );
+        },
+      ),
+      subtitle: Text(
+        'Áp dụng từ: ${a.tuNgay}${a.denNgay != null ? ' - ${a.denNgay}' : ''}',
+        style: const TextStyle(fontSize: 12),
+      ),
+      trailing: PopupMenuButton<String>(
+        onSelected: (value) {
+          if (value == 'change_shift') {
+            _showChangeShiftDialog(context, ref, a, currentSchedule);
+          } else if (value == 'close_assignment') {
+            _showCloseAssignmentDialog(context, ref, a);
+          }
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            value: 'change_shift',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.swap_horiz, size: 18),
+                SizedBox(width: 8),
+                Flexible(
+                  child: Text('Chuyển ca', overflow: TextOverflow.ellipsis),
+                ),
+              ],
+            ),
+          ),
+          const PopupMenuItem(
+            value: 'close_assignment',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.stop_circle_outlined, size: 18, color: Colors.red),
+                SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Kết thúc phân ca',
+                    style: TextStyle(color: Colors.red),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -194,20 +267,20 @@ class AssignmentTab extends ConsumerWidget {
     StudentShiftAssignment a,
     ClassSchedule currentSchedule,
   ) {
-    DateTime effectiveDate = DateTime.now();
     int? selectedScheduleId;
+    DateTime effectiveDate = DateTime.now();
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
+      builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Đổi ca học'),
+          title: const Text('Chuyển ca học định kỳ'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Chuyển sang ca mới từ ngày:'),
               ListTile(
-                title: Text(DateFormat('dd/MM/yyyy').format(effectiveDate)),
+                title: const Text('Ngày bắt đầu ca mới'),
+                subtitle: Text(DateFormat('dd/MM/yyyy').format(effectiveDate)),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
                   final picked = await showDatePicker(
@@ -256,6 +329,127 @@ class AssignmentTab extends ConsumerWidget {
                   );
                 },
               ),
+              if (selectedScheduleId != null) ...[
+                const SizedBox(height: 12),
+                Consumer(
+                  builder: (context, ref, _) {
+                    final previewAsync = ref.watch(
+                      assignmentConflictPreviewProvider((
+                        a.idHocSinh,
+                        selectedScheduleId!,
+                        DateFormat('yyyy-MM-dd').format(effectiveDate),
+                        null,
+                        a.id,
+                      )),
+                    );
+                    return previewAsync.when(
+                      data: (res) => ScheduleConflictBanner(result: res),
+                      loading: () => const LinearProgressIndicator(),
+                      error: (e, _) => Text('Lỗi kiểm tra trùng lịch: $e'),
+                    );
+                  },
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy'),
+            ),
+            Consumer(
+              builder: (context, ref, _) {
+                bool isBlocked = false;
+                if (selectedScheduleId != null) {
+                  final previewAsync = ref.watch(
+                    assignmentConflictPreviewProvider((
+                      a.idHocSinh,
+                      selectedScheduleId!,
+                      DateFormat('yyyy-MM-dd').format(effectiveDate),
+                      null,
+                      a.id,
+                    )),
+                  );
+                  if (previewAsync.value != null &&
+                      !previewAsync.value!.canAssign) {
+                    isBlocked = true;
+                  }
+                }
+
+                return ElevatedButton(
+                  onPressed: (selectedScheduleId == null || isBlocked)
+                      ? null
+                      : () async {
+                          try {
+                            await ref
+                                .read(
+                                  classAssignmentControllerProvider(
+                                    classId,
+                                  ).notifier,
+                                )
+                                .changeShift(
+                                  studentId: a.idHocSinh,
+                                  oldAssignmentId: a.id!,
+                                  newScheduleId: selectedScheduleId!,
+                                  effectiveDate: effectiveDate,
+                                );
+                            if (context.mounted) Navigator.pop(context);
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    e.toString().replaceAll('Exception: ', ''),
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  child: const Text('Xác nhận'),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCloseAssignmentDialog(
+    BuildContext context,
+    WidgetRef ref,
+    StudentShiftAssignment a,
+  ) {
+    DateTime endDate = DateTime.now();
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Kết thúc phân ca'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Học sinh sẽ không còn học ca này từ ngày kết thúc.'),
+              const SizedBox(height: 16),
+              ListTile(
+                title: const Text('Ngày kết thúc'),
+                subtitle: Text(DateFormat('dd/MM/yyyy').format(endDate)),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: endDate,
+                    firstDate: DateTime.parse(a.tuNgay),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) {
+                    setDialogState(() => endDate = picked);
+                  }
+                },
+              ),
             ],
           ),
           actions: [
@@ -264,36 +458,25 @@ class AssignmentTab extends ConsumerWidget {
               child: const Text('Hủy'),
             ),
             ElevatedButton(
-              onPressed: selectedScheduleId == null
-                  ? null
-                  : () async {
-                      try {
-                        await ref
-                            .read(
-                              classAssignmentControllerProvider(
-                                classId,
-                              ).notifier,
-                            )
-                            .changeShift(
-                              studentId: a.idHocSinh,
-                              oldAssignmentId: a.id!,
-                              newScheduleId: selectedScheduleId!,
-                              effectiveDate: effectiveDate,
-                            );
-                        if (context.mounted) Navigator.pop(context);
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                e.toString().replaceAll('Exception: ', ''),
-                              ),
-                            ),
-                          );
-                        }
-                      }
-                    },
-              child: const Text('Xác nhận'),
+              onPressed: () async {
+                try {
+                  await ref
+                      .read(classAssignmentControllerProvider(classId).notifier)
+                      .close(assignmentId: a.id!, endDate: endDate);
+                  if (context.mounted) Navigator.pop(context);
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          e.toString().replaceAll('Exception: ', ''),
+                        ),
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Xác nhận kết thúc'),
             ),
           ],
         ),
@@ -328,54 +511,100 @@ class _AssignStudentDialogState extends ConsumerState<AssignStudentDialog> {
 
     return AlertDialog(
       title: const Text('Phân ca cho học sinh'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          studentsAsync.when(
-            data: (students) => DropdownButtonFormField<int>(
-              initialValue: _selectedStudentId,
-              decoration: const InputDecoration(labelText: 'Chọn học sinh'),
-              items: students
-                  .map(
-                    (s) => DropdownMenuItem(value: s.id, child: Text(s.hoTen)),
-                  )
-                  .toList(),
-              onChanged: (v) => setState(() => _selectedStudentId = v),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            studentsAsync.when(
+              data: (students) => DropdownButtonFormField<int>(
+                initialValue: _selectedStudentId,
+                decoration: const InputDecoration(labelText: 'Chọn học sinh'),
+                items: students
+                    .map(
+                      (s) =>
+                          DropdownMenuItem(value: s.id, child: Text(s.hoTen)),
+                    )
+                    .toList(),
+                onChanged: (v) => setState(() => _selectedStudentId = v),
+              ),
+              loading: () => const CircularProgressIndicator(),
+              error: (e, _) => Text('Lỗi: $e'),
             ),
-            loading: () => const CircularProgressIndicator(),
-            error: (e, _) => Text('Lỗi: $e'),
-          ),
-          const SizedBox(height: 16),
-          ListTile(
-            title: const Text('Ngày bắt đầu áp dụng'),
-            subtitle: Text(DateFormat('dd/MM/yyyy').format(_startDate)),
-            trailing: const Icon(Icons.calendar_today),
-            onTap: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: _startDate,
-                firstDate: DateTime(2020),
-                lastDate: DateTime(2100),
-              );
-              if (picked != null) {
-                setState(() {
-                  _startDate = picked;
-                  _selectedStudentId =
-                      null; // Reset selection as candidate list might change
-                });
-              }
-            },
-          ),
-        ],
+            const SizedBox(height: 16),
+            ListTile(
+              title: const Text('Ngày bắt đầu áp dụng'),
+              subtitle: Text(DateFormat('dd/MM/yyyy').format(_startDate)),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _startDate,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) {
+                  setState(() {
+                    _startDate = picked;
+                    _selectedStudentId = null;
+                  });
+                }
+              },
+            ),
+            if (_selectedStudentId != null) ...[
+              const SizedBox(height: 12),
+              Consumer(
+                builder: (context, ref, _) {
+                  final previewAsync = ref.watch(
+                    assignmentConflictPreviewProvider((
+                      _selectedStudentId!,
+                      widget.scheduleId,
+                      DateFormat('yyyy-MM-dd').format(_startDate),
+                      null,
+                      null,
+                    )),
+                  );
+                  return previewAsync.when(
+                    data: (res) => ScheduleConflictBanner(result: res),
+                    loading: () => const LinearProgressIndicator(),
+                    error: (e, _) => Text('Lỗi kiểm tra trùng lịch: $e'),
+                  );
+                },
+              ),
+            ],
+          ],
+        ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Hủy'),
         ),
-        ElevatedButton(
-          onPressed: _selectedStudentId == null ? null : _submit,
-          child: const Text('Xác nhận'),
+        Consumer(
+          builder: (context, ref, _) {
+            bool isBlocked = false;
+            if (_selectedStudentId != null) {
+              final previewAsync = ref.watch(
+                assignmentConflictPreviewProvider((
+                  _selectedStudentId!,
+                  widget.scheduleId,
+                  DateFormat('yyyy-MM-dd').format(_startDate),
+                  null,
+                  null,
+                )),
+              );
+              if (previewAsync.value != null &&
+                  !previewAsync.value!.canAssign) {
+                isBlocked = true;
+              }
+            }
+
+            return ElevatedButton(
+              onPressed: (_selectedStudentId == null || isBlocked)
+                  ? null
+                  : _submit,
+              child: const Text('Xác nhận'),
+            );
+          },
         ),
       ],
     );

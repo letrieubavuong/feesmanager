@@ -40,7 +40,7 @@ final assignmentRepositoryProvider =
 
 typedef AssignmentRepositoryRef = FutureProviderRef<AssignmentRepository>;
 String _$classScheduleServiceHash() =>
-    r'af95df3cc18f2d46bd2ea5a67b7d710db6d3cc88';
+    r'fd6a5209eccdd8a773bd892cb63f585d966685e8';
 
 /// See also [classScheduleService].
 @ProviderFor(classScheduleService)
