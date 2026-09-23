@@ -241,6 +241,116 @@ void main() {
     );
 
     testWidgets(
+      'Invoice provider LOADING state fails closed without draft preview or action buttons',
+      (tester) async {
+        final testStudent = Student(
+          id: 1,
+          hoTen: 'Invoice Loading Student',
+          sdtPhuHuynh: '0901234567',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        final nowMonth = DateTime.now().toString().substring(0, 7);
+        final completer = Completer<List<TuitionInvoice>>();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWith((ref) async => db),
+              classTuitionPoliciesProvider(1).overrideWith((ref) async => []),
+              effectiveTuitionPolicyProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => null),
+              classMonthStudentsProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => [testStudent]),
+              studentDetailProvider(1).overrideWith((ref) async => testStudent),
+              classMonthInvoicesProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) => completer.future),
+              classMonthPaymentSummariesProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => {}),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(body: ClassTuitionTab(classId: 1)),
+            ),
+          ),
+        );
+
+        for (int i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        expect(find.text('Đang tải dữ liệu hóa đơn...'), findsOneWidget);
+        expect(find.text('NHÁP'), findsNothing);
+        expect(find.text('Chốt học phí'), findsNothing);
+        expect(find.text('Thanh toán'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Invoice provider ERROR state fails closed without draft preview or action buttons',
+      (tester) async {
+        final testStudent = Student(
+          id: 1,
+          hoTen: 'Invoice Error Student',
+          sdtPhuHuynh: '0901234567',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        final nowMonth = DateTime.now().toString().substring(0, 7);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWith((ref) async => db),
+              classTuitionPoliciesProvider(1).overrideWith((ref) async => []),
+              effectiveTuitionPolicyProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => null),
+              classMonthStudentsProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => [testStudent]),
+              studentDetailProvider(1).overrideWith((ref) async => testStudent),
+              classMonthInvoicesProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) => Future.error('Invoice DB Error')),
+              classMonthPaymentSummariesProvider((
+                1,
+                nowMonth,
+              )).overrideWith((ref) async => {}),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(body: ClassTuitionTab(classId: 1)),
+            ),
+          ),
+        );
+
+        for (int i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        expect(
+          find.textContaining('Lỗi dữ liệu hóa đơn: Invoice DB Error'),
+          findsOneWidget,
+        );
+        expect(find.text('NHÁP'), findsNothing);
+        expect(find.text('Chốt học phí'), findsNothing);
+        expect(find.text('Thanh toán'), findsNothing);
+      },
+    );
+
+    testWidgets(
       'Finalized invoice + payment summary provider LOADING state hides Thanh toán button',
       (tester) async {
         final testStudent = Student(
@@ -386,6 +496,101 @@ void main() {
           findsOneWidget,
         );
         expect(find.text('Thanh toán'), findsNothing);
+      },
+    );
+
+    test(
+      'PaymentController recordPayment live invalidates classMonthInvoicesProvider and classMonthPaymentSummariesProvider',
+      () async {
+        // Seed DB
+        await db.execute('''
+        INSERT INTO hoc_sinh (id, ho_ten, sdt_phu_huynh, created_at, updated_at)
+        VALUES (1, 'Student 1', '0901234567', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+
+        await db.execute('''
+        INSERT INTO lop (id, ten_lop, created_at, updated_at)
+        VALUES (1, 'Class 1', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+
+        await db.execute('''
+        INSERT INTO chinh_sach_hoc_phi (id, id_lop, hieu_luc_tu, hoc_phi_moi_buoi, created_at, updated_at)
+        VALUES (1, 1, '2026-01-01', 50000, '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+
+        await db.execute('''
+        INSERT INTO hoc_phi_thang (id, id_hoc_sinh, id_lop, thang, id_chinh_sach_hoc_phi, so_buoi_eligible, so_buoi_tinh_phi, credit_opening, credit_earned, credit_used, credit_closing, tong_truoc_giam, so_tien_phai_thu, trang_thai, created_at, updated_at)
+        VALUES (1, 1, 1, '2026-09', 1, 12, 12, 0, 0, 0, 0, 600000, 600000, 'DA_CHOT', '2026-09-01T00:00:00.000', '2026-09-01T00:00:00.000')
+      ''');
+
+        final container = ProviderContainer(
+          overrides: [databaseProvider.overrideWith((ref) async => db)],
+        );
+        addTearDown(container.dispose);
+
+        // Read initial invoices & summaries
+        var invoices = await container.read(
+          classMonthInvoicesProvider((1, '2026-09')).future,
+        );
+        expect(invoices.first.trangThai, TuitionInvoiceStatus.DA_CHOT);
+
+        var summaries = await container.read(
+          classMonthPaymentSummariesProvider((1, '2026-09')).future,
+        );
+        expect(summaries[1]?.remainingDebt, 600000);
+
+        // Record partial payment 300,000
+        await container
+            .read(paymentControllerProvider.notifier)
+            .recordPayment(
+              studentId: 1,
+              classId: 1,
+              month: '2026-09',
+              amount: 300000,
+              paymentDate: '2026-09-15',
+              method: PaymentMethod.CHUYEN_KHOAN,
+            );
+
+        // Re-read batch providers - must reload live with new state CON_NO
+        invoices = await container.read(
+          classMonthInvoicesProvider((1, '2026-09')).future,
+        );
+        expect(invoices.first.trangThai, TuitionInvoiceStatus.CON_NO);
+
+        summaries = await container.read(
+          classMonthPaymentSummariesProvider((1, '2026-09')).future,
+        );
+        expect(summaries[1]?.totalPaid, 300000);
+        expect(summaries[1]?.remainingDebt, 300000);
+        expect(summaries[1]?.settlementStatus, TuitionInvoiceStatus.CON_NO);
+
+        // Record remaining payment 300,000
+        await container
+            .read(paymentControllerProvider.notifier)
+            .recordPayment(
+              studentId: 1,
+              classId: 1,
+              month: '2026-09',
+              amount: 300000,
+              paymentDate: '2026-09-20',
+              method: PaymentMethod.TIEN_MAT,
+            );
+
+        // Re-read batch providers - must reload live with new state DA_THANH_TOAN
+        invoices = await container.read(
+          classMonthInvoicesProvider((1, '2026-09')).future,
+        );
+        expect(invoices.first.trangThai, TuitionInvoiceStatus.DA_THANH_TOAN);
+
+        summaries = await container.read(
+          classMonthPaymentSummariesProvider((1, '2026-09')).future,
+        );
+        expect(summaries[1]?.totalPaid, 600000);
+        expect(summaries[1]?.remainingDebt, 0);
+        expect(
+          summaries[1]?.settlementStatus,
+          TuitionInvoiceStatus.DA_THANH_TOAN,
+        );
       },
     );
   });

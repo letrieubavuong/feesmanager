@@ -397,12 +397,12 @@ class _InvoicePaymentsProviderElement
   (int, int, String) get arg => (origin as InvoicePaymentsProvider).arg;
 }
 
-String _$paymentControllerHash() => r'dfce3f5c7ca6717f4c707101ba368608e0028283';
+String _$paymentControllerHash() => r'2c8e2b86b463e0fe4705e9c30c5b02cf12a1115a';
 
 /// See also [PaymentController].
 @ProviderFor(PaymentController)
 final paymentControllerProvider =
-    AutoDisposeAsyncNotifierProvider<PaymentController, void>.internal(
+    AsyncNotifierProvider<PaymentController, void>.internal(
       PaymentController.new,
       name: r'paymentControllerProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -412,6 +412,6 @@ final paymentControllerProvider =
       allTransitiveDependencies: null,
     );
 
-typedef _$PaymentController = AutoDisposeAsyncNotifier<void>;
+typedef _$PaymentController = AsyncNotifier<void>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

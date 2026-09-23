@@ -35,7 +35,7 @@ Future<List<Payment>> invoicePayments(
   return service.getPaymentsForStudentClassMonth(arg.$1, arg.$2, arg.$3);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class PaymentController extends _$PaymentController {
   @override
   FutureOr<void> build() {}
@@ -66,6 +66,7 @@ class PaymentController extends _$PaymentController {
       );
 
       // Invalidate dependent providers to trigger instant live refresh
+      ref.invalidate(classMonthInvoicesProvider((classId, month)));
       ref.invalidate(studentInvoiceProvider(studentId, classId, month));
       ref.invalidate(
         tuitionPreviewControllerProvider(studentId, classId, month),

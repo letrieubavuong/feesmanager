@@ -484,38 +484,87 @@ class _StudentTuitionCard extends ConsumerWidget {
       data: (student) {
         if (student == null) return const SizedBox.shrink();
 
-        final invoices = invoicesAsync.value ?? [];
-        final invoice = invoices.cast<TuitionInvoice?>().firstWhere(
-          (i) => i != null && i.idHocSinh == studentId,
-          orElse: () => null,
-        );
-
-        final isFinalized = invoice?.trangThai.isFinalizedSnapshot == true;
-
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: isFinalized
-                ? _buildFinalizedInvoiceSnapshot(
-                    context,
-                    ref,
+        return invoicesAsync.when(
+          loading: () => Card(
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
                     student.hoTen,
-                    invoice!,
-                    paymentSummariesAsync,
-                  )
-                : previewAsync.when(
-                    data: (preview) => _buildDraftPreviewCard(
-                      context,
-                      ref,
-                      student.hoTen,
-                      preview,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (e, _) => Text('Chưa thể xem trước học phí: $e'),
                   ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Đang tải dữ liệu hóa đơn...',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
           ),
+          error: (e, _) => Card(
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    student.hoTen,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Lỗi dữ liệu hóa đơn: $e',
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          data: (invoices) {
+            final invoice = invoices.cast<TuitionInvoice?>().firstWhere(
+              (i) => i != null && i.idHocSinh == studentId,
+              orElse: () => null,
+            );
+
+            final isFinalized = invoice?.trangThai.isFinalizedSnapshot == true;
+
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: isFinalized
+                    ? _buildFinalizedInvoiceSnapshot(
+                        context,
+                        ref,
+                        student.hoTen,
+                        invoice!,
+                        paymentSummariesAsync,
+                      )
+                    : previewAsync.when(
+                        data: (preview) => _buildDraftPreviewCard(
+                          context,
+                          ref,
+                          student.hoTen,
+                          preview,
+                        ),
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (e, _) => Text('Chưa thể xem trước học phí: $e'),
+                      ),
+              ),
+            );
+          },
         );
       },
       loading: () => const SizedBox.shrink(),
@@ -784,7 +833,7 @@ class _StudentTuitionCard extends ConsumerWidget {
   ) {
     final amountController = TextEditingController(text: '$remainingDebt');
     final dateController = TextEditingController(
-      text: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+      text: DateFormat('yyyy-MM-DD').format(DateTime.now()),
     );
     PaymentMethod selectedMethod = PaymentMethod.CHUYEN_KHOAN;
     final txController = TextEditingController();
