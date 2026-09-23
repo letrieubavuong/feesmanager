@@ -5,7 +5,6 @@ import '../../schedule_conflicts/presentation/schedule_conflict_banner.dart';
 import '../../schedule_conflicts/presentation/schedule_conflict_providers.dart';
 import '../../sessions/domain/class_session.dart';
 import '../../sessions/domain/session_service.dart';
-import '../../students/domain/student.dart';
 import '../../students/domain/student_service.dart';
 import '../domain/session_adjustment_service.dart';
 import 'session_adjustment_controller.dart';
@@ -37,6 +36,7 @@ class SessionAdjustmentDialogs {
         .toList();
 
     if (eligibleTargets.isEmpty) {
+      if (!context.mounted) return;
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -58,6 +58,7 @@ class SessionAdjustmentDialogs {
     int selectedTargetId = eligibleTargets.first.id!;
     final reasonController = TextEditingController();
 
+    if (!context.mounted) return;
     showDialog(
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
@@ -215,6 +216,7 @@ class SessionAdjustmentDialogs {
     }
 
     if (eligibleTargets.isEmpty) {
+      if (!context.mounted) return;
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -234,6 +236,7 @@ class SessionAdjustmentDialogs {
     int selectedTargetId = eligibleTargets.first.$1.id!;
     final reasonController = TextEditingController();
 
+    if (!context.mounted) return;
     showDialog(
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
@@ -403,6 +406,7 @@ class SessionAdjustmentDialogs {
     }
 
     if (studentClassOptions.isEmpty) {
+      if (!context.mounted) return;
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -424,6 +428,7 @@ class SessionAdjustmentDialogs {
     int selectedOptionIndex = 0;
     final reasonController = TextEditingController();
 
+    if (!context.mounted) return;
     showDialog(
       context: context,
       builder: (dialogCtx) => StatefulBuilder(

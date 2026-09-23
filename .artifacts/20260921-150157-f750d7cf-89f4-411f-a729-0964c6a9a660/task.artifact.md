@@ -1,10 +1,11 @@
-# Task Management - Phase 8 Hardening: Session Credit / Buổi Dư
+# Task Management - Phase 11: Schedule Conflicts & Availability Constraints
 
-- [/] Research Phase 8 Hardening Requirements & Formulate Plan
-- [ ] Implement Forward Database Migration v9 -> v10 (`_migrateV9ToV10`) with reason-specific CHECK constraints
-- [ ] Fix Historical Month `closingBalance` in `SessionCreditService`
-- [ ] Hardened Atomic Fail-Closed Reconciliation (`reconcileEarnedCreditsForStudentClassMonth` & `reconcileEarnedCreditsForClassMonth`)
-- [ ] Update Presentation UI (UI Month Selector Fix & "Số dư cuối tháng" Label)
-- [ ] Add Comprehensive Test Suite (v9->v10 Migration, FK/CHECK Constraints, Historical Balance, UI Integration)
-- [ ] Quality Gate & CI Verification (`dart format`, `build_runner`, `flutter analyze`, `flutter test`)
-- [ ] Update Documentation & Commit/Push to Main
+- [/] Phase 11 Planning & Audit
+- [ ] Step 1: Database Migration v12 -> v13 (`rang_buoc_lich_hoc_sinh` table)
+- [ ] Step 2: Schedule Conflicts Domain & Data Models
+- [ ] Step 3: Canonical `ScheduleConflictService` Engine Implementation
+- [ ] Step 4: Refactor Consumers (`ScheduleDomainService` & `SessionAdjustmentService`)
+- [ ] Step 5: Real v12 -> v13 SQLite Database Migration Test
+- [ ] Step 6: `ScheduleConflictService` Domain & Integration Test Suite
+- [ ] Step 7: Presentation Layer (Providers, Constraint Management UI, Dialog Conflict Previews)
+- [ ] Step 8: Quality Gate & Remote CI Verification

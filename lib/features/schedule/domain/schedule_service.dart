@@ -51,8 +51,9 @@ class ScheduleDomainService {
   Future<ClassSchedule> createSchedule(ClassSchedule schedule) async {
     final cls = await _classService.getClassById(schedule.idLop);
     if (cls == null) throw Exception('Không tìm thấy lớp học');
-    if (cls.daLuuTru)
+    if (cls.daLuuTru) {
       throw Exception('Không thể tạo lịch học cho lớp đã lưu trữ');
+    }
 
     _validateSchedule(schedule);
 

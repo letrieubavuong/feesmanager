@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/date_formatter.dart';
-import '../../memberships/presentation/membership_providers.dart';
 import '../../schedule_conflicts/presentation/schedule_conflict_banner.dart';
 import '../../schedule_conflicts/presentation/schedule_conflict_providers.dart';
 import '../../students/domain/student.dart';

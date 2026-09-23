@@ -1,98 +1,52 @@
-# Implementation Plan - Phase 8: Session Credit / Buổi Dư
+# Implementation Plan - Phase 11: Schedule Conflicts & Availability Constraints
 
-Implement canonical Session Credit / Buổi Dư management with `SessionCreditService` as the single source of truth and `buoi_du_ledger` as the auditable persistence ledger.
+This plan details the technical changes for Phase 11: upgrading DB to version 13 with `rang_buoc_lich_hoc_sinh`, implementing the canonical `ScheduleConflictService`, transferring conflict ownership from `ScheduleDomainService` and `SessionAdjustmentService`, adding student constraint management UI, integrating real-time conflict/warning previews into assignment and adjustment dialogs, and writing an exhaustive test suite (20+ new tests + real v12->v13 DB migration test).
 
-## User Review Required
+## Engineering Blueprint
 
-> [!IMPORTANT]
-> **Key Architecture Decisions**:
-> 1. **Credit Scope**: Credit belongs strictly to `student + class` (never global student balance).
-> 2. **No Stored Balance Column**: Credit balance is derived exclusively via `SUM(delta)` from `buoi_du_ledger`.
-> 3. **Default Standard Sessions**: Default limit is 12 sessions per month, isolated in `SessionCreditService.defaultStandardSessionsPerMonth`.
-> 4. **No Automatic Credit Consumption**: Approved absences (`NGHI_CO_PHEP`) do NOT auto-consume credits in Phase 8 (`BU_TRU_NGHI_CO_PHEP` reason is in schema/enum for Phase 9 tuition integration).
-> 5. **Read Purity**: All preview and balance queries are 100% read-only. Reconciliation is an explicit write action.
+### 1. Database Upgrade v12 -> v13
+- In `lib/core/database/app_database.dart`:
+  - Increment DB version to 13.
+  - Add `_migrateV12ToV13` creating `rang_buoc_lich_hoc_sinh` table with Foreign Key (`ON DELETE RESTRICT`) to `hoc_sinh`, strict `CHECK` constraints on types (`loai`), occurrence shape (`kieu`), time order (`gio_ket_thuc > gio_bat_dau`), non-negative travel buffer, and status (`HOAT_DONG`, `DA_HUY`).
+  - Create performance indexes on `(id_hoc_sinh, trang_thai)`, `(id_hoc_sinh, thu_trong_tuan, hieu_luc_tu, hieu_luc_den)`, and `(id_hoc_sinh, ngay_cu_the)`.
 
-## Proposed Changes
+### 2. Feature Architecture: `lib/features/schedule_conflicts/`
+- **Domain Models**:
+  - `schedule_constraint.dart`: Entity mapping to `rang_buoc_lich_hoc_sinh` with `ConstraintType` (`HARD_BLOCK`, `SOFT_PREFERENCE`, `OTHER_CENTER`), `OccurrenceType` (`DINH_KY`, `MOT_LAN`), `ConstraintStatus` (`HOAT_DONG`, `DA_HUY`).
+  - `schedule_conflict_reason_code.dart`: Enum `ScheduleConflictReasonCode` (`EXACT_OVERLAP`, `PARTIAL_OVERLAP`, `CONTAINED_OVERLAP`, `HARD_BLOCK`, `SOFT_PREFERENCE`, `OTHER_CENTER_CLASS`, `TRAVEL_BUFFER`, `ONE_OFF_SESSION_CONFLICT`).
+  - `schedule_conflict.dart`: Detailed metadata model (`reasonCode`, `isHard`, `message`, `existingClassId`, `existingScheduleId`, `existingSessionId`, `constraintId`, `date`, `weekday`, `startTime`, `endTime`, `sourceDescription`).
+  - `schedule_conflict_result.dart`: `ScheduleConflictResult` (`canAssign = hardConflicts.isEmpty`, `hardConflicts`, `softWarnings`, `reasonCodes`).
+- **Data Layer**:
+  - `schedule_constraint_repository.dart`: SQLite CRUD repository for `rang_buoc_lich_hoc_sinh`.
+- **Canonical Service**:
+  - `schedule_conflict_service.dart`: Single canonical conflict engine evaluating candidate recurring assignments or one-off sessions against center assignments, constraints, and specific-date session commitments.
+  - Correctly classifies `EXACT_OVERLAP`, `PARTIAL_OVERLAP`, `CONTAINED_OVERLAP`.
+  - Implements travel buffer semantics (gap < buffer = soft warning `TRAVEL_BUFFER`, gap >= buffer = clear).
 
-### Database Migration (v8 -> v9)
+### 3. Service Ownership Transfer & Consumer Refactoring
+- **`ScheduleDomainService`**:
+  - Replaces internal inline `_isTimeOverlap` loop in `_validateAssignmentInterval` with `_conflictService.evaluateCandidateAssignment(...)`.
+  - Preserves Phase 3 interval boundaries and atomic shift-change behavior.
+- **`SessionAdjustmentService`**:
+  - Calls `_conflictService.evaluateOneOffCandidate(...)` before creating `DOI_CA`, `HOC_BU`, or `PHAT_SINH`.
+  - Excludes original session for `DOI_CA` to avoid false self-conflicts.
 
-#### [app_database.dart](file:///C:/Lap%20trinh%20Android/Tuition2027/lib/core/database/app_database.dart)
-- Upgrade `_version` to 9.
-- Implement `_migrateV8ToV9`:
-  - Create table `buoi_du_ledger`.
-  - Create partial unique index `idx_buoi_du_auto_event_unique`.
-  - Create indexes for `(id_hoc_sinh, id_lop, ngay_hieu_luc)`, `(id_lop, ngay_hieu_luc)`, and `(id_buoi_hoc)`.
+### 4. Presentation & UI Integration
+- Constraint management in `StudentDetailPage`: view, create, and cancel constraints (no hard deletes).
+- Conflict preview in `AssignStudentDialog` & `ChangeShiftDialog`: displays red banners for hard conflicts (blocks save) and amber banners for soft warnings (allows save).
+- Conflict preview in `SessionAdjustmentDialogs` (`Đổi ca`, `Học bù`, `Phát sinh`).
 
----
-
-### Session Credits Module
-
-#### [NEW] [credit_ledger_reason.dart](file:///C:/Lap%20trinh%20Android/Tuition2027/lib/features/session_credits/domain/credit_ledger_reason.dart)
-- Define `CreditLedgerReason` enum: `VUOT_SO_BUOI_CHUAN`, `BU_TRU_NGHI_CO_PHEP`, `DIEU_CHINH_THU_CONG`, `MIGRATION`.
-
-#### [NEW] [credit_ledger_entry.dart](file:///C:/Lap%20trinh%20Android/Tuition2027/lib/features/session_credits/domain/credit_ledger_entry.dart)
-- Typed model for `buoi_du_ledger` rows.
-
-#### [NEW] [credit_session_candidate.dart](file:///C:/Lap%20trinh%20Android/Tuition2027/lib/features/session_credits/domain/credit_session_candidate.dart)
-- Typed read model for monthly session classification (`isStandard`, `isExtra`, `earnsCredit`, `existingEarnedLedgerEntry`).
-
-#### [NEW] [monthly_credit_summary.dart](file:///C:/Lap%20trinh%20Android/Tuition2027/lib/features/session_credits/domain/monthly_credit_summary.dart)
-- Read model for monthly credit status and preview.
-
-#### [NEW] [session_credit_repository.dart](file:///C:/Lap%20trinh%20Android/Tuition2027/lib/features/session_credits/data/session_credit_repository.dart)
-- Persistence layer for `buoi_du_ledger`.
-
-#### [NEW] [session_credit_service.dart](file:///C:/Lap%20trinh%20Android/Tuition2027/lib/features/session_credits/domain/session_credit_service.dart)
-- Single canonical business owner of credit rules, eligibility calculation, standard vs extra classification, previewing, and idempotent reconciliation.
-
-#### [NEW] [session_credit_controller.dart](file:///C:/Lap%20trinh%20Android/Tuition2027/lib/features/session_credits/presentation/session_credit_controller.dart)
-- Riverpod notifier managing credit state and commands.
-
-#### [NEW] [session_credit_page.dart](file:///C:/Lap%20trinh%20Android/Tuition2027/lib/features/session_credits/presentation/session_credit_page.dart)
-- Mobile-friendly UI for credit summary, candidate preview, reconciliation, manual adjustment, and ledger history.
-
-#### [student_detail_page.dart](file:///C:/Lap%20trinh%20Android/Tuition2027/lib/features/students/presentation/student_detail_page.dart)
-- Add navigation entry point to `SessionCreditPage` per class.
+### 5. Exhaustive Verification Suite
+- `test/repository/migration_v12_v13_test.dart`: Real SQLite database migration v12 -> v13 asserting data preservation, FK RESTRICT enforcement, `CHECK` constraints, indexes, and clean `PRAGMA foreign_key_check`.
+- `test/schedule_conflicts/schedule_conflict_service_test.dart`: Exhaustive test matrix (Tests A..Z and HOC_BU/PHAT_SINH/Phase 3 regressions).
 
 ---
 
-### Documentation
-
-#### [DATABASE_SCHEMA.md](file:///C:/Lap%20trinh%20Android/Tuition2027/docs/DATABASE_SCHEMA.md)
-- Update with implemented v9 schema details.
-
-#### [ARCHITECTURE.md](file:///C:/Lap%20trinh%20Android/Tuition2027/docs/ARCHITECTURE.md)
-- Document `SessionCreditService` canonical ownership.
-
-#### [REBUILD_STATUS.md](file:///C:/Lap%20trinh%20Android/Tuition2027/docs/REBUILD_STATUS.md)
-- Mark Phase 8 COMPLETE with exact test count.
-
----
-
-### Verification Plan
-
-#### Automated Tests
-1. **Migration Tests** (`test/repository/migration_v8_v9_test.dart`):
-   - Upgrade v8->v9 preserving Phase 0-7 data.
-   - Fresh v9 install with clean foreign key check.
-   - SQLite `CHECK` and `UNIQUE` constraint tests.
-2. **Domain & Service Unit Tests** (`test/session_credits/session_credit_service_test.dart`):
-   - Eligible sessions calculation (CHINH + DA_HOC + RosterService participant).
-   - Standard (1..12) vs Extra (13+) classification.
-   - Earning rules (`CO_MAT`/`TRE` -> +1, others -> 0).
-   - Exclusion of `HOC_BU` and `PHAT_SINH`.
-   - Idempotent reconciliation.
-   - Class-scoped balance and `getBalanceAsOf` date filtering.
-   - Manual adjustment validation and audit trail.
-   - Pure read verification.
-3. **Widget & Presentation Tests** (`test/presentation/session_credits_ui_test.dart`):
-   - Credit page rendering, reconciliation preview, manual adjustment form, error propagation.
-
-#### Full Quality Gate Commands
+## Verification Commands
 ```bash
-dart format .
+flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 git ls-files '*.dart' ':!:**/*.g.dart' | ForEach-Object { dart format --output=none --set-exit-if-changed $_ }
 flutter analyze
-flutter test
+flutter test --no-pub -j 2
 ```

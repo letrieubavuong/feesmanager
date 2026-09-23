@@ -175,8 +175,10 @@ class ScheduleConflictService {
           assignment.idLichHoc,
         );
         if (existingSchedule == null) continue;
-        if (excludeClassId != null && existingSchedule.idLop == excludeClassId)
+        if (excludeClassId != null &&
+            existingSchedule.idLop == excludeClassId) {
           continue;
+        }
 
         if (existingSchedule.thuTrongTuan == weekday) {
           if (_isTimeOverlap(

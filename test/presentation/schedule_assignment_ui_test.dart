@@ -8,7 +8,6 @@ import 'package:tuition2027/core/database/app_database.dart';
 import 'package:tuition2027/core/database/database_provider.dart';
 import 'package:tuition2027/features/classes/domain/class.dart';
 import 'package:tuition2027/features/classes/presentation/class_controller.dart';
-import 'package:tuition2027/features/memberships/presentation/membership_providers.dart';
 import 'package:tuition2027/features/schedule/domain/class_schedule.dart';
 import 'package:tuition2027/features/schedule/domain/student_shift_assignment.dart';
 import 'package:tuition2027/features/schedule/presentation/assignment_controller.dart';

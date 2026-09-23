@@ -16,10 +16,7 @@ import 'package:tuition2027/features/schedule_conflicts/domain/schedule_conflict
 import 'package:tuition2027/features/schedule_conflicts/domain/schedule_conflict_service.dart';
 import 'package:tuition2027/features/schedule_conflicts/domain/schedule_constraint.dart';
 import 'package:tuition2027/features/session_adjustments/data/session_adjustment_repository.dart';
-import 'package:tuition2027/features/session_adjustments/domain/session_adjustment_service.dart';
 import 'package:tuition2027/features/sessions/data/session_repository.dart';
-import 'package:tuition2027/features/sessions/domain/class_session.dart';
-import 'package:tuition2027/features/sessions/domain/session_service.dart';
 import 'package:tuition2027/features/students/data/student_repository.dart';
 import 'package:tuition2027/features/students/domain/student_service.dart';
 

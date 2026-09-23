@@ -35,7 +35,7 @@ void showAddConstraintDialog(
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<ConstraintType>(
-                value: selectedType,
+                initialValue: selectedType,
                 decoration: const InputDecoration(labelText: 'Loại ràng buộc'),
                 items: ConstraintType.values
                     .map(
@@ -51,7 +51,7 @@ void showAddConstraintDialog(
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<OccurrenceType>(
-                value: selectedOccurrence,
+                initialValue: selectedOccurrence,
                 decoration: const InputDecoration(labelText: 'Tần suất'),
                 items: OccurrenceType.values
                     .map(
@@ -68,7 +68,7 @@ void showAddConstraintDialog(
               const SizedBox(height: 8),
               if (selectedOccurrence == OccurrenceType.DINH_KY) ...[
                 DropdownButtonFormField<int>(
-                  value: selectedWeekday,
+                  initialValue: selectedWeekday,
                   decoration: const InputDecoration(
                     labelText: 'Thứ trong tuần',
                   ),
