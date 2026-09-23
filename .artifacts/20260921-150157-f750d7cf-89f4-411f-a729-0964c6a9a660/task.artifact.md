@@ -1,11 +1,8 @@
-# Task Management - Phase 11: Schedule Conflicts & Availability Constraints
+# Task Management - Phase 11A Final Closure Execution
 
-- [/] Phase 11 Planning & Audit
-- [ ] Step 1: Database Migration v12 -> v13 (`rang_buoc_lich_hoc_sinh` table)
-- [ ] Step 2: Schedule Conflicts Domain & Data Models
-- [ ] Step 3: Canonical `ScheduleConflictService` Engine Implementation
-- [ ] Step 4: Refactor Consumers (`ScheduleDomainService` & `SessionAdjustmentService`)
-- [ ] Step 5: Real v12 -> v13 SQLite Database Migration Test
-- [ ] Step 6: `ScheduleConflictService` Domain & Integration Test Suite
-- [ ] Step 7: Presentation Layer (Providers, Constraint Management UI, Dialog Conflict Previews)
-- [ ] Step 8: Quality Gate & Remote CI Verification
+- [/] Phase 11A Final Closure Execution
+	- [ ] Step 1: Add two missing raw SQLite migration assertions in `test/repository/migration_v12_v13_test.dart`
+	- [ ] Step 2: Fix stale test count references in `docs/REBUILD_STATUS.md`
+	- [ ] Step 3: Run Full Quality Gate (`flutter pub get`, `build_runner`, `dart format`, `flutter analyze`, `flutter test`)
+	- [ ] Step 4: Commit and Push to `main`
+	- [ ] Step 5: Final Report Verification

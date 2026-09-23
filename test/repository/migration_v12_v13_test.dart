@@ -324,6 +324,24 @@ void main() {
           throwsA(isA<DatabaseException>()),
         );
 
+        // Assert CHECK constraint: DINH_KY missing hieu_luc_tu rejected
+        expect(
+          () => dbV13.execute('''
+          INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
+          VALUES (101, 'HARD_BLOCK', 'DINH_KY', 1, '18:00', '20:00', NULL, '2026-01-01', '2026-01-01')
+        '''),
+          throwsA(isA<DatabaseException>()),
+        );
+
+        // Assert CHECK constraint: MOT_LAN missing ngay_cu_the rejected
+        expect(
+          () => dbV13.execute('''
+          INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, ngay_cu_the, gio_bat_dau, gio_ket_thuc, created_at, updated_at)
+          VALUES (101, 'HARD_BLOCK', 'MOT_LAN', NULL, '18:00', '20:00', '2026-01-01', '2026-01-01')
+        '''),
+          throwsA(isA<DatabaseException>()),
+        );
+
         // Assert ON DELETE RESTRICT on student deletion with active constraint
         expect(
           () => dbV13.execute("DELETE FROM hoc_sinh WHERE id = 101"),
