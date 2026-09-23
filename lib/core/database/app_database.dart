@@ -786,8 +786,16 @@ class AppDatabase {
           OR
           (kieu = 'MOT_LAN' AND ngay_cu_the IS NOT NULL AND thu_trong_tuan IS NULL AND hieu_luc_tu IS NULL AND hieu_luc_den IS NULL)
         ),
-        CHECK (gio_bat_dau GLOB '[0-2][0-9]:[0-5][0-9]'),
-        CHECK (gio_ket_thuc GLOB '[0-2][0-9]:[0-5][0-9]' AND gio_ket_thuc > gio_bat_dau),
+        CHECK (
+          (gio_bat_dau GLOB '[0-1][0-9]:[0-5][0-9]' OR gio_bat_dau GLOB '2[0-3]:[0-5][0-9]') AND
+          (gio_ket_thuc GLOB '[0-1][0-9]:[0-5][0-9]' OR gio_ket_thuc GLOB '2[0-3]:[0-5][0-9]') AND
+          gio_ket_thuc > gio_bat_dau
+        ),
+        CHECK (
+          (ngay_cu_the IS NULL OR (ngay_cu_the GLOB '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]' AND CAST(substr(ngay_cu_the, 6, 2) AS INTEGER) BETWEEN 1 AND 12 AND CAST(substr(ngay_cu_the, 9, 2) AS INTEGER) BETWEEN 1 AND 31)) AND
+          (hieu_luc_tu IS NULL OR (hieu_luc_tu GLOB '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]' AND CAST(substr(hieu_luc_tu, 6, 2) AS INTEGER) BETWEEN 1 AND 12 AND CAST(substr(hieu_luc_tu, 9, 2) AS INTEGER) BETWEEN 1 AND 31)) AND
+          (hieu_luc_den IS NULL OR (hieu_luc_den GLOB '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]' AND CAST(substr(hieu_luc_den, 6, 2) AS INTEGER) BETWEEN 1 AND 12 AND CAST(substr(hieu_luc_den, 9, 2) AS INTEGER) BETWEEN 1 AND 31))
+        ),
         CHECK (travel_buffer_phut >= 0),
         CHECK (trang_thai IN ('HOAT_DONG', 'DA_HUY'))
       )

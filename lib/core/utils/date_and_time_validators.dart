@@ -1,7 +1,7 @@
 class DateAndTimeValidators {
   static final RegExp _timeRegExp = RegExp(r'^([01]\d|2[0-3]):[0-5]\d$');
   static final RegExp _dateRegExp = RegExp(
-    r'^20\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$',
+    r'^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$',
   );
 
   /// Validates HH:mm canonical time string.

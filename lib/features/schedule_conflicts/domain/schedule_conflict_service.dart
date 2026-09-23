@@ -136,44 +136,37 @@ class ScheduleConflictService {
       }
     }
 
-    // 2. Check student constraints (HARD_BLOCK, SOFT_PREFERENCE, OTHER_CENTER)
-    final activeConstraints = await _constraintRepo.getActiveForStudent(
-      studentId,
-    );
+    // 2. Check student constraints (narrow targeted query)
+    final activeConstraints = await _constraintRepo
+        .getActiveForRecurringCandidate(
+          studentId: studentId,
+          weekday: targetSchedule.thuTrongTuan,
+          startDate: startDate,
+          endDate: endDate,
+        );
     for (final constraint in activeConstraints) {
       if (constraint.occurrenceType == OccurrenceType.DINH_KY) {
-        if (constraint.weekday == targetSchedule.thuTrongTuan) {
-          if (_isDateRangeOverlap(
-            startDate,
-            endDate,
-            constraint.effectiveFrom!,
-            constraint.effectiveTo,
-          )) {
-            _evaluateConstraintAgainstTime(
-              constraint: constraint,
-              candStart: targetSchedule.gioBatDau,
-              candEnd: targetSchedule.gioKetThuc,
-              weekday: targetSchedule.thuTrongTuan,
-              hardConflicts: hardConflicts,
-              softWarnings: softWarnings,
-            );
-          }
-        }
+        _evaluateConstraintAgainstTime(
+          constraint: constraint,
+          candStart: targetSchedule.gioBatDau,
+          candEnd: targetSchedule.gioKetThuc,
+          weekday: targetSchedule.thuTrongTuan,
+          hardConflicts: hardConflicts,
+          softWarnings: softWarnings,
+        );
       } else if (constraint.occurrenceType == OccurrenceType.MOT_LAN) {
         final specDate = constraint.specificDate!;
         final specDt = DateTime.parse(specDate);
         if (specDt.weekday == targetSchedule.thuTrongTuan) {
-          if (_isDateInInterval(specDate, startDate, endDate)) {
-            _evaluateConstraintAgainstTime(
-              constraint: constraint,
-              candStart: targetSchedule.gioBatDau,
-              candEnd: targetSchedule.gioKetThuc,
-              weekday: targetSchedule.thuTrongTuan,
-              date: specDate,
-              hardConflicts: hardConflicts,
-              softWarnings: softWarnings,
-            );
-          }
+          _evaluateConstraintAgainstTime(
+            constraint: constraint,
+            candStart: targetSchedule.gioBatDau,
+            candEnd: targetSchedule.gioKetThuc,
+            weekday: targetSchedule.thuTrongTuan,
+            date: specDate,
+            hardConflicts: hardConflicts,
+            softWarnings: softWarnings,
+          );
         }
       }
     }

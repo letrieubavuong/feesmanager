@@ -279,6 +279,51 @@ void main() {
           throwsA(isA<DatabaseException>()),
         );
 
+        // Assert CHECK constraint: 24:00 and 25:00 time rejected
+        expect(
+          () => dbV13.execute('''
+          INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
+          VALUES (101, 'HARD_BLOCK', 'DINH_KY', 1, '24:00', '25:00', '2026-01-01', '2026-01-01', '2026-01-01')
+        '''),
+          throwsA(isA<DatabaseException>()),
+        );
+
+        // Assert CHECK constraint: invalid status rejected
+        expect(
+          () => dbV13.execute('''
+          INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, trang_thai, created_at, updated_at)
+          VALUES (101, 'HARD_BLOCK', 'DINH_KY', 1, '18:00', '20:00', '2026-01-01', 'INVALID_STATUS', '2026-01-01', '2026-01-01')
+        '''),
+          throwsA(isA<DatabaseException>()),
+        );
+
+        // Assert CHECK constraint: MOT_LAN with effectiveFrom/effectiveTo rejected
+        expect(
+          () => dbV13.execute('''
+          INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, ngay_cu_the, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
+          VALUES (101, 'HARD_BLOCK', 'MOT_LAN', '2026-10-15', '18:00', '20:00', '2026-01-01', '2026-01-01', '2026-01-01')
+        '''),
+          throwsA(isA<DatabaseException>()),
+        );
+
+        // Assert CHECK constraint: malformed date slash 2026/10/15 rejected
+        expect(
+          () => dbV13.execute('''
+          INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, ngay_cu_the, gio_bat_dau, gio_ket_thuc, created_at, updated_at)
+          VALUES (101, 'HARD_BLOCK', 'MOT_LAN', '2026/10/15', '18:00', '20:00', '2026-01-01', '2026-01-01')
+        '''),
+          throwsA(isA<DatabaseException>()),
+        );
+
+        // Assert CHECK constraint: invalid month 13 in date 2026-13-01 rejected
+        expect(
+          () => dbV13.execute('''
+          INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, ngay_cu_the, gio_bat_dau, gio_ket_thuc, created_at, updated_at)
+          VALUES (101, 'HARD_BLOCK', 'MOT_LAN', '2026-13-01', '18:00', '20:00', '2026-01-01', '2026-01-01')
+        '''),
+          throwsA(isA<DatabaseException>()),
+        );
+
         // Assert ON DELETE RESTRICT on student deletion with active constraint
         expect(
           () => dbV13.execute("DELETE FROM hoc_sinh WHERE id = 101"),

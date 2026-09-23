@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' hide equals;
 import 'package:tuition2027/core/database/app_database.dart';
+import 'package:tuition2027/core/utils/date_and_time_validators.dart';
 import 'package:tuition2027/features/classes/data/class_repository.dart';
 import 'package:tuition2027/features/classes/domain/class_service.dart';
 import 'package:tuition2027/features/memberships/data/membership_repository.dart';
@@ -1141,6 +1142,63 @@ void main() {
         );
       },
     );
+
+    test('DateAndTimeValidators Edge Cases', () {
+      // 23:59 valid
+      expect(
+        () => DateAndTimeValidators.validateTimeStr('23:59'),
+        returnsNormally,
+      );
+
+      // 24:00 invalid
+      expect(
+        () => DateAndTimeValidators.validateTimeStr('24:00'),
+        throwsA(isA<FormatException>()),
+      );
+
+      // 25:00 invalid
+      expect(
+        () => DateAndTimeValidators.validateTimeStr('25:00'),
+        throwsA(isA<FormatException>()),
+      );
+
+      // malformed HH:mm invalid
+      expect(
+        () => DateAndTimeValidators.validateTimeStr('8:00'),
+        throwsA(isA<FormatException>()),
+      );
+
+      // 2099-12-31 valid
+      expect(
+        () => DateAndTimeValidators.validateDateStr('2099-12-31'),
+        returnsNormally,
+      );
+
+      // 2100-01-01 valid
+      expect(
+        () => DateAndTimeValidators.validateDateStr('2100-01-01'),
+        returnsNormally,
+      );
+
+      // malformed date invalid
+      expect(
+        () => DateAndTimeValidators.validateDateStr('2026/02/15'),
+        throwsA(isA<FormatException>()),
+      );
+
+      // 2026-02-31 invalid
+      expect(
+        () => DateAndTimeValidators.validateDateStr('2026-02-31'),
+        throwsA(isA<FormatException>()),
+      );
+
+      // effectiveTo before effectiveFrom invalid
+      expect(
+        () =>
+            DateAndTimeValidators.validateDateRange('2026-06-01', '2026-01-01'),
+        throwsA(isA<FormatException>()),
+      );
+    });
   });
 }
 

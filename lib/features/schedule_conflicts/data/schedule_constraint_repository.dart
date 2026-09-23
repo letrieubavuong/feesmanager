@@ -84,6 +84,60 @@ class ScheduleConstraintRepository {
     return rows.map((r) => ScheduleConstraint.fromRow(r)).toList();
   }
 
+  Future<List<ScheduleConstraint>> getActiveForRecurringCandidate({
+    required int studentId,
+    required int weekday,
+    required String startDate,
+    String? endDate,
+  }) async {
+    final String whereClause;
+    final List<dynamic> whereArgs;
+
+    if (endDate != null) {
+      whereClause =
+          'id_hoc_sinh = ? AND trang_thai = ? AND ('
+          '(kieu = ? AND thu_trong_tuan = ? AND hieu_luc_tu <= ? AND (hieu_luc_den IS NULL OR hieu_luc_den >= ?))'
+          ' OR '
+          '(kieu = ? AND ngay_cu_the >= ? AND ngay_cu_the <= ?)'
+          ')';
+      whereArgs = [
+        studentId,
+        ConstraintStatus.HOAT_DONG.dbValue,
+        OccurrenceType.DINH_KY.dbValue,
+        weekday,
+        endDate,
+        startDate,
+        OccurrenceType.MOT_LAN.dbValue,
+        startDate,
+        endDate,
+      ];
+    } else {
+      whereClause =
+          'id_hoc_sinh = ? AND trang_thai = ? AND ('
+          '(kieu = ? AND thu_trong_tuan = ? AND (hieu_luc_den IS NULL OR hieu_luc_den >= ?))'
+          ' OR '
+          '(kieu = ? AND ngay_cu_the >= ?)'
+          ')';
+      whereArgs = [
+        studentId,
+        ConstraintStatus.HOAT_DONG.dbValue,
+        OccurrenceType.DINH_KY.dbValue,
+        weekday,
+        startDate,
+        OccurrenceType.MOT_LAN.dbValue,
+        startDate,
+      ];
+    }
+
+    final rows = await _db.query(
+      'rang_buoc_lich_hoc_sinh',
+      where: whereClause,
+      whereArgs: whereArgs,
+      orderBy: 'created_at DESC',
+    );
+    return rows.map((r) => ScheduleConstraint.fromRow(r)).toList();
+  }
+
   Future<void> cancelConstraint(int id) async {
     final count = await _db.update(
       'rang_buoc_lich_hoc_sinh',
