@@ -138,20 +138,19 @@
   - `PaymentController.recordPayment` invalidates `classMonthInvoicesProvider`, `studentInvoiceProvider`, `invoicePaymentSummaryProvider`, `classMonthPaymentSummariesProvider`, and `invoicePaymentsProvider` to trigger instant live UI refresh across all views.
 - [x] Comprehensive Tests (277 tests passing).
 
-## Phase 11: Schedule Conflicts & Availability Constraints - COMPLETE
+## Phase 11: Schedule Conflicts - IN PROGRESS
 - [x] Forward Database Migration (v12 -> v13) creating `rang_buoc_lich_hoc_sinh` table with Foreign Keys (`ON DELETE RESTRICT`), strict `CHECK` constraints on types (`loai`), occurrence shape (`kieu`), time order (`gio_ket_thuc > gio_bat_dau`), non-negative travel buffer, status (`HOAT_DONG`, `DA_HUY`), and performance indexes.
 - [x] Real v12 -> v13 database migration test on real SQLite file (`test/repository/migration_v12_v13_test.dart`) asserting data preservation, FK RESTRICT, `CHECK` constraints, and clean `PRAGMA foreign_key_check`.
 - [x] Constraint domain & data models (`ScheduleConstraint`, `ConstraintType`, `OccurrenceType`, `ConstraintStatus`, `ScheduleConstraintRepository`).
 - [x] Single Canonical Owner `ScheduleConflictService`:
-  - Classifies time overlaps: `EXACT_OVERLAP`, `CONTAINED_OVERLAP`, `PARTIAL_OVERLAP`.
+  - Single canonical overlap logic for `[start, end)` time intervals classifying `EXACT_OVERLAP`, `CONTAINED_OVERLAP`, `PARTIAL_OVERLAP`.
   - Evaluates student constraints: `HARD_BLOCK` (hard conflict), `SOFT_PREFERENCE` (soft warning), `OTHER_CENTER` (hard conflict on overlap, soft warning on `TRAVEL_BUFFER` gap).
   - Evaluates one-off session commitments and excludes `DOI_CA` original session to avoid false self-conflicts.
+  - Fail-closed error handling: Missing schedule references or corrupted time formats throw `StateError` / `FormatException` instead of silently continuing.
 - [x] Consumer Refactoring:
   - `ScheduleDomainService`: Consumes `ScheduleConflictService` for `assignStudent` and `changeRecurringShift`.
   - `SessionAdjustmentService`: Consumes `ScheduleConflictService` before creating `DOI_CA`, `HOC_BU`, or `PHAT_SINH`.
-- [x] Student Constraint Management UI in `StudentDetailPage` (view, create, cancel without hard deletion).
-- [x] Real-time Conflict Previews (`ScheduleConflictBanner`) integrated into `AssignStudentDialog`, `ChangeShiftDialog`, `_showDoiCaDialog`, `_showHocBuDialog`, and `_showPhatSinhDialog` (disables Save button on hard conflicts).
-- [x] Comprehensive Tests (289 tests passing):
+- [x] Comprehensive Tests (296 tests passing):
     - `test/repository/migration_v12_v13_test.dart`
     - `test/schedule_conflicts/schedule_conflict_service_test.dart`
     - `test/schedule/assignment_service_test.dart`

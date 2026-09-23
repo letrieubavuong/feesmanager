@@ -59,7 +59,11 @@ class ScheduleConflictService {
         final existingSchedule = await _scheduleRepo.getById(
           assignment.idLichHoc,
         );
-        if (existingSchedule == null) continue;
+        if (existingSchedule == null) {
+          throw StateError(
+            'Dữ liệu không đồng bộ: Không tìm thấy lịch học (id: ${assignment.idLichHoc}) của phân ca (id: ${assignment.id})',
+          );
+        }
 
         if (existingSchedule.thuTrongTuan == targetSchedule.thuTrongTuan) {
           if (_isTimeOverlap(
@@ -174,7 +178,11 @@ class ScheduleConflictService {
         final existingSchedule = await _scheduleRepo.getById(
           assignment.idLichHoc,
         );
-        if (existingSchedule == null) continue;
+        if (existingSchedule == null) {
+          throw StateError(
+            'Dữ liệu không đồng bộ: Không tìm thấy lịch học (id: ${assignment.idLichHoc}) của phân ca (id: ${assignment.id})',
+          );
+        }
         if (excludeClassId != null &&
             existingSchedule.idLop == excludeClassId) {
           continue;
@@ -459,7 +467,22 @@ class ScheduleConflictService {
 
   int _timeToMinutes(String timeStr) {
     final parts = timeStr.split(':');
-    return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+    if (parts.length != 2) {
+      throw FormatException(
+        'Định dạng thời gian không hợp lệ (cần HH:mm): $timeStr',
+      );
+    }
+    final hours = int.tryParse(parts[0]);
+    final minutes = int.tryParse(parts[1]);
+    if (hours == null ||
+        minutes == null ||
+        hours < 0 ||
+        hours > 23 ||
+        minutes < 0 ||
+        minutes > 59) {
+      throw FormatException('Giá trị thời gian không hợp lệ: $timeStr');
+    }
+    return hours * 60 + minutes;
   }
 
   int _calculateGapMinutes(String s1, String e1, String s2, String e2) {

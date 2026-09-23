@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:path/path.dart';
+import 'package:path/path.dart' hide equals;
 import 'package:tuition2027/core/database/app_database.dart';
 import 'package:tuition2027/features/classes/data/class_repository.dart';
 import 'package:tuition2027/features/classes/domain/class_service.dart';
@@ -680,5 +680,291 @@ void main() {
         expect(assignResult.conflictReason, contains('Trùng lịch'));
       },
     );
+
+    test('Test 7: Single-day boundary overlap -> conflict', () async {
+      final s1 = await scheduleRepo.create(
+        ClassSchedule(
+          idLop: 1,
+          thuTrongTuan: 1,
+          gioBatDau: '14:00',
+          gioKetThuc: '16:00',
+          hieuLucTu: '2026-05-15',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      await scheduleDomainService.assignStudent(
+        studentId: 1,
+        classId: 1,
+        scheduleId: s1,
+        startDate: DateTime(2026, 5, 15),
+        endDate: DateTime(2026, 5, 15),
+      );
+
+      final s2 = await scheduleRepo.create(
+        ClassSchedule(
+          idLop: 2,
+          thuTrongTuan: 1,
+          gioBatDau: '15:00',
+          gioKetThuc: '17:00',
+          hieuLucTu: '2026-05-15',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      final res = await conflictService.evaluateCandidateAssignment(
+        studentId: 1,
+        targetScheduleId: s2,
+        startDate: '2026-05-15',
+        endDate: '2026-05-15',
+      );
+
+      expect(res.canAssign, isFalse);
+      expect(res.hardConflicts, isNotEmpty);
+    });
+
+    test('Test 8: Open-ended interval matching', () async {
+      final s1 = await scheduleRepo.create(
+        ClassSchedule(
+          idLop: 1,
+          thuTrongTuan: 1,
+          gioBatDau: '08:00',
+          gioKetThuc: '10:00',
+          hieuLucTu: '2026-01-01',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      await scheduleDomainService.assignStudent(
+        studentId: 1,
+        classId: 1,
+        scheduleId: s1,
+        startDate: DateTime(2026, 1, 1), // null end date
+      );
+
+      final s2 = await scheduleRepo.create(
+        ClassSchedule(
+          idLop: 2,
+          thuTrongTuan: 1,
+          gioBatDau: '09:00',
+          gioKetThuc: '11:00',
+          hieuLucTu: '2026-06-01',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      final res = await conflictService.evaluateCandidateAssignment(
+        studentId: 1,
+        targetScheduleId: s2,
+        startDate: '2026-06-01', // also open ended
+      );
+
+      expect(res.canAssign, isFalse);
+      expect(res.hardConflicts, isNotEmpty);
+    });
+
+    test(
+      'Test 15: Travel buffer = 0 -> no warning for adjacent schedules',
+      () async {
+        await constraintRepo.createConstraint(
+          ScheduleConstraint(
+            studentId: 1,
+            type: ConstraintType.OTHER_CENTER,
+            occurrenceType: OccurrenceType.DINH_KY,
+            weekday: 1,
+            startTime: '08:00',
+            endTime: '09:00',
+            effectiveFrom: '2026-01-01',
+            travelBufferMinutes: 0,
+            sourceName: 'Center C',
+          ),
+        );
+
+        final s1 = await scheduleRepo.create(
+          ClassSchedule(
+            idLop: 1,
+            thuTrongTuan: 1,
+            gioBatDau: '09:05',
+            gioKetThuc: '10:05',
+            hieuLucTu: '2026-01-01',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        final res = await conflictService.evaluateCandidateAssignment(
+          studentId: 1,
+          targetScheduleId: s1,
+          startDate: '2026-01-01',
+        );
+
+        expect(res.canAssign, isTrue);
+        expect(res.softWarnings, isEmpty);
+      },
+    );
+
+    test('Test 17: changeRecurringShift excludes old assignment', () async {
+      final s1 = await scheduleRepo.create(
+        ClassSchedule(
+          idLop: 1,
+          thuTrongTuan: 1,
+          gioBatDau: '08:00',
+          gioKetThuc: '10:00',
+          hieuLucTu: '2026-01-01',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      final oldAssignmentId = await scheduleDomainService.assignStudent(
+        studentId: 1,
+        classId: 1,
+        scheduleId: s1,
+        startDate: DateTime(2026, 1, 1),
+      );
+
+      final s2 = await scheduleRepo.create(
+        ClassSchedule(
+          idLop: 1,
+          thuTrongTuan: 1,
+          gioBatDau: '08:30',
+          gioKetThuc: '10:30',
+          hieuLucTu: '2026-01-01',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      // Evaluate candidate excluding old assignment
+      final res = await conflictService.evaluateCandidateAssignment(
+        studentId: 1,
+        targetScheduleId: s2,
+        startDate: '2026-06-01',
+        excludeAssignmentId: oldAssignmentId.assignmentId,
+      );
+
+      expect(res.canAssign, isTrue);
+      expect(res.hardConflicts, isEmpty);
+    });
+
+    test(
+      'Test 18: Rollback preserves old assignment if mutation fails',
+      () async {
+        final s1 = await scheduleRepo.create(
+          ClassSchedule(
+            idLop: 1,
+            thuTrongTuan: 1,
+            gioBatDau: '08:00',
+            gioKetThuc: '10:00',
+            hieuLucTu: '2026-01-01',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        final oldAssignRes = await scheduleDomainService.assignStudent(
+          studentId: 1,
+          classId: 1,
+          scheduleId: s1,
+          startDate: DateTime(2026, 1, 1),
+        );
+
+        // Try change shift to invalid non-existent schedule id -> fails
+        expect(
+          () async => await scheduleDomainService.changeRecurringShift(
+            studentId: 1,
+            classId: 1,
+            oldAssignmentId: oldAssignRes.assignmentId!,
+            newScheduleId: 9999,
+            effectiveDate: DateTime(2026, 6, 1),
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        // Verify old assignment is still active (den_ngay is null)
+        final studentAssignments = await assignmentRepo.getByStudent(1);
+        final active = studentAssignments.firstWhere(
+          (a) => a.id == oldAssignRes.assignmentId,
+        );
+        expect(active, isNotNull);
+        expect(active.denNgay, isNull);
+      },
+    );
+
+    test('Fail Closed: Missing schedule reference throws StateError', () async {
+      // Temporarily disable FKs to insert corrupt row with non-existent schedule ID 9999
+      await db.execute('PRAGMA foreign_keys = OFF;');
+      await db.execute('''
+        INSERT INTO phan_ca_hoc_sinh (id_hoc_sinh, id_lop, id_lich_hoc, tu_ngay, created_at, updated_at)
+        VALUES (1, 1, 9999, '2026-01-01', '2026-01-01', '2026-01-01')
+      ''');
+      await db.execute('PRAGMA foreign_keys = ON;');
+
+      final s1 = await scheduleRepo.create(
+        ClassSchedule(
+          idLop: 2,
+          thuTrongTuan: 1,
+          gioBatDau: '08:00',
+          gioKetThuc: '10:00',
+          hieuLucTu: '2026-01-01',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      expect(
+        () async => await conflictService.evaluateCandidateAssignment(
+          studentId: 1,
+          targetScheduleId: s1,
+          startDate: '2026-01-01',
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test('Fail Closed: Invalid time format throws FormatException', () async {
+      // '99:99' passes string comparison '99:99' > '08:00' but fails hour/minute parsing in _timeToMinutes
+      final s1 = await scheduleRepo.create(
+        ClassSchedule(
+          idLop: 1,
+          thuTrongTuan: 1,
+          gioBatDau: '08:00',
+          gioKetThuc: '99:99',
+          hieuLucTu: '2026-01-01',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      await db.execute('''
+        INSERT INTO phan_ca_hoc_sinh (id_hoc_sinh, id_lop, id_lich_hoc, tu_ngay, created_at, updated_at)
+        VALUES (1, 1, $s1, '2026-01-01', '2026-01-01', '2026-01-01')
+      ''');
+
+      final s2 = await scheduleRepo.create(
+        ClassSchedule(
+          idLop: 2,
+          thuTrongTuan: 1,
+          gioBatDau: '08:00',
+          gioKetThuc: '10:00',
+          hieuLucTu: '2026-01-01',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      expect(
+        () async => await conflictService.evaluateCandidateAssignment(
+          studentId: 1,
+          targetScheduleId: s2,
+          startDate: '2026-01-01',
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
   });
 }

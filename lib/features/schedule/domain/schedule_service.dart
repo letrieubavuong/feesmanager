@@ -195,7 +195,7 @@ class ScheduleDomainService {
       endStr,
     );
 
-    await _assignmentRepo.create(
+    final newId = await _assignmentRepo.create(
       StudentShiftAssignment(
         idHocSinh: studentId,
         idLop: classId,
@@ -210,6 +210,7 @@ class ScheduleDomainService {
 
     return AssignmentConflictResult(
       canAssign: true,
+      assignmentId: newId,
       detailedResult: conflictResult,
     );
   }
@@ -450,11 +451,13 @@ class ScheduleDomainService {
 
 class AssignmentConflictResult {
   final bool canAssign;
+  final int? assignmentId;
   final String? conflictReason;
   final ScheduleConflictResult? detailedResult;
 
   const AssignmentConflictResult({
     required this.canAssign,
+    this.assignmentId,
     this.conflictReason,
     this.detailedResult,
   });
