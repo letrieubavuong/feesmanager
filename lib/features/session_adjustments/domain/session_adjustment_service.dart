@@ -32,7 +32,7 @@ class SessionAdjustmentService {
   final MembershipService _membershipService;
   final AttendanceRepository _attendanceRepo;
   final RosterService _rosterService;
-  final ScheduleConflictService? _conflictService;
+  final ScheduleConflictService _conflictService;
 
   SessionAdjustmentService(
     this._repo,
@@ -41,9 +41,9 @@ class SessionAdjustmentService {
     this._sessionService,
     this._membershipService,
     this._attendanceRepo,
-    this._rosterService, [
+    this._rosterService,
     this._conflictService,
-  ]);
+  );
 
   Future<int> createDoiCa({
     required int studentId,
@@ -129,19 +129,15 @@ class SessionAdjustmentService {
       );
     }
 
-    // Check schedule conflicts
-    final conflictSvc = _conflictService;
-    if (conflictSvc != null) {
-      final conflictResult = await conflictSvc.evaluateOneOffCandidate(
-        studentId: studentId,
-        targetDate: targetSession.ngay,
-        startTime: targetSession.gioBatDau,
-        endTime: targetSession.gioKetThuc,
-        excludeSessionId: originalSessionId,
-      );
-      if (!conflictResult.canAssign) {
-        throw Exception(conflictResult.hardConflicts.first.message);
-      }
+    // Recheck schedule conflicts before persistence
+    final conflictResult = await _conflictService
+        .evaluateOneOffSessionCandidate(
+          studentId: studentId,
+          targetSessionId: targetSessionId,
+          replacingOriginalSessionId: originalSessionId,
+        );
+    if (!conflictResult.canAssign) {
+      throw Exception(conflictResult.hardConflicts.first.message);
     }
 
     final adjustment = SessionAdjustment(
@@ -235,18 +231,14 @@ class SessionAdjustmentService {
       throw Exception('Học sinh đã được xếp vào buổi học bù này');
     }
 
-    // Check schedule conflicts
-    final conflictSvc = _conflictService;
-    if (conflictSvc != null) {
-      final conflictResult = await conflictSvc.evaluateOneOffCandidate(
-        studentId: studentId,
-        targetDate: targetSession.ngay,
-        startTime: targetSession.gioBatDau,
-        endTime: targetSession.gioKetThuc,
-      );
-      if (!conflictResult.canAssign) {
-        throw Exception(conflictResult.hardConflicts.first.message);
-      }
+    // Recheck schedule conflicts before persistence
+    final conflictResult = await _conflictService
+        .evaluateOneOffSessionCandidate(
+          studentId: studentId,
+          targetSessionId: targetSessionId,
+        );
+    if (!conflictResult.canAssign) {
+      throw Exception(conflictResult.hardConflicts.first.message);
     }
 
     final adjustment = SessionAdjustment(
@@ -309,18 +301,14 @@ class SessionAdjustmentService {
       throw Exception('Học sinh đã được xếp vào buổi học phát sinh này');
     }
 
-    // Check schedule conflicts
-    final conflictSvc = _conflictService;
-    if (conflictSvc != null) {
-      final conflictResult = await conflictSvc.evaluateOneOffCandidate(
-        studentId: studentId,
-        targetDate: targetSession.ngay,
-        startTime: targetSession.gioBatDau,
-        endTime: targetSession.gioKetThuc,
-      );
-      if (!conflictResult.canAssign) {
-        throw Exception(conflictResult.hardConflicts.first.message);
-      }
+    // Recheck schedule conflicts before persistence
+    final conflictResult = await _conflictService
+        .evaluateOneOffSessionCandidate(
+          studentId: studentId,
+          targetSessionId: targetSessionId,
+        );
+    if (!conflictResult.canAssign) {
+      throw Exception(conflictResult.hardConflicts.first.message);
     }
 
     final adjustment = SessionAdjustment(

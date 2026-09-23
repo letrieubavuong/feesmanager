@@ -249,6 +249,28 @@ class TestDbHelperV6 {
           ON buoi_du_ledger(id_hoc_sinh, id_lop, id_buoi_hoc, ly_do)
           WHERE id_buoi_hoc IS NOT NULL AND ly_do IN ('VUOT_SO_BUOI_CHUAN', 'BU_TRU_NGHI_CO_PHEP')
         ''');
+
+        await db.execute('''
+          CREATE TABLE rang_buoc_lich_hoc_sinh (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_hoc_sinh INTEGER NOT NULL,
+            loai TEXT NOT NULL,
+            kieu TEXT NOT NULL,
+            thu_trong_tuan INTEGER NULL,
+            ngay_cu_the TEXT NULL,
+            gio_bat_dau TEXT NOT NULL,
+            gio_ket_thuc TEXT NOT NULL,
+            hieu_luc_tu TEXT NULL,
+            hieu_luc_den TEXT NULL,
+            travel_buffer_phut INTEGER NOT NULL DEFAULT 0,
+            ten_nguon TEXT NULL,
+            ghi_chu TEXT NULL,
+            trang_thai TEXT NOT NULL DEFAULT 'HOAT_DONG',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id) ON DELETE RESTRICT
+          )
+        ''');
       },
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');

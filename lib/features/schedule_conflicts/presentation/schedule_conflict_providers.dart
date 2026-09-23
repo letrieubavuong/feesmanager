@@ -124,3 +124,16 @@ Future<ScheduleConflictResult> oneOffConflictPreview(
     excludeSessionId: arg.$5,
   );
 }
+
+@riverpod
+Future<ScheduleConflictResult> oneOffSessionConflictPreview(
+  OneOffSessionConflictPreviewRef ref,
+  (int studentId, int targetSessionId, int? replacingOriginalSessionId) arg,
+) async {
+  final service = await ref.watch(scheduleConflictServiceProvider.future);
+  return service.evaluateOneOffSessionCandidate(
+    studentId: arg.$1,
+    targetSessionId: arg.$2,
+    replacingOriginalSessionId: arg.$3,
+  );
+}

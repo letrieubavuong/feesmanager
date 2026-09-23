@@ -438,6 +438,136 @@ class _OneOffConflictPreviewProviderElement
       (origin as OneOffConflictPreviewProvider).arg;
 }
 
+String _$oneOffSessionConflictPreviewHash() =>
+    r'ebcc76dd7fb4037e65e7e17f789710f769d9471e';
+
+/// See also [oneOffSessionConflictPreview].
+@ProviderFor(oneOffSessionConflictPreview)
+const oneOffSessionConflictPreviewProvider =
+    OneOffSessionConflictPreviewFamily();
+
+/// See also [oneOffSessionConflictPreview].
+class OneOffSessionConflictPreviewFamily
+    extends Family<AsyncValue<ScheduleConflictResult>> {
+  /// See also [oneOffSessionConflictPreview].
+  const OneOffSessionConflictPreviewFamily();
+
+  /// See also [oneOffSessionConflictPreview].
+  OneOffSessionConflictPreviewProvider call((int, int, int?) arg) {
+    return OneOffSessionConflictPreviewProvider(arg);
+  }
+
+  @override
+  OneOffSessionConflictPreviewProvider getProviderOverride(
+    covariant OneOffSessionConflictPreviewProvider provider,
+  ) {
+    return call(provider.arg);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'oneOffSessionConflictPreviewProvider';
+}
+
+/// See also [oneOffSessionConflictPreview].
+class OneOffSessionConflictPreviewProvider
+    extends AutoDisposeFutureProvider<ScheduleConflictResult> {
+  /// See also [oneOffSessionConflictPreview].
+  OneOffSessionConflictPreviewProvider((int, int, int?) arg)
+    : this._internal(
+        (ref) => oneOffSessionConflictPreview(
+          ref as OneOffSessionConflictPreviewRef,
+          arg,
+        ),
+        from: oneOffSessionConflictPreviewProvider,
+        name: r'oneOffSessionConflictPreviewProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$oneOffSessionConflictPreviewHash,
+        dependencies: OneOffSessionConflictPreviewFamily._dependencies,
+        allTransitiveDependencies:
+            OneOffSessionConflictPreviewFamily._allTransitiveDependencies,
+        arg: arg,
+      );
+
+  OneOffSessionConflictPreviewProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.arg,
+  }) : super.internal();
+
+  final (int, int, int?) arg;
+
+  @override
+  Override overrideWith(
+    FutureOr<ScheduleConflictResult> Function(
+      OneOffSessionConflictPreviewRef provider,
+    )
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: OneOffSessionConflictPreviewProvider._internal(
+        (ref) => create(ref as OneOffSessionConflictPreviewRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        arg: arg,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<ScheduleConflictResult> createElement() {
+    return _OneOffSessionConflictPreviewProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is OneOffSessionConflictPreviewProvider && other.arg == arg;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, arg.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin OneOffSessionConflictPreviewRef
+    on AutoDisposeFutureProviderRef<ScheduleConflictResult> {
+  /// The parameter `arg` of this provider.
+  (int, int, int?) get arg;
+}
+
+class _OneOffSessionConflictPreviewProviderElement
+    extends AutoDisposeFutureProviderElement<ScheduleConflictResult>
+    with OneOffSessionConflictPreviewRef {
+  _OneOffSessionConflictPreviewProviderElement(super.provider);
+
+  @override
+  (int, int, int?) get arg =>
+      (origin as OneOffSessionConflictPreviewProvider).arg;
+}
+
 String _$scheduleConstraintControllerHash() =>
     r'64e0b20253041f92a2d3a2c7c9647ed6a66b21ee';
 

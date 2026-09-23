@@ -3,6 +3,7 @@ import '../../classes/domain/class_service.dart';
 import '../../schedule/data/assignment_repository.dart';
 import '../../schedule/data/schedule_repository.dart';
 import '../../session_adjustments/data/session_adjustment_repository.dart';
+import '../../session_adjustments/domain/session_adjustment.dart';
 import '../../sessions/data/session_repository.dart';
 import '../../sessions/domain/class_session.dart';
 import '../data/schedule_constraint_repository.dart';
@@ -177,7 +178,72 @@ class ScheduleConflictService {
     );
   }
 
-  /// Evaluates conflict for a one-off session candidate (Đổi ca, Học bù, Phát sinh)
+  /// Canonical one-off conflict evaluation using Session IDs as source of truth.
+  Future<ScheduleConflictResult> evaluateOneOffSessionCandidate({
+    required int studentId,
+    required int targetSessionId,
+    int? replacingOriginalSessionId,
+  }) async {
+    final targetSession = await _sessionRepo.getById(targetSessionId);
+    if (targetSession == null) {
+      throw StateError('Không tìm thấy buổi học đích (id: $targetSessionId)');
+    }
+
+    DateAndTimeValidators.validateDateStr(
+      targetSession.ngay,
+      'targetSession.ngay',
+    );
+    DateAndTimeValidators.validateTimeOrder(
+      targetSession.gioBatDau,
+      targetSession.gioKetThuc,
+      'targetSession.gioBatDau',
+      'targetSession.gioKetThuc',
+    );
+
+    int? excludedScheduleId;
+    ClassSession? replacingOriginalSession;
+    if (replacingOriginalSessionId != null) {
+      replacingOriginalSession = await _sessionRepo.getById(
+        replacingOriginalSessionId,
+      );
+      if (replacingOriginalSession == null) {
+        throw StateError(
+          'Không tìm thấy buổi học gốc cần đổi ca (id: $replacingOriginalSessionId)',
+        );
+      }
+      DateAndTimeValidators.validateDateStr(
+        replacingOriginalSession.ngay,
+        'replacingOriginalSession.ngay',
+      );
+      DateAndTimeValidators.validateTimeOrder(
+        replacingOriginalSession.gioBatDau,
+        replacingOriginalSession.gioKetThuc,
+        'replacingOriginalSession.gioBatDau',
+        'replacingOriginalSession.gioKetThuc',
+      );
+
+      if (replacingOriginalSession.loai == SessionType.CHINH) {
+        if (replacingOriginalSession.idLichHoc == null) {
+          throw StateError(
+            'Dữ liệu không đồng bộ: Buổi học chính bị thiếu idLichHoc (id: ${replacingOriginalSession.id})',
+          );
+        }
+        excludedScheduleId = replacingOriginalSession.idLichHoc;
+      }
+    }
+
+    return evaluateOneOffCandidateInternal(
+      studentId: studentId,
+      targetSessionId: targetSessionId,
+      targetDate: targetSession.ngay,
+      startTime: targetSession.gioBatDau,
+      endTime: targetSession.gioKetThuc,
+      replacingOriginalSessionId: replacingOriginalSessionId,
+      excludedScheduleId: excludedScheduleId,
+    );
+  }
+
+  /// Compatibility wrapper for one-off candidate conflict evaluation
   Future<ScheduleConflictResult> evaluateOneOffCandidate({
     required int studentId,
     required String targetDate,
@@ -186,7 +252,6 @@ class ScheduleConflictService {
     int? excludeSessionId,
     int? excludeClassId,
   }) async {
-    // 0. Strict Fail-Closed Input Validation
     DateAndTimeValidators.validateDateStr(targetDate, 'targetDate');
     DateAndTimeValidators.validateTimeOrder(
       startTime,
@@ -195,11 +260,57 @@ class ScheduleConflictService {
       'endTime',
     );
 
+    return evaluateOneOffCandidateInternal(
+      studentId: studentId,
+      targetSessionId: excludeSessionId ?? -1,
+      targetDate: targetDate,
+      startTime: startTime,
+      endTime: endTime,
+      replacingOriginalSessionId: excludeSessionId,
+      excludedScheduleId: null,
+    );
+  }
+
+  /// Shared internal evaluator for one-off candidates
+  Future<ScheduleConflictResult> evaluateOneOffCandidateInternal({
+    required int studentId,
+    required int targetSessionId,
+    required String targetDate,
+    required String startTime,
+    required String endTime,
+    int? replacingOriginalSessionId,
+    int? excludedScheduleId,
+  }) async {
     final targetDt = DateTime.parse(targetDate);
     final weekday = targetDt.weekday;
 
     final hardConflicts = <ScheduleConflict>[];
     final softWarnings = <ScheduleConflict>[];
+    final conflictingScheduleIds = <int>{};
+
+    // Fetch student's outgoing DOI_CA adjustments on targetDate
+    final studentAdjustments = await _adjustmentRepo.getByStudent(studentId);
+    final outgoingDoiCaAdjustments = studentAdjustments
+        .where(
+          (a) =>
+              a.loai == SessionAdjustmentType.DOI_CA && a.idBuoiHocGoc != null,
+        )
+        .toList();
+
+    final outgoingScheduleIdsOnTargetDate = <int>{};
+    if (outgoingDoiCaAdjustments.isNotEmpty) {
+      final origSessionIds = outgoingDoiCaAdjustments
+          .map((a) => a.idBuoiHocGoc!)
+          .toList();
+      final origSessions = await _sessionRepo.getByIds(origSessionIds);
+      for (final s in origSessions) {
+        if (s.ngay == targetDate &&
+            s.loai == SessionType.CHINH &&
+            s.idLichHoc != null) {
+          outgoingScheduleIdsOnTargetDate.add(s.idLichHoc!);
+        }
+      }
+    }
 
     // 1. Check recurring center class assignments active on targetDate (Batch optimization)
     final existingAssignments = await _assignmentRepo.getByStudent(studentId);
@@ -228,12 +339,15 @@ class ScheduleConflictService {
       final classesMap = {for (final c in classesList) c.id!: c};
 
       for (final assignment in activeAssignments) {
-        final existingSchedule = schedulesMap[assignment.idLichHoc]!;
-        if (excludeClassId != null &&
-            existingSchedule.idLop == excludeClassId) {
+        if (excludedScheduleId != null &&
+            assignment.idLichHoc == excludedScheduleId) {
+          continue;
+        }
+        if (outgoingScheduleIdsOnTargetDate.contains(assignment.idLichHoc)) {
           continue;
         }
 
+        final existingSchedule = schedulesMap[assignment.idLichHoc]!;
         DateAndTimeValidators.validateTimeOrder(
           existingSchedule.gioBatDau,
           existingSchedule.gioKetThuc,
@@ -248,6 +362,7 @@ class ScheduleConflictService {
             startTime,
             endTime,
           )) {
+            conflictingScheduleIds.add(existingSchedule.id!);
             final reason = _classifyTimeOverlap(
               existingSchedule.gioBatDau,
               existingSchedule.gioKetThuc,
@@ -279,7 +394,7 @@ class ScheduleConflictService {
       }
     }
 
-    // 2. Check student constraints active on targetDate
+    // 2. Check student constraints active on targetDate (narrow targeted query)
     final activeConstraints = await _constraintRepo.getActiveForStudentAndDate(
       studentId,
       targetDate,
@@ -297,59 +412,119 @@ class ScheduleConflictService {
       );
     }
 
-    // 3. Check existing actual sessions and adjustments on targetDate
+    // 3. Check existing actual sessions & adjustments on targetDate (N+1 Elimination & Effective Roster)
     final allSessionsOnDate = await _sessionRepo.getByDate(targetDate);
-    for (final session in allSessionsOnDate) {
-      if (session.id == excludeSessionId) continue;
-      if (session.trangThai == SessionStatus.HUY ||
-          session.trangThai == SessionStatus.NGHI_LE) {
-        continue;
+    final candidateSessions = allSessionsOnDate
+        .where(
+          (s) => s.id != targetSessionId && s.id != replacingOriginalSessionId,
+        )
+        .where(
+          (s) =>
+              s.trangThai != SessionStatus.HUY &&
+              s.trangThai != SessionStatus.NGHI_LE,
+        )
+        .toList();
+
+    if (candidateSessions.isNotEmpty) {
+      final sessionIds = candidateSessions.map((s) => s.id!).toList();
+      final targetAdjustmentsList = await _adjustmentRepo.getByTargetSessionIds(
+        sessionIds,
+      );
+      final originalAdjustmentsList = await _adjustmentRepo
+          .getByOriginalSessionIds(sessionIds);
+
+      final targetAdjMap = <int, List<SessionAdjustment>>{};
+      for (final a in targetAdjustmentsList) {
+        targetAdjMap.putIfAbsent(a.idBuoiHocThamGia, () => []).add(a);
       }
 
-      DateAndTimeValidators.validateTimeOrder(
-        session.gioBatDau,
-        session.gioKetThuc,
-        'session.gioBatDau',
-        'session.gioKetThuc',
-      );
-
-      // Check if student is in roster/adjustments of this session
-      final adjustments = await _adjustmentRepo.getByTargetSession(session.id!);
-      final isAdjustmentParticipant = adjustments.any(
-        (a) => a.idHocSinh == studentId,
-      );
-
-      bool isRostered = isAdjustmentParticipant;
-      if (!isRostered) {
-        // Check if student has base assignment for this class/session
-        isRostered = activeAssignments.any((a) => a.idLop == session.idLop);
+      final origAdjMap = <int, List<SessionAdjustment>>{};
+      for (final a in originalAdjustmentsList) {
+        if (a.idBuoiHocGoc != null) {
+          origAdjMap.putIfAbsent(a.idBuoiHocGoc!, () => []).add(a);
+        }
       }
 
-      if (isRostered) {
-        if (_isTimeOverlap(
+      final sessionClassIds = candidateSessions
+          .map((s) => s.idLop)
+          .toSet()
+          .toList();
+      final sessionClassesList = await _classService.getClassesByIds(
+        sessionClassIds,
+      );
+      final sessionClassesMap = {for (final c in sessionClassesList) c.id!: c};
+
+      for (final session in candidateSessions) {
+        DateAndTimeValidators.validateTimeOrder(
           session.gioBatDau,
           session.gioKetThuc,
-          startTime,
-          endTime,
-        )) {
-          final targetClass = await _classService.getClassById(session.idLop);
-          final className = targetClass?.tenLop ?? 'Lớp #${session.idLop}';
+          'session.gioBatDau',
+          'session.gioKetThuc',
+        );
 
-          hardConflicts.add(
-            ScheduleConflict(
-              reasonCode: ScheduleConflictReasonCode.ONE_OFF_SESSION_CONFLICT,
-              isHard: true,
-              message:
-                  'Trùng lịch với buổi học khác ngày $targetDate tại $className (${session.gioBatDau}-${session.gioKetThuc})',
-              existingClassId: session.idLop,
-              existingSessionId: session.id,
-              date: targetDate,
-              weekday: weekday,
-              startTime: session.gioBatDau,
-              endTime: session.gioKetThuc,
-              sourceDescription: className,
-            ),
-          );
+        // Effective Roster Calculation
+        final hasIncomingAdjustment = (targetAdjMap[session.id] ?? []).any(
+          (a) => a.idHocSinh == studentId,
+        );
+
+        final hasOutgoingDoiCa = (origAdjMap[session.id] ?? []).any(
+          (a) =>
+              a.idHocSinh == studentId &&
+              a.loai == SessionAdjustmentType.DOI_CA,
+        );
+
+        bool isBaseRostered = false;
+        if (session.loai == SessionType.CHINH) {
+          if (session.idLichHoc == null) {
+            throw StateError(
+              'Dữ liệu không đồng bộ: Ca học chính bị thiếu idLichHoc (id: ${session.id})',
+            );
+          }
+
+          if (excludedScheduleId == null ||
+              session.idLichHoc != excludedScheduleId) {
+            isBaseRostered = activeAssignments.any(
+              (a) => a.idLichHoc == session.idLichHoc,
+            );
+          }
+        }
+
+        final isEffectiveParticipant =
+            (isBaseRostered && !hasOutgoingDoiCa) || hasIncomingAdjustment;
+
+        if (isEffectiveParticipant) {
+          if (_isTimeOverlap(
+            session.gioBatDau,
+            session.gioKetThuc,
+            startTime,
+            endTime,
+          )) {
+            // Deduplicate: If recurring schedule overlap was already logged for this CHINH session, skip
+            if (session.loai == SessionType.CHINH &&
+                session.idLichHoc != null &&
+                conflictingScheduleIds.contains(session.idLichHoc)) {
+              continue;
+            }
+
+            final targetClass = sessionClassesMap[session.idLop];
+            final className = targetClass?.tenLop ?? 'Lớp #${session.idLop}';
+
+            hardConflicts.add(
+              ScheduleConflict(
+                reasonCode: ScheduleConflictReasonCode.ONE_OFF_SESSION_CONFLICT,
+                isHard: true,
+                message:
+                    'Trùng lịch với buổi học khác ngày $targetDate tại $className (${session.gioBatDau}-${session.gioKetThuc})',
+                existingClassId: session.idLop,
+                existingSessionId: session.id,
+                date: targetDate,
+                weekday: weekday,
+                startTime: session.gioBatDau,
+                endTime: session.gioKetThuc,
+                sourceDescription: className,
+              ),
+            );
+          }
         }
       }
     }

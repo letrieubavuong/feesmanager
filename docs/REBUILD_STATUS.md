@@ -140,22 +140,24 @@
 
 ## Phase 11: Schedule Conflicts - IN PROGRESS
 - [x] Phase 11A Core Schedule Conflict Engine: COMPLETE.
+- [x] Phase 11B One-Off Schedule Conflict Integration: COMPLETE.
 - [x] Forward Database Migration (v12 -> v13) creating `rang_buoc_lich_hoc_sinh` table with Foreign Keys (`ON DELETE RESTRICT`), strict `CHECK` constraints on types (`loai`), occurrence shape (`kieu`), time format (`00:00`..`23:59`), time order (`gio_ket_thuc > gio_bat_dau`), date shape (`YYYY-MM-DD`), non-negative travel buffer, status (`HOAT_DONG`, `DA_HUY`), and performance indexes.
 - [x] Real v12 -> v13 database migration test on real SQLite file (`test/repository/migration_v12_v13_test.dart`) asserting data preservation, FK RESTRICT, strict `CHECK` constraints, and clean `PRAGMA foreign_key_check`.
 - [x] Constraint domain & data models (`ScheduleConstraint`, `ConstraintType`, `OccurrenceType`, `ConstraintStatus`, `ScheduleConstraintRepository`).
 - [x] Single Canonical Owner `ScheduleConflictService`:
   - Single canonical overlap logic for `[start, end)` time intervals classifying `EXACT_OVERLAP`, `CONTAINED_OVERLAP`, `PARTIAL_OVERLAP`.
   - Evaluates student constraints: `HARD_BLOCK` (hard conflict), `SOFT_PREFERENCE` (soft warning), `OTHER_CENTER` (hard conflict on overlap, soft warning on `TRAVEL_BUFFER` gap).
-  - Evaluates one-off session commitments and excludes `DOI_CA` original session to avoid false self-conflicts.
+  - Evaluates one-off session commitments with exact `DOI_CA` replacement semantics, outgoing `DOI_CA` commitment removal, and multi-shift roster precision (`assignment.idLichHoc == session.idLichHoc`).
   - Fail-closed error handling: Missing schedule references, corrupted time formats, or malformed constraint shapes throw `StateError` / `FormatException` instead of silently continuing.
-  - Narrow targeted queries (`getActiveForRecurringCandidate`) and batch queries eliminating N+1 overhead (`getByIds` for schedules and classes).
+  - Narrow targeted queries (`getActiveForRecurringCandidate`) and batch queries eliminating N+1 overhead (`getByIds` for schedules and classes, `getByTargetSessionIds`/`getByOriginalSessionIds` for adjustments).
 - [x] Consumer Refactoring:
   - `ScheduleDomainService`: `ScheduleConflictService` is a REQUIRED non-nullable dependency across all consumers and tests. Fallback overlap engine removed completely.
   - `changeRecurringShift`: Atomic SQLite transaction (`closeOld` + `insertNew` in one transaction block with real rollback proof).
-  - `SessionAdjustmentService`: Consumes `ScheduleConflictService` before creating `DOI_CA`, `HOC_BU`, or `PHAT_SINH`.
-- [x] Comprehensive Tests (300 tests passing):
+  - `SessionAdjustmentService`: `ScheduleConflictService` is a REQUIRED non-nullable dependency. Always re-checks `evaluateOneOffSessionCandidate` in `createDoiCa`, `createHocBu`, and `createPhatSinh` prior to persistence.
+- [x] Comprehensive Tests (303 tests passing):
     - `test/repository/migration_v12_v13_test.dart`
     - `test/schedule_conflicts/schedule_conflict_service_test.dart`
+    - `test/session_adjustments/session_adjustment_service_test.dart`
     - `test/schedule/assignment_service_test.dart`
     - `test/schedule/schedule_service_test.dart`
 
@@ -166,7 +168,7 @@
 - **Version**: 13
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
-- **Tests**: 300 tests passing
+- **Tests**: 303 tests passing
 - **Quality Gate**:
   - `dart analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (300 tests)
+  - `flutter test`: 100% Pass (303 tests)

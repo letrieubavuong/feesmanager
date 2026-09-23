@@ -29,6 +29,17 @@ class SessionRepository {
     return ClassSession.fromMap(maps.first);
   }
 
+  Future<List<ClassSession>> getByIds(List<int> ids) async {
+    if (ids.isEmpty) return [];
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final List<Map<String, dynamic>> maps = await _db.query(
+      'buoi_hoc',
+      where: 'id IN ($placeholders)',
+      whereArgs: ids,
+    );
+    return List.generate(maps.length, (i) => ClassSession.fromMap(maps[i]));
+  }
+
   Future<List<ClassSession>> getByClass(int classId) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'buoi_hoc',
