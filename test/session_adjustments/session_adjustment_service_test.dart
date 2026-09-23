@@ -37,6 +37,7 @@ void main() {
   late AttendanceService attendanceService;
   late SessionService sessionService;
   late AttendanceRepository attendanceRepo;
+  late ScheduleConflictService conflictService;
 
   final nowStr = DateTime.now().toIso8601String();
 
@@ -58,7 +59,7 @@ void main() {
     final classService = ClassService(classRepo, membershipService);
 
     final constraintRepo = ScheduleConstraintRepository(db);
-    final conflictService = ScheduleConflictService(
+    conflictService = ScheduleConflictService(
       constraintRepo,
       scheduleRepo,
       assignmentRepo,
@@ -1324,104 +1325,192 @@ void main() {
       },
     );
 
-    test(
-      'Phase 11B: Constraint HARD_BLOCK rejects DOI_CA, SOFT_PREFERENCE allows DOI_CA',
-      () async {
-        await db.insert('hoc_sinh', {
-          'id': 1,
-          'ho_ten': 'S1',
-          'created_at': nowStr,
-          'updated_at': nowStr,
-        });
-        await db.insert('lop', {
-          'id': 10,
-          'ten_lop': 'C10',
-          'created_at': nowStr,
-          'updated_at': nowStr,
-        });
-        await db.insert('tham_gia_lop', {
-          'id': 100,
-          'id_hoc_sinh': 1,
-          'id_lop': 10,
-          'tu_ngay': '2026-01-01',
-          'created_at': nowStr,
-          'updated_at': nowStr,
-        });
+    test('Phase 11B: Constraint HARD_BLOCK rejects DOI_CA', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
 
-        await db.insert('lich_hoc', {
-          'id': 1,
-          'id_lop': 10,
-          'thu_trong_tuan': 1,
-          'gio_bat_dau': '08:00',
-          'gio_ket_thuc': '09:30',
-          'hieu_luc_tu': '2026-01-01',
-          'created_at': nowStr,
-          'updated_at': nowStr,
-        });
-        await db.insert('lich_hoc', {
-          'id': 2,
-          'id_lop': 10,
-          'thu_trong_tuan': 1,
-          'gio_bat_dau': '10:00',
-          'gio_ket_thuc': '11:30',
-          'hieu_luc_tu': '2026-01-01',
-          'created_at': nowStr,
-          'updated_at': nowStr,
-        });
-        await db.insert('phan_ca_hoc_sinh', {
-          'id': 10,
-          'id_hoc_sinh': 1,
-          'id_lop': 10,
-          'id_lich_hoc': 1,
-          'tu_ngay': '2026-01-01',
-          'created_at': nowStr,
-          'updated_at': nowStr,
-        });
+      await db.insert('lich_hoc', {
+        'id': 1,
+        'id_lop': 10,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '08:00',
+        'gio_ket_thuc': '09:30',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lich_hoc', {
+        'id': 2,
+        'id_lop': 10,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '10:00',
+        'gio_ket_thuc': '11:30',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('phan_ca_hoc_sinh', {
+        'id': 10,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'id_lich_hoc': 1,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
 
-        await db.insert('buoi_hoc', {
-          'id': 101,
-          'id_lop': 10,
-          'id_lich_hoc': 1,
-          'ngay': '2026-09-21',
-          'gio_bat_dau': '08:00',
-          'gio_ket_thuc': '09:30',
-          'loai': 'CHINH',
-          'trang_thai': 'DU_KIEN',
-          'created_at': nowStr,
-          'updated_at': nowStr,
-        });
-        await db.insert('buoi_hoc', {
-          'id': 102,
-          'id_lop': 10,
-          'id_lich_hoc': 2,
-          'ngay': '2026-09-21',
-          'gio_bat_dau': '10:00',
-          'gio_ket_thuc': '11:30',
-          'loai': 'CHINH',
-          'trang_thai': 'DU_KIEN',
-          'created_at': nowStr,
-          'updated_at': nowStr,
-        });
+      await db.insert('buoi_hoc', {
+        'id': 101,
+        'id_lop': 10,
+        'id_lich_hoc': 1,
+        'ngay': '2026-09-21',
+        'gio_bat_dau': '08:00',
+        'gio_ket_thuc': '09:30',
+        'loai': 'CHINH',
+        'trang_thai': 'DU_KIEN',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('buoi_hoc', {
+        'id': 102,
+        'id_lop': 10,
+        'id_lich_hoc': 2,
+        'ngay': '2026-09-21',
+        'gio_bat_dau': '10:00',
+        'gio_ket_thuc': '11:30',
+        'loai': 'CHINH',
+        'trang_thai': 'DU_KIEN',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
 
-        // Add HARD_BLOCK constraint on 10:30-11:30
-        await db.execute('''
+      // Add HARD_BLOCK constraint on 10:30-11:30
+      await db.execute('''
           INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
           VALUES (1, 'HARD_BLOCK', 'DINH_KY', 1, '10:30', '11:30', '2026-01-01', '2026-01-01', '2026-01-01')
         ''');
 
-        // HARD_BLOCK rejects DOI_CA
-        await expectLater(
-          adjustmentService.createDoiCa(
-            studentId: 1,
-            originalSessionId: 101,
-            targetSessionId: 102,
-          ),
-          throwsA(
-            predicate((e) => e.toString().contains('Trùng lịch bận cố định')),
-          ),
-        );
-      },
-    );
+      // HARD_BLOCK rejects DOI_CA
+      await expectLater(
+        adjustmentService.createDoiCa(
+          studentId: 1,
+          originalSessionId: 101,
+          targetSessionId: 102,
+        ),
+        throwsA(
+          predicate((e) => e.toString().contains('Trùng lịch bận cố định')),
+        ),
+      );
+    });
+
+    test('Phase 11B: Constraint SOFT_PREFERENCE allows DOI_CA', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.insert('lich_hoc', {
+        'id': 1,
+        'id_lop': 10,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '08:00',
+        'gio_ket_thuc': '09:30',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lich_hoc', {
+        'id': 2,
+        'id_lop': 10,
+        'thu_trong_tuan': 1,
+        'gio_bat_dau': '10:00',
+        'gio_ket_thuc': '11:30',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('phan_ca_hoc_sinh', {
+        'id': 10,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'id_lich_hoc': 1,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.insert('buoi_hoc', {
+        'id': 101,
+        'id_lop': 10,
+        'id_lich_hoc': 1,
+        'ngay': '2026-09-21',
+        'gio_bat_dau': '08:00',
+        'gio_ket_thuc': '09:30',
+        'loai': 'CHINH',
+        'trang_thai': 'DU_KIEN',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('buoi_hoc', {
+        'id': 102,
+        'id_lop': 10,
+        'id_lich_hoc': 2,
+        'ngay': '2026-09-21',
+        'gio_bat_dau': '10:00',
+        'gio_ket_thuc': '11:30',
+        'loai': 'CHINH',
+        'trang_thai': 'DU_KIEN',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      // Add SOFT_PREFERENCE constraint on 10:30-11:30
+      await db.execute('''
+          INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
+          VALUES (1, 'SOFT_PREFERENCE', 'DINH_KY', 1, '10:30', '11:30', '2026-01-01', '2026-01-01', '2026-01-01')
+        ''');
+
+      final id = await adjustmentService.createDoiCa(
+        studentId: 1,
+        originalSessionId: 101,
+        targetSessionId: 102,
+      );
+      expect(id, isNotNull);
+    });
 
     test(
       'Phase 11B: Outgoing DOI_CA removes student commitment on original session date',
@@ -1532,6 +1621,100 @@ void main() {
           targetSessionId: 103,
         );
         expect(psAdjId, isNotNull);
+      },
+    );
+
+    test(
+      'Phase 11B: Deduplication ensures exactly ONE hard conflict per physical commitment',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 20,
+          'ten_lop': 'C20',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 200,
+          'id_hoc_sinh': 1,
+          'id_lop': 20,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Class 10 schedule 08:00-09:30
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': 10,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Generated CHINH session for Class 10 on date 2026-09-21
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Target candidate PHAT_SINH session in Class 20 (08:30-10:00)
+        await db.insert('buoi_hoc', {
+          'id': 201,
+          'id_lop': 20,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '08:30',
+          'gio_ket_thuc': '10:00',
+          'loai': 'PHAT_SINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        final conflictResult = await conflictService
+            .evaluateOneOffSessionCandidate(studentId: 1, targetSessionId: 201);
+
+        // Deduplication asserts that hardConflicts contains exactly 1 entry for this physical commitment
+        expect(conflictResult.hardConflicts.length, equals(1));
       },
     );
 

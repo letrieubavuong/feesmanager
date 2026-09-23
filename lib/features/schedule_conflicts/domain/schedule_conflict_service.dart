@@ -225,7 +225,7 @@ class ScheduleConflictService {
       if (replacingOriginalSession.loai == SessionType.CHINH) {
         if (replacingOriginalSession.idLichHoc == null) {
           throw StateError(
-            'Dữ liệu không đồng bộ: Buổi học chính bị thiếu idLichHoc (id: ${replacingOriginalSession.id})',
+            'Dữ liệu không đồng bộ: Ca học chính bị thiếu idLichHoc (id: ${replacingOriginalSession.id})',
           );
         }
         excludedScheduleId = replacingOriginalSession.idLichHoc;
@@ -288,26 +288,107 @@ class ScheduleConflictService {
     final softWarnings = <ScheduleConflict>[];
     final conflictingScheduleIds = <int>{};
 
-    // Fetch student's outgoing DOI_CA adjustments on targetDate
+    // 0. Fetch & Fail-Closed Validate Student's Persisted Adjustments
     final studentAdjustments = await _adjustmentRepo.getByStudent(studentId);
-    final outgoingDoiCaAdjustments = studentAdjustments
-        .where(
-          (a) =>
-              a.loai == SessionAdjustmentType.DOI_CA && a.idBuoiHocGoc != null,
-        )
-        .toList();
+    final refSessionIds = <int>{};
+    for (final a in studentAdjustments) {
+      refSessionIds.add(a.idBuoiHocThamGia);
+      if (a.idBuoiHocGoc != null) refSessionIds.add(a.idBuoiHocGoc!);
+    }
 
+    final refSessionsList = await _sessionRepo.getByIds(refSessionIds.toList());
+    final refSessionsMap = {for (final s in refSessionsList) s.id!: s};
+
+    // Fail-Closed Validation of Persisted Adjustments and Relationships
+    for (final a in studentAdjustments) {
+      final targetS = refSessionsMap[a.idBuoiHocThamGia];
+      if (targetS == null) {
+        throw StateError(
+          'Dữ liệu không đồng bộ: Adjustment (id: ${a.id}) reference target session (id: ${a.idBuoiHocThamGia}) không tồn tại',
+        );
+      }
+
+      if (a.loai == SessionAdjustmentType.DOI_CA) {
+        if (a.idBuoiHocGoc == null) {
+          throw StateError(
+            'Dữ liệu không đồng bộ: Adjustment ĐỔI CA (id: ${a.id}) bị thiếu idBuoiHocGoc',
+          );
+        }
+        final origS = refSessionsMap[a.idBuoiHocGoc!];
+        if (origS == null) {
+          throw StateError(
+            'Dữ liệu không đồng bộ: Adjustment ĐỔI CA (id: ${a.id}) reference original session (id: ${a.idBuoiHocGoc}) không tồn tại',
+          );
+        }
+        if (origS.id == targetS.id) {
+          throw StateError(
+            'Dữ liệu không đồng bộ: Adjustment ĐỔI CA (id: ${a.id}) có buổi gốc trùng buổi đích',
+          );
+        }
+        if (origS.loai != SessionType.CHINH ||
+            targetS.loai != SessionType.CHINH) {
+          throw StateError(
+            'Dữ liệu không đồng bộ: Adjustment ĐỔI CA (id: ${a.id}) có buổi gốc/đích không thuộc loại CHÍNH',
+          );
+        }
+        if (origS.idLop != targetS.idLop) {
+          throw StateError(
+            'Dữ liệu không đồng bộ: Adjustment ĐỔI CA (id: ${a.id}) có buổi gốc và đích khác lớp',
+          );
+        }
+        if (origS.ngay != targetS.ngay) {
+          throw StateError(
+            'Dữ liệu không đồng bộ: Adjustment ĐỔI CA (id: ${a.id}) có buổi gốc và đích khác ngày',
+          );
+        }
+      } else if (a.loai == SessionAdjustmentType.HOC_BU) {
+        if (a.idBuoiHocGoc == null) {
+          throw StateError(
+            'Dữ liệu không đồng bộ: Adjustment HỌC BÙ (id: ${a.id}) bị thiếu idBuoiHocGoc',
+          );
+        }
+        final origS = refSessionsMap[a.idBuoiHocGoc!];
+        if (origS == null) {
+          throw StateError(
+            'Dữ liệu không đồng bộ: Adjustment HỌC BÙ (id: ${a.id}) reference original session (id: ${a.idBuoiHocGoc}) không tồn tại',
+          );
+        }
+        if (origS.loai != SessionType.CHINH) {
+          throw StateError(
+            'Dữ liệu không đồng bộ: Adjustment HỌC BÙ (id: ${a.id}) có buổi gốc không thuộc loại CHÍNH',
+          );
+        }
+        if (targetS.loai != SessionType.HOC_BU) {
+          throw StateError(
+            'Dữ liệu không đồng bộ: Adjustment HỌC BÙ (id: ${a.id}) có buổi đích không thuộc loại HỌC BÙ',
+          );
+        }
+      } else if (a.loai == SessionAdjustmentType.PHAT_SINH) {
+        if (a.idBuoiHocGoc != null) {
+          throw StateError(
+            'Dữ liệu không đồng bộ: Adjustment PHÁT SINH (id: ${a.id}) không được có idBuoiHocGoc',
+          );
+        }
+        if (targetS.loai != SessionType.PHAT_SINH) {
+          throw StateError(
+            'Dữ liệu không đồng bộ: Adjustment PHÁT SINH (id: ${a.id}) có buổi đích không thuộc loại PHÁT SINH',
+          );
+        }
+      }
+    }
+
+    // Resolve outgoing DOI_CA schedule IDs on targetDate
     final outgoingScheduleIdsOnTargetDate = <int>{};
-    if (outgoingDoiCaAdjustments.isNotEmpty) {
-      final origSessionIds = outgoingDoiCaAdjustments
-          .map((a) => a.idBuoiHocGoc!)
-          .toList();
-      final origSessions = await _sessionRepo.getByIds(origSessionIds);
-      for (final s in origSessions) {
-        if (s.ngay == targetDate &&
-            s.loai == SessionType.CHINH &&
-            s.idLichHoc != null) {
-          outgoingScheduleIdsOnTargetDate.add(s.idLichHoc!);
+    for (final a in studentAdjustments) {
+      if (a.loai == SessionAdjustmentType.DOI_CA && a.idBuoiHocGoc != null) {
+        final origS = refSessionsMap[a.idBuoiHocGoc!]!;
+        if (origS.ngay == targetDate && origS.loai == SessionType.CHINH) {
+          if (origS.idLichHoc == null) {
+            throw StateError(
+              'Dữ liệu không đồng bộ: Ca học chính (id: ${origS.id}) bị thiếu idLichHoc',
+            );
+          }
+          outgoingScheduleIdsOnTargetDate.add(origS.idLichHoc!);
         }
       }
     }

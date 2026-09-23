@@ -154,7 +154,7 @@
   - `ScheduleDomainService`: `ScheduleConflictService` is a REQUIRED non-nullable dependency across all consumers and tests. Fallback overlap engine removed completely.
   - `changeRecurringShift`: Atomic SQLite transaction (`closeOld` + `insertNew` in one transaction block with real rollback proof).
   - `SessionAdjustmentService`: `ScheduleConflictService` is a REQUIRED non-nullable dependency. Always re-checks `evaluateOneOffSessionCandidate` in `createDoiCa`, `createHocBu`, and `createPhatSinh` prior to persistence.
-- [x] Comprehensive Tests (303 tests passing):
+- [x] Comprehensive Tests (305 tests passing):
     - `test/repository/migration_v12_v13_test.dart`
     - `test/schedule_conflicts/schedule_conflict_service_test.dart`
     - `test/session_adjustments/session_adjustment_service_test.dart`
@@ -168,7 +168,7 @@
 - **Version**: 13
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
-- **Tests**: 303 tests passing
+- **Tests**: 305 tests passing
 - **Quality Gate**:
   - `dart analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (303 tests)
+  - `flutter test`: 100% Pass (305 tests)
