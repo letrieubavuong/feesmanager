@@ -29,6 +29,17 @@ class ScheduleRepository {
     return ClassSchedule.fromMap(maps.first);
   }
 
+  Future<List<ClassSchedule>> getByIds(List<int> ids) async {
+    if (ids.isEmpty) return [];
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final List<Map<String, dynamic>> maps = await _db.query(
+      'lich_hoc',
+      where: 'id IN ($placeholders)',
+      whereArgs: ids,
+    );
+    return List.generate(maps.length, (i) => ClassSchedule.fromMap(maps[i]));
+  }
+
   Future<List<ClassSchedule>> getByClass(int classId) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'lich_hoc',

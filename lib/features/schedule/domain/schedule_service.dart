@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:intl/intl.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/utils/date_and_time_validators.dart';
 import '../data/schedule_repository.dart';
 import '../data/assignment_repository.dart';
 import 'class_schedule.dart';
@@ -35,16 +36,16 @@ class ScheduleDomainService {
   final MembershipService _membershipService;
   final ClassService _classService;
   final StudentService _studentService;
-  final ScheduleConflictService? _conflictService;
+  final ScheduleConflictService _conflictService;
 
   ScheduleDomainService(
     this._scheduleRepo,
     this._assignmentRepo,
     this._membershipService,
     this._classService,
-    this._studentService, [
+    this._studentService,
     this._conflictService,
-  ]);
+  );
 
   // --- Schedule Management ---
 
@@ -169,24 +170,7 @@ class ScheduleDomainService {
     final startStr = dateFormat.format(startDate);
     final endStr = endDate != null ? dateFormat.format(endDate) : null;
 
-    ScheduleConflictResult? conflictResult;
-    if (_conflictService != null) {
-      conflictResult = await _conflictService.evaluateCandidateAssignment(
-        studentId: studentId,
-        targetScheduleId: scheduleId,
-        startDate: startStr,
-        endDate: endStr,
-      );
-
-      if (!conflictResult.canAssign) {
-        return AssignmentConflictResult(
-          canAssign: false,
-          conflictReason: conflictResult.hardConflicts.first.message,
-          detailedResult: conflictResult,
-        );
-      }
-    }
-
+    // 1. Boundary Check
     await _validateAssignmentInterval(
       studentId,
       classId,
@@ -195,6 +179,23 @@ class ScheduleDomainService {
       endStr,
     );
 
+    // 2. Canonical Conflict Evaluation (Single Source of Truth)
+    final conflictResult = await _conflictService.evaluateCandidateAssignment(
+      studentId: studentId,
+      targetScheduleId: scheduleId,
+      startDate: startStr,
+      endDate: endStr,
+    );
+
+    if (!conflictResult.canAssign) {
+      return AssignmentConflictResult(
+        canAssign: false,
+        conflictReason: conflictResult.hardConflicts.first.message,
+        detailedResult: conflictResult,
+      );
+    }
+
+    // 3. Persist Assignment
     final newId = await _assignmentRepo.create(
       StudentShiftAssignment(
         idHocSinh: studentId,
@@ -301,31 +302,51 @@ class ScheduleDomainService {
       throw Exception('Lịch học không thuộc lớp này');
     }
 
+    // 1. Validate Boundaries
     await _validateAssignmentInterval(
       studentId,
       classId,
       schedule,
       startStr,
       null,
+    );
+
+    // 2. Canonical Conflict Evaluation
+    final conflictResult = await _conflictService.evaluateCandidateAssignment(
+      studentId: studentId,
+      targetScheduleId: newScheduleId,
+      startDate: startStr,
+      endDate: null,
       excludeAssignmentId: oldAssignmentId,
     );
+    if (!conflictResult.canAssign) {
+      throw Exception(conflictResult.hardConflicts.first.message);
+    }
 
-    await closeAssignment(
-      oldAssignmentId,
-      effectiveDate.subtract(const Duration(days: 1)),
-    );
-
-    await _assignmentRepo.create(
-      StudentShiftAssignment(
-        idHocSinh: studentId,
-        idLop: classId,
-        idLichHoc: newScheduleId,
-        tuNgay: startStr,
-        denNgay: null,
-        createdAt: DateTime.now(),
+    // 3. Atomic Transaction (Close Old + Insert New)
+    await _assignmentRepo.db.transaction((txn) async {
+      final updatedOld = oldAssignment.copyWith(
+        denNgay: yesterdayStr,
         updatedAt: DateTime.now(),
-      ),
-    );
+      );
+      final count = await _assignmentRepo.updateInTxn(txn, updatedOld);
+      if (count != 1) {
+        throw Exception('Cập nhật phân ca cũ thất bại');
+      }
+
+      await _assignmentRepo.createInTxn(
+        txn,
+        StudentShiftAssignment(
+          idHocSinh: studentId,
+          idLop: classId,
+          idLichHoc: newScheduleId,
+          tuNgay: startStr,
+          denNgay: null,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+    });
   }
 
   Future<void> _validateAssignmentInterval(
@@ -333,9 +354,8 @@ class ScheduleDomainService {
     int classId,
     ClassSchedule schedule,
     String startStr,
-    String? endStr, {
-    int? excludeAssignmentId,
-  }) async {
+    String? endStr,
+  ) async {
     // 1. Membership Boundary Check
     final memberships = await _membershipService.getMembershipHistory(
       studentId,
@@ -381,71 +401,24 @@ class ScheduleDomainService {
         );
       }
     }
-
-    // 3. Conflict Check
-    if (_conflictService != null) {
-      final result = await _conflictService.evaluateCandidateAssignment(
-        studentId: studentId,
-        targetScheduleId: schedule.id!,
-        startDate: startStr,
-        endDate: endStr,
-        excludeAssignmentId: excludeAssignmentId,
-      );
-      if (!result.canAssign) {
-        throw Exception(result.hardConflicts.first.message);
-      }
-    } else {
-      final existingAssignments = await _assignmentRepo.getByStudent(studentId);
-      for (final assignment in existingAssignments) {
-        if (assignment.id == excludeAssignmentId) continue;
-
-        bool dateOverlap = true;
-        if (assignment.denNgay != null &&
-            startStr.compareTo(assignment.denNgay!) > 0) {
-          dateOverlap = false;
-        }
-        if (endStr != null && assignment.tuNgay.compareTo(endStr) > 0) {
-          dateOverlap = false;
-        }
-
-        if (dateOverlap) {
-          final existingSchedule = await _scheduleRepo.getById(
-            assignment.idLichHoc,
-          );
-          if (existingSchedule == null) continue;
-
-          if (existingSchedule.thuTrongTuan == schedule.thuTrongTuan) {
-            if (_isTimeOverlap(
-              existingSchedule.gioBatDau,
-              existingSchedule.gioKetThuc,
-              schedule.gioBatDau,
-              schedule.gioKetThuc,
-            )) {
-              throw Exception(
-                'Trùng lịch: ${existingSchedule.gioBatDau}-${existingSchedule.gioKetThuc} (Thứ ${existingSchedule.thuTrongTuan}) tại lớp khác.',
-              );
-            }
-          }
-        }
-      }
-    }
   }
 
   void _validateSchedule(ClassSchedule schedule) {
+    DateAndTimeValidators.validateTimeOrder(
+      schedule.gioBatDau,
+      schedule.gioKetThuc,
+      'gioBatDau',
+      'gioKetThuc',
+    );
+    DateAndTimeValidators.validateDateRange(
+      schedule.hieuLucTu,
+      schedule.hieuLucDen,
+      'hieuLucTu',
+      'hieuLucDen',
+    );
     if (schedule.thuTrongTuan < 1 || schedule.thuTrongTuan > 7) {
       throw Exception('Thứ trong tuần không hợp lệ (1-7)');
     }
-    if (schedule.gioBatDau.compareTo(schedule.gioKetThuc) >= 0) {
-      throw Exception('Giờ kết thúc phải sau giờ bắt đầu');
-    }
-    if (schedule.hieuLucDen != null &&
-        schedule.hieuLucTu.compareTo(schedule.hieuLucDen!) > 0) {
-      throw Exception('Ngày kết thúc hiệu lực không được trước ngày bắt đầu');
-    }
-  }
-
-  bool _isTimeOverlap(String s1, String e1, String s2, String e2) {
-    return s1.compareTo(e2) < 0 && s2.compareTo(e1) < 0;
   }
 }
 

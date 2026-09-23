@@ -207,11 +207,74 @@ void main() {
           throwsA(isA<DatabaseException>()),
         );
 
+        // Assert CHECK constraint: invalid kieu rejected
+        expect(
+          () => dbV13.execute('''
+          INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
+          VALUES (101, 'HARD_BLOCK', 'INVALID_KIEU', 1, '18:00', '20:00', '2026-01-01', '2026-01-01', '2026-01-01')
+        '''),
+          throwsA(isA<DatabaseException>()),
+        );
+
+        // Assert CHECK constraint: invalid weekday (not 1..7) rejected
+        expect(
+          () => dbV13.execute('''
+          INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
+          VALUES (101, 'HARD_BLOCK', 'DINH_KY', 9, '18:00', '20:00', '2026-01-01', '2026-01-01', '2026-01-01')
+        '''),
+          throwsA(isA<DatabaseException>()),
+        );
+
+        // Assert CHECK constraint: invalid time format (gio_bat_dau) rejected
+        expect(
+          () => dbV13.execute('''
+          INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
+          VALUES (101, 'HARD_BLOCK', 'DINH_KY', 1, 'INVALID', '20:00', '2026-01-01', '2026-01-01', '2026-01-01')
+        '''),
+          throwsA(isA<DatabaseException>()),
+        );
+
         // Assert CHECK constraint: gio_ket_thuc <= gio_bat_dau rejected
         expect(
           () => dbV13.execute('''
           INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
           VALUES (101, 'HARD_BLOCK', 'DINH_KY', 1, '20:00', '18:00', '2026-01-01', '2026-01-01', '2026-01-01')
+        '''),
+          throwsA(isA<DatabaseException>()),
+        );
+
+        // Assert CHECK constraint: negative travel buffer rejected
+        expect(
+          () => dbV13.execute('''
+          INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, travel_buffer_phut, created_at, updated_at)
+          VALUES (101, 'OTHER_CENTER', 'DINH_KY', 1, '18:00', '20:00', '2026-01-01', -15, '2026-01-01', '2026-01-01')
+        '''),
+          throwsA(isA<DatabaseException>()),
+        );
+
+        // Assert CHECK constraint: DINH_KY with ngay_cu_the rejected
+        expect(
+          () => dbV13.execute('''
+          INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, ngay_cu_the, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
+          VALUES (101, 'HARD_BLOCK', 'DINH_KY', 1, '2026-10-15', '18:00', '20:00', '2026-01-01', '2026-01-01', '2026-01-01')
+        '''),
+          throwsA(isA<DatabaseException>()),
+        );
+
+        // Assert CHECK constraint: MOT_LAN with thu_trong_tuan rejected
+        expect(
+          () => dbV13.execute('''
+          INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, ngay_cu_the, gio_bat_dau, gio_ket_thuc, created_at, updated_at)
+          VALUES (101, 'HARD_BLOCK', 'MOT_LAN', 1, '2026-10-15', '18:00', '20:00', '2026-01-01', '2026-01-01')
+        '''),
+          throwsA(isA<DatabaseException>()),
+        );
+
+        // Assert CHECK constraint: DINH_KY with hieu_luc_den < hieu_luc_tu rejected
+        expect(
+          () => dbV13.execute('''
+          INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, hieu_luc_den, created_at, updated_at)
+          VALUES (101, 'HARD_BLOCK', 'DINH_KY', 1, '18:00', '20:00', '2026-06-01', '2026-01-01', '2026-01-01', '2026-01-01')
         '''),
           throwsA(isA<DatabaseException>()),
         );

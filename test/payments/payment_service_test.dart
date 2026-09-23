@@ -29,6 +29,9 @@ import 'package:tuition2027/features/tuition/domain/tuition_invoice.dart';
 import 'package:tuition2027/features/tuition/domain/tuition_policy_service.dart';
 import 'package:tuition2027/features/tuition/domain/tuition_service.dart';
 
+import 'package:tuition2027/features/schedule_conflicts/data/schedule_constraint_repository.dart';
+import 'package:tuition2027/features/schedule_conflicts/domain/schedule_conflict_service.dart';
+
 void main() {
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
@@ -72,6 +75,16 @@ void main() {
         db,
       );
 
+      final constraintRepo = ScheduleConstraintRepository(db);
+      final conflictService = ScheduleConflictService(
+        constraintRepo,
+        scheduleRepo,
+        assignRepo,
+        sessionRepo,
+        adjRepo,
+        classService,
+      );
+
       final sessionService = SessionService(sessionRepo, classService);
       final scheduleService = ScheduleDomainService(
         scheduleRepo,
@@ -79,6 +92,7 @@ void main() {
         membershipService,
         classService,
         studentService,
+        conflictService,
       );
       final rosterService = RosterService(
         sessionService,

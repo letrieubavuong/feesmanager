@@ -31,6 +31,18 @@ class ClassRepository {
     return ClassEntity.fromMap(maps.first);
   }
 
+  Future<List<ClassEntity>> getByIds(List<int> ids) async {
+    if (ids.isEmpty) return [];
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final List<Map<String, dynamic>> maps = await _db.query(
+      'lop',
+      where: 'id IN ($placeholders)',
+      whereArgs: ids,
+    );
+
+    return List.generate(maps.length, (i) => ClassEntity.fromMap(maps[i]));
+  }
+
   Future<List<ClassEntity>> getAll({
     ClassFilter filter = ClassFilter.active,
   }) async {

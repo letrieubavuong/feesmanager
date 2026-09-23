@@ -102,6 +102,61 @@ class TestDbHelper {
           CHECK (den_ngay IS NULL OR den_ngay >= tu_ngay)
         )
       ''');
+
+        await db.execute('''
+        CREATE TABLE buoi_hoc (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          id_lop INTEGER NOT NULL,
+          ngay TEXT NOT NULL,
+          thu_trong_tuan INTEGER NOT NULL,
+          gio_bat_dau TEXT NOT NULL,
+          gio_ket_thuc TEXT NOT NULL,
+          loai TEXT NOT NULL DEFAULT 'CHINH',
+          trang_thai TEXT NOT NULL DEFAULT 'DU_KIEN',
+          ghi_chu TEXT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (id_lop) REFERENCES lop (id)
+        )
+      ''');
+
+        await db.execute('''
+        CREATE TABLE dieu_chinh_buoi_hoc (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          id_hoc_sinh INTEGER NOT NULL,
+          id_buoi_hoc_goc INTEGER NULL,
+          id_buoi_hoc_dich INTEGER NOT NULL,
+          loai TEXT NOT NULL,
+          ly_do TEXT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+          FOREIGN KEY (id_buoi_hoc_goc) REFERENCES buoi_hoc (id),
+          FOREIGN KEY (id_buoi_hoc_dich) REFERENCES buoi_hoc (id)
+        )
+      ''');
+
+        await db.execute('''
+        CREATE TABLE rang_buoc_lich_hoc_sinh (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          id_hoc_sinh INTEGER NOT NULL,
+          loai TEXT NOT NULL,
+          kieu TEXT NOT NULL,
+          thu_trong_tuan INTEGER NULL,
+          ngay_cu_the TEXT NULL,
+          gio_bat_dau TEXT NOT NULL,
+          gio_ket_thuc TEXT NOT NULL,
+          hieu_luc_tu TEXT NULL,
+          hieu_luc_den TEXT NULL,
+          travel_buffer_phut INTEGER NOT NULL DEFAULT 0,
+          ten_nguon TEXT NULL,
+          ghi_chu TEXT NULL,
+          trang_thai TEXT NOT NULL DEFAULT 'HOAT_DONG',
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id) ON DELETE RESTRICT
+        )
+      ''');
       },
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');

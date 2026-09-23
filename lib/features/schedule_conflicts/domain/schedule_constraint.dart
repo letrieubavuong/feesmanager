@@ -1,5 +1,7 @@
 // ignore_for_file: constant_identifier_names
 
+import '../../../core/utils/date_and_time_validators.dart';
+
 enum ConstraintType {
   HARD_BLOCK,
   SOFT_PREFERENCE,
@@ -101,37 +103,51 @@ class ScheduleConstraint {
   }
 
   void _validate() {
-    if (startTime.compareTo(endTime) >= 0) {
-      throw ArgumentError(
-        'Giờ kết thúc ($endTime) phải sau giờ bắt đầu ($startTime)',
-      );
-    }
+    DateAndTimeValidators.validateTimeOrder(
+      startTime,
+      endTime,
+      'startTime',
+      'endTime',
+    );
     if (travelBufferMinutes < 0) {
-      throw ArgumentError('Thời gian di chuyển không được âm');
+      throw FormatException(
+        'Thời gian di chuyển không được âm: $travelBufferMinutes',
+      );
     }
     if (occurrenceType == OccurrenceType.DINH_KY) {
       if (weekday == null || weekday! < 1 || weekday! > 7) {
-        throw ArgumentError('Ràng buộc định kỳ phải chọn thứ trong tuần (1-7)');
+        throw FormatException(
+          'Ràng buộc định kỳ phải chọn thứ trong tuần (1-7): $weekday',
+        );
       }
       if (effectiveFrom == null || effectiveFrom!.trim().isEmpty) {
-        throw ArgumentError(
+        throw const FormatException(
           'Ràng buộc định kỳ phải chọn ngày bắt đầu hiệu lực',
         );
       }
-      if (effectiveTo != null && effectiveFrom!.compareTo(effectiveTo!) > 0) {
-        throw ArgumentError(
-          'Ngày kết thúc hiệu lực không được trước ngày bắt đầu',
-        );
-      }
+      DateAndTimeValidators.validateDateRange(
+        effectiveFrom!,
+        effectiveTo,
+        'effectiveFrom',
+        'effectiveTo',
+      );
       if (specificDate != null) {
-        throw ArgumentError('Ràng buộc định kỳ không dùng ngày cụ thể');
+        throw const FormatException('Ràng buộc định kỳ không dùng ngày cụ thể');
       }
     } else {
       if (specificDate == null || specificDate!.trim().isEmpty) {
-        throw ArgumentError('Ràng buộc một lần phải chọn ngày cụ thể');
+        throw const FormatException('Ràng buộc một lần phải chọn ngày cụ thể');
       }
+      DateAndTimeValidators.validateDateStr(specificDate!, 'specificDate');
       if (weekday != null) {
-        throw ArgumentError('Ràng buộc một lần không cài đặt thứ định kỳ');
+        throw const FormatException(
+          'Ràng buộc một lần không cài đặt thứ định kỳ',
+        );
+      }
+      if (effectiveFrom != null || effectiveTo != null) {
+        throw const FormatException(
+          'Ràng buộc một lần không mang ngày hiệu lực định kỳ',
+        );
       }
     }
   }

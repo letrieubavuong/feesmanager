@@ -68,6 +68,10 @@ class ClassService {
   Future<ClassEntity?> getClassById(int id) {
     return _repository.getById(id);
   }
+
+  Future<List<ClassEntity>> getClassesByIds(List<int> ids) {
+    return _repository.getByIds(ids);
+  }
 }
 
 @Riverpod(keepAlive: true)

@@ -12,6 +12,10 @@ import 'package:tuition2027/features/memberships/data/membership_repository.dart
 import 'package:tuition2027/features/students/domain/student_service.dart';
 import 'package:tuition2027/features/students/data/student_repository.dart';
 import 'package:tuition2027/features/students/domain/student.dart';
+import 'package:tuition2027/features/schedule_conflicts/data/schedule_constraint_repository.dart';
+import 'package:tuition2027/features/schedule_conflicts/domain/schedule_conflict_service.dart';
+import 'package:tuition2027/features/session_adjustments/data/session_adjustment_repository.dart';
+import 'package:tuition2027/features/sessions/data/session_repository.dart';
 import 'test_db_helper.dart';
 
 void main() {
@@ -30,16 +34,29 @@ void main() {
     classRepo = ClassRepository(db);
     studentRepo = StudentRepository(db);
     scheduleRepo = ScheduleRepository(db);
+    final assignmentRepo = AssignmentRepository(db);
+    final constraintRepo = ScheduleConstraintRepository(db);
+    final sessionRepo = SessionRepository(db);
+    final adjustmentRepo = SessionAdjustmentRepository(db);
     membershipService = MembershipService(MembershipRepository(db));
     final classService = ClassService(classRepo, membershipService);
     final studentService = StudentService(studentRepo, membershipService);
+    final conflictService = ScheduleConflictService(
+      constraintRepo,
+      scheduleRepo,
+      assignmentRepo,
+      sessionRepo,
+      adjustmentRepo,
+      classService,
+    );
 
     service = ScheduleDomainService(
       scheduleRepo,
-      AssignmentRepository(db),
+      assignmentRepo,
       membershipService,
       classService,
       studentService,
+      conflictService,
     );
   });
 

@@ -966,5 +966,197 @@ void main() {
         throwsA(isA<FormatException>()),
       );
     });
+
+    test(
+      'Real Rollback Proof: SQLite trigger ABORT during shift change rolls back old assignment close',
+      () async {
+        final s1 = await scheduleRepo.create(
+          ClassSchedule(
+            idLop: 1,
+            thuTrongTuan: 1,
+            gioBatDau: '08:00',
+            gioKetThuc: '10:00',
+            hieuLucTu: '2026-01-01',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        final oldAssignRes = await scheduleDomainService.assignStudent(
+          studentId: 1,
+          classId: 1,
+          scheduleId: s1,
+          startDate: DateTime(2026, 1, 1),
+        );
+
+        // Construct fake schedule with non-existent DB id 99999
+        final fakeSchedule = ClassSchedule(
+          id: 99999,
+          idLop: 1,
+          thuTrongTuan: 1,
+          gioBatDau: '14:00',
+          gioKetThuc: '16:00',
+          hieuLucTu: '2026-01-01',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        final testScheduleRepo = _TestFkFailureScheduleRepository(
+          db,
+          99999,
+          fakeSchedule,
+        );
+        final testDomainService = ScheduleDomainService(
+          testScheduleRepo,
+          assignmentRepo,
+          membershipService,
+          classService,
+          StudentService(StudentRepository(db), membershipService),
+          ScheduleConflictService(
+            constraintRepo,
+            testScheduleRepo,
+            assignmentRepo,
+            sessionRepo,
+            adjustmentRepo,
+            classService,
+          ),
+        );
+
+        // Attempt shift change to schedule 99999 -> fails Foreign Key check on INSERT into phan_ca_hoc_sinh
+        expect(
+          () async => await testDomainService.changeRecurringShift(
+            studentId: 1,
+            classId: 1,
+            oldAssignmentId: oldAssignRes.assignmentId!,
+            newScheduleId: 99999,
+            effectiveDate: DateTime(2026, 6, 1),
+          ),
+          throwsA(isA<DatabaseException>()),
+        );
+
+        // Verify old assignment is STILL open (den_ngay is NULL) due to atomic rollback
+        final studentAssignments = await assignmentRepo.getByStudent(1);
+        expect(studentAssignments.length, equals(1));
+        final active = studentAssignments.firstWhere(
+          (a) => a.id == oldAssignRes.assignmentId,
+        );
+        expect(active.denNgay, isNull);
+      },
+    );
+
+    test(
+      'Test Matrix: Candidate time non-overlapping but malformed throws FormatException',
+      () async {
+        final s1 = await scheduleRepo.create(
+          ClassSchedule(
+            idLop: 1,
+            thuTrongTuan: 1,
+            gioBatDau: '08:00',
+            gioKetThuc: '10:00',
+            hieuLucTu: '2026-01-01',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        await scheduleDomainService.assignStudent(
+          studentId: 1,
+          classId: 1,
+          scheduleId: s1,
+          startDate: DateTime(2026, 1, 1),
+        );
+
+        // Temporarily disable FKs to insert corrupt schedule with malformed time
+        await db.execute('PRAGMA foreign_keys = OFF;');
+        await db.execute('''
+        INSERT INTO lich_hoc (id, id_lop, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
+        VALUES (999, 2, 1, '14:00', '25:00', '2026-01-01', '2026-01-01', '2026-01-01')
+      ''');
+        await db.execute('PRAGMA foreign_keys = ON;');
+
+        expect(
+          () async => await conflictService.evaluateCandidateAssignment(
+            studentId: 1,
+            targetScheduleId: 999,
+            startDate: '2026-01-01',
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      },
+    );
+
+    test(
+      'Test Matrix: Constraint model rejects malformed time, date, and mixed fields',
+      () {
+        expect(
+          () => ScheduleConstraint(
+            studentId: 1,
+            type: ConstraintType.HARD_BLOCK,
+            occurrenceType: OccurrenceType.DINH_KY,
+            weekday: 1,
+            startTime: '08:00',
+            endTime: '25:00',
+            effectiveFrom: '2026-01-01',
+          ),
+          throwsA(isA<FormatException>()),
+        );
+
+        expect(
+          () => ScheduleConstraint(
+            studentId: 1,
+            type: ConstraintType.HARD_BLOCK,
+            occurrenceType: OccurrenceType.MOT_LAN,
+            specificDate: '2026-02-31',
+            startTime: '08:00',
+            endTime: '10:00',
+          ),
+          throwsA(isA<FormatException>()),
+        );
+
+        expect(
+          () => ScheduleConstraint(
+            studentId: 1,
+            type: ConstraintType.HARD_BLOCK,
+            occurrenceType: OccurrenceType.DINH_KY,
+            weekday: 1,
+            startTime: '08:00',
+            endTime: '10:00',
+            effectiveFrom: '2026-06-01',
+            effectiveTo: '2026-01-01',
+          ),
+          throwsA(isA<FormatException>()),
+        );
+
+        expect(
+          () => ScheduleConstraint(
+            studentId: 1,
+            type: ConstraintType.HARD_BLOCK,
+            occurrenceType: OccurrenceType.MOT_LAN,
+            weekday: 1,
+            specificDate: '2026-10-15',
+            startTime: '08:00',
+            endTime: '10:00',
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      },
+    );
   });
+}
+
+class _TestFkFailureScheduleRepository extends ScheduleRepository {
+  final int fakeScheduleId;
+  final ClassSchedule fakeSchedule;
+
+  _TestFkFailureScheduleRepository(
+    super.db,
+    this.fakeScheduleId,
+    this.fakeSchedule,
+  );
+
+  @override
+  Future<ClassSchedule?> getById(int id) async {
+    if (id == fakeScheduleId) return fakeSchedule;
+    return super.getById(id);
+  }
 }

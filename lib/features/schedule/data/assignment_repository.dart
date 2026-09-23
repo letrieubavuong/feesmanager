@@ -12,8 +12,27 @@ class AssignmentRepository {
     return await _db.insert('phan_ca_hoc_sinh', assignment.toMap());
   }
 
+  Future<int> createInTxn(
+    DatabaseExecutor txn,
+    StudentShiftAssignment assignment,
+  ) async {
+    return await txn.insert('phan_ca_hoc_sinh', assignment.toMap());
+  }
+
   Future<int> update(StudentShiftAssignment assignment) async {
     return await _db.update(
+      'phan_ca_hoc_sinh',
+      assignment.toMap(),
+      where: 'id = ?',
+      whereArgs: [assignment.id],
+    );
+  }
+
+  Future<int> updateInTxn(
+    DatabaseExecutor txn,
+    StudentShiftAssignment assignment,
+  ) async {
+    return await txn.update(
       'phan_ca_hoc_sinh',
       assignment.toMap(),
       where: 'id = ?',

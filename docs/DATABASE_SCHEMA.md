@@ -1,14 +1,48 @@
-# DATABASE SCHEMA DESIGN
+# TUITION2027 - CANONICAL SQLITE SCHEMA
 
-This document describes the canonical SQLite database structure for Tuition2027.
+## 1. Purpose
 
-## 1. `hoc_sinh`
+This document defines the logical canonical SQLite schema for the rebuilt Tuition2027 data core.
 
-Purpose: canonical student master table.
+It is the persistence counterpart of `TUITION2027_DOMAIN_CONSTITUTION.md`.
 
-Columns:
+Names below are canonical. Do not introduce parallel aliases for the same concept.
+
+## 2. General conventions
+
+### IDs
+
+Use integer local primary keys for SQLite operational relationships.
+
+Later cloud sync may add stable sync identifiers without replacing local relational keys.
+
+### Dates
+
+Date only: `YYYY-MM-DD`.
+
+Month: `YYYY-MM`.
+
+Time of day: `HH:mm`.
+
+### Timestamps
+
+Use ISO-8601 timestamps for `created_at`, `updated_at`, and finalized/audit timestamps.
+
+### Soft delete/archive
+
+Students/classes use archive flags rather than destructive deletion after history exists.
+
+## 3. `hoc_sinh`
+
+Purpose: person/profile data only.
+
+Suggested columns:
+
 - `id INTEGER PRIMARY KEY AUTOINCREMENT`
 - `ho_ten TEXT NOT NULL`
+- `ngay_sinh TEXT NULL`
+- `gioi_tinh TEXT NULL`
+- `ten_phu_huynh TEXT NULL`
 - `sdt_phu_huynh TEXT NULL`
 - `sdt_hoc_sinh TEXT NULL`
 - `email TEXT NULL`
@@ -24,11 +58,29 @@ Columns:
 - `created_at TEXT NOT NULL`
 - `updated_at TEXT NOT NULL`
 
-## 2. `lop`
+Constraints:
 
-Purpose: canonical class master table.
+- `da_luu_tru IN (0,1)`
+- parent phone is NOT UNIQUE
 
-Columns:
+Indexes:
+
+- name
+- normalized parent phone if a separate normalized lookup column is used
+
+Must not contain:
+
+- class membership
+- join date
+- global credit balance
+- current debt
+
+## 4. `lop`
+
+Purpose: class identity/metadata.
+
+Suggested columns:
+
 - `id INTEGER PRIMARY KEY AUTOINCREMENT`
 - `ten_lop TEXT NOT NULL`
 - `khoi INTEGER NULL`
@@ -39,11 +91,16 @@ Columns:
 - `created_at TEXT NOT NULL`
 - `updated_at TEXT NOT NULL`
 
-## 3. `tham_gia_lop`
+Optional uniqueness on active class naming should be a product decision; do not rely on class name as identity.
 
-Purpose: class membership history per student.
+Do not store current class size as truth.
 
-Columns:
+## 5. `tham_gia_lop`
+
+Purpose: membership intervals.
+
+Suggested columns:
+
 - `id INTEGER PRIMARY KEY AUTOINCREMENT`
 - `id_hoc_sinh INTEGER NOT NULL`
 - `id_lop INTEGER NOT NULL`
@@ -55,11 +112,54 @@ Columns:
 - `created_at TEXT NOT NULL`
 - `updated_at TEXT NOT NULL`
 
-## 4. `lich_hoc`
+Foreign keys:
 
-Purpose: recurring schedule rule per class.
+- `id_hoc_sinh -> hoc_sinh.id`
+- `id_lop -> lop.id`
 
-Columns:
+Constraints:
+
+- `den_ngay IS NULL OR den_ngay >= tu_ngay`
+- `mien_giam_phan_tram BETWEEN 0 AND 100`
+- unique `(id_hoc_sinh, id_lop, tu_ngay)`
+- partial unique open interval `(id_hoc_sinh, id_lop) WHERE den_ngay IS NULL`
+
+Indexes:
+
+- `(id_lop, tu_ngay, den_ngay)`
+- `(id_hoc_sinh, tu_ngay, den_ngay)`
+
+## 6. `chinh_sach_hoc_phi`
+
+Purpose: effective-dated class tuition policy.
+
+Suggested columns:
+
+- `id INTEGER PRIMARY KEY AUTOINCREMENT`
+- `id_lop INTEGER NOT NULL`
+- `hieu_luc_tu TEXT NOT NULL`
+- `hieu_luc_den TEXT NULL`
+- `so_buoi_chuan_thang INTEGER NOT NULL DEFAULT 12`
+- `hoc_phi_moi_buoi INTEGER NOT NULL DEFAULT 0`
+- `hoc_phi_thang_toi_da INTEGER NULL`
+- `ghi_chu TEXT NULL`
+- `created_at TEXT NOT NULL`
+- `updated_at TEXT NOT NULL`
+
+Constraints:
+
+- standard sessions > 0
+- fees >= 0
+- effective end >= start when present
+
+Avoid overlapping active policies for the same class.
+
+## 7. `lich_hoc`
+
+Purpose: recurring class schedule.
+
+Suggested columns:
+
 - `id INTEGER PRIMARY KEY AUTOINCREMENT`
 - `id_lop INTEGER NOT NULL`
 - `thu_trong_tuan INTEGER NOT NULL`
@@ -71,11 +171,22 @@ Columns:
 - `created_at TEXT NOT NULL`
 - `updated_at TEXT NOT NULL`
 
-## 5. `phan_ca_hoc_sinh`
+Constraints:
 
-Purpose: student shift assignment to recurring schedule.
+- weekday between 1 and 7, Monday..Sunday
+- end time > start time
+- effective end >= start
 
-Columns:
+Suggested uniqueness:
+
+`(id_lop, thu_trong_tuan, gio_bat_dau, hieu_luc_tu)`
+
+## 8. `phan_ca_hoc_sinh`
+
+Purpose: student assignment to a recurring schedule/shift.
+
+Suggested columns:
+
 - `id INTEGER PRIMARY KEY AUTOINCREMENT`
 - `id_hoc_sinh INTEGER NOT NULL`
 - `id_lop INTEGER NOT NULL`
@@ -87,11 +198,21 @@ Columns:
 - `created_at TEXT NOT NULL`
 - `updated_at TEXT NOT NULL`
 
-## 6. `buoi_hoc`
+The referenced schedule must belong to `id_lop`.
 
-Purpose: dated actual/planned sessions.
+Assignment must not silently outlive membership.
 
-Columns:
+Indexes:
+
+- `(id_hoc_sinh, tu_ngay, den_ngay)`
+- `(id_lich_hoc, tu_ngay, den_ngay)`
+
+## 9. `buoi_hoc`
+
+Purpose: actual/planned dated session.
+
+Suggested columns:
+
 - `id INTEGER PRIMARY KEY AUTOINCREMENT`
 - `id_lop INTEGER NOT NULL`
 - `id_lich_hoc INTEGER NULL`
@@ -104,27 +225,34 @@ Columns:
 - `created_at TEXT NOT NULL`
 - `updated_at TEXT NOT NULL`
 
-## 7. `diem_danh`
+Canonical type:
 
-Purpose: attendance record per student/session.
+- `CHINH`
+- `HOC_BU`
+- `PHAT_SINH`
 
-Columns:
-- `id INTEGER PRIMARY KEY AUTOINCREMENT`
-- `id_buoi_hoc INTEGER NOT NULL`
-- `id_hoc_sinh INTEGER NOT NULL`
-- `id_lop_goc INTEGER NOT NULL`
-- `trang_thai TEXT NOT NULL`
-- `loai_tham_gia TEXT NOT NULL DEFAULT 'CHINH'`
-- `id_buoi_vang_goc INTEGER NULL`
-- `ghi_chu TEXT NULL`
-- `created_at TEXT NOT NULL`
-- `updated_at TEXT NOT NULL`
+Canonical status:
 
-## 8. `don_nghi_hoc`
+- `DU_KIEN`
+- `DA_HOC`
+- `HUY`
+- `NGHI_LE`
 
-Purpose: leave request records.
+Suggested uniqueness:
 
-Columns:
+`(id_lop, ngay, gio_bat_dau)`
+
+Indexes:
+
+- `(id_lop, ngay)`
+- `(id_lich_hoc, ngay)`
+
+## 10. `don_nghi_hoc`
+
+Purpose: requested/approved leave interval.
+
+Suggested columns:
+
 - `id INTEGER PRIMARY KEY AUTOINCREMENT`
 - `id_hoc_sinh INTEGER NOT NULL`
 - `id_lop INTEGER NOT NULL`
@@ -136,11 +264,20 @@ Columns:
 - `created_at TEXT NOT NULL`
 - `updated_at TEXT NOT NULL`
 
-## 9. `dieu_chinh_buoi_hoc`
+Statuses:
 
-Purpose: one-off session adjustments (Đổi ca, Học bù, Phát sinh).
+- `CHO_DUYET`
+- `DA_DUYET`
+- `TU_CHOI`
 
-Columns:
+Approved leave may influence attendance draft, not replace attendance records.
+
+## 11. `dieu_chinh_buoi_hoc`
+
+Purpose: one-off session participation exception.
+
+Suggested columns:
+
 - `id INTEGER PRIMARY KEY AUTOINCREMENT`
 - `id_hoc_sinh INTEGER NOT NULL`
 - `id_lop_goc INTEGER NOT NULL`
@@ -150,11 +287,93 @@ Columns:
 - `ly_do TEXT NULL`
 - `created_at TEXT NOT NULL`
 
-## 10. `buoi_du_ledger`
+Types:
 
-Purpose: session credit ledger entries.
+- `DOI_CA`
+- `HOC_BU`
+- `PHAT_SINH`
 
-Columns:
+Does not modify recurring schedule assignment.
+
+## 12. `diem_danh`
+
+Purpose: final attendance record per student/session.
+
+Suggested columns:
+
+- `id INTEGER PRIMARY KEY AUTOINCREMENT`
+- `id_buoi_hoc INTEGER NOT NULL`
+- `id_hoc_sinh INTEGER NOT NULL`
+- `id_lop_goc INTEGER NOT NULL`
+- `trang_thai TEXT NOT NULL`
+- `loai_tham_gia TEXT NOT NULL DEFAULT 'CHINH'`
+- `id_buoi_vang_goc INTEGER NULL`
+- `ghi_chu TEXT NULL`
+- `created_at TEXT NOT NULL`
+- `updated_at TEXT NOT NULL`
+
+Statuses:
+
+- `CO_MAT`
+- `TRE`
+- `NGHI_CO_PHEP`
+- `NGHI_KHONG_PHEP`
+- `HOC_BU`
+
+Participation types:
+
+- `CHINH`
+- `DOI_CA`
+- `HOC_BU`
+
+Unique:
+
+`(id_buoi_hoc, id_hoc_sinh)`
+
+Missing row is `CHUA_DIEM_DANH` in application state, not a persisted attendance status.
+
+## 13. `lich_can`
+
+Purpose: recurring or one-off student constraints/preferences.
+
+Suggested columns:
+
+- `id INTEGER PRIMARY KEY AUTOINCREMENT`
+- `id_hoc_sinh INTEGER NOT NULL`
+- `loai TEXT NOT NULL`
+- `muc_do TEXT NOT NULL`
+- `thu_trong_tuan INTEGER NULL`
+- `ngay_cu_the TEXT NULL`
+- `gio_bat_dau TEXT NOT NULL`
+- `gio_ket_thuc TEXT NOT NULL`
+- `hieu_luc_tu TEXT NULL`
+- `hieu_luc_den TEXT NULL`
+- `ghi_chu TEXT NULL`
+- `created_at TEXT NOT NULL`
+- `updated_at TEXT NOT NULL`
+
+Types:
+
+- `HOC_CHINH_KHOA`
+- `HOC_MON_KHAC`
+- `LOP_KHAC_TRUNG_TAM`
+- `BAN_CA_NHAN`
+- `DI_CHUYEN`
+- `NGUYEN_VONG`
+
+Severity:
+
+- `CUNG`
+- `MEM`
+
+Use either weekday-based recurrence or specific date according to the domain rule.
+
+## 14. `buoi_du_ledger`
+
+Purpose: auditable session-credit ledger.
+
+Suggested columns:
+
 - `id INTEGER PRIMARY KEY AUTOINCREMENT`
 - `id_hoc_sinh INTEGER NOT NULL`
 - `id_lop INTEGER NOT NULL`
@@ -165,27 +384,27 @@ Columns:
 - `ghi_chu TEXT NULL`
 - `created_at TEXT NOT NULL`
 
-## 11. `chinh_sach_hoc_phi`
+Reasons:
 
-Purpose: monthly tuition policies per class.
+- `VUOT_SO_BUOI_CHUAN` (requires `id_buoi_hoc NOT NULL` and `delta = 1`)
+- `BU_TRU_NGHI_CO_PHEP` (requires `id_buoi_hoc NOT NULL` and `delta = -1`)
+- `DIEU_CHINH_THU_CONG` (requires `delta != 0`)
+- `MIGRATION` (requires `delta != 0`)
 
-Columns:
-- `id INTEGER PRIMARY KEY AUTOINCREMENT`
-- `id_lop INTEGER NOT NULL`
-- `hieu_luc_tu TEXT NOT NULL`
-- `hieu_luc_den TEXT NULL`
-- `so_buoi_chuan_thang INTEGER NOT NULL DEFAULT 12`
-- `hoc_phi_moi_buoi INTEGER NOT NULL DEFAULT 0`
-- `hoc_phi_thang_toi_da INTEGER NULL`
-- `ghi_chu TEXT NULL`
-- `created_at TEXT NOT NULL`
-- `updated_at TEXT NOT NULL`
+Balance:
 
-## 12. `hoc_phi_thang`
+`SUM(delta)` grouped by student + class.
 
-Purpose: monthly tuition invoice snapshots.
+Prevent duplicate automated events with a partial unique index such as:
 
-Columns:
+`(id_hoc_sinh, id_lop, id_buoi_hoc, ly_do) WHERE id_buoi_hoc IS NOT NULL`
+
+## 15. `hoc_phi_thang`
+
+Purpose: monthly tuition invoice/snapshot.
+
+Suggested columns:
+
 - `id INTEGER PRIMARY KEY AUTOINCREMENT`
 - `id_hoc_sinh INTEGER NOT NULL`
 - `id_lop INTEGER NOT NULL`
@@ -207,11 +426,25 @@ Columns:
 - `created_at TEXT NOT NULL`
 - `updated_at TEXT NOT NULL`
 
-## 13. `thanh_toan` (Database v12)
+Statuses:
 
-Purpose: actual payment transaction records.
+- `NHAP`
+- `DA_CHOT`
+- `DA_THANH_TOAN`
+- `CON_NO`
 
-Columns:
+Unique:
+
+`(id_hoc_sinh, id_lop, thang)`
+
+Once finalized, historical amounts do not silently change. Corrections must be explicit adjustments/re-finalization flow.
+
+## 16. `thanh_toan`
+
+Purpose: actual received money.
+
+Suggested columns:
+
 - `id INTEGER PRIMARY KEY AUTOINCREMENT`
 - `id_hoc_sinh INTEGER NOT NULL`
 - `id_lop INTEGER NOT NULL`
@@ -224,15 +457,48 @@ Columns:
 - `ghi_chu TEXT NULL`
 - `created_at TEXT NOT NULL`
 
+Methods:
+
+- `TIEN_MAT`
+- `CHUYEN_KHOAN`
+- `KHAC`
+
 Constraints:
-- Foreign keys: `id_hoc_sinh -> hoc_sinh(id) ON DELETE RESTRICT`, `id_lop -> lop(id) ON DELETE RESTRICT`, `id_hoc_phi_thang -> hoc_phi_thang(id) ON DELETE RESTRICT`
-- `so_tien > 0`
-- `phuong_thuc IN ('TIEN_MAT', 'CHUYEN_KHOAN', 'KHAC')`
-- Partial UNIQUE index on non-empty `ma_giao_dich`
 
-## 14. `rang_buoc_lich_hoc_sinh` (Database v13)
+- amount > 0
+- partial unique `ma_giao_dich` when non-empty
 
-Purpose: student availability constraints (hard blocks, soft preferences, and other center class commitments).
+Debt is not stored here.
+
+## 17. `thong_bao`
+
+Purpose: notification delivery/audit record, not business truth.
+
+Suggested columns:
+
+- `id INTEGER PRIMARY KEY AUTOINCREMENT`
+- `id_hoc_sinh INTEGER NULL`
+- `id_lop INTEGER NULL`
+- `loai TEXT NOT NULL`
+- `kenh TEXT NOT NULL`
+- `nguoi_nhan TEXT NULL`
+- `noi_dung TEXT NOT NULL`
+- `trang_thai TEXT NOT NULL`
+- `scheduled_at TEXT NULL`
+- `sent_at TEXT NULL`
+- `error_message TEXT NULL`
+- `created_at TEXT NOT NULL`
+
+Examples of type:
+
+- absence
+- urgent notice
+- tuition reminder
+- exam/grade notice
+
+## 18. `rang_buoc_lich_hoc_sinh` (Database Version 13)
+
+Purpose: student schedule availability constraints, hard blocks, soft preferences, and external center commitments.
 
 Columns:
 - `id INTEGER PRIMARY KEY AUTOINCREMENT`
@@ -253,9 +519,67 @@ Columns:
 - `updated_at TEXT NOT NULL`
 
 Constraints:
-- Foreign key: `id_hoc_sinh -> hoc_sinh(id) ON DELETE RESTRICT`
-- `loai IN ('HARD_BLOCK', 'SOFT_PREFERENCE', 'OTHER_CENTER')`
-- `kieu IN ('DINH_KY', 'MOT_LAN')`
-- `gio_ket_thuc > gio_bat_dau`
-- `travel_buffer_phut >= 0`
-- `trang_thai IN ('HOAT_DONG', 'DA_HUY')`
+- Foreign key: `FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh(id) ON DELETE RESTRICT`
+- `CHECK (loai IN ('HARD_BLOCK', 'SOFT_PREFERENCE', 'OTHER_CENTER'))`
+- `CHECK (kieu IN ('DINH_KY', 'MOT_LAN'))`
+- `CHECK (trang_thai IN ('HOAT_DONG', 'DA_HUY'))`
+- `CHECK (gio_bat_dau GLOB '[0-2][0-9]:[0-5][0-9]')`
+- `CHECK (gio_ket_thuc GLOB '[0-2][0-9]:[0-5][0-9]' AND gio_ket_thuc > gio_bat_dau)`
+- `CHECK (travel_buffer_phut >= 0)`
+- `CHECK ((kieu = 'DINH_KY' AND thu_trong_tuan BETWEEN 1 AND 7 AND ngay_cu_the IS NULL AND hieu_luc_tu IS NOT NULL AND (hieu_luc_den IS NULL OR hieu_luc_den >= hieu_luc_tu)) OR (kieu = 'MOT_LAN' AND ngay_cu_the IS NOT NULL AND thu_trong_tuan IS NULL AND hieu_luc_tu IS NULL AND hieu_luc_den IS NULL))`
+
+Indexes:
+- `idx_rang_buoc_student_status ON rang_buoc_lich_hoc_sinh (id_hoc_sinh, trang_thai)`
+- `idx_rang_buoc_student_date ON rang_buoc_lich_hoc_sinh (id_hoc_sinh, ngay_cu_the)`
+
+## 19. Migration support tables
+
+### `import_run`
+
+Tracks importer execution and source fingerprint.
+
+### `migration_issue`
+
+Tracks ambiguity/errors for manual review.
+
+These are support tables, not core business entities.
+
+## 20. Recommended views/read models
+
+Views may improve reporting, but must remain derived.
+
+Examples:
+
+### `v_so_buoi_du`
+
+Group ledger by student + class and sum delta.
+
+### `v_thanh_toan_thang`
+
+Group payment totals by student + class + month.
+
+### `v_cong_no_thang`
+
+Invoice due minus payment totals.
+
+Do not update these views as independent sources of truth.
+
+## 21. Foreign-key deletion policy
+
+Default for historical entities should be restrictive/no-action rather than cascading deletion.
+
+Students/classes with history are archived.
+
+Cascade may be acceptable only for truly owned ephemeral children with no historical/audit value, and must be justified explicitly.
+
+## 22. Schema change policy
+
+Every schema change requires:
+
+- forward migration
+- migration test
+- data-integrity check
+- compatibility assessment
+- updated schema document
+
+Never patch production schema ad hoc from a screen/service.

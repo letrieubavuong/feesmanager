@@ -16,6 +16,10 @@ import 'package:tuition2027/features/classes/domain/class.dart';
 import 'package:tuition2027/features/schedule/domain/class_schedule.dart';
 import 'test_db_helper_v6.dart';
 
+import 'package:tuition2027/features/schedule_conflicts/data/schedule_constraint_repository.dart';
+import 'package:tuition2027/features/schedule_conflicts/domain/schedule_conflict_service.dart';
+import 'package:tuition2027/features/session_adjustments/data/session_adjustment_repository.dart';
+
 void main() {
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
@@ -38,12 +42,24 @@ void main() {
       StudentRepository(db),
       membershipService,
     );
+    final constraintRepo = ScheduleConstraintRepository(db);
+    final adjustmentRepo = SessionAdjustmentRepository(db);
+    final conflictService = ScheduleConflictService(
+      constraintRepo,
+      scheduleRepo,
+      assignmentRepo,
+      sessionRepo,
+      adjustmentRepo,
+      classService,
+    );
+
     final scheduleService = ScheduleDomainService(
       scheduleRepo,
       assignmentRepo,
       membershipService,
       classService,
       studentService,
+      conflictService,
     );
 
     genService = SessionGenerationService(

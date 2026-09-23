@@ -782,11 +782,12 @@ class AppDatabase {
         CHECK (loai IN ('HARD_BLOCK', 'SOFT_PREFERENCE', 'OTHER_CENTER')),
         CHECK (kieu IN ('DINH_KY', 'MOT_LAN')),
         CHECK (
-          (kieu = 'DINH_KY' AND thu_trong_tuan IS NOT NULL AND thu_trong_tuan BETWEEN 1 AND 7 AND ngay_cu_the IS NULL AND hieu_luc_tu IS NOT NULL)
+          (kieu = 'DINH_KY' AND thu_trong_tuan IS NOT NULL AND thu_trong_tuan BETWEEN 1 AND 7 AND ngay_cu_the IS NULL AND hieu_luc_tu IS NOT NULL AND (hieu_luc_den IS NULL OR hieu_luc_den >= hieu_luc_tu))
           OR
-          (kieu = 'MOT_LAN' AND ngay_cu_the IS NOT NULL AND thu_trong_tuan IS NULL)
+          (kieu = 'MOT_LAN' AND ngay_cu_the IS NOT NULL AND thu_trong_tuan IS NULL AND hieu_luc_tu IS NULL AND hieu_luc_den IS NULL)
         ),
-        CHECK (gio_ket_thuc > gio_bat_dau),
+        CHECK (gio_bat_dau GLOB '[0-2][0-9]:[0-5][0-9]'),
+        CHECK (gio_ket_thuc GLOB '[0-2][0-9]:[0-5][0-9]' AND gio_ket_thuc > gio_bat_dau),
         CHECK (travel_buffer_phut >= 0),
         CHECK (trang_thai IN ('HOAT_DONG', 'DA_HUY'))
       )

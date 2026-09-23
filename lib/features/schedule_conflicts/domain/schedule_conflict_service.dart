@@ -1,3 +1,4 @@
+import '../../../core/utils/date_and_time_validators.dart';
 import '../../classes/domain/class_service.dart';
 import '../../schedule/data/assignment_repository.dart';
 import '../../schedule/data/schedule_repository.dart';
@@ -35,35 +36,68 @@ class ScheduleConflictService {
     String? endDate,
     int? excludeAssignmentId,
   }) async {
+    // 0. Strict Fail-Closed Input Validation
+    DateAndTimeValidators.validateDateRange(
+      startDate,
+      endDate,
+      'startDate',
+      'endDate',
+    );
+
     final targetSchedule = await _scheduleRepo.getById(targetScheduleId);
     if (targetSchedule == null) {
-      throw Exception(
+      throw StateError(
         'Không tìm thấy lịch học cần phân ca (id: $targetScheduleId)',
       );
     }
+    DateAndTimeValidators.validateTimeOrder(
+      targetSchedule.gioBatDau,
+      targetSchedule.gioKetThuc,
+      'targetSchedule.gioBatDau',
+      'targetSchedule.gioKetThuc',
+    );
 
     final hardConflicts = <ScheduleConflict>[];
     final softWarnings = <ScheduleConflict>[];
 
-    // 1. Check existing Tuition2027 center class assignments
+    // 1. Batch Fetch & Validate Existing Assignments, Schedules, and Classes (N+1 Elimination)
     final existingAssignments = await _assignmentRepo.getByStudent(studentId);
-    for (final assignment in existingAssignments) {
-      if (assignment.id == excludeAssignmentId) continue;
+    final activeAssignments = existingAssignments
+        .where((a) => a.id != excludeAssignmentId)
+        .where(
+          (a) => _isDateRangeOverlap(startDate, endDate, a.tuNgay, a.denNgay),
+        )
+        .toList();
 
-      if (_isDateRangeOverlap(
-        startDate,
-        endDate,
-        assignment.tuNgay,
-        assignment.denNgay,
-      )) {
-        final existingSchedule = await _scheduleRepo.getById(
-          assignment.idLichHoc,
-        );
-        if (existingSchedule == null) {
+    if (activeAssignments.isNotEmpty) {
+      final scheduleIds = activeAssignments
+          .map((a) => a.idLichHoc)
+          .toSet()
+          .toList();
+      final schedulesList = await _scheduleRepo.getByIds(scheduleIds);
+      final schedulesMap = {for (final s in schedulesList) s.id!: s};
+
+      // Fail-closed check for missing schedule references
+      for (final a in activeAssignments) {
+        if (!schedulesMap.containsKey(a.idLichHoc)) {
           throw StateError(
-            'Dữ liệu không đồng bộ: Không tìm thấy lịch học (id: ${assignment.idLichHoc}) của phân ca (id: ${assignment.id})',
+            'Dữ liệu không đồng bộ: Không tìm thấy lịch học (id: ${a.idLichHoc}) của phân ca (id: ${a.id})',
           );
         }
+      }
+
+      final classIds = schedulesList.map((s) => s.idLop).toSet().toList();
+      final classesList = await _classService.getClassesByIds(classIds);
+      final classesMap = {for (final c in classesList) c.id!: c};
+
+      for (final assignment in activeAssignments) {
+        final existingSchedule = schedulesMap[assignment.idLichHoc]!;
+        DateAndTimeValidators.validateTimeOrder(
+          existingSchedule.gioBatDau,
+          existingSchedule.gioKetThuc,
+          'existingSchedule.gioBatDau',
+          'existingSchedule.gioKetThuc',
+        );
 
         if (existingSchedule.thuTrongTuan == targetSchedule.thuTrongTuan) {
           if (_isTimeOverlap(
@@ -79,9 +113,7 @@ class ScheduleConflictService {
               targetSchedule.gioKetThuc,
             );
 
-            final targetClass = await _classService.getClassById(
-              existingSchedule.idLop,
-            );
+            final targetClass = classesMap[existingSchedule.idLop];
             final className =
                 targetClass?.tenLop ?? 'Lớp #${existingSchedule.idLop}';
 
@@ -161,32 +193,60 @@ class ScheduleConflictService {
     int? excludeSessionId,
     int? excludeClassId,
   }) async {
-    final hardConflicts = <ScheduleConflict>[];
-    final softWarnings = <ScheduleConflict>[];
+    // 0. Strict Fail-Closed Input Validation
+    DateAndTimeValidators.validateDateStr(targetDate, 'targetDate');
+    DateAndTimeValidators.validateTimeOrder(
+      startTime,
+      endTime,
+      'startTime',
+      'endTime',
+    );
 
     final targetDt = DateTime.parse(targetDate);
     final weekday = targetDt.weekday;
 
-    // 1. Check recurring center class assignments active on targetDate
+    final hardConflicts = <ScheduleConflict>[];
+    final softWarnings = <ScheduleConflict>[];
+
+    // 1. Check recurring center class assignments active on targetDate (Batch optimization)
     final existingAssignments = await _assignmentRepo.getByStudent(studentId);
-    for (final assignment in existingAssignments) {
-      if (_isDateInInterval(
-        targetDate,
-        assignment.tuNgay,
-        assignment.denNgay,
-      )) {
-        final existingSchedule = await _scheduleRepo.getById(
-          assignment.idLichHoc,
-        );
-        if (existingSchedule == null) {
+    final activeAssignments = existingAssignments
+        .where((a) => _isDateInInterval(targetDate, a.tuNgay, a.denNgay))
+        .toList();
+
+    if (activeAssignments.isNotEmpty) {
+      final scheduleIds = activeAssignments
+          .map((a) => a.idLichHoc)
+          .toSet()
+          .toList();
+      final schedulesList = await _scheduleRepo.getByIds(scheduleIds);
+      final schedulesMap = {for (final s in schedulesList) s.id!: s};
+
+      for (final a in activeAssignments) {
+        if (!schedulesMap.containsKey(a.idLichHoc)) {
           throw StateError(
-            'Dữ liệu không đồng bộ: Không tìm thấy lịch học (id: ${assignment.idLichHoc}) của phân ca (id: ${assignment.id})',
+            'Dữ liệu không đồng bộ: Không tìm thấy lịch học (id: ${a.idLichHoc}) của phân ca (id: ${a.id})',
           );
         }
+      }
+
+      final classIds = schedulesList.map((s) => s.idLop).toSet().toList();
+      final classesList = await _classService.getClassesByIds(classIds);
+      final classesMap = {for (final c in classesList) c.id!: c};
+
+      for (final assignment in activeAssignments) {
+        final existingSchedule = schedulesMap[assignment.idLichHoc]!;
         if (excludeClassId != null &&
             existingSchedule.idLop == excludeClassId) {
           continue;
         }
+
+        DateAndTimeValidators.validateTimeOrder(
+          existingSchedule.gioBatDau,
+          existingSchedule.gioKetThuc,
+          'existingSchedule.gioBatDau',
+          'existingSchedule.gioKetThuc',
+        );
 
         if (existingSchedule.thuTrongTuan == weekday) {
           if (_isTimeOverlap(
@@ -202,9 +262,7 @@ class ScheduleConflictService {
               endTime,
             );
 
-            final targetClass = await _classService.getClassById(
-              existingSchedule.idLop,
-            );
+            final targetClass = classesMap[existingSchedule.idLop];
             final className =
                 targetClass?.tenLop ?? 'Lớp #${existingSchedule.idLop}';
 
@@ -229,37 +287,21 @@ class ScheduleConflictService {
     }
 
     // 2. Check student constraints active on targetDate
-    final activeConstraints = await _constraintRepo.getActiveForStudent(
+    final activeConstraints = await _constraintRepo.getActiveForStudentAndDate(
       studentId,
+      targetDate,
+      weekday,
     );
     for (final constraint in activeConstraints) {
-      bool applies = false;
-      if (constraint.occurrenceType == OccurrenceType.DINH_KY) {
-        if (constraint.weekday == weekday &&
-            _isDateInInterval(
-              targetDate,
-              constraint.effectiveFrom!,
-              constraint.effectiveTo,
-            )) {
-          applies = true;
-        }
-      } else if (constraint.occurrenceType == OccurrenceType.MOT_LAN) {
-        if (constraint.specificDate == targetDate) {
-          applies = true;
-        }
-      }
-
-      if (applies) {
-        _evaluateConstraintAgainstTime(
-          constraint: constraint,
-          candStart: startTime,
-          candEnd: endTime,
-          weekday: weekday,
-          date: targetDate,
-          hardConflicts: hardConflicts,
-          softWarnings: softWarnings,
-        );
-      }
+      _evaluateConstraintAgainstTime(
+        constraint: constraint,
+        candStart: startTime,
+        candEnd: endTime,
+        weekday: weekday,
+        date: targetDate,
+        hardConflicts: hardConflicts,
+        softWarnings: softWarnings,
+      );
     }
 
     // 3. Check existing actual sessions and adjustments on targetDate
@@ -271,6 +313,13 @@ class ScheduleConflictService {
         continue;
       }
 
+      DateAndTimeValidators.validateTimeOrder(
+        session.gioBatDau,
+        session.gioKetThuc,
+        'session.gioBatDau',
+        'session.gioKetThuc',
+      );
+
       // Check if student is in roster/adjustments of this session
       final adjustments = await _adjustmentRepo.getByTargetSession(session.id!);
       final isAdjustmentParticipant = adjustments.any(
@@ -280,12 +329,7 @@ class ScheduleConflictService {
       bool isRostered = isAdjustmentParticipant;
       if (!isRostered) {
         // Check if student has base assignment for this class/session
-        final classAssignments = await _assignmentRepo.getByStudent(studentId);
-        isRostered = classAssignments.any(
-          (a) =>
-              a.idLop == session.idLop &&
-              _isDateInInterval(targetDate, a.tuNgay, a.denNgay),
-        );
+        isRostered = activeAssignments.any((a) => a.idLop == session.idLop);
       }
 
       if (isRostered) {
@@ -332,6 +376,13 @@ class ScheduleConflictService {
     required List<ScheduleConflict> hardConflicts,
     required List<ScheduleConflict> softWarnings,
   }) {
+    DateAndTimeValidators.validateTimeOrder(
+      constraint.startTime,
+      constraint.endTime,
+      'constraint.startTime',
+      'constraint.endTime',
+    );
+
     final overlap = _isTimeOverlap(
       constraint.startTime,
       constraint.endTime,
@@ -435,10 +486,10 @@ class ScheduleConflictService {
     if (s1 == s2 && e1 == e2) {
       return ScheduleConflictReasonCode.EXACT_OVERLAP;
     }
-    final start1 = _timeToMinutes(s1);
-    final end1 = _timeToMinutes(e1);
-    final start2 = _timeToMinutes(s2);
-    final end2 = _timeToMinutes(e2);
+    final start1 = DateAndTimeValidators.timeToMinutes(s1, 's1');
+    final end1 = DateAndTimeValidators.timeToMinutes(e1, 'e1');
+    final start2 = DateAndTimeValidators.timeToMinutes(s2, 's2');
+    final end2 = DateAndTimeValidators.timeToMinutes(e2, 'e2');
 
     if ((start1 <= start2 && end1 >= end2) ||
         (start2 <= start1 && end2 >= end1)) {
@@ -465,31 +516,11 @@ class ScheduleConflictService {
     return true;
   }
 
-  int _timeToMinutes(String timeStr) {
-    final parts = timeStr.split(':');
-    if (parts.length != 2) {
-      throw FormatException(
-        'Định dạng thời gian không hợp lệ (cần HH:mm): $timeStr',
-      );
-    }
-    final hours = int.tryParse(parts[0]);
-    final minutes = int.tryParse(parts[1]);
-    if (hours == null ||
-        minutes == null ||
-        hours < 0 ||
-        hours > 23 ||
-        minutes < 0 ||
-        minutes > 59) {
-      throw FormatException('Giá trị thời gian không hợp lệ: $timeStr');
-    }
-    return hours * 60 + minutes;
-  }
-
   int _calculateGapMinutes(String s1, String e1, String s2, String e2) {
-    final start1 = _timeToMinutes(s1);
-    final end1 = _timeToMinutes(e1);
-    final start2 = _timeToMinutes(s2);
-    final end2 = _timeToMinutes(e2);
+    final start1 = DateAndTimeValidators.timeToMinutes(s1, 's1');
+    final end1 = DateAndTimeValidators.timeToMinutes(e1, 'e1');
+    final start2 = DateAndTimeValidators.timeToMinutes(s2, 's2');
+    final end2 = DateAndTimeValidators.timeToMinutes(e2, 'e2');
 
     if (start1 >= end2) {
       return start1 - end2;
