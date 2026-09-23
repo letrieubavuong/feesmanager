@@ -1,10 +1,16 @@
-# Task Management - Phase 11B: One-Off Schedule Conflict Integration
+# Task Management - Phase 11B Core Refactoring & Fail-Closed Hardening
 
-- [x] Step 1: Make `ScheduleConflictService` a REQUIRED non-nullable dependency in `SessionAdjustmentService` (and update provider & tests)
-- [x] Step 2: Implement Batch Adjustment Repository APIs (`getByTargetSessionIds`, `getByOriginalSessionIds` in `SessionAdjustmentRepository`)
-- [x] Step 3: Implement `evaluateOneOffSessionCandidate` in `ScheduleConflictService` with Session ID, Exact DOI_CA replacement semantics, Multi-shift accuracy, Effective Roster resolution, Batch Class/Adjustment queries, Deduplication & Fail-closed integrity
-- [x] Step 4: Refactor `SessionAdjustmentService` (`createDoiCa`, `createHocBu`, `createPhatSinh`) to consume canonical `evaluateOneOffSessionCandidate` API and re-check conflicts before persistence
-- [x] Step 5: Update `SessionAdjustmentDialogs` / UI Providers to adapt to the canonical `evaluateOneOffSessionCandidate` API without expanding UI scope
-- [x] Step 6: Comprehensive Unit Tests in `test/session_adjustments/session_adjustment_service_test.dart` and `test/schedule_conflicts/schedule_conflict_service_test.dart` (DOI_CA, HOC_BU, PHAT_SINH, Multi-shift, Outgoing DOI_CA, Rollback, Edge cases)
-- [x] Step 7: Update `docs/REBUILD_STATUS.md` & Quality Gate Verification (`flutter pub get`, `build_runner`, `dart format`, `flutter analyze`, `flutter test`)
-- [x] Step 8: Commit, Push to `main` & Report Remote CI Status
+- [x] Step 1: Refactor `ScheduleConflictService.evaluateOneOffCandidateInternal` to perform strict fail-closed relationship validation on persisted adjustments & batch load referenced sessions/classes
+- [x] Step 2: Implement conflict deduplication between recurring assignment and generated `CHINH` session
+- [x] Step 3: Implement comprehensive fail-closed corruption checks & relationship assertions for `DOI_CA`, `HOC_BU`, `PHAT_SINH`
+- [x] Step 4: Split misnamed test in `test/session_adjustments/session_adjustment_service_test.dart` into separate `HARD_BLOCK` and `SOFT_PREFERENCE` tests
+- [x] Step 5: Add full suite of tests in `test/session_adjustments/session_adjustment_service_test.dart` and `test/schedule_conflicts/schedule_conflict_service_test.dart`:
+	- DOI_CA matrix tests (16 tests)
+	- HOC_BU matrix tests (11 tests)
+	- PHAT_SINH matrix tests (10 tests)
+	- Multi-shift roster precision test
+	- Outgoing & Incoming DOI_CA effective roster test
+	- Fail-closed corruption tests
+	- Deduplication conflict count test
+- [x] Step 6: Update `docs/REBUILD_STATUS.md`
+- [x] Step 7: Quality Gate & Push to `main` (`flutter pub get`, `build_runner`, `dart format`, `flutter analyze`, `flutter test`, `git push`)
