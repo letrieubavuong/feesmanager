@@ -24,6 +24,7 @@ import 'package:tuition2027/features/students/data/student_repository.dart';
 import '../sessions/test_db_helper_v6.dart';
 
 import 'package:tuition2027/features/schedule_conflicts/data/schedule_constraint_repository.dart';
+import 'package:tuition2027/features/schedule_conflicts/domain/schedule_conflict_reason_code.dart';
 import 'package:tuition2027/features/schedule_conflicts/domain/schedule_conflict_service.dart';
 
 void main() {
@@ -2026,8 +2027,401 @@ void main() {
       expect(id, isNotNull);
     });
 
+    // --- HOC_BU FOCUSED TESTS ---
+
+    test('HOC_BU recurring commitment overlap rejects', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      // Student has recurring Schedule 1 on Tue (day 2) 18:00-19:30
+      await db.insert('lich_hoc', {
+        'id': 1,
+        'id_lop': 10,
+        'thu_trong_tuan': 2,
+        'gio_bat_dau': '18:00',
+        'gio_ket_thuc': '19:30',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('phan_ca_hoc_sinh', {
+        'id': 10,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'id_lich_hoc': 1,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      // Missed session on 2026-09-21
+      await db.insert('buoi_hoc', {
+        'id': 101,
+        'id_lop': 10,
+        'ngay': '2026-09-21',
+        'gio_bat_dau': '08:00',
+        'gio_ket_thuc': '09:30',
+        'loai': 'CHINH',
+        'trang_thai': 'DA_HOC',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('diem_danh', {
+        'id_buoi_hoc': 101,
+        'id_hoc_sinh': 1,
+        'id_lop_goc': 10,
+        'trang_thai': 'NGHI_CO_PHEP',
+        'loai_tham_gia': 'CHINH',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      // Target HOC_BU session on Tue 2026-09-22 17:30-19:00
+      await db.insert('buoi_hoc', {
+        'id': 102,
+        'id_lop': 10,
+        'ngay': '2026-09-22',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'HOC_BU',
+        'trang_thai': 'DU_KIEN',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await expectLater(
+        adjustmentService.createHocBu(
+          studentId: 1,
+          originalSessionId: 101,
+          targetSessionId: 102,
+        ),
+        throwsA(predicate((e) => e.toString().contains('Trùng lịch'))),
+      );
+    });
+
+    test('HOC_BU HARD_BLOCK rejects', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.insert('buoi_hoc', {
+        'id': 101,
+        'id_lop': 10,
+        'ngay': '2026-09-21',
+        'gio_bat_dau': '08:00',
+        'gio_ket_thuc': '09:30',
+        'loai': 'CHINH',
+        'trang_thai': 'DA_HOC',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('diem_danh', {
+        'id_buoi_hoc': 101,
+        'id_hoc_sinh': 1,
+        'id_lop_goc': 10,
+        'trang_thai': 'NGHI_CO_PHEP',
+        'loai_tham_gia': 'CHINH',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('buoi_hoc', {
+        'id': 102,
+        'id_lop': 10,
+        'ngay': '2026-09-22',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'HOC_BU',
+        'trang_thai': 'DU_KIEN',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.execute('''
+        INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
+        VALUES (1, 'HARD_BLOCK', 'DINH_KY', 2, '18:00', '19:00', '2026-01-01', '2026-01-01', '2026-01-01')
+      ''');
+
+      await expectLater(
+        adjustmentService.createHocBu(
+          studentId: 1,
+          originalSessionId: 101,
+          targetSessionId: 102,
+        ),
+        throwsA(
+          predicate((e) => e.toString().contains('Trùng lịch bận cố định')),
+        ),
+      );
+    });
+
+    test('HOC_BU OTHER_CENTER overlap rejects', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.insert('buoi_hoc', {
+        'id': 101,
+        'id_lop': 10,
+        'ngay': '2026-09-21',
+        'gio_bat_dau': '08:00',
+        'gio_ket_thuc': '09:30',
+        'loai': 'CHINH',
+        'trang_thai': 'DA_HOC',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('diem_danh', {
+        'id_buoi_hoc': 101,
+        'id_hoc_sinh': 1,
+        'id_lop_goc': 10,
+        'trang_thai': 'NGHI_CO_PHEP',
+        'loai_tham_gia': 'CHINH',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('buoi_hoc', {
+        'id': 102,
+        'id_lop': 10,
+        'ngay': '2026-09-22',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'HOC_BU',
+        'trang_thai': 'DU_KIEN',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.execute('''
+        INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
+        VALUES (1, 'OTHER_CENTER', 'DINH_KY', 2, '18:00', '19:00', '2026-01-01', '2026-01-01', '2026-01-01')
+      ''');
+
+      await expectLater(
+        adjustmentService.createHocBu(
+          studentId: 1,
+          originalSessionId: 101,
+          targetSessionId: 102,
+        ),
+        throwsA(
+          predicate(
+            (e) => e.toString().contains('Trùng lịch học tại trung tâm khác'),
+          ),
+        ),
+      );
+    });
+
+    test('HOC_BU SOFT_PREFERENCE allows (canAssign == true)', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.insert('buoi_hoc', {
+        'id': 101,
+        'id_lop': 10,
+        'ngay': '2026-09-21',
+        'gio_bat_dau': '08:00',
+        'gio_ket_thuc': '09:30',
+        'loai': 'CHINH',
+        'trang_thai': 'DA_HOC',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('diem_danh', {
+        'id_buoi_hoc': 101,
+        'id_hoc_sinh': 1,
+        'id_lop_goc': 10,
+        'trang_thai': 'NGHI_CO_PHEP',
+        'loai_tham_gia': 'CHINH',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('buoi_hoc', {
+        'id': 102,
+        'id_lop': 10,
+        'ngay': '2026-09-22',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'HOC_BU',
+        'trang_thai': 'DU_KIEN',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.execute('''
+        INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
+        VALUES (1, 'SOFT_PREFERENCE', 'DINH_KY', 2, '18:00', '19:00', '2026-01-01', '2026-01-01', '2026-01-01')
+      ''');
+
+      final preview = await conflictService.evaluateOneOffSessionCandidate(
+        studentId: 1,
+        targetSessionId: 102,
+      );
+      expect(preview.canAssign, isTrue);
+      expect(
+        preview.softWarnings.any(
+          (w) => w.reasonCode == ScheduleConflictReasonCode.SOFT_PREFERENCE,
+        ),
+        isTrue,
+      );
+
+      final id = await adjustmentService.createHocBu(
+        studentId: 1,
+        originalSessionId: 101,
+        targetSessionId: 102,
+      );
+      expect(id, isNotNull);
+    });
+
+    test('HOC_BU TRAVEL_BUFFER warning allows (canAssign == true)', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.insert('buoi_hoc', {
+        'id': 101,
+        'id_lop': 10,
+        'ngay': '2026-09-21',
+        'gio_bat_dau': '08:00',
+        'gio_ket_thuc': '09:30',
+        'loai': 'CHINH',
+        'trang_thai': 'DA_HOC',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('diem_danh', {
+        'id_buoi_hoc': 101,
+        'id_hoc_sinh': 1,
+        'id_lop_goc': 10,
+        'trang_thai': 'NGHI_CO_PHEP',
+        'loai_tham_gia': 'CHINH',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('buoi_hoc', {
+        'id': 102,
+        'id_lop': 10,
+        'ngay': '2026-09-22',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'HOC_BU',
+        'trang_thai': 'DU_KIEN',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      // OTHER_CENTER ends at 17:15, target starts at 17:30 (gap 15m < 30m buffer)
+      await db.execute('''
+        INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, travel_buffer_phut, hieu_luc_tu, created_at, updated_at)
+        VALUES (1, 'OTHER_CENTER', 'DINH_KY', 2, '16:00', '17:15', 30, '2026-01-01', '2026-01-01', '2026-01-01')
+      ''');
+
+      final preview = await conflictService.evaluateOneOffSessionCandidate(
+        studentId: 1,
+        targetSessionId: 102,
+      );
+      expect(preview.canAssign, isTrue);
+      expect(
+        preview.softWarnings.any(
+          (w) => w.reasonCode == ScheduleConflictReasonCode.TRAVEL_BUFFER,
+        ),
+        isTrue,
+      );
+
+      final id = await adjustmentService.createHocBu(
+        studentId: 1,
+        originalSessionId: 101,
+        targetSessionId: 102,
+      );
+      expect(id, isNotNull);
+    });
+
     test(
-      'Phase 11B HOC_BU: recurring overlap, HARD_BLOCK, OTHER_CENTER, SOFT_PREFERENCE, TRAVEL_BUFFER',
+      'HOC_BU one-off collisions: incoming DOI_CA, HOC_BU, PHAT_SINH participation blocks',
       () async {
         await db.insert('hoc_sinh', {
           'id': 1,
@@ -2050,7 +2444,6 @@ void main() {
           'updated_at': nowStr,
         });
 
-        // Missed session on 2026-09-21
         await db.insert('buoi_hoc', {
           'id': 101,
           'id_lop': 10,
@@ -2072,7 +2465,7 @@ void main() {
           'updated_at': nowStr,
         });
 
-        // Target HOC_BU session on Tue 2026-09-22 17:30-19:00
+        // Target HOC_BU session 102 on Tue 2026-09-22 17:30-19:00
         await db.insert('buoi_hoc', {
           'id': 102,
           'id_lop': 10,
@@ -2085,28 +2478,327 @@ void main() {
           'updated_at': nowStr,
         });
 
-        // Add HARD_BLOCK constraint on Tue 18:00-19:00
+        // Overlapping session 201 on Tue 2026-09-22 18:00-19:30 where student 1 has incoming PHAT_SINH adjustment
+        await db.insert('buoi_hoc', {
+          'id': 201,
+          'id_lop': 10,
+          'ngay': '2026-09-22',
+          'gio_bat_dau': '18:00',
+          'gio_ket_thuc': '19:30',
+          'loai': 'PHAT_SINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
         await db.execute('''
-        INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
-        VALUES (1, 'HARD_BLOCK', 'DINH_KY', 2, '18:00', '19:00', '2026-01-01', '2026-01-01', '2026-01-01')
+        INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at)
+        VALUES (1, 10, NULL, 201, 'PHAT_SINH', '$nowStr')
       ''');
 
-        // Rejects HOC_BU
         await expectLater(
           adjustmentService.createHocBu(
             studentId: 1,
             originalSessionId: 101,
             targetSessionId: 102,
           ),
-          throwsA(
-            predicate((e) => e.toString().contains('Trùng lịch bận cố định')),
-          ),
+          throwsA(predicate((e) => e.toString().contains('Trùng lịch'))),
         );
       },
     );
 
+    // --- PHAT_SINH FOCUSED TESTS ---
+
+    test('PHAT_SINH recurring commitment overlap rejects', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      // Student has recurring schedule on Wed 18:00-19:30
+      await db.insert('lich_hoc', {
+        'id': 1,
+        'id_lop': 10,
+        'thu_trong_tuan': 3,
+        'gio_bat_dau': '18:00',
+        'gio_ket_thuc': '19:30',
+        'hieu_luc_tu': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('phan_ca_hoc_sinh', {
+        'id': 10,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'id_lich_hoc': 1,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      // Target PHAT_SINH session on Wed 2026-09-23 17:30-19:00
+      await db.insert('buoi_hoc', {
+        'id': 103,
+        'id_lop': 10,
+        'ngay': '2026-09-23',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'PHAT_SINH',
+        'trang_thai': 'DU_KIEN',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await expectLater(
+        adjustmentService.createPhatSinh(
+          studentId: 1,
+          originalClassId: 10,
+          targetSessionId: 103,
+        ),
+        throwsA(predicate((e) => e.toString().contains('Trùng lịch'))),
+      );
+    });
+
+    test('PHAT_SINH HARD_BLOCK rejects', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.insert('buoi_hoc', {
+        'id': 103,
+        'id_lop': 10,
+        'ngay': '2026-09-23',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'PHAT_SINH',
+        'trang_thai': 'DU_KIEN',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.execute('''
+        INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
+        VALUES (1, 'HARD_BLOCK', 'DINH_KY', 3, '18:00', '19:00', '2026-01-01', '2026-01-01', '2026-01-01')
+      ''');
+
+      await expectLater(
+        adjustmentService.createPhatSinh(
+          studentId: 1,
+          originalClassId: 10,
+          targetSessionId: 103,
+        ),
+        throwsA(
+          predicate((e) => e.toString().contains('Trùng lịch bận cố định')),
+        ),
+      );
+    });
+
+    test('PHAT_SINH OTHER_CENTER overlap rejects', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.insert('buoi_hoc', {
+        'id': 103,
+        'id_lop': 10,
+        'ngay': '2026-09-23',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'PHAT_SINH',
+        'trang_thai': 'DU_KIEN',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.execute('''
+        INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
+        VALUES (1, 'OTHER_CENTER', 'DINH_KY', 3, '18:00', '19:00', '2026-01-01', '2026-01-01', '2026-01-01')
+      ''');
+
+      await expectLater(
+        adjustmentService.createPhatSinh(
+          studentId: 1,
+          originalClassId: 10,
+          targetSessionId: 103,
+        ),
+        throwsA(
+          predicate(
+            (e) => e.toString().contains('Trùng lịch học tại trung tâm khác'),
+          ),
+        ),
+      );
+    });
+
+    test('PHAT_SINH SOFT_PREFERENCE allows (canAssign == true)', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.insert('buoi_hoc', {
+        'id': 103,
+        'id_lop': 10,
+        'ngay': '2026-09-23',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'PHAT_SINH',
+        'trang_thai': 'DU_KIEN',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.execute('''
+        INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
+        VALUES (1, 'SOFT_PREFERENCE', 'DINH_KY', 3, '18:00', '19:00', '2026-01-01', '2026-01-01', '2026-01-01')
+      ''');
+
+      final preview = await conflictService.evaluateOneOffSessionCandidate(
+        studentId: 1,
+        targetSessionId: 103,
+      );
+      expect(preview.canAssign, isTrue);
+      expect(
+        preview.softWarnings.any(
+          (w) => w.reasonCode == ScheduleConflictReasonCode.SOFT_PREFERENCE,
+        ),
+        isTrue,
+      );
+
+      final id = await adjustmentService.createPhatSinh(
+        studentId: 1,
+        originalClassId: 10,
+        targetSessionId: 103,
+      );
+      expect(id, isNotNull);
+    });
+
+    test('PHAT_SINH TRAVEL_BUFFER warning allows (canAssign == true)', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.insert('buoi_hoc', {
+        'id': 103,
+        'id_lop': 10,
+        'ngay': '2026-09-23',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'PHAT_SINH',
+        'trang_thai': 'DU_KIEN',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      // OTHER_CENTER ends at 17:15, target starts at 17:30 (gap 15m < 30m buffer)
+      await db.execute('''
+        INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, travel_buffer_phut, hieu_luc_tu, created_at, updated_at)
+        VALUES (1, 'OTHER_CENTER', 'DINH_KY', 3, '16:00', '17:15', 30, '2026-01-01', '2026-01-01', '2026-01-01')
+      ''');
+
+      final preview = await conflictService.evaluateOneOffSessionCandidate(
+        studentId: 1,
+        targetSessionId: 103,
+      );
+      expect(preview.canAssign, isTrue);
+      expect(
+        preview.softWarnings.any(
+          (w) => w.reasonCode == ScheduleConflictReasonCode.TRAVEL_BUFFER,
+        ),
+        isTrue,
+      );
+
+      final id = await adjustmentService.createPhatSinh(
+        studentId: 1,
+        originalClassId: 10,
+        targetSessionId: 103,
+      );
+      expect(id, isNotNull);
+    });
+
     test(
-      'Phase 11B PHAT_SINH: HARD_BLOCK rejects, SOFT_PREFERENCE allows',
+      'PHAT_SINH one-off collisions: overlapping DOI_CA, HOC_BU, PHAT_SINH participation blocks',
       () async {
         await db.insert('hoc_sinh', {
           'id': 1,
@@ -2129,7 +2821,7 @@ void main() {
           'updated_at': nowStr,
         });
 
-        // Target PHAT_SINH session on Wed 2026-09-23 17:30-19:00
+        // Target PHAT_SINH session 103 on Wed 2026-09-23 17:30-19:00
         await db.insert('buoi_hoc', {
           'id': 103,
           'id_lop': 10,
@@ -2142,10 +2834,32 @@ void main() {
           'updated_at': nowStr,
         });
 
-        // Add HARD_BLOCK constraint on Wed 18:00-19:00
+        // Overlapping HOC_BU session 202 on Wed 2026-09-23 18:00-19:30 where student 1 has HOC_BU adjustment
+        await db.insert('buoi_hoc', {
+          'id': 201,
+          'id_lop': 10,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 202,
+          'id_lop': 10,
+          'ngay': '2026-09-23',
+          'gio_bat_dau': '18:00',
+          'gio_ket_thuc': '19:30',
+          'loai': 'HOC_BU',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
         await db.execute('''
-        INSERT INTO rang_buoc_lich_hoc_sinh (id_hoc_sinh, loai, kieu, thu_trong_tuan, gio_bat_dau, gio_ket_thuc, hieu_luc_tu, created_at, updated_at)
-        VALUES (1, 'HARD_BLOCK', 'DINH_KY', 3, '18:00', '19:00', '2026-01-01', '2026-01-01', '2026-01-01')
+        INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at)
+        VALUES (1, 10, 201, 202, 'HOC_BU', '$nowStr')
       ''');
 
         await expectLater(
@@ -2154,9 +2868,7 @@ void main() {
             originalClassId: 10,
             targetSessionId: 103,
           ),
-          throwsA(
-            predicate((e) => e.toString().contains('Trùng lịch bận cố định')),
-          ),
+          throwsA(predicate((e) => e.toString().contains('Trùng lịch'))),
         );
       },
     );

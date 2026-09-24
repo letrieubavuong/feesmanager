@@ -1,7 +1,9 @@
-# Task Management - Phase 11B Complete Test Matrix Audit & Expansion
+# Task Management - Phase 11B Final Closure Production Fix & Test Refinement
 
-- [x] Step 1: Audit all existing tests against Prompt Items 7, 10, 11, 12, 14
-- [x] Step 2: Implement explicit dedicated unit tests in `test/schedule_conflicts/schedule_conflict_service_test.dart` and `test/session_adjustments/session_adjustment_service_test.dart` for any missing test matrix cases
-- [x] Step 3: Run Full Quality Gate (`flutter pub get`, `build_runner`, `dart format`, `flutter analyze`, `flutter test`)
-- [x] Step 4: Commit and Push to `main`
-- [x] Step 5: Verify Remote CI & Report Final Status
+- [x] Step 1: Implement strict DOI_CA replacement relationship validation in `ScheduleConflictService.evaluateOneOffSessionCandidate`
+- [x] Step 2: Implement direct regression tests for `evaluateOneOffSessionCandidate` (different date, different class, original == target, non-CHINH target, valid DOI_CA, arbitrary historical session exclusion attempt)
+- [x] Step 3: Refine `HOC_BU` and `PHAT_SINH` test suites into focused, independent tests for recurring overlap, HARD_BLOCK, OTHER_CENTER, SOFT_PREFERENCE, and TRAVEL_BUFFER
+- [x] Step 4: Refine `HUY` / `NGHI_LE` test to establish active effective participation and compare against a `DU_KIEN` control case
+- [x] Step 5: Run Full Quality Gate (`flutter pub get`, `build_runner`, `dart format`, `flutter analyze`, `flutter test`)
+- [x] Step 6: Commit and Push to `main`
+- [x] Step 7: Verify Remote CI & Report Final Status
