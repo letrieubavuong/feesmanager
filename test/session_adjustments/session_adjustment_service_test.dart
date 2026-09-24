@@ -2456,5 +2456,540 @@ void main() {
         }
       },
     );
+
+    // --- DIRECT REGRESSION TESTS FOR evaluateOneOffSessionCandidate ---
+
+    test(
+      'Direct Regression Case A: original and target different date -> StateError',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': 10,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Original session on 2026-09-14
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-14',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        // Target session on 2026-09-21
+        await db.insert('buoi_hoc', {
+          'id': 102,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '10:00',
+          'gio_ket_thuc': '11:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await expectLater(
+          conflictService.evaluateOneOffSessionCandidate(
+            studentId: 1,
+            targetSessionId: 102,
+            replacingOriginalSessionId: 101,
+          ),
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
+
+    test(
+      'Direct Regression Case B: original and target different class -> StateError',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 20,
+          'ten_lop': 'C20',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lich_hoc', {
+          'id': 2,
+          'id_lop': 20,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '10:00',
+          'gio_ket_thuc': '11:30',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 102,
+          'id_lop': 20,
+          'id_lich_hoc': 2,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '10:00',
+          'gio_ket_thuc': '11:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await expectLater(
+          conflictService.evaluateOneOffSessionCandidate(
+            studentId: 1,
+            targetSessionId: 102,
+            replacingOriginalSessionId: 101,
+          ),
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
+
+    test(
+      'Direct Regression Case C: original == target -> StateError',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await expectLater(
+          conflictService.evaluateOneOffSessionCandidate(
+            studentId: 1,
+            targetSessionId: 101,
+            replacingOriginalSessionId: 101,
+          ),
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
+
+    test(
+      'Direct Regression Case D: target not CHINH but has replacingOriginalSessionId -> StateError',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 102,
+          'id_lop': 10,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '10:00',
+          'gio_ket_thuc': '11:30',
+          'loai': 'PHAT_SINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await expectLater(
+          conflictService.evaluateOneOffSessionCandidate(
+            studentId: 1,
+            targetSessionId: 102,
+            replacingOriginalSessionId: 101,
+          ),
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
+
+    test(
+      'Direct Regression Case E: valid DOI_CA replacement excludes original recurring commitment',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lich_hoc', {
+          'id': 2,
+          'id_lop': 10,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '10:00',
+          'gio_ket_thuc': '11:30',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': 10,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 102,
+          'id_lop': 10,
+          'id_lich_hoc': 2,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '10:00',
+          'gio_ket_thuc': '11:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        final result = await conflictService.evaluateOneOffSessionCandidate(
+          studentId: 1,
+          targetSessionId: 102,
+          replacingOriginalSessionId: 101,
+        );
+        expect(result.canAssign, isTrue);
+        expect(result.hardConflicts, isEmpty);
+      },
+    );
+
+    test(
+      'Prove Arbitrary Exclusion Cannot Happen: historical session on different date throws StateError',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': 10,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Historical session on 2026-09-14
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-14',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        // Target session on 2026-09-21
+        await db.insert('buoi_hoc', {
+          'id': 102,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await expectLater(
+          conflictService.evaluateOneOffSessionCandidate(
+            studentId: 1,
+            targetSessionId: 102,
+            replacingOriginalSessionId: 101,
+          ),
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
+
+    test('HUY/NGHI_LE Status Filtering Proof with Control Case', () async {
+      await db.insert('hoc_sinh', {
+        'id': 1,
+        'ho_ten': 'S1',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 10,
+        'ten_lop': 'C10',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('lop', {
+        'id': 20,
+        'ten_lop': 'C20',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      await db.insert('tham_gia_lop', {
+        'id': 100,
+        'id_hoc_sinh': 1,
+        'id_lop': 10,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+      await db.insert('tham_gia_lop', {
+        'id': 200,
+        'id_hoc_sinh': 1,
+        'id_lop': 20,
+        'tu_ngay': '2026-01-01',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      // Target candidate session in Class 10 (10:00-11:30)
+      await db.insert('buoi_hoc', {
+        'id': 102,
+        'id_lop': 10,
+        'ngay': '2026-09-21',
+        'gio_bat_dau': '10:00',
+        'gio_ket_thuc': '11:30',
+        'loai': 'PHAT_SINH',
+        'trang_thai': 'DU_KIEN',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      // Overlapping session 201 in Class 20 (10:00-11:30) with status HUY
+      await db.insert('buoi_hoc', {
+        'id': 201,
+        'id_lop': 20,
+        'ngay': '2026-09-21',
+        'gio_bat_dau': '10:00',
+        'gio_ket_thuc': '11:30',
+        'loai': 'PHAT_SINH',
+        'trang_thai': 'HUY',
+        'created_at': nowStr,
+        'updated_at': nowStr,
+      });
+
+      // Student 1 has incoming PHAT_SINH adjustment for session 201
+      await db.execute('''
+        INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at)
+        VALUES (1, 20, NULL, 201, 'PHAT_SINH', '$nowStr')
+      ''');
+
+      // Test 1: HUY session ignored -> canAssign == true
+      var res = await conflictService.evaluateOneOffSessionCandidate(
+        studentId: 1,
+        targetSessionId: 102,
+      );
+      expect(res.canAssign, isTrue);
+
+      // Change session 201 to DU_KIEN (Control Case)
+      await db.update('buoi_hoc', {'trang_thai': 'DU_KIEN'}, where: 'id = 201');
+
+      // Test 2: DU_KIEN session produces HARD CONFLICT -> canAssign == false
+      res = await conflictService.evaluateOneOffSessionCandidate(
+        studentId: 1,
+        targetSessionId: 102,
+      );
+      expect(res.canAssign, isFalse);
+      expect(res.hardConflicts, isNotEmpty);
+    });
   });
 }

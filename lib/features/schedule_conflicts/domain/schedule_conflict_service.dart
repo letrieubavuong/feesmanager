@@ -201,9 +201,8 @@ class ScheduleConflictService {
     );
 
     int? excludedScheduleId;
-    ClassSession? replacingOriginalSession;
     if (replacingOriginalSessionId != null) {
-      replacingOriginalSession = await _sessionRepo.getById(
+      final replacingOriginalSession = await _sessionRepo.getById(
         replacingOriginalSessionId,
       );
       if (replacingOriginalSession == null) {
@@ -211,6 +210,7 @@ class ScheduleConflictService {
           'Không tìm thấy buổi học gốc cần đổi ca (id: $replacingOriginalSessionId)',
         );
       }
+
       DateAndTimeValidators.validateDateStr(
         replacingOriginalSession.ngay,
         'replacingOriginalSession.ngay',
@@ -222,14 +222,40 @@ class ScheduleConflictService {
         'replacingOriginalSession.gioKetThuc',
       );
 
-      if (replacingOriginalSession.loai == SessionType.CHINH) {
-        if (replacingOriginalSession.idLichHoc == null) {
-          throw StateError(
-            'Dữ liệu không đồng bộ: Ca học chính bị thiếu idLichHoc (id: ${replacingOriginalSession.id})',
-          );
-        }
-        excludedScheduleId = replacingOriginalSession.idLichHoc;
+      // Validate DOI_CA replacement relationship fail-closed rules
+      if (replacingOriginalSession.id == targetSession.id) {
+        throw StateError(
+          'Dữ liệu không đồng bộ: Buổi học gốc trùng với buổi học đích (id: $targetSessionId)',
+        );
       }
+      if (replacingOriginalSession.loai != SessionType.CHINH ||
+          targetSession.loai != SessionType.CHINH) {
+        throw StateError(
+          'Dữ liệu không đồng bộ: Đổi ca yêu cầu cả buổi gốc và buổi đích thuộc loại CHÍNH',
+        );
+      }
+      if (replacingOriginalSession.idLop != targetSession.idLop) {
+        throw StateError(
+          'Dữ liệu không đồng bộ: Buổi học gốc và buổi học đích phải thuộc cùng một lớp',
+        );
+      }
+      if (replacingOriginalSession.ngay != targetSession.ngay) {
+        throw StateError(
+          'Dữ liệu không đồng bộ: Buổi học gốc và buổi học đích phải cùng ngày',
+        );
+      }
+      if (replacingOriginalSession.idLichHoc == null) {
+        throw StateError(
+          'Dữ liệu không đồng bộ: Buổi học gốc thuộc loại CHÍNH bị thiếu idLichHoc (id: ${replacingOriginalSession.id})',
+        );
+      }
+      if (targetSession.idLichHoc == null) {
+        throw StateError(
+          'Dữ liệu không đồng bộ: Buổi học đích thuộc loại CHÍNH bị thiếu idLichHoc (id: ${targetSession.id})',
+        );
+      }
+
+      excludedScheduleId = replacingOriginalSession.idLichHoc;
     }
 
     return evaluateOneOffCandidateInternal(
