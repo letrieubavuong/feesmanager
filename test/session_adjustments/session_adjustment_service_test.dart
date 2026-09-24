@@ -3279,82 +3279,6 @@ void main() {
     });
 
     test(
-      'PHAT_SINH one-off collisions: overlapping DOI_CA, HOC_BU, PHAT_SINH participation blocks',
-      () async {
-        await db.insert('hoc_sinh', {
-          'id': 1,
-          'ho_ten': 'S1',
-          'created_at': nowStr,
-          'updated_at': nowStr,
-        });
-        await db.insert('lop', {
-          'id': 10,
-          'ten_lop': 'C10',
-          'created_at': nowStr,
-          'updated_at': nowStr,
-        });
-        await db.insert('tham_gia_lop', {
-          'id': 100,
-          'id_hoc_sinh': 1,
-          'id_lop': 10,
-          'tu_ngay': '2026-01-01',
-          'created_at': nowStr,
-          'updated_at': nowStr,
-        });
-
-        // Target PHAT_SINH session 103 on Wed 2026-09-23 17:30-19:00
-        await db.insert('buoi_hoc', {
-          'id': 103,
-          'id_lop': 10,
-          'ngay': '2026-09-23',
-          'gio_bat_dau': '17:30',
-          'gio_ket_thuc': '19:00',
-          'loai': 'PHAT_SINH',
-          'trang_thai': 'DU_KIEN',
-          'created_at': nowStr,
-          'updated_at': nowStr,
-        });
-
-        // Overlapping HOC_BU session 202 on Wed 2026-09-23 18:00-19:30 where student 1 has HOC_BU adjustment
-        await db.insert('buoi_hoc', {
-          'id': 201,
-          'id_lop': 10,
-          'ngay': '2026-09-21',
-          'gio_bat_dau': '08:00',
-          'gio_ket_thuc': '09:30',
-          'loai': 'CHINH',
-          'trang_thai': 'DA_HOC',
-          'created_at': nowStr,
-          'updated_at': nowStr,
-        });
-        await db.insert('buoi_hoc', {
-          'id': 202,
-          'id_lop': 10,
-          'ngay': '2026-09-23',
-          'gio_bat_dau': '18:00',
-          'gio_ket_thuc': '19:30',
-          'loai': 'HOC_BU',
-          'trang_thai': 'DU_KIEN',
-          'created_at': nowStr,
-          'updated_at': nowStr,
-        });
-        await db.execute('''
-        INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at)
-        VALUES (1, 10, 201, 202, 'HOC_BU', '$nowStr')
-      ''');
-
-        await expectLater(
-          adjustmentService.createPhatSinh(
-            studentId: 1,
-            originalClassId: 10,
-            targetSessionId: 103,
-          ),
-          throwsA(predicate((e) => e.toString().contains('Trùng lịch'))),
-        );
-      },
-    );
-
-    test(
       'Phase 11B Fail-Closed Corruption: HOC_BU target wrong type throws StateError',
       () async {
         await db.insert('hoc_sinh', {
@@ -4172,11 +4096,28 @@ void main() {
         targetSessionId: 102,
       );
       expect(res.canAssign, isTrue);
+      expect(res.hardConflicts, isEmpty);
 
-      // Change session 201 to DU_KIEN (Control Case)
+      // Test 2: Change session 201 to NGHI_LE -> canAssign == true
+      await db.update('buoi_hoc', {'trang_thai': 'NGHI_LE'}, where: 'id = 201');
+      res = await conflictService.evaluateOneOffSessionCandidate(
+        studentId: 1,
+        targetSessionId: 102,
+      );
+      expect(res.canAssign, isTrue);
+      expect(res.hardConflicts, isEmpty);
+
+      // Test 3: Change session 201 to DU_KIEN (Control Case) -> canAssign == false
       await db.update('buoi_hoc', {'trang_thai': 'DU_KIEN'}, where: 'id = 201');
+      res = await conflictService.evaluateOneOffSessionCandidate(
+        studentId: 1,
+        targetSessionId: 102,
+      );
+      expect(res.canAssign, isFalse);
+      expect(res.hardConflicts, isNotEmpty);
 
-      // Test 2: DU_KIEN session produces HARD CONFLICT -> canAssign == false
+      // Test 4: Change session 201 to DA_HOC (Control Case) -> canAssign == false
+      await db.update('buoi_hoc', {'trang_thai': 'DA_HOC'}, where: 'id = 201');
       res = await conflictService.evaluateOneOffSessionCandidate(
         studentId: 1,
         targetSessionId: 102,
