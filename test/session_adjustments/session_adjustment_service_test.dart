@@ -2420,8 +2420,10 @@ void main() {
       expect(id, isNotNull);
     });
 
+    // --- HOC_BU ONE-OFF COLLISION TESTS ---
+
     test(
-      'HOC_BU one-off collisions: incoming DOI_CA, HOC_BU, PHAT_SINH participation blocks',
+      'HOC_BU one-off collisions: incoming DOI_CA participation blocks createHocBu',
       () async {
         await db.insert('hoc_sinh', {
           'id': 1,
@@ -2478,9 +2480,237 @@ void main() {
           'updated_at': nowStr,
         });
 
-        // Overlapping session 201 on Tue 2026-09-22 18:00-19:30 where student 1 has incoming PHAT_SINH adjustment
+        // Overlapping DOI_CA session 201 (08:00-09:30) -> 202 (18:00-19:30)
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'thu_trong_tuan': 2,
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lich_hoc', {
+          'id': 2,
+          'id_lop': 10,
+          'thu_trong_tuan': 2,
+          'gio_bat_dau': '18:00',
+          'gio_ket_thuc': '19:30',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': 10,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
         await db.insert('buoi_hoc', {
           'id': 201,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-22',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 202,
+          'id_lop': 10,
+          'id_lich_hoc': 2,
+          'ngay': '2026-09-22',
+          'gio_bat_dau': '18:00',
+          'gio_ket_thuc': '19:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Persisted DOI_CA adjustment
+        await db.execute('''
+        INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at)
+        VALUES (1, 10, 201, 202, 'DOI_CA', '$nowStr')
+      ''');
+
+        await expectLater(
+          adjustmentService.createHocBu(
+            studentId: 1,
+            originalSessionId: 101,
+            targetSessionId: 102,
+          ),
+          throwsA(predicate((e) => e.toString().contains('Trùng lịch'))),
+        );
+      },
+    );
+
+    test(
+      'HOC_BU one-off collisions: existing HOC_BU participation blocks createHocBu',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 101,
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 10,
+          'trang_thai': 'NGHI_CO_PHEP',
+          'loai_tham_gia': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Target HOC_BU session 102 on Tue 2026-09-22 17:30-19:00
+        await db.insert('buoi_hoc', {
+          'id': 102,
+          'id_lop': 10,
+          'ngay': '2026-09-22',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'HOC_BU',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Overlapping HOC_BU session 302 on Tue 2026-09-22 18:00-19:30 with persisted HOC_BU adjustment
+        await db.insert('buoi_hoc', {
+          'id': 301,
+          'id_lop': 10,
+          'ngay': '2026-09-20',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 302,
+          'id_lop': 10,
+          'ngay': '2026-09-22',
+          'gio_bat_dau': '18:00',
+          'gio_ket_thuc': '19:30',
+          'loai': 'HOC_BU',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.execute('''
+        INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at)
+        VALUES (1, 10, 301, 302, 'HOC_BU', '$nowStr')
+      ''');
+
+        await expectLater(
+          adjustmentService.createHocBu(
+            studentId: 1,
+            originalSessionId: 101,
+            targetSessionId: 102,
+          ),
+          throwsA(predicate((e) => e.toString().contains('Trùng lịch'))),
+        );
+      },
+    );
+
+    test(
+      'HOC_BU one-off collisions: overlapping PHAT_SINH participation blocks createHocBu',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 101,
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 10,
+          'trang_thai': 'NGHI_CO_PHEP',
+          'loai_tham_gia': 'CHINH',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Target HOC_BU session 102 on Tue 2026-09-22 17:30-19:00
+        await db.insert('buoi_hoc', {
+          'id': 102,
+          'id_lop': 10,
+          'ngay': '2026-09-22',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'HOC_BU',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Overlapping PHAT_SINH session 401 on Tue 2026-09-22 18:00-19:30 with persisted PHAT_SINH adjustment
+        await db.insert('buoi_hoc', {
+          'id': 401,
           'id_lop': 10,
           'ngay': '2026-09-22',
           'gio_bat_dau': '18:00',
@@ -2492,7 +2722,7 @@ void main() {
         });
         await db.execute('''
         INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at)
-        VALUES (1, 10, NULL, 201, 'PHAT_SINH', '$nowStr')
+        VALUES (1, 10, NULL, 401, 'PHAT_SINH', '$nowStr')
       ''');
 
         await expectLater(
@@ -2500,6 +2730,257 @@ void main() {
             studentId: 1,
             originalSessionId: 101,
             targetSessionId: 102,
+          ),
+          throwsA(predicate((e) => e.toString().contains('Trùng lịch'))),
+        );
+      },
+    );
+
+    // --- PHAT_SINH ONE-OFF COLLISION TESTS ---
+
+    test(
+      'PHAT_SINH one-off collisions: overlapping DOI_CA target participation blocks createPhatSinh',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Target PHAT_SINH session 103 on Wed 2026-09-23 17:30-19:00
+        await db.insert('buoi_hoc', {
+          'id': 103,
+          'id_lop': 10,
+          'ngay': '2026-09-23',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'PHAT_SINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Overlapping DOI_CA target session 202 on Wed 2026-09-23 18:00-19:30
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 10,
+          'thu_trong_tuan': 3,
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lich_hoc', {
+          'id': 2,
+          'id_lop': 10,
+          'thu_trong_tuan': 3,
+          'gio_bat_dau': '18:00',
+          'gio_ket_thuc': '19:30',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': 10,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 201,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-23',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 202,
+          'id_lop': 10,
+          'id_lich_hoc': 2,
+          'ngay': '2026-09-23',
+          'gio_bat_dau': '18:00',
+          'gio_ket_thuc': '19:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.execute('''
+        INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at)
+        VALUES (1, 10, 201, 202, 'DOI_CA', '$nowStr')
+      ''');
+
+        await expectLater(
+          adjustmentService.createPhatSinh(
+            studentId: 1,
+            originalClassId: 10,
+            targetSessionId: 103,
+          ),
+          throwsA(predicate((e) => e.toString().contains('Trùng lịch'))),
+        );
+      },
+    );
+
+    test(
+      'PHAT_SINH one-off collisions: overlapping HOC_BU participation blocks createPhatSinh',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Target PHAT_SINH session 103 on Wed 2026-09-23 17:30-19:00
+        await db.insert('buoi_hoc', {
+          'id': 103,
+          'id_lop': 10,
+          'ngay': '2026-09-23',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'PHAT_SINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Overlapping HOC_BU session 302 on Wed 2026-09-23 18:00-19:30
+        await db.insert('buoi_hoc', {
+          'id': 301,
+          'id_lop': 10,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 302,
+          'id_lop': 10,
+          'ngay': '2026-09-23',
+          'gio_bat_dau': '18:00',
+          'gio_ket_thuc': '19:30',
+          'loai': 'HOC_BU',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.execute('''
+        INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at)
+        VALUES (1, 10, 301, 302, 'HOC_BU', '$nowStr')
+      ''');
+
+        await expectLater(
+          adjustmentService.createPhatSinh(
+            studentId: 1,
+            originalClassId: 10,
+            targetSessionId: 103,
+          ),
+          throwsA(predicate((e) => e.toString().contains('Trùng lịch'))),
+        );
+      },
+    );
+
+    test(
+      'PHAT_SINH one-off collisions: overlapping PHAT_SINH participation blocks createPhatSinh',
+      () async {
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'S1',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('lop', {
+          'id': 10,
+          'ten_lop': 'C10',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 100,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Target PHAT_SINH session 103 on Wed 2026-09-23 17:30-19:00
+        await db.insert('buoi_hoc', {
+          'id': 103,
+          'id_lop': 10,
+          'ngay': '2026-09-23',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'PHAT_SINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        // Overlapping PHAT_SINH session 401 on Wed 2026-09-23 18:00-19:30
+        await db.insert('buoi_hoc', {
+          'id': 401,
+          'id_lop': 10,
+          'ngay': '2026-09-23',
+          'gio_bat_dau': '18:00',
+          'gio_ket_thuc': '19:30',
+          'loai': 'PHAT_SINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.execute('''
+        INSERT INTO dieu_chinh_buoi_hoc (id_hoc_sinh, id_lop_goc, id_buoi_hoc_goc, id_buoi_hoc_tham_gia, loai, created_at)
+        VALUES (1, 10, NULL, 401, 'PHAT_SINH', '$nowStr')
+      ''');
+
+        await expectLater(
+          adjustmentService.createPhatSinh(
+            studentId: 1,
+            originalClassId: 10,
+            targetSessionId: 103,
           ),
           throwsA(predicate((e) => e.toString().contains('Trùng lịch'))),
         );
