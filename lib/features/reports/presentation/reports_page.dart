@@ -284,7 +284,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
     return SizedBox(
       width: 160,
       child: DropdownButtonFormField<String>(
-        initialValue: months.contains(currentMonth) ? currentMonth : months.first,
+        initialValue: months.contains(currentMonth)
+            ? currentMonth
+            : months.first,
         isExpanded: true,
         decoration: const InputDecoration(
           labelText: 'Chọn tháng',
