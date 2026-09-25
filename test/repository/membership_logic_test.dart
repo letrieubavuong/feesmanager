@@ -120,6 +120,84 @@ void main() {
       expect(await service.getClassSize(cId, date: DateTime(2026, 9, 20)), 1);
     });
 
+    test(
+      'getActiveMembershipsOnDate asserts exact interval boundaries',
+      () async {
+        final sId = await studentRepo.create(
+          Student(
+            hoTen: 'Bao',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        final cId1 = await classRepo.create(
+          ClassEntity(
+            tenLop: 'Class 1',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        final cId2 = await classRepo.create(
+          ClassEntity(
+            tenLop: 'Class 2',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        // Membership 1: 2026-10-10 to 2026-10-20
+        await service.enrollStudent(
+          studentId: sId,
+          classId: cId1,
+          joinDate: DateTime(2026, 10, 10),
+        );
+        await service.leaveClass(
+          studentId: sId,
+          classId: cId1,
+          endDate: DateTime(2026, 10, 20),
+        );
+
+        // Membership 2: Open interval starting 2026-10-15
+        await service.enrollStudent(
+          studentId: sId,
+          classId: cId2,
+          joinDate: DateTime(2026, 10, 15),
+        );
+
+        // Test 1: Date 2026-10-09 (Before M1 start) -> 0 active
+        var active = await service.getActiveMembershipsOnDate(
+          DateTime(2026, 10, 9),
+        );
+        expect(active, isEmpty);
+
+        // Test 2: Date 2026-10-10 (Exact M1 start) -> M1 included
+        active = await service.getActiveMembershipsOnDate(
+          DateTime(2026, 10, 10),
+        );
+        expect(active.length, equals(1));
+        expect(active.first.idLop, equals(cId1));
+
+        // Test 3: Date 2026-10-15 (Both M1 and M2 active) -> 2 active
+        active = await service.getActiveMembershipsOnDate(
+          DateTime(2026, 10, 15),
+        );
+        expect(active.length, equals(2));
+
+        // Test 4: Date 2026-10-20 (Exact M1 end) -> Both M1 and M2 included
+        active = await service.getActiveMembershipsOnDate(
+          DateTime(2026, 10, 20),
+        );
+        expect(active.length, equals(2));
+
+        // Test 5: Date 2026-10-21 (After M1 end, M2 open) -> M2 included, M1 excluded
+        active = await service.getActiveMembershipsOnDate(
+          DateTime(2026, 10, 21),
+        );
+        expect(active.length, equals(1));
+        expect(active.first.idLop, equals(cId2));
+      },
+    );
+
     test('pause and resume', () async {
       final sId = await studentRepo.create(
         Student(

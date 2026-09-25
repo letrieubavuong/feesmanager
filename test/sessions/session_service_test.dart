@@ -195,6 +195,96 @@ void main() {
       );
     });
 
+    test(
+      'getUpcomingHocBuSessions filters strictly by HOC_BU, DU_KIEN, and date',
+      () async {
+        final classId = await classRepo.create(
+          ClassEntity(
+            id: 10,
+            tenLop: 'Class 10',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        // 1. Valid HOC_BU DU_KIEN on 2026-10-15
+        await sessionRepo.create(
+          ClassSession(
+            idLop: classId,
+            ngay: '2026-10-15',
+            gioBatDau: '17:30',
+            gioKetThuc: '19:00',
+            loai: SessionType.HOC_BU,
+            trangThai: SessionStatus.DU_KIEN,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        // 2. HOC_BU past date 2026-10-01 (before fromDate 2026-10-10) -> EXCLUDED
+        await sessionRepo.create(
+          ClassSession(
+            idLop: classId,
+            ngay: '2026-10-01',
+            gioBatDau: '17:30',
+            gioKetThuc: '19:00',
+            loai: SessionType.HOC_BU,
+            trangThai: SessionStatus.DU_KIEN,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        // 3. CHINH session on 2026-10-15 (different time 08:00) -> EXCLUDED
+        await sessionRepo.create(
+          ClassSession(
+            idLop: classId,
+            ngay: '2026-10-15',
+            gioBatDau: '08:00',
+            gioKetThuc: '09:30',
+            loai: SessionType.CHINH,
+            trangThai: SessionStatus.DU_KIEN,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        // 4. HOC_BU HUY on 2026-10-15 (different time 10:00) -> EXCLUDED
+        await sessionRepo.create(
+          ClassSession(
+            idLop: classId,
+            ngay: '2026-10-15',
+            gioBatDau: '10:00',
+            gioKetThuc: '11:30',
+            loai: SessionType.HOC_BU,
+            trangThai: SessionStatus.HUY,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        // 5. HOC_BU DA_HOC on 2026-10-15 (different time 14:00) -> EXCLUDED
+        await sessionRepo.create(
+          ClassSession(
+            idLop: classId,
+            ngay: '2026-10-15',
+            gioBatDau: '14:00',
+            gioKetThuc: '15:30',
+            loai: SessionType.HOC_BU,
+            trangThai: SessionStatus.DA_HOC,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        final results = await service.getUpcomingHocBuSessions('2026-10-10');
+        expect(results.length, equals(1));
+        expect(results.first.loai, equals(SessionType.HOC_BU));
+        expect(results.first.trangThai, equals(SessionStatus.DU_KIEN));
+        expect(results.first.ngay, equals('2026-10-15'));
+      },
+    );
+
     test('markTaughtFromAttendance behavior', () async {
       final classId = await classRepo.create(
         ClassEntity(
