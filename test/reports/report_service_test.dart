@@ -540,7 +540,7 @@ void main() {
         );
 
         // Insert invoice with status DA_CHOT (0 paid), but insert FULL payment directly in DB without updating invoice status (corrupted state!)
-      final invId = await tuitionRepo.insertInvoice(
+        final invId = await tuitionRepo.insertInvoice(
           TuitionInvoice(
             idHocSinh: stId,
             idLop: cId,
