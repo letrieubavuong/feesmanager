@@ -283,5 +283,85 @@ void main() {
         expect(pdfBytes.length, greaterThan(500));
       },
     );
+
+    test(
+      'All 10 overall attendance & financial summary fields rendered cleanly in PDF with zero and large values',
+      () async {
+        final summary = ReportSummary(
+          scope: ReportScope.forMonth(month: '2026-10'),
+          generatedAt: DateTime(2026, 10, 31, 23, 59),
+          attendance: const AttendanceReportSummary(
+            totalSessions: 100,
+            totalEligibleParticipations: 1500,
+            totalPresent: 1400,
+            totalLate: 50,
+            totalExcusedAbsence: 30,
+            totalUnexcusedAbsence: 20,
+            attendanceRatePercentage: 93.3,
+          ),
+          financial: const FinancialReportSummary(
+            totalInvoiced: 1500000000,
+            totalPaid: 1200000000,
+            totalOutstandingDebt: 300000000,
+          ),
+          classSummaries: const [
+            ClassReportSummary(
+              classId: 101,
+              className:
+                  'Lớp Luyện Thi Đại Học Chất Lượng Cao Nguyễn Văn Cừ Mã Số 101 (Đã Lưu Trữ)',
+              studentCountInScope: 15,
+              attendance: AttendanceReportSummary(
+                totalSessions: 100,
+                totalEligibleParticipations: 1500,
+                totalPresent: 1400,
+                totalLate: 50,
+                totalExcusedAbsence: 30,
+                totalUnexcusedAbsence: 20,
+                attendanceRatePercentage: 93.3,
+              ),
+              financial: FinancialReportSummary(
+                totalInvoiced: 1500000000,
+                totalPaid: 1200000000,
+                totalOutstandingDebt: 300000000,
+              ),
+            ),
+          ],
+          studentSummaries: const [
+            StudentReportSummary(
+              studentId: 201,
+              studentName:
+                  'Công Tằng Tôn Nữ Hoàng Thị Đoan Trang Nguyễn (Đã Nghỉ Học)',
+              enrolledClassNames: [
+                'Lớp Luyện Thi Đại Học Chất Lượng Cao Nguyễn Văn Cừ Mã Số 101 (Đã Lưu Trữ)',
+              ],
+              attendance: AttendanceReportSummary(
+                totalSessions: 100,
+                totalEligibleParticipations: 100,
+                totalPresent: 95,
+                totalLate: 3,
+                totalExcusedAbsence: 2,
+                totalUnexcusedAbsence: 0,
+                attendanceRatePercentage: 95.0,
+              ),
+              financial: FinancialReportSummary(
+                totalInvoiced: 100000000,
+                totalPaid: 80000000,
+                totalOutstandingDebt: 20000000,
+              ),
+            ),
+          ],
+        );
+
+        final pdfBytes = await pdfService.buildPdf(
+          summary,
+          regularFontData: regularFontBytes,
+          boldFontData: boldFontBytes,
+        );
+
+        expect(pdfBytes, isNotNull);
+        expect(pdfBytes.length, greaterThan(1000));
+        expect(String.fromCharCodes(pdfBytes.sublist(0, 5)), equals('%PDF-'));
+      },
+    );
   });
 }

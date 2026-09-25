@@ -142,31 +142,50 @@ class ReportPdfService {
     final fin = summary.financial;
 
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      padding: const pw.EdgeInsets.all(10),
       decoration: const pw.BoxDecoration(
         color: PdfColors.grey100,
         borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
       ),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+      child: pw.Column(
         children: [
-          _buildKpiItem(
-            'Tỷ lệ đi học',
-            '${att.attendanceRatePercentage.toStringAsFixed(1)}%',
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+            children: [
+              _buildKpiItem(
+                'Tỷ lệ đi học',
+                '${att.attendanceRatePercentage.toStringAsFixed(1)}%',
+              ),
+              _buildKpiItem('Tổng số buổi', '${att.totalSessions}'),
+              _buildKpiItem(
+                'Tổng lượt đủ điều kiện',
+                '${att.totalEligibleParticipations}',
+              ),
+              _buildKpiItem('Có mặt', '${att.totalPresent}'),
+              _buildKpiItem('Trễ', '${att.totalLate}'),
+              _buildKpiItem('Có phép', '${att.totalExcusedAbsence}'),
+              _buildKpiItem('Không phép', '${att.totalUnexcusedAbsence}'),
+            ],
           ),
-          _buildKpiItem('Số buổi', '${att.totalSessions}'),
-          _buildKpiItem('Lượt tham gia', '${att.totalEligibleParticipations}'),
-          _buildKpiItem(
-            'Học phí chốt',
-            _currencyFormatter.format(fin.totalInvoiced),
-          ),
-          _buildKpiItem(
-            'Doanh thu thực nhận',
-            _currencyFormatter.format(fin.totalPaid),
-          ),
-          _buildKpiItem(
-            'Dư nợ hiện tại của hóa đơn trong kỳ',
-            _currencyFormatter.format(fin.totalOutstandingDebt),
+          pw.SizedBox(height: 6),
+          pw.Divider(thickness: 0.5, color: PdfColors.grey300),
+          pw.SizedBox(height: 6),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+            children: [
+              _buildKpiItem(
+                'Học phí đã chốt',
+                _currencyFormatter.format(fin.totalInvoiced),
+              ),
+              _buildKpiItem(
+                'Doanh thu thực nhận',
+                _currencyFormatter.format(fin.totalPaid),
+              ),
+              _buildKpiItem(
+                'Dư nợ hiện tại của hóa đơn trong kỳ',
+                _currencyFormatter.format(fin.totalOutstandingDebt),
+              ),
+            ],
           ),
         ],
       ),
