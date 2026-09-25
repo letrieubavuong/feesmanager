@@ -186,8 +186,10 @@ void main() {
           scope: ReportScope.forMonth(month: '2026-10'),
           generatedAt: DateTime.now(),
           attendance: const AttendanceReportSummary(
-            totalEligibleSessions: 10,
+            totalSessions: 5,
+            totalEligibleParticipations: 10,
             totalPresent: 8,
+            totalLate: 1,
             totalExcusedAbsence: 1,
             totalUnexcusedAbsence: 1,
             attendanceRatePercentage: 80.0,
@@ -203,8 +205,10 @@ void main() {
               className: 'Class 10A',
               activeStudentCount: 5,
               attendance: AttendanceReportSummary(
-                totalEligibleSessions: 10,
+                totalSessions: 5,
+                totalEligibleParticipations: 10,
                 totalPresent: 8,
+                totalLate: 1,
                 totalExcusedAbsence: 1,
                 totalUnexcusedAbsence: 1,
                 attendanceRatePercentage: 80.0,
@@ -222,8 +226,10 @@ void main() {
               studentName: 'Student A',
               enrolledClassNames: ['Class 10A'],
               attendance: AttendanceReportSummary(
-                totalEligibleSessions: 10,
+                totalSessions: 5,
+                totalEligibleParticipations: 10,
                 totalPresent: 8,
+                totalLate: 1,
                 totalExcusedAbsence: 1,
                 totalUnexcusedAbsence: 1,
                 attendanceRatePercentage: 80.0,
@@ -253,7 +259,10 @@ void main() {
         expect(find.text('Tỷ lệ đi học'), findsAtLeast(1));
         expect(find.text('Học phí chốt'), findsAtLeast(1));
         expect(find.text('Doanh thu thực nhận'), findsAtLeast(1));
-        expect(find.text('Dư nợ chưa thu'), findsAtLeast(1));
+        expect(
+          find.text('Dư nợ hiện tại của hóa đơn trong kỳ'),
+          findsAtLeast(1),
+        );
 
         expect(find.text('Tổng quan theo Lớp học'), findsOneWidget);
         expect(find.text('Class 10A'), findsAtLeast(1));
@@ -261,6 +270,71 @@ void main() {
         expect(find.text('Chi tiết theo Học sinh'), findsOneWidget);
         expect(find.text('Student A'), findsOneWidget);
 
+        await tester.runAsync(() async => db.close());
+      },
+    );
+
+    testWidgets(
+      'ReportsPage does not display stale KPI numbers while new scope is loading',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+        });
+
+        final initialSummary = ReportSummary(
+          scope: ReportScope.forMonth(month: '2026-10'),
+          generatedAt: DateTime.now(),
+          attendance: const AttendanceReportSummary(
+            totalSessions: 5,
+            totalEligibleParticipations: 10,
+            totalPresent: 10,
+            totalLate: 0,
+            totalExcusedAbsence: 0,
+            totalUnexcusedAbsence: 0,
+            attendanceRatePercentage: 100.0,
+          ),
+          financial: const FinancialReportSummary(
+            totalInvoiced: 999999,
+            totalPaid: 999999,
+            totalOutstandingDebt: 0,
+          ),
+          classSummaries: [],
+          studentSummaries: [],
+        );
+
+        final nextCompleter = Completer<ReportSummary>();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWith((ref) async => db),
+              reportSummaryProvider.overrideWith((ref) {
+                final scope = ref.watch(reportScopeNotifierProvider);
+                if (scope.mode == ReportMode.month) {
+                  return Future.value(initialSummary);
+                }
+                return nextCompleter.future;
+              }),
+            ],
+            child: const MaterialApp(home: ReportsPage()),
+          ),
+        );
+
+        await waitForAsyncProviders(tester);
+
+        expect(find.text('100.0%'), findsOneWidget);
+
+        // Switch mode to Custom Range -> triggers new scope load
+        await tester.tap(find.text('Khoảng ngày'));
+        await tester.pump();
+
+        // Verify loading indicator is displayed and old stale numbers (100.0%) ARE NOT SHOWN AS NEW DATA
+        expect(find.text('Đang tổng hợp báo cáo...'), findsOneWidget);
+        expect(find.text('100.0%'), findsNothing);
+
+        nextCompleter.complete(initialSummary);
         await tester.runAsync(() async => db.close());
       },
     );

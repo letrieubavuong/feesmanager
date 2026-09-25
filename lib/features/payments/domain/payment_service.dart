@@ -203,6 +203,75 @@ class PaymentService {
     return resultMap;
   }
 
+  Future<List<InvoicePaymentSummary>> getPaymentSummariesForInvoices(
+    List<TuitionInvoice> invoices,
+  ) async {
+    if (invoices.isEmpty) return [];
+
+    final invoiceIds = invoices.map((i) => i.id).whereType<int>().toList();
+
+    final payments = await _paymentRepo.getPaymentsForInvoiceIds(invoiceIds);
+
+    final paymentGroupMap = <int, List<Payment>>{
+      for (final inv in invoices) inv.id!: <Payment>[],
+    };
+
+    for (final p in payments) {
+      if (p.invoiceId != null && paymentGroupMap.containsKey(p.invoiceId)) {
+        paymentGroupMap[p.invoiceId]!.add(p);
+      }
+    }
+
+    final summaries = <InvoicePaymentSummary>[];
+    for (final inv in invoices) {
+      final invPayments = paymentGroupMap[inv.id!] ?? [];
+      final summary = PaymentSettlementRules.evaluate(
+        invoice: inv,
+        payments: invPayments,
+      );
+      summaries.add(summary);
+    }
+
+    return summaries;
+  }
+
+  Future<List<Payment>> getValidatedPaymentsInDateRange({
+    required String fromDate,
+    required String toDate,
+    int? classId,
+    int? studentId,
+  }) async {
+    _validateIsoDate(fromDate);
+    _validateIsoDate(toDate);
+
+    final payments = await _paymentRepo.getPaymentsInDateRange(
+      fromDate: fromDate,
+      toDate: toDate,
+      classId: classId,
+      studentId: studentId,
+    );
+
+    for (final p in payments) {
+      if (p.invoiceId != null) {
+        final inv = await _tuitionRepo.getInvoiceById(p.invoiceId!);
+        if (inv == null) {
+          throw Exception(
+            'Lỗi bất biến thanh toán: Không tìm thấy hóa đơn #${p.invoiceId} thuộc thanh toán #${p.id}',
+          );
+        }
+        if (p.studentId != inv.idHocSinh ||
+            p.classId != inv.idLop ||
+            p.month != inv.thang) {
+          throw Exception(
+            'Lỗi bất biến thanh toán: Thông tin học sinh, lớp hoặc tháng của thanh toán #${p.id} không khớp với hóa đơn #${inv.id}',
+          );
+        }
+      }
+    }
+
+    return payments;
+  }
+
   Future<List<Payment>> getPaymentsForStudentClassMonth(
     int studentId,
     int classId,

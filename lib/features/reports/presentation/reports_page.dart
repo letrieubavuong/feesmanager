@@ -377,7 +377,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                 value:
                     '${summary.attendance.attendanceRatePercentage.toStringAsFixed(1)}%',
                 subtitle:
-                    'Có mặt: ${summary.attendance.totalPresent} / ${summary.attendance.totalEligibleSessions} lượt',
+                    'Có mặt: ${summary.attendance.totalPresent} / ${summary.attendance.totalEligibleParticipations} lượt (Trễ: ${summary.attendance.totalLate})',
                 icon: Icons.check_circle_outline,
                 color: Colors.green,
               ),
@@ -410,7 +410,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
               width: kpiWidth,
               child: _buildKpiCard(
                 context,
-                title: 'Dư nợ chưa thu',
+                title: 'Dư nợ hiện tại của hóa đơn trong kỳ',
                 value: currencyFormatter.format(
                   summary.financial.totalOutstandingDebt,
                 ),
@@ -531,7 +531,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                           DataCell(Text(s.enrolledClassNames.join(', '))),
                           DataCell(
                             Text(
-                              '${s.attendance.totalPresent} / ${s.attendance.totalEligibleSessions}',
+                              '${s.attendance.totalPresent} / ${s.attendance.totalEligibleParticipations}',
                             ),
                           ),
                           DataCell(

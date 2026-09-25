@@ -176,10 +176,15 @@
 ## Phase 12: Reports - IN PROGRESS
 - [x] Phase 12A Canonical Report Foundation + Report UI: COMPLETE.
   - Implemented immutable presentation-independent read models (`ReportScope`, `ReportSummary`, `AttendanceReportSummary`, `FinancialReportSummary`, `ClassReportSummary`, `StudentReportSummary`).
-  - Implemented `ReportService` canonical composition engine consuming `RosterService`, `AttendanceRepository`, `TuitionRepository`, `PaymentRepository`, `StudentService`, `ClassService` without recreating business formulas.
-  - Added repository projection primitives (`SessionRepository.getByDateRange`, `PaymentRepository.getPaymentsInDateRange`, `TuitionRepository.getInvoicesInMonthRange`).
-  - Implemented `ReportScopeNotifier`, `reportSummaryProvider`, and `ReportsPage` UI with Month selector, Custom date range picker, Class/Student filters, KPI cards, and detail breakdown tables. Wired `ReportsPage` into `AppShell`.
-  - Added unit & integration tests (`test/reports/report_service_test.dart` and `test/presentation/phase12a_reports_ui_test.dart`) asserting cross-module consistency, financial invariants, date boundaries, and payment timing (Month A invoice paid in Month B).
+  - Strict date parsing validation in `ReportScope` (`YYYY-MM-DD` and `YYYY-MM`).
+  - Refactored `ReportService` canonical composition engine to consume ONLY domain services (`SessionService`, `AttendanceService`, `MembershipService`, `TuitionService`, `PaymentService`, `ClassService`, `StudentService`, `RosterService`) with zero duplicated business formulas.
+  - Attendance reporting includes `DA_HOC` completed sessions only (excluding `DU_KIEN`, `HUY`, `NGHI_LE`) and uses canonical `AttendanceState` getters (`countsAsPresent`, `isLate`, `isExcusedAbsence`, `isUnexcusedAbsence`). Field `totalEligibleParticipations` explicitly tracks attendance opportunities; `totalSessions` tracks session count; `totalLate` tracks late participations.
+  - Financial settlement & debt calculation delegates to `PaymentService.getPaymentSummariesForInvoices` using `PaymentSettlementRules.evaluate`, failing closed on corrupted invoice/payment relationships or status mismatches.
+  - Cash revenue receives actual payments in date range via `PaymentService.getValidatedPaymentsInDateRange`.
+  - Historical archived classes & students with scope activity are batch loaded and included in report summaries (`ClassService.getClassesByIds`, `StudentService.getStudentsByIds`).
+  - Range-aware memberships (`MembershipService.getMembershipsOverlappingDateRange`) accurately filter student enrolled classes for reports.
+  - Implemented `ReportScopeNotifier`, `reportSummaryProvider`, and `ReportsPage` UI with Month selector, Custom date range picker, Class/Student filters, responsive KPI cards, and detail breakdown tables. Wired `ReportsPage` into `AppShell`.
+  - Added unit & integration tests (`test/reports/report_service_test.dart` and `test/presentation/phase12a_reports_ui_test.dart`) asserting strict date validation, true cross-module consistency, financial corruption fail-closed protection, completed session filtering, archived entity inclusion, and UI stale data prevention.
 
 ---
 
@@ -188,7 +193,7 @@
 - **Version**: 13
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
-- **Tests**: 389 tests passing
+- **Tests**: 393 tests passing
 - **Quality Gate**:
   - `dart analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (389 tests)
+  - `flutter test`: 100% Pass (393 tests)

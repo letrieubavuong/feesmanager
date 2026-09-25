@@ -31,6 +31,17 @@ class TuitionRepository {
     );
   }
 
+  Future<TuitionInvoice?> getInvoiceById(int id) async {
+    final maps = await _db.query(
+      'hoc_phi_thang',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return TuitionInvoice.fromMap(maps.first);
+  }
+
   Future<TuitionInvoice?> getInvoice(
     int studentId,
     int classId,

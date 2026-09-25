@@ -9,6 +9,11 @@ class ReportScope {
   final int? classId; // null = ALL classes
   final int? studentId; // null = ALL students
 
+  static final RegExp _dateRegExp = RegExp(
+    r'^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$',
+  );
+  static final RegExp _monthRegExp = RegExp(r'^\d{4}-(0[1-9]|1[0-2])$');
+
   ReportScope({
     required this.mode,
     required this.fromDate,
@@ -16,6 +21,8 @@ class ReportScope {
     this.classId,
     this.studentId,
   }) {
+    _validateIsoDate(fromDate);
+    _validateIsoDate(toDate);
     if (fromDate.compareTo(toDate) > 0) {
       throw ArgumentError(
         'Từ ngày ($fromDate) không được lớn hơn Đến ngày ($toDate)',
@@ -28,10 +35,8 @@ class ReportScope {
     int? classId,
     int? studentId,
   }) {
+    _validateIsoMonth(month);
     final parts = month.split('-');
-    if (parts.length != 2) {
-      throw ArgumentError('Định dạng tháng không hợp lệ (cần YYYY-MM): $month');
-    }
     final year = int.parse(parts[0]);
     final m = int.parse(parts[1]);
     final firstDay = DateTime(year, m, 1);
@@ -62,6 +67,28 @@ class ReportScope {
       classId: classId,
       studentId: studentId,
     );
+  }
+
+  static void _validateIsoDate(String date) {
+    if (!_dateRegExp.hasMatch(date)) {
+      throw ArgumentError(
+        'Định dạng ngày không hợp lệ (cần YYYY-MM-DD): $date',
+      );
+    }
+    final parsed = DateTime.tryParse(date);
+    if (parsed == null) {
+      throw ArgumentError('Ngày không hợp lệ: $date');
+    }
+    final formatted = DateFormat('yyyy-MM-dd').format(parsed);
+    if (formatted != date) {
+      throw ArgumentError('Ngày không tồn tại trên lịch: $date');
+    }
+  }
+
+  static void _validateIsoMonth(String month) {
+    if (!_monthRegExp.hasMatch(month)) {
+      throw ArgumentError('Định dạng tháng không hợp lệ (cần YYYY-MM): $month');
+    }
   }
 
   ReportScope copyWith({

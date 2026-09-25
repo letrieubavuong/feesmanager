@@ -41,6 +41,19 @@ class SessionService {
     required String toDate,
   }) => _repo.getUpcomingHocBuSessions(fromDate: fromDate, toDate: toDate);
 
+  Future<List<ClassSession>> getCompletedSessionsInRange({
+    required String fromDate,
+    required String toDate,
+    int? classId,
+  }) async {
+    final sessions = await _repo.getByDateRange(
+      fromDate: fromDate,
+      toDate: toDate,
+      classId: classId,
+    );
+    return sessions.where((s) => s.trangThai == SessionStatus.DA_HOC).toList();
+  }
+
   Future<void> createManualSession(ClassSession session) async {
     final cls = await _classService.getClassById(session.idLop);
     if (cls == null) throw Exception('Không tìm thấy lớp học');

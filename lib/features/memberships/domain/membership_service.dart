@@ -181,6 +181,18 @@ class MembershipService {
     return _repository.getActiveOnDate(dateFormat.format(date));
   }
 
+  Future<List<ClassMembership>> getMembershipsOverlappingDateRange({
+    required String fromDate,
+    required String toDate,
+    int? classId,
+    int? studentId,
+  }) => _repository.getOverlappingDateRange(
+    fromDate: fromDate,
+    toDate: toDate,
+    classId: classId,
+    studentId: studentId,
+  );
+
   Future<bool> hasActiveMemberships(int studentId) async {
     final now = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final active = await _repository.getActiveByStudent(studentId, now);

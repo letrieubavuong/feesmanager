@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'tuition_invoice.dart';
 import '../../../core/database/database_provider.dart';
 import '../../attendance/data/attendance_repository.dart';
 import '../../attendance/domain/attendance_record.dart';
@@ -312,6 +313,22 @@ class TuitionService {
     }
 
     return true;
+  }
+
+  Future<List<TuitionInvoice>> getFinalizedInvoicesInMonthRange({
+    required String fromMonth,
+    required String toMonth,
+    int? classId,
+    int? studentId,
+  }) async {
+    _validateIsoMonth(fromMonth);
+    _validateIsoMonth(toMonth);
+    return _tuitionRepo.getInvoicesInMonthRange(
+      fromMonth: fromMonth,
+      toMonth: toMonth,
+      classId: classId,
+      studentId: studentId,
+    );
   }
 
   void _validateIsoMonth(String month) {

@@ -1,23 +1,29 @@
 import 'report_scope.dart';
 
 class AttendanceReportSummary {
-  final int totalEligibleSessions;
+  final int totalSessions; // Actual completed session count
+  final int totalEligibleParticipations; // Student-attendance opportunities
   final int totalPresent;
+  final int totalLate;
   final int totalExcusedAbsence;
   final int totalUnexcusedAbsence;
   final double attendanceRatePercentage;
 
   const AttendanceReportSummary({
-    required this.totalEligibleSessions,
+    required this.totalSessions,
+    required this.totalEligibleParticipations,
     required this.totalPresent,
+    required this.totalLate,
     required this.totalExcusedAbsence,
     required this.totalUnexcusedAbsence,
     required this.attendanceRatePercentage,
   });
 
   factory AttendanceReportSummary.zero() => const AttendanceReportSummary(
-    totalEligibleSessions: 0,
+    totalSessions: 0,
+    totalEligibleParticipations: 0,
     totalPresent: 0,
+    totalLate: 0,
     totalExcusedAbsence: 0,
     totalUnexcusedAbsence: 0,
     attendanceRatePercentage: 0.0,
@@ -92,7 +98,7 @@ class ReportSummary {
   });
 
   bool get isEmpty =>
-      attendance.totalEligibleSessions == 0 &&
+      attendance.totalEligibleParticipations == 0 &&
       financial.totalInvoiced == 0 &&
       financial.totalPaid == 0 &&
       classSummaries.isEmpty &&

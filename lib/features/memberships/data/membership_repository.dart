@@ -82,6 +82,36 @@ class MembershipRepository {
     return List.generate(maps.length, (i) => ClassMembership.fromMap(maps[i]));
   }
 
+  Future<List<ClassMembership>> getOverlappingDateRange({
+    required String fromDate,
+    required String toDate,
+    int? classId,
+    int? studentId,
+  }) async {
+    final whereClauses = <String>[
+      'tu_ngay <= ?',
+      '(den_ngay IS NULL OR den_ngay >= ?)',
+    ];
+    final whereArgs = <dynamic>[toDate, fromDate];
+
+    if (classId != null) {
+      whereClauses.add('id_lop = ?');
+      whereArgs.add(classId);
+    }
+    if (studentId != null) {
+      whereClauses.add('id_hoc_sinh = ?');
+      whereArgs.add(studentId);
+    }
+
+    final maps = await _db.query(
+      'tham_gia_lop',
+      where: whereClauses.join(' AND '),
+      whereArgs: whereArgs,
+      orderBy: 'tu_ngay ASC',
+    );
+    return maps.map((m) => ClassMembership.fromMap(m)).toList();
+  }
+
   Future<ClassMembership?> getOpenMembership(int studentId, int classId) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'tham_gia_lop',

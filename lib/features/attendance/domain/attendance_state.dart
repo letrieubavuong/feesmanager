@@ -44,6 +44,19 @@ enum AttendanceState {
     }
   }
 
+  bool get countsAsPresent =>
+      this == AttendanceState.CO_MAT ||
+      this == AttendanceState.TRE ||
+      this == AttendanceState.HOC_BU;
+
+  bool get isLate => this == AttendanceState.TRE;
+
+  bool get isExcusedAbsence => this == AttendanceState.NGHI_CO_PHEP;
+
+  bool get isUnexcusedAbsence => this == AttendanceState.NGHI_KHONG_PHEP;
+
+  bool get isUnresolved => this == AttendanceState.CHUA_DIEM_DANH;
+
   factory AttendanceState.fromStatus(AttendanceStatus? status) {
     if (status == null) return AttendanceState.CHUA_DIEM_DANH;
     switch (status) {
