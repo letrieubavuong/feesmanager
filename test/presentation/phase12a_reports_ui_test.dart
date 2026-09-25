@@ -338,5 +338,100 @@ void main() {
         await tester.runAsync(() async => db.close());
       },
     );
+
+    testWidgets(
+      'ReportsPage renders historical archived class and student from ReportSummary',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+        });
+
+        tester.view.physicalSize = const Size(1200, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final archivedSummary = ReportSummary(
+          scope: ReportScope.forMonth(month: '2026-10'),
+          generatedAt: DateTime.now(),
+          attendance: const AttendanceReportSummary(
+            totalSessions: 2,
+            totalEligibleParticipations: 4,
+            totalPresent: 4,
+            totalLate: 0,
+            totalExcusedAbsence: 0,
+            totalUnexcusedAbsence: 0,
+            attendanceRatePercentage: 100.0,
+          ),
+          financial: const FinancialReportSummary(
+            totalInvoiced: 500000,
+            totalPaid: 500000,
+            totalOutstandingDebt: 0,
+          ),
+          classSummaries: const [
+            ClassReportSummary(
+              classId: 99,
+              className: 'Archived Class 99',
+              studentCountInScope: 1,
+              attendance: AttendanceReportSummary(
+                totalSessions: 2,
+                totalEligibleParticipations: 4,
+                totalPresent: 4,
+                totalLate: 0,
+                totalExcusedAbsence: 0,
+                totalUnexcusedAbsence: 0,
+                attendanceRatePercentage: 100.0,
+              ),
+              financial: FinancialReportSummary(
+                totalInvoiced: 500000,
+                totalPaid: 500000,
+                totalOutstandingDebt: 0,
+              ),
+            ),
+          ],
+          studentSummaries: const [
+            StudentReportSummary(
+              studentId: 88,
+              studentName: 'Archived Student 88',
+              enrolledClassNames: ['Archived Class 99'],
+              attendance: AttendanceReportSummary(
+                totalSessions: 2,
+                totalEligibleParticipations: 4,
+                totalPresent: 4,
+                totalLate: 0,
+                totalExcusedAbsence: 0,
+                totalUnexcusedAbsence: 0,
+                attendanceRatePercentage: 100.0,
+              ),
+              financial: FinancialReportSummary(
+                totalInvoiced: 500000,
+                totalPaid: 500000,
+                totalOutstandingDebt: 0,
+              ),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWith((ref) async => db),
+              reportSummaryProvider.overrideWith(
+                (ref) async => archivedSummary,
+              ),
+            ],
+            child: const MaterialApp(home: ReportsPage()),
+          ),
+        );
+
+        await waitForAsyncProviders(tester);
+
+        expect(find.text('Archived Class 99'), findsAtLeast(1));
+        expect(find.text('Archived Student 88'), findsOneWidget);
+
+        await tester.runAsync(() async => db.close());
+      },
+    );
   });
 }
