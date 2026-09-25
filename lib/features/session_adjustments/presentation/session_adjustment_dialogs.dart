@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../attendance/presentation/attendance_controller.dart';
 import '../../classes/domain/class_service.dart';
 import '../../memberships/domain/membership_service.dart';
@@ -195,8 +196,15 @@ class SessionAdjustmentDialogs {
     final origSession = await sessionService.getSessionById(originalSessionId);
     if (origSession == null) return;
 
+    final today = DateTime.now();
+    final todayStr = DateFormat('yyyy-MM-dd').format(today);
+    final lookaheadEndStr = DateFormat(
+      'yyyy-MM-dd',
+    ).format(today.add(const Duration(days: 90)));
+
     final futureHocBuSessions = await sessionService.getUpcomingHocBuSessions(
-      origSession.ngay,
+      fromDate: todayStr,
+      toDate: lookaheadEndStr,
     );
 
     final eligibleSessions = futureHocBuSessions

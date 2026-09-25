@@ -36,8 +36,10 @@ class SessionService {
     );
   }
 
-  Future<List<ClassSession>> getUpcomingHocBuSessions(String fromDate) =>
-      _repo.getUpcomingHocBuSessions(fromDate);
+  Future<List<ClassSession>> getUpcomingHocBuSessions({
+    required String fromDate,
+    required String toDate,
+  }) => _repo.getUpcomingHocBuSessions(fromDate: fromDate, toDate: toDate);
 
   Future<void> createManualSession(ClassSession session) async {
     final cls = await _classService.getClassById(session.idLop);

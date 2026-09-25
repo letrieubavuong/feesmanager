@@ -538,10 +538,139 @@ void main() {
 
   // --- 2. HOC_BU UI TEST MATRIX ---
   group('HOC_BU Dialog UI Matrix Tests', () {
+    testWidgets(
+      'showHocBuDialog filters target candidate window using 90-day relative lookahead',
+      (tester) async {
+        late Database db;
+        final today = DateTime.now();
+        final pastDateStr = DateFormat(
+          'yyyy-MM-dd',
+        ).format(today.subtract(const Duration(days: 5)));
+        final validFutureStr = DateFormat(
+          'yyyy-MM-dd',
+        ).format(today.add(const Duration(days: 10)));
+        final farFutureStr = DateFormat(
+          'yyyy-MM-dd',
+        ).format(today.add(const Duration(days: 100)));
+
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+
+          await db.insert('tham_gia_lop', {
+            'id': 101,
+            'id_hoc_sinh': 1,
+            'id_lop': 10,
+            'tu_ngay': '2026-01-01',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+
+          // Historical original session in the past
+          await db.insert('buoi_hoc', {
+            'id': 101,
+            'id_lop': 10,
+            'id_lich_hoc': 1,
+            'ngay': pastDateStr,
+            'gio_bat_dau': '08:00',
+            'gio_ket_thuc': '09:30',
+            'loai': 'CHINH',
+            'trang_thai': 'DA_HOC',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+
+          // 1. Past HOC_BU DU_KIEN before TODAY -> MUST NOT appear
+          await db.insert('buoi_hoc', {
+            'id': 301,
+            'id_lop': 20,
+            'ngay': pastDateStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'HOC_BU',
+            'trang_thai': 'DU_KIEN',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+
+          // 2. Valid future HOC_BU inside 90-day window -> MUST appear
+          await db.insert('buoi_hoc', {
+            'id': 302,
+            'id_lop': 20,
+            'ngay': validFutureStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'HOC_BU',
+            'trang_thai': 'DU_KIEN',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+
+          // 3. Far future HOC_BU beyond 90-day window -> MUST NOT appear
+          await db.insert('buoi_hoc', {
+            'id': 303,
+            'id_lop': 20,
+            'ngay': farFutureStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'HOC_BU',
+            'trang_thai': 'DU_KIEN',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        });
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [databaseProvider.overrideWith((ref) async => db)],
+            child: MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => Consumer(
+                    builder: (context, ref, _) => ElevatedButton(
+                      onPressed: () => SessionAdjustmentDialogs.showHocBuDialog(
+                        context: context,
+                        ref: ref,
+                        studentId: 1,
+                        originalSessionId: 101,
+                      ),
+                      child: const Text('Open HocBu'),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open HocBu'));
+        await waitForAsyncProviders(tester);
+
+        expect(find.text('Xếp học bù'), findsOneWidget);
+
+        final dropdownFinder = find.byWidgetPredicate(
+          (w) => w is DropdownButtonFormField,
+        );
+        await tester.tap(dropdownFinder);
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining(validFutureStr), findsAtLeast(1));
+        expect(find.textContaining(pastDateStr), findsNothing);
+        expect(find.textContaining(farFutureStr), findsNothing);
+
+        await tester.runAsync(() async => db.close());
+      },
+    );
+
     testWidgets('showHocBuDialog preview loading disables submit', (
       tester,
     ) async {
       late Database db;
+      final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final futureDateStr = DateFormat(
+        'yyyy-MM-dd',
+      ).format(DateTime.now().add(const Duration(days: 5)));
+
       await tester.runAsync(() async {
         db = await createTestDb();
         await setupBaseData(db);
@@ -559,7 +688,7 @@ void main() {
           'id': 101,
           'id_lop': 10,
           'id_lich_hoc': 1,
-          'ngay': '2026-10-10',
+          'ngay': todayStr,
           'gio_bat_dau': '08:00',
           'gio_ket_thuc': '09:30',
           'loai': 'CHINH',
@@ -571,7 +700,7 @@ void main() {
         await db.insert('buoi_hoc', {
           'id': 301,
           'id_lop': 20,
-          'ngay': '2026-10-12',
+          'ngay': futureDateStr,
           'gio_bat_dau': '17:30',
           'gio_ket_thuc': '19:00',
           'loai': 'HOC_BU',
@@ -632,6 +761,11 @@ void main() {
       tester,
     ) async {
       late Database db;
+      final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final futureDateStr = DateFormat(
+        'yyyy-MM-dd',
+      ).format(DateTime.now().add(const Duration(days: 5)));
+
       await tester.runAsync(() async {
         db = await createTestDb();
         await setupBaseData(db);
@@ -649,7 +783,7 @@ void main() {
           'id': 101,
           'id_lop': 10,
           'id_lich_hoc': 1,
-          'ngay': '2026-10-10',
+          'ngay': todayStr,
           'gio_bat_dau': '08:00',
           'gio_ket_thuc': '09:30',
           'loai': 'CHINH',
@@ -661,7 +795,7 @@ void main() {
         await db.insert('buoi_hoc', {
           'id': 301,
           'id_lop': 20,
-          'ngay': '2026-10-12',
+          'ngay': futureDateStr,
           'gio_bat_dau': '17:30',
           'gio_ket_thuc': '19:00',
           'loai': 'HOC_BU',
@@ -716,6 +850,11 @@ void main() {
       tester,
     ) async {
       late Database db;
+      final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final futureDateStr = DateFormat(
+        'yyyy-MM-dd',
+      ).format(DateTime.now().add(const Duration(days: 5)));
+
       await tester.runAsync(() async {
         db = await createTestDb();
         await setupBaseData(db);
@@ -733,7 +872,7 @@ void main() {
           'id': 101,
           'id_lop': 10,
           'id_lich_hoc': 1,
-          'ngay': '2026-10-10',
+          'ngay': todayStr,
           'gio_bat_dau': '08:00',
           'gio_ket_thuc': '09:30',
           'loai': 'CHINH',
@@ -745,7 +884,7 @@ void main() {
         await db.insert('buoi_hoc', {
           'id': 301,
           'id_lop': 20,
-          'ngay': '2026-10-12',
+          'ngay': futureDateStr,
           'gio_bat_dau': '17:30',
           'gio_ket_thuc': '19:00',
           'loai': 'HOC_BU',
@@ -811,6 +950,11 @@ void main() {
 
     testWidgets('showHocBuDialog soft warning enables submit', (tester) async {
       late Database db;
+      final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final futureDateStr = DateFormat(
+        'yyyy-MM-dd',
+      ).format(DateTime.now().add(const Duration(days: 5)));
+
       await tester.runAsync(() async {
         db = await createTestDb();
         await setupBaseData(db);
@@ -828,7 +972,7 @@ void main() {
           'id': 101,
           'id_lop': 10,
           'id_lich_hoc': 1,
-          'ngay': '2026-10-10',
+          'ngay': todayStr,
           'gio_bat_dau': '08:00',
           'gio_ket_thuc': '09:30',
           'loai': 'CHINH',
@@ -840,7 +984,7 @@ void main() {
         await db.insert('buoi_hoc', {
           'id': 301,
           'id_lop': 20,
-          'ngay': '2026-10-12',
+          'ngay': futureDateStr,
           'gio_bat_dau': '17:30',
           'gio_ket_thuc': '19:00',
           'loai': 'HOC_BU',
@@ -908,6 +1052,11 @@ void main() {
       'showHocBuDialog creates HOC_BU adjustment record in DB with correct studentId, originalSessionId, targetSessionId, loai',
       (tester) async {
         late Database db;
+        final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        final futureDateStr = DateFormat(
+          'yyyy-MM-dd',
+        ).format(DateTime.now().add(const Duration(days: 5)));
+
         await tester.runAsync(() async {
           db = await createTestDb();
           await setupBaseData(db);
@@ -926,7 +1075,7 @@ void main() {
             'id': 101,
             'id_lop': 10,
             'id_lich_hoc': 1,
-            'ngay': '2026-10-10',
+            'ngay': todayStr,
             'gio_bat_dau': '08:00',
             'gio_ket_thuc': '09:30',
             'loai': 'CHINH',
@@ -949,7 +1098,7 @@ void main() {
           await db.insert('buoi_hoc', {
             'id': 301,
             'id_lop': 20,
-            'ngay': '2026-10-12',
+            'ngay': futureDateStr,
             'gio_bat_dau': '17:30',
             'gio_ket_thuc': '19:00',
             'loai': 'HOC_BU',
@@ -1491,6 +1640,8 @@ void main() {
       'showAddConstraintDialog HARD_BLOCK DINH_KY creation succeeds and asserts persisted fields',
       (tester) async {
         late Database db;
+        final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
         await tester.runAsync(() async {
           db = await createTestDb();
           await setupBaseData(db);
@@ -1534,6 +1685,7 @@ void main() {
         expect(records.first['thu_trong_tuan'], equals(1));
         expect(records.first['gio_bat_dau'], equals('17:30'));
         expect(records.first['gio_ket_thuc'], equals('19:00'));
+        expect(records.first['hieu_luc_tu'], equals(todayStr));
         expect(records.first['trang_thai'], equals('HOAT_DONG'));
 
         await tester.runAsync(() async => db.close());
@@ -1544,6 +1696,8 @@ void main() {
       'showAddConstraintDialog SOFT_PREFERENCE DINH_KY creation succeeds and asserts persisted fields',
       (tester) async {
         late Database db;
+        final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
         await tester.runAsync(() async {
           db = await createTestDb();
           await setupBaseData(db);
@@ -1595,6 +1749,10 @@ void main() {
         expect(records.first['id_hoc_sinh'], equals(1));
         expect(records.first['loai'], equals('SOFT_PREFERENCE'));
         expect(records.first['kieu'], equals('DINH_KY'));
+        expect(records.first['thu_trong_tuan'], equals(1));
+        expect(records.first['gio_bat_dau'], equals('17:30'));
+        expect(records.first['gio_ket_thuc'], equals('19:00'));
+        expect(records.first['hieu_luc_tu'], equals(todayStr));
         expect(records.first['trang_thai'], equals('HOAT_DONG'));
 
         await tester.runAsync(() async => db.close());
@@ -1665,9 +1823,12 @@ void main() {
           records = await db.query('rang_buoc_lich_hoc_sinh');
         });
         expect(records.length, equals(1));
+        expect(records.first['id_hoc_sinh'], equals(1));
         expect(records.first['loai'], equals('OTHER_CENTER'));
+        expect(records.first['kieu'], equals('DINH_KY'));
         expect(records.first['ten_nguon'], equals('Center Alpha'));
         expect(records.first['travel_buffer_phut'], equals(25));
+        expect(records.first['trang_thai'], equals('HOAT_DONG'));
 
         await tester.runAsync(() async => db.close());
       },
@@ -1731,9 +1892,15 @@ void main() {
           records = await db.query('rang_buoc_lich_hoc_sinh');
         });
         expect(records.length, equals(1));
+        expect(records.first['id_hoc_sinh'], equals(1));
+        expect(records.first['loai'], equals('HARD_BLOCK'));
         expect(records.first['kieu'], equals('MOT_LAN'));
         expect(records.first['ngay_cu_the'], equals('2026-11-20'));
         expect(records.first['thu_trong_tuan'], isNull);
+        expect(records.first['hieu_luc_tu'], isNull);
+        expect(records.first['gio_bat_dau'], equals('17:30'));
+        expect(records.first['gio_ket_thuc'], equals('19:00'));
+        expect(records.first['trang_thai'], equals('HOAT_DONG'));
 
         await tester.runAsync(() async => db.close());
       },
@@ -1853,6 +2020,132 @@ void main() {
     );
 
     testWidgets(
+      'showAddConstraintDialog rejects invalid date format YYYY-MM-DD without inserting DB row',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+        });
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [databaseProvider.overrideWith((ref) async => db)],
+            child: MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => Scaffold(
+                    body: Consumer(
+                      builder: (context, ref, _) => ElevatedButton(
+                        onPressed: () =>
+                            showAddConstraintDialog(context, ref, 1),
+                        child: const Text('Open Constraint Dialog'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open Constraint Dialog'));
+        await waitForAsyncProviders(tester);
+
+        final occurrenceDropdown = find.widgetWithText(
+          DropdownButtonFormField<OccurrenceType>,
+          'Tần suất',
+        );
+        await tester.tap(occurrenceDropdown);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Một lần').last);
+        await waitForAsyncProviders(tester);
+
+        final dateField = find.widgetWithText(
+          TextField,
+          'Ngày cụ thể (YYYY-MM-DD)',
+        );
+        await tester.enterText(dateField, '2026-13-99');
+
+        await tester.tap(find.text('Lưu ràng buộc'));
+        await waitForAsyncProviders(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.textContaining('Lỗi:'), findsOneWidget);
+
+        late List<Map<String, dynamic>> records;
+        await tester.runAsync(() async {
+          records = await db.query('rang_buoc_lich_hoc_sinh');
+        });
+        expect(records, isEmpty);
+
+        await tester.runAsync(() async => db.close());
+      },
+    );
+
+    testWidgets(
+      'showAddConstraintDialog rejects reversed effective date range without inserting DB row',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+        });
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [databaseProvider.overrideWith((ref) async => db)],
+            child: MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => Scaffold(
+                    body: Consumer(
+                      builder: (context, ref, _) => ElevatedButton(
+                        onPressed: () =>
+                            showAddConstraintDialog(context, ref, 1),
+                        child: const Text('Open Constraint Dialog'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open Constraint Dialog'));
+        await waitForAsyncProviders(tester);
+
+        final fromField = find.widgetWithText(
+          TextField,
+          'Hiệu lực từ ngày (YYYY-MM-DD)',
+        );
+        final toField = find.widgetWithText(
+          TextField,
+          'Hiệu lực đến ngày (để trống nếu vô hạn)',
+        );
+
+        await tester.enterText(fromField, '2026-11-10');
+        await tester.enterText(toField, '2026-11-01');
+
+        await tester.tap(find.text('Lưu ràng buộc'));
+        await waitForAsyncProviders(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.textContaining('Lỗi:'), findsOneWidget);
+
+        late List<Map<String, dynamic>> records;
+        await tester.runAsync(() async {
+          records = await db.query('rang_buoc_lich_hoc_sinh');
+        });
+        expect(records, isEmpty);
+
+        await tester.runAsync(() async => db.close());
+      },
+    );
+
+    testWidgets(
       'showAddConstraintDialog rejects negative travel buffer without inserting DB row',
       (tester) async {
         late Database db;
@@ -1907,6 +2200,78 @@ void main() {
 
         await tester.enterText(sourceField, 'Center Alpha');
         await tester.enterText(bufferField, '-15');
+
+        await tester.tap(find.text('Lưu ràng buộc'));
+        await waitForAsyncProviders(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.textContaining('Lỗi:'), findsOneWidget);
+
+        late List<Map<String, dynamic>> records;
+        await tester.runAsync(() async {
+          records = await db.query('rang_buoc_lich_hoc_sinh');
+        });
+        expect(records, isEmpty);
+
+        await tester.runAsync(() async => db.close());
+      },
+    );
+
+    testWidgets(
+      'showAddConstraintDialog rejects non-integer travel buffer without inserting DB row',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+        });
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [databaseProvider.overrideWith((ref) async => db)],
+            child: MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => Scaffold(
+                    body: Consumer(
+                      builder: (context, ref, _) => ElevatedButton(
+                        onPressed: () =>
+                            showAddConstraintDialog(context, ref, 1),
+                        child: const Text('Open Constraint Dialog'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open Constraint Dialog'));
+        await waitForAsyncProviders(tester);
+
+        // Select OTHER_CENTER
+        final typeDropdown = find.widgetWithText(
+          DropdownButtonFormField<ConstraintType>,
+          'Loại ràng buộc',
+        );
+        await tester.tap(typeDropdown);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Học ở trung tâm khác').last);
+        await waitForAsyncProviders(tester);
+
+        final sourceField = find.widgetWithText(
+          TextField,
+          'Tên trường / trung tâm khác',
+        );
+        final bufferField = find.widgetWithText(
+          TextField,
+          'Thời gian di chuyển cần thiết (phút)',
+        );
+
+        await tester.enterText(sourceField, 'Center Alpha');
+        await tester.enterText(bufferField, '12.5');
 
         await tester.tap(find.text('Lưu ràng buộc'));
         await waitForAsyncProviders(tester);
@@ -2427,89 +2792,86 @@ void main() {
 
   // --- 8. CHANGE SHIFT DIALOG FAIL-CLOSED TESTS ---
   group('ChangeShiftDialog Fail-Closed Tests', () {
-    testWidgets(
-      'ChangeShiftDialog disables confirm button on preview loading, error, hard conflict, and enables on clear',
-      (tester) async {
-        late Database db;
-        await tester.runAsync(() async {
-          db = await createTestDb();
-          await setupBaseData(db);
+    testWidgets('ChangeShiftDialog preview loading disables confirm button', (
+      tester,
+    ) async {
+      late Database db;
+      await tester.runAsync(() async {
+        db = await createTestDb();
+        await setupBaseData(db);
 
-          await db.insert('tham_gia_lop', {
-            'id': 101,
-            'id_hoc_sinh': 1,
-            'id_lop': 10,
-            'tu_ngay': '2026-01-01',
-            'created_at': nowStr,
-            'updated_at': nowStr,
-          });
-
-          await db.insert('phan_ca_hoc_sinh', {
-            'id': 500,
-            'id_hoc_sinh': 1,
-            'id_lop': 10,
-            'id_lich_hoc': 1,
-            'tu_ngay': '2026-01-01',
-            'created_at': nowStr,
-            'updated_at': nowStr,
-          });
+        await db.insert('tham_gia_lop', {
+          'id': 101,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
         });
 
-        final pendingCompleter = Completer<ScheduleConflictResult>();
-        final effectiveDateStr = DateFormat(
-          'yyyy-MM-dd',
-        ).format(DateTime.now());
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': 500,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      });
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWith((ref) async => db),
-              assignmentConflictPreviewProvider((
-                1,
-                2,
-                effectiveDateStr,
-                null,
-                500,
-              )).overrideWith((ref) => pendingCompleter.future),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(body: AssignmentTab(classId: 10)),
-            ),
+      final pendingCompleter = Completer<ScheduleConflictResult>();
+      final effectiveDateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWith((ref) async => db),
+            assignmentConflictPreviewProvider((
+              1,
+              2,
+              effectiveDateStr,
+              null,
+              500,
+            )).overrideWith((ref) => pendingCompleter.future),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: AssignmentTab(classId: 10)),
           ),
-        );
+        ),
+      );
 
-        await waitForAsyncProviders(tester);
+      await waitForAsyncProviders(tester);
 
-        // Open PopupMenu for Student 1
-        final menuBtn = find.byIcon(Icons.more_vert).first;
-        await tester.tap(menuBtn);
-        await tester.pumpAndSettle();
+      // Open PopupMenu for Student 1
+      final menuBtn = find.byIcon(Icons.more_vert).first;
+      await tester.tap(menuBtn);
+      await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Chuyển ca'));
-        await waitForAsyncProviders(tester);
+      await tester.tap(find.text('Chuyển ca'));
+      await waitForAsyncProviders(tester);
 
-        expect(find.text('Chuyển ca học định kỳ'), findsOneWidget);
+      expect(find.text('Chuyển ca học định kỳ'), findsOneWidget);
 
-        // Select Schedule 2 (10:00-11:30)
-        final dropdownFinder = find.byWidgetPredicate(
-          (w) => w is DropdownButtonFormField<int>,
-        );
-        await tester.tap(dropdownFinder);
-        await tester.pumpAndSettle();
+      // Select Schedule 2 (10:00-11:30)
+      final dropdownFinder = find.byWidgetPredicate(
+        (w) => w is DropdownButtonFormField<int>,
+      );
+      await tester.tap(dropdownFinder);
+      await tester.pumpAndSettle();
 
-        await tester.tap(find.textContaining('Thứ Bảy: 10:00-11:30').last);
-        await waitForAsyncProviders(tester, iterations: 5);
+      await tester.tap(find.textContaining('Thứ Bảy: 10:00-11:30').last);
+      await waitForAsyncProviders(tester, iterations: 5);
 
-        // Confirm button is disabled while preview is loading
-        final confirmBtn = tester.widget<ElevatedButton>(
-          find.widgetWithText(ElevatedButton, 'Xác nhận'),
-        );
-        expect(confirmBtn.onPressed, isNull);
+      // Confirm button is disabled while preview is loading
+      final confirmBtn = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Xác nhận'),
+      );
+      expect(confirmBtn.onPressed, isNull);
 
-        pendingCompleter.complete(ScheduleConflictResult.clear());
-        await tester.runAsync(() async => db.close());
-      },
-    );
+      pendingCompleter.complete(ScheduleConflictResult.clear());
+      await tester.runAsync(() async => db.close());
+    });
 
     testWidgets('ChangeShiftDialog preview error disables confirm button', (
       tester,
@@ -2757,78 +3119,83 @@ void main() {
       await tester.runAsync(() async => db.close());
     });
 
-    testWidgets('ChangeShiftDialog clear preview enables confirm button', (
-      tester,
-    ) async {
-      late Database db;
-      await tester.runAsync(() async {
-        db = await createTestDb();
-        await setupBaseData(db);
+    testWidgets(
+      'ChangeShiftDialog evaluates preview with exact canonical argument tuple (1, 2, effectiveDateStr, null, 500)',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
 
-        await db.insert('tham_gia_lop', {
-          'id': 101,
-          'id_hoc_sinh': 1,
-          'id_lop': 10,
-          'tu_ngay': '2026-01-01',
-          'created_at': nowStr,
-          'updated_at': nowStr,
+          await db.insert('tham_gia_lop', {
+            'id': 101,
+            'id_hoc_sinh': 1,
+            'id_lop': 10,
+            'tu_ngay': '2026-01-01',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+
+          await db.insert('phan_ca_hoc_sinh', {
+            'id': 500,
+            'id_hoc_sinh': 1,
+            'id_lop': 10,
+            'id_lich_hoc': 1,
+            'tu_ngay': '2026-01-01',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
         });
 
-        await db.insert('phan_ca_hoc_sinh', {
-          'id': 500,
-          'id_hoc_sinh': 1,
-          'id_lop': 10,
-          'id_lich_hoc': 1,
-          'tu_ngay': '2026-01-01',
-          'created_at': nowStr,
-          'updated_at': nowStr,
-        });
-      });
+        final effectiveDateStr = DateFormat(
+          'yyyy-MM-dd',
+        ).format(DateTime.now());
 
-      final effectiveDateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWith((ref) async => db),
-            assignmentConflictPreviewProvider((
-              1,
-              2,
-              effectiveDateStr,
-              null,
-              500,
-            )).overrideWith((ref) async => ScheduleConflictResult.clear()),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: AssignmentTab(classId: 10)),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWith((ref) async => db),
+              // Explicitly override exact tuple family args: (studentId: 1, targetScheduleId: 2, effectiveDateStr, endDate: null, excludeAssignmentId: 500)
+              assignmentConflictPreviewProvider((
+                1,
+                2,
+                effectiveDateStr,
+                null,
+                500,
+              )).overrideWith((ref) async => ScheduleConflictResult.clear()),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(body: AssignmentTab(classId: 10)),
+            ),
           ),
-        ),
-      );
+        );
 
-      await waitForAsyncProviders(tester);
+        await waitForAsyncProviders(tester);
 
-      final menuBtn = find.byIcon(Icons.more_vert).first;
-      await tester.tap(menuBtn);
-      await tester.pumpAndSettle();
+        final menuBtn = find.byIcon(Icons.more_vert).first;
+        await tester.tap(menuBtn);
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Chuyển ca'));
-      await waitForAsyncProviders(tester);
+        await tester.tap(find.text('Chuyển ca'));
+        await waitForAsyncProviders(tester);
 
-      final dropdownFinder = find.byWidgetPredicate(
-        (w) => w is DropdownButtonFormField<int>,
-      );
-      await tester.tap(dropdownFinder);
-      await tester.pumpAndSettle();
+        final dropdownFinder = find.byWidgetPredicate(
+          (w) => w is DropdownButtonFormField<int>,
+        );
+        await tester.tap(dropdownFinder);
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.textContaining('Thứ Bảy: 10:00-11:30').last);
-      await waitForAsyncProviders(tester);
+        await tester.tap(find.textContaining('Thứ Bảy: 10:00-11:30').last);
+        await waitForAsyncProviders(tester);
 
-      final confirmBtn = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Xác nhận'),
-      );
-      expect(confirmBtn.onPressed, isNotNull);
+        // Verify exact family argument tuple override was invoked and button is enabled
+        final confirmBtn = tester.widget<ElevatedButton>(
+          find.widgetWithText(ElevatedButton, 'Xác nhận'),
+        );
+        expect(confirmBtn.onPressed, isNotNull);
 
-      await tester.runAsync(() async => db.close());
-    });
+        await tester.runAsync(() async => db.close());
+      },
+    );
   });
 }

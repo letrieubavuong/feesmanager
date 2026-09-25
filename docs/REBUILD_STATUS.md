@@ -162,7 +162,7 @@
   - Fixed PHAT_SINH student selection: derives candidates from active memberships on `targetSession.ngay` using `getActiveMembershipsOnDate`; batch fetches class names; supports cross-class memberships without assuming `originalClassId = targetSession.idLop`; excludes archived students and students with existing adjustments; validates target session type (`PHAT_SINH`) and status (`DU_KIEN`).
   - Enhanced Constraint Management UI: integrated constraint list and confirmation dialog into `StudentDetailPage`; added UI input validation to `showAddConstraintDialog` (validates HH:mm time order, YYYY-MM-DD date format, travel buffer >= 0, OTHER_CENTER required source name); invalidates `studentConstraintsProvider` on create/cancel.
   - Added new comprehensive widget tests in `test/presentation/phase11c_schedule_conflict_ui_test.dart`.
-- [x] Comprehensive Tests (375 tests passing):
+- [x] Comprehensive Tests (379 tests passing):
     - `test/repository/migration_v12_v13_test.dart`
     - `test/schedule_conflicts/schedule_conflict_service_test.dart`
     - `test/session_adjustments/session_adjustment_service_test.dart`
@@ -177,7 +177,7 @@
 - **Version**: 13
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
-- **Tests**: 375 tests passing
+- **Tests**: 379 tests passing
 - **Quality Gate**:
   - `dart analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (375 tests)
+  - `flutter test`: 100% Pass (379 tests)

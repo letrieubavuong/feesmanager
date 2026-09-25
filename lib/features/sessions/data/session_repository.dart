@@ -74,11 +74,15 @@ class SessionRepository {
     return List.generate(maps.length, (i) => ClassSession.fromMap(maps[i]));
   }
 
-  Future<List<ClassSession>> getUpcomingHocBuSessions(String fromDate) async {
+  Future<List<ClassSession>> getUpcomingHocBuSessions({
+    required String fromDate,
+    required String toDate,
+  }) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'buoi_hoc',
-      where: 'loai = \'HOC_BU\' AND trang_thai = \'DU_KIEN\' AND ngay >= ?',
-      whereArgs: [fromDate],
+      where:
+          'loai = \'HOC_BU\' AND trang_thai = \'DU_KIEN\' AND ngay >= ? AND ngay <= ?',
+      whereArgs: [fromDate, toDate],
       orderBy: 'ngay ASC, gio_bat_dau ASC',
     );
     return List.generate(maps.length, (i) => ClassSession.fromMap(maps[i]));
