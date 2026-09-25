@@ -41,6 +41,16 @@ class SessionService {
     required String toDate,
   }) => _repo.getUpcomingHocBuSessions(fromDate: fromDate, toDate: toDate);
 
+  Future<List<ClassSession>> getSessionsInDateRange({
+    required String fromDate,
+    required String toDate,
+    int? classId,
+  }) => _repo.getByDateRange(
+    fromDate: fromDate,
+    toDate: toDate,
+    classId: classId,
+  );
+
   Future<List<ClassSession>> getCompletedSessionsInRange({
     required String fromDate,
     required String toDate,

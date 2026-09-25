@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../app/navigation/app_global_drawer.dart';
 import 'class_controller.dart';
 import 'class_form_page.dart';
 import 'class_detail_page.dart';
@@ -30,7 +31,9 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
     final classListAsync = ref.watch(classListControllerProvider);
 
     return Scaffold(
+      drawer: const AppGlobalDrawer(),
       appBar: AppBar(
+        leading: const GlobalMenuButton(),
         title: const Text('Lớp học'),
         actions: [
           PopupMenuButton<ClassFilter>(

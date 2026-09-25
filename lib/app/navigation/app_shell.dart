@@ -1,162 +1,102 @@
 import 'package:flutter/material.dart';
-import '../../features/students/presentation/student_list_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/classes/presentation/class_list_page.dart';
-import '../../features/tuition/presentation/global_tuition_page.dart';
+import '../../features/dashboard/presentation/dashboard_page.dart';
 import '../../features/reports/presentation/reports_page.dart';
+import '../../features/settings/presentation/settings_page.dart';
+import '../../features/students/presentation/student_list_page.dart';
+import '../../features/tuition/presentation/global_tuition_page.dart';
+import 'app_destination.dart';
+import 'app_global_drawer.dart';
+import 'navigation_controller.dart';
 
-class AppShell extends StatefulWidget {
+class AppShell extends ConsumerWidget {
   const AppShell({super.key});
 
   @override
-  State<AppShell> createState() => _AppShellState();
-}
-
-class _AppShellState extends State<AppShell> {
-  int _selectedIndex = 0;
-
-  static const List<NavigationItem> _items = [
-    NavigationItem(
-      label: 'Trang chủ',
-      icon: Icons.home_outlined,
-      selectedIcon: Icons.home,
-      content: Center(child: Text('Trang chủ - Dashboard Placeholder')),
-    ),
-    NavigationItem(
-      label: 'Học sinh',
-      icon: Icons.people_outline,
-      selectedIcon: Icons.people,
-      content: StudentListPage(),
-    ),
-    NavigationItem(
-      label: 'Lớp học',
-      icon: Icons.class_outlined,
-      selectedIcon: Icons.class_,
-      content: ClassListPage(),
-    ),
-    NavigationItem(
-      label: 'Lịch học',
-      icon: Icons.calendar_today_outlined,
-      selectedIcon: Icons.calendar_today,
-      content: PlaceholderPage(title: 'Lịch học'),
-    ),
-    NavigationItem(
-      label: 'Điểm danh',
-      icon: Icons.how_to_reg_outlined,
-      selectedIcon: Icons.how_to_reg,
-      content: PlaceholderPage(title: 'Điểm danh'),
-    ),
-    NavigationItem(
-      label: 'Học phí',
-      icon: Icons.payments_outlined,
-      selectedIcon: Icons.payments,
-      content: GlobalTuitionPage(),
-    ),
-    NavigationItem(
-      label: 'Báo cáo',
-      icon: Icons.bar_chart_outlined,
-      selectedIcon: Icons.bar_chart,
-      content: ReportsPage(),
-    ),
-    NavigationItem(
-      label: 'Cài đặt',
-      icon: Icons.settings_outlined,
-      selectedIcon: Icons.settings,
-      content: PlaceholderPage(title: 'Cài đặt'),
-    ),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentDestId = ref.watch(navigationControllerProvider);
     final width = MediaQuery.of(context).size.width;
     final useSidebar = width >= 600;
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+
+    final bottomDestinations = AppDestination.bottomNavDestinations;
+
+    // Active content widget based on active destination ID
+    Widget content;
+    switch (currentDestId) {
+      case AppDestinationId.home:
+        content = const DashboardPage();
+        break;
+      case AppDestinationId.classes:
+        content = const ClassListPage();
+        break;
+      case AppDestinationId.students:
+        content = const StudentListPage();
+        break;
+      case AppDestinationId.tuition:
+        content = const GlobalTuitionPage();
+        break;
+      case AppDestinationId.reports:
+        content = const ReportsPage();
+        break;
+      case AppDestinationId.settings:
+        content = const SettingsPage();
+        break;
+    }
+
+    // Active bottom navigation index
+    final currentDest = AppDestination.fromId(currentDestId);
+    final selectedBottomIndex = currentDest.bottomNavIndex ?? 0;
 
     return Scaffold(
+      drawer: const AppGlobalDrawer(),
       body: Row(
         children: [
           if (useSidebar)
             NavigationRail(
               extended: width >= 800,
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: (index) =>
-                  setState(() => _selectedIndex = index),
+              selectedIndex: selectedBottomIndex,
+              onDestinationSelected: (index) {
+                ref
+                    .read(navigationControllerProvider.notifier)
+                    .goToBottomIndex(index);
+              },
               labelType: width >= 800
                   ? NavigationRailLabelType.none
                   : NavigationRailLabelType.all,
-              destinations: _items
-                  .map(
-                    (item) => NavigationRailDestination(
-                      icon: Icon(item.icon),
-                      selectedIcon: Icon(item.selectedIcon),
-                      label: Text(item.label),
-                    ),
-                  )
-                  .toList(),
+              destinations: bottomDestinations.map((dest) {
+                final label = isEn ? dest.enLabel : dest.viLabel;
+                return NavigationRailDestination(
+                  icon: Icon(dest.icon, key: dest.key),
+                  selectedIcon: Icon(dest.selectedIcon),
+                  label: Text(label),
+                );
+              }).toList(),
             ),
-          const VerticalDivider(thickness: 1, width: 1),
-          Expanded(child: _items[_selectedIndex].content),
+          if (useSidebar) const VerticalDivider(thickness: 1, width: 1),
+          Expanded(child: content),
         ],
       ),
       bottomNavigationBar: useSidebar
           ? null
           : NavigationBar(
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: (index) =>
-                  setState(() => _selectedIndex = index),
-              destinations: _items
-                  .map(
-                    (item) => NavigationDestination(
-                      icon: Icon(item.icon),
-                      selectedIcon: Icon(item.selectedIcon),
-                      label: item.label,
-                    ),
-                  )
-                  .toList(),
+              selectedIndex: selectedBottomIndex,
+              onDestinationSelected: (index) {
+                ref
+                    .read(navigationControllerProvider.notifier)
+                    .goToBottomIndex(index);
+              },
+              destinations: bottomDestinations.map((dest) {
+                final label = isEn ? dest.enLabel : dest.viLabel;
+                return NavigationDestination(
+                  key: dest.key,
+                  icon: Icon(dest.icon),
+                  selectedIcon: Icon(dest.selectedIcon),
+                  label: label,
+                );
+              }).toList(),
             ),
-    );
-  }
-}
-
-class NavigationItem {
-  final String label;
-  final IconData icon;
-  final IconData selectedIcon;
-  final Widget content;
-
-  const NavigationItem({
-    required this.label,
-    required this.icon,
-    required this.selectedIcon,
-    required this.content,
-  });
-}
-
-class PlaceholderPage extends StatelessWidget {
-  final String title;
-  const PlaceholderPage({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.construction,
-              size: 64,
-              color: Theme.of(context).disabledColor,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Chức năng $title',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            const Text('Sẽ được triển khai ở phase tiếp theo.'),
-          ],
-        ),
-      ),
     );
   }
 }

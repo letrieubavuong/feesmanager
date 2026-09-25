@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../app/navigation/app_global_drawer.dart';
 import '../../classes/presentation/class_controller.dart';
 import '../../students/presentation/student_controller.dart';
 import '../domain/report_scope.dart';
@@ -55,9 +56,11 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
     final studentsAsync = ref.watch(studentListControllerProvider);
 
     return Scaffold(
+      drawer: const AppGlobalDrawer(),
       appBar: AppBar(
         title: const Text('Báo cáo & Thống kê'),
         actions: [
+          const GlobalMenuButton(),
           summaryAsync.when(
             data: (summary) => IconButton(
               icon: _isExporting

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../app/common_widgets/dirty_form_scope.dart';
 import '../domain/student.dart';
 import 'student_controller.dart';
 
@@ -27,21 +28,40 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
 
   int? _khoi;
   String? _gioiTinh;
+  bool _isDirty = false;
+
+  void _onChanged() {
+    if (!_isDirty) {
+      setState(() {
+        _isDirty = true;
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     final s = widget.student;
-    _hoTenController = TextEditingController(text: s?.hoTen);
-    _ngaySinhController = TextEditingController(text: s?.ngaySinh);
-    _tenPhuHuynhController = TextEditingController(text: s?.tenPhuHuynh);
-    _sdtPhuHuynhController = TextEditingController(text: s?.sdtPhuHuynh);
-    _sdtHocSinhController = TextEditingController(text: s?.sdtHocSinh);
-    _emailController = TextEditingController(text: s?.email);
-    _truongController = TextEditingController(text: s?.truongDangHoc);
-    _diaChiController = TextEditingController(text: s?.diaChi);
-    _facebookController = TextEditingController(text: s?.facebook);
-    _ghiChuController = TextEditingController(text: s?.ghiChu);
+    _hoTenController = TextEditingController(text: s?.hoTen)
+      ..addListener(_onChanged);
+    _ngaySinhController = TextEditingController(text: s?.ngaySinh)
+      ..addListener(_onChanged);
+    _tenPhuHuynhController = TextEditingController(text: s?.tenPhuHuynh)
+      ..addListener(_onChanged);
+    _sdtPhuHuynhController = TextEditingController(text: s?.sdtPhuHuynh)
+      ..addListener(_onChanged);
+    _sdtHocSinhController = TextEditingController(text: s?.sdtHocSinh)
+      ..addListener(_onChanged);
+    _emailController = TextEditingController(text: s?.email)
+      ..addListener(_onChanged);
+    _truongController = TextEditingController(text: s?.truongDangHoc)
+      ..addListener(_onChanged);
+    _diaChiController = TextEditingController(text: s?.diaChi)
+      ..addListener(_onChanged);
+    _facebookController = TextEditingController(text: s?.facebook)
+      ..addListener(_onChanged);
+    _ghiChuController = TextEditingController(text: s?.ghiChu)
+      ..addListener(_onChanged);
     _khoi = s?.khoi;
     _gioiTinh = s?.gioiTinh;
   }
@@ -63,148 +83,161 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.student == null ? 'Thêm học sinh' : 'Sửa học sinh'),
-        actions: [IconButton(icon: const Icon(Icons.check), onPressed: _save)],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _hoTenController,
-                decoration: const InputDecoration(
-                  labelText: 'Họ và tên *',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) => (value == null || value.trim().isEmpty)
-                    ? 'Vui lòng nhập họ tên'
-                    : null,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<int>(
-                      initialValue: _khoi,
-                      decoration: const InputDecoration(
-                        labelText: 'Khối',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: List.generate(12, (index) => index + 1)
-                          .map(
-                            (k) => DropdownMenuItem(
-                              value: k,
-                              child: Text('Khối $k'),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) => setState(() => _khoi = v),
-                    ),
+    return DirtyFormScope(
+      isDirty: _isDirty,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            widget.student == null ? 'Thêm học sinh' : 'Sửa học sinh',
+          ),
+          actions: [
+            IconButton(icon: const Icon(Icons.check), onPressed: _save),
+          ],
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextFormField(
+                  controller: _hoTenController,
+                  decoration: const InputDecoration(
+                    labelText: 'Họ và tên *',
+                    border: OutlineInputBorder(),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _gioiTinh,
-                      decoration: const InputDecoration(
-                        labelText: 'Giới tính',
-                        border: OutlineInputBorder(),
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Vui lòng nhập họ tên'
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<int>(
+                        initialValue: _khoi,
+                        decoration: const InputDecoration(
+                          labelText: 'Khối',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: List.generate(12, (index) => index + 1)
+                            .map(
+                              (k) => DropdownMenuItem(
+                                value: k,
+                                child: Text('Khối $k'),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (v) {
+                          _onChanged();
+                          setState(() => _khoi = v);
+                        },
                       ),
-                      items: const [
-                        DropdownMenuItem(value: 'NAM', child: Text('Nam')),
-                        DropdownMenuItem(value: 'NU', child: Text('Nữ')),
-                        DropdownMenuItem(value: 'KHAC', child: Text('Khác')),
-                      ],
-                      onChanged: (v) => setState(() => _gioiTinh = v),
                     ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _gioiTinh,
+                        decoration: const InputDecoration(
+                          labelText: 'Giới tính',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'NAM', child: Text('Nam')),
+                          DropdownMenuItem(value: 'NU', child: Text('Nữ')),
+                          DropdownMenuItem(value: 'KHAC', child: Text('Khác')),
+                        ],
+                        onChanged: (v) {
+                          _onChanged();
+                          setState(() => _gioiTinh = v);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _truongController,
+                  decoration: const InputDecoration(
+                    labelText: 'Trường đang học',
+                    border: OutlineInputBorder(),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _truongController,
-                decoration: const InputDecoration(
-                  labelText: 'Trường đang học',
-                  border: OutlineInputBorder(),
                 ),
-              ),
-              const SizedBox(height: 16),
-              const Divider(),
-              const Text(
-                'Thông tin phụ huynh',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _tenPhuHuynhController,
-                decoration: const InputDecoration(
-                  labelText: 'Tên phụ huynh',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+                const Divider(),
+                const Text(
+                  'Thông tin phụ huynh',
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _sdtPhuHuynhController,
-                decoration: const InputDecoration(
-                  labelText: 'SĐT phụ huynh',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _tenPhuHuynhController,
+                  decoration: const InputDecoration(
+                    labelText: 'Tên phụ huynh',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 16),
-              const Divider(),
-              const Text(
-                'Liên hệ khác',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _sdtHocSinhController,
-                decoration: const InputDecoration(
-                  labelText: 'SĐT học sinh',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _sdtPhuHuynhController,
+                  decoration: const InputDecoration(
+                    labelText: 'SĐT phụ huynh',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.phone,
                 ),
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+                const Divider(),
+                const Text(
+                  'Liên hệ khác',
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _diaChiController,
-                decoration: const InputDecoration(
-                  labelText: 'Địa chỉ',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _sdtHocSinhController,
+                  decoration: const InputDecoration(
+                    labelText: 'SĐT học sinh',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.phone,
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _facebookController,
-                decoration: const InputDecoration(
-                  labelText: 'Facebook',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _ghiChuController,
-                decoration: const InputDecoration(
-                  labelText: 'Ghi chú',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _diaChiController,
+                  decoration: const InputDecoration(
+                    labelText: 'Địa chỉ',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-                maxLines: 3,
-              ),
-            ],
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _facebookController,
+                  decoration: const InputDecoration(
+                    labelText: 'Facebook',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _ghiChuController,
+                  decoration: const InputDecoration(
+                    labelText: 'Ghi chú',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -240,6 +273,7 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
         .read(studentFormControllerProvider.notifier)
         .save(student);
     if (success && mounted) {
+      _isDirty = false;
       ref.read(studentListControllerProvider.notifier).refresh();
       Navigator.of(context).pop();
     }

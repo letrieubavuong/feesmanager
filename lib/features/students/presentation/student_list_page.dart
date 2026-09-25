@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../app/navigation/app_global_drawer.dart';
 import 'student_controller.dart';
 import 'student_form_page.dart';
 import 'student_detail_page.dart';
@@ -25,7 +26,9 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
     final studentListAsync = ref.watch(studentListControllerProvider);
 
     return Scaffold(
+      drawer: const AppGlobalDrawer(),
       appBar: AppBar(
+        leading: const GlobalMenuButton(),
         title: const Text('Học sinh'),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),

@@ -197,14 +197,33 @@
   - Integrated PDF export button on `ReportsPage` with fail-closed state protection (disabled during loading, error, or scope change resolving).
   - Comprehensive unit & widget tests (`test/reports/report_pdf_service_test.dart`, `test/presentation/phase12a_reports_ui_test.dart`, and `test/presentation/phase12b_pdf_export_ui_test.dart`) proving PDF byte generation (`%PDF-`), offline Vietnamese Unicode, multi-page layout without page limit exceptions, PDF ↔ UI figure parity, filter reset interaction truthfulness, double-tap single invocation, stale scope protection, and export UI button lifecycle states.
 
+## Phase 13A: Android App Foundation - COMPLETE
+- [x] Android-first UI with exactly 4 bottom navigation items (`Home`, `Classes`, `Students`, `Tuition`).
+- [x] Attendance function ownership strictly under Class domain (no standalone Attendance bottom navigation item).
+- [x] Global Navigation Drawer (`AppGlobalDrawer`) accessible from top-level and nested screens.
+- [x] Centralized Navigation Model (`AppDestination`) with stable UI test keys (`UiKeys`).
+- [x] Real Dashboard Page (`DashboardPage`) with header greeting, global search for students/classes, today's schedule overview, quick action buttons, and active center KPIs.
+- [x] Real Settings Page (`SettingsPage`) with Theme Mode selector (System/Light/Dark), 8 curated color palettes with swatch previews, Language selector (System/Vi/En), and App/Database info.
+- [x] Material 3 Design System & Theme Engine (`AppSpacing`, `AppRadius`, `AppTypography`, `AppSemanticColors`, `AppPaletteInfo`, `AppTheme`).
+- [x] Semantic color extensions for Attendance states (`CO_MAT`, `TRE`, `NGHI_CO_PHEP`, `NGHI_KHONG_PHEP`, `CHUA_DIEM_DANH`), Tuition states (`DA_THANH_TOAN`, `CON_NO`, `NHAP`, `DA_CHOT`), and Schedule conflict states (`normal`, `softWarning`, `hardConflict`).
+- [x] Flutter l10n localization architecture (`app_vi.arb`, `app_en.arb`, `AppLocalizations`) with `LocaleController` state management and `SharedPreferences` persistence.
+- [x] Presentation formatting foundation (`AppFormatter`) for locale-aware currency, dates, months, numbers, and weekdays.
+- [x] Domain values remain 100% untranslated in database/models (`DA_HOC`, `DU_KIEN`, `HUY`, `NGHI_LE`, `DA_THANH_TOAN`, `CON_NO`, etc.).
+- [x] Reusable standard UI components (`AppLoadingState`, `AppEmptyState`, `AppErrorState`, `AppFeedback` SnackBars/Dialogs).
+- [x] Dirty Form Protection foundation (`DirtyFormScope`) with unsaved changes confirmation dialog.
+- [x] Accessibility & responsiveness verified on narrow 320px viewports and 1.5x text scale.
+- [x] Real Android Integration Smoke Test (`integration_test/phase13a_android_smoke_test.dart`) executed and passed on real Android emulator (`emulator-5554`, Android 13, API 33).
+- [x] Debug APK (`app-debug.apk`) built successfully.
+
 ---
 
 ## Technical Details
 - **Database**: `tuition_next.db`
 - **Version**: 13
 - **State Management**: Riverpod (Generator used)
-- **Navigation**: Manual shell implementation (Responsive)
-- **Tests**: 415 tests passing
+- **Navigation**: Centralized `AppDestination` + Riverpod `NavigationController` + `AppGlobalDrawer`
+- **Tests**: 435 tests passing
 - **Quality Gate**:
   - `dart analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (415 tests)
+  - `flutter test`: 100% Pass (435 tests)
+  - `integration_test`: 100% Pass on Android Emulator (API 33)

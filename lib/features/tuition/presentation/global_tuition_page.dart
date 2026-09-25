@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../app/navigation/app_global_drawer.dart';
 import '../../classes/domain/class.dart';
 import '../../classes/presentation/class_controller.dart';
 import 'class_tuition_tab.dart';
@@ -19,7 +20,11 @@ class _GlobalTuitionPageState extends ConsumerState<GlobalTuitionPage> {
     final classesAsync = ref.watch(classListControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Quản lý Học phí')),
+      drawer: const AppGlobalDrawer(),
+      appBar: AppBar(
+        leading: const GlobalMenuButton(),
+        title: const Text('Quản lý Học phí'),
+      ),
       body: classesAsync.when(
         data: (classes) {
           if (classes.isEmpty) {
