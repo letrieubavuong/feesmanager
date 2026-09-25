@@ -173,12 +173,22 @@
 
 ---
 
+## Phase 12: Reports - IN PROGRESS
+- [x] Phase 12A Canonical Report Foundation + Report UI: COMPLETE.
+  - Implemented immutable presentation-independent read models (`ReportScope`, `ReportSummary`, `AttendanceReportSummary`, `FinancialReportSummary`, `ClassReportSummary`, `StudentReportSummary`).
+  - Implemented `ReportService` canonical composition engine consuming `RosterService`, `AttendanceRepository`, `TuitionRepository`, `PaymentRepository`, `StudentService`, `ClassService` without recreating business formulas.
+  - Added repository projection primitives (`SessionRepository.getByDateRange`, `PaymentRepository.getPaymentsInDateRange`, `TuitionRepository.getInvoicesInMonthRange`).
+  - Implemented `ReportScopeNotifier`, `reportSummaryProvider`, and `ReportsPage` UI with Month selector, Custom date range picker, Class/Student filters, KPI cards, and detail breakdown tables. Wired `ReportsPage` into `AppShell`.
+  - Added unit & integration tests (`test/reports/report_service_test.dart` and `test/presentation/phase12a_reports_ui_test.dart`) asserting cross-module consistency, financial invariants, date boundaries, and payment timing (Month A invoice paid in Month B).
+
+---
+
 ## Technical Details
 - **Database**: `tuition_next.db`
 - **Version**: 13
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
-- **Tests**: 379 tests passing
+- **Tests**: 389 tests passing
 - **Quality Gate**:
   - `dart analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (379 tests)
+  - `flutter test`: 100% Pass (389 tests)

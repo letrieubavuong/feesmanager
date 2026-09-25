@@ -72,6 +72,37 @@ class TuitionRepository {
     return maps.map((m) => TuitionInvoice.fromMap(m)).toList();
   }
 
+  Future<List<TuitionInvoice>> getInvoicesInMonthRange({
+    required String fromMonth,
+    required String toMonth,
+    int? classId,
+    int? studentId,
+  }) async {
+    final whereClauses = <String>[
+      'thang >= ?',
+      'thang <= ?',
+      "trang_thai != 'NHAP'",
+    ];
+    final whereArgs = <dynamic>[fromMonth, toMonth];
+
+    if (classId != null) {
+      whereClauses.add('id_lop = ?');
+      whereArgs.add(classId);
+    }
+    if (studentId != null) {
+      whereClauses.add('id_hoc_sinh = ?');
+      whereArgs.add(studentId);
+    }
+
+    final maps = await _db.query(
+      'hoc_phi_thang',
+      where: whereClauses.join(' AND '),
+      whereArgs: whereArgs,
+      orderBy: 'thang DESC, id DESC',
+    );
+    return maps.map((m) => TuitionInvoice.fromMap(m)).toList();
+  }
+
   Future<List<TuitionInvoice>> getInvoicesForStudentClass(
     int studentId,
     int classId,

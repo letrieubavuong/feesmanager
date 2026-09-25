@@ -64,6 +64,28 @@ class SessionRepository {
     return List.generate(maps.length, (i) => ClassSession.fromMap(maps[i]));
   }
 
+  Future<List<ClassSession>> getByDateRange({
+    required String fromDate,
+    required String toDate,
+    int? classId,
+  }) async {
+    final whereClauses = <String>['ngay >= ?', 'ngay <= ?'];
+    final whereArgs = <dynamic>[fromDate, toDate];
+
+    if (classId != null) {
+      whereClauses.add('id_lop = ?');
+      whereArgs.add(classId);
+    }
+
+    final maps = await _db.query(
+      'buoi_hoc',
+      where: whereClauses.join(' AND '),
+      whereArgs: whereArgs,
+      orderBy: 'ngay ASC, gio_bat_dau ASC',
+    );
+    return List.generate(maps.length, (i) => ClassSession.fromMap(maps[i]));
+  }
+
   Future<List<ClassSession>> getByDate(String date) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'buoi_hoc',

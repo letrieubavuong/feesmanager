@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../features/students/presentation/student_list_page.dart';
 import '../../features/classes/presentation/class_list_page.dart';
 import '../../features/tuition/presentation/global_tuition_page.dart';
+import '../../features/reports/presentation/reports_page.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -54,7 +55,7 @@ class _AppShellState extends State<AppShell> {
       label: 'Báo cáo',
       icon: Icons.bar_chart_outlined,
       selectedIcon: Icons.bar_chart,
-      content: PlaceholderPage(title: 'Báo cáo'),
+      content: ReportsPage(),
     ),
     NavigationItem(
       label: 'Cài đặt',

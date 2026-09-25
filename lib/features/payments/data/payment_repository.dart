@@ -83,6 +83,36 @@ class PaymentRepository {
     return maps.map((m) => Payment.fromMap(m)).toList();
   }
 
+  Future<List<Payment>> getPaymentsInDateRange({
+    required String fromDate,
+    required String toDate,
+    int? classId,
+    int? studentId,
+  }) async {
+    final whereClauses = <String>[
+      'ngay_thanh_toan >= ?',
+      'ngay_thanh_toan <= ?',
+    ];
+    final whereArgs = <dynamic>[fromDate, toDate];
+
+    if (classId != null) {
+      whereClauses.add('id_lop = ?');
+      whereArgs.add(classId);
+    }
+    if (studentId != null) {
+      whereClauses.add('id_hoc_sinh = ?');
+      whereArgs.add(studentId);
+    }
+
+    final maps = await _db.query(
+      'thanh_toan',
+      where: whereClauses.join(' AND '),
+      whereArgs: whereArgs,
+      orderBy: 'ngay_thanh_toan DESC, id DESC',
+    );
+    return maps.map((m) => Payment.fromMap(m)).toList();
+  }
+
   Future<int> getTotalPaidForInvoice(int invoiceId) async {
     final result = await _db.rawQuery(
       'SELECT COALESCE(SUM(so_tien), 0) AS total FROM thanh_toan WHERE id_hoc_phi_thang = ?',
