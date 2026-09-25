@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../attendance/presentation/attendance_controller.dart';
+import '../../classes/domain/class_service.dart';
+import '../../memberships/domain/membership_service.dart';
 import '../../schedule_conflicts/presentation/schedule_conflict_banner.dart';
 import '../../schedule_conflicts/presentation/schedule_conflict_providers.dart';
 import '../../sessions/domain/class_session.dart';
@@ -63,10 +65,6 @@ class SessionAdjustmentDialogs {
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
-          final targetSession = eligibleTargets.firstWhere(
-            (s) => s.id == selectedTargetId,
-          );
-
           return AlertDialog(
             title: const Text('Xếp đổi ca học'),
             content: SingleChildScrollView(
@@ -101,11 +99,9 @@ class SessionAdjustmentDialogs {
                   Consumer(
                     builder: (context, ref, _) {
                       final previewAsync = ref.watch(
-                        oneOffConflictPreviewProvider((
+                        oneOffSessionConflictPreviewProvider((
                           studentId,
-                          targetSession.ngay,
-                          targetSession.gioBatDau,
-                          targetSession.gioKetThuc,
+                          selectedTargetId,
                           originalSessionId,
                         )),
                       );
@@ -126,20 +122,18 @@ class SessionAdjustmentDialogs {
               ),
               Consumer(
                 builder: (context, ref, _) {
-                  bool isBlocked = false;
                   final previewAsync = ref.watch(
-                    oneOffConflictPreviewProvider((
+                    oneOffSessionConflictPreviewProvider((
                       studentId,
-                      targetSession.ngay,
-                      targetSession.gioBatDau,
-                      targetSession.gioKetThuc,
+                      selectedTargetId,
                       originalSessionId,
                     )),
                   );
-                  if (previewAsync.value != null &&
-                      !previewAsync.value!.canAssign) {
-                    isBlocked = true;
-                  }
+                  final isBlocked = previewAsync.when(
+                    data: (res) => !res.canAssign,
+                    loading: () => true,
+                    error: (_, __) => true,
+                  );
 
                   return ElevatedButton(
                     onPressed: isBlocked
@@ -201,21 +195,19 @@ class SessionAdjustmentDialogs {
     final origSession = await sessionService.getSessionById(originalSessionId);
     if (origSession == null) return;
 
-    final futureSessions = await sessionService.getSessionsForClassAndRange(
-      0,
-      DateTime.parse(origSession.ngay),
-      DateTime.now().add(const Duration(days: 90)),
+    final futureHocBuSessions = await sessionService.getUpcomingHocBuSessions(
+      origSession.ngay,
     );
 
-    final eligibleTargets = <(ClassSession, String)>[];
-    for (final s in futureSessions) {
-      if (s.loai == SessionType.HOC_BU &&
-          s.trangThai == SessionStatus.DU_KIEN) {
-        eligibleTargets.add((s, 'Lớp #${s.idLop}'));
-      }
-    }
+    final eligibleSessions = futureHocBuSessions
+        .where(
+          (s) =>
+              s.loai == SessionType.HOC_BU &&
+              s.trangThai == SessionStatus.DU_KIEN,
+        )
+        .toList();
 
-    if (eligibleTargets.isEmpty) {
+    if (eligibleSessions.isEmpty) {
       if (!context.mounted) return;
       showDialog(
         context: context,
@@ -233,6 +225,16 @@ class SessionAdjustmentDialogs {
       return;
     }
 
+    final classService = await ref.read(classServiceProvider.future);
+    final classIds = eligibleSessions.map((s) => s.idLop).toSet().toList();
+    final classes = await classService.getClassesByIds(classIds);
+    final classMap = {for (final c in classes) c.id!: c.tenLop};
+
+    final eligibleTargets = eligibleSessions.map((s) {
+      final className = classMap[s.idLop] ?? 'Lớp #${s.idLop}';
+      return (s, className);
+    }).toList();
+
     int selectedTargetId = eligibleTargets.first.$1.id!;
     final reasonController = TextEditingController();
 
@@ -241,10 +243,6 @@ class SessionAdjustmentDialogs {
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
-          final targetSession = eligibleTargets
-              .firstWhere((pair) => pair.$1.id == selectedTargetId)
-              .$1;
-
           return AlertDialog(
             title: const Text('Xếp học bù'),
             content: SingleChildScrollView(
@@ -283,11 +281,9 @@ class SessionAdjustmentDialogs {
                   Consumer(
                     builder: (context, ref, _) {
                       final previewAsync = ref.watch(
-                        oneOffConflictPreviewProvider((
+                        oneOffSessionConflictPreviewProvider((
                           studentId,
-                          targetSession.ngay,
-                          targetSession.gioBatDau,
-                          targetSession.gioKetThuc,
+                          selectedTargetId,
                           null,
                         )),
                       );
@@ -308,20 +304,18 @@ class SessionAdjustmentDialogs {
               ),
               Consumer(
                 builder: (context, ref, _) {
-                  bool isBlocked = false;
                   final previewAsync = ref.watch(
-                    oneOffConflictPreviewProvider((
+                    oneOffSessionConflictPreviewProvider((
                       studentId,
-                      targetSession.ngay,
-                      targetSession.gioBatDau,
-                      targetSession.gioKetThuc,
+                      selectedTargetId,
                       null,
                     )),
                   );
-                  if (previewAsync.value != null &&
-                      !previewAsync.value!.canAssign) {
-                    isBlocked = true;
-                  }
+                  final isBlocked = previewAsync.when(
+                    data: (res) => !res.canAssign,
+                    loading: () => true,
+                    error: (_, __) => true,
+                  );
 
                   return ElevatedButton(
                     onPressed: isBlocked
@@ -377,7 +371,27 @@ class SessionAdjustmentDialogs {
   }) async {
     final sessionService = await ref.read(sessionServiceProvider.future);
     final targetSession = await sessionService.getSessionById(targetSessionId);
-    if (targetSession == null) return;
+    if (targetSession == null ||
+        targetSession.loai != SessionType.PHAT_SINH ||
+        targetSession.trangThai != SessionStatus.DU_KIEN) {
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Buổi học không hợp lệ'),
+          content: const Text(
+            'Buổi học phát sinh không tồn tại hoặc không ở trạng thái DỰ KIẾN.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Đóng'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
 
     final studentService = await ref.read(studentServiceProvider.future);
     final allStudents = await studentService.getStudents();
@@ -392,17 +406,36 @@ class SessionAdjustmentDialogs {
         .map((a) => a.idHocSinh)
         .toSet();
 
+    final membershipService = await ref.read(membershipServiceProvider.future);
+    final targetDate = DateTime.parse(targetSession.ngay);
+    final activeMemberships = await membershipService
+        .getActiveMembershipsOnDate(targetDate);
+
+    final membershipsByStudent = <int, List<int>>{};
+    for (final m in activeMemberships) {
+      membershipsByStudent.putIfAbsent(m.idHocSinh, () => []).add(m.idLop);
+    }
+
+    final classService = await ref.read(classServiceProvider.future);
+    final classIds = activeMemberships.map((m) => m.idLop).toSet().toList();
+    final classes = await classService.getClassesByIds(classIds);
+    final classMap = {for (final c in classes) c.id!: c.tenLop};
+
     final studentClassOptions = <_StudentClassOption>[];
     for (final s in allStudents) {
       if (s.daLuuTru || existingStudentIds.contains(s.id)) continue;
-      studentClassOptions.add(
-        _StudentClassOption(
-          studentId: s.id!,
-          studentName: s.hoTen,
-          classId: targetSession.idLop,
-          className: 'Lớp #${targetSession.idLop}',
-        ),
-      );
+      final studentClassIds = membershipsByStudent[s.id] ?? [];
+      for (final cid in studentClassIds) {
+        final className = classMap[cid] ?? 'Lớp #$cid';
+        studentClassOptions.add(
+          _StudentClassOption(
+            studentId: s.id!,
+            studentName: s.hoTen,
+            classId: cid,
+            className: className,
+          ),
+        );
+      }
     }
 
     if (studentClassOptions.isEmpty) {
@@ -412,7 +445,7 @@ class SessionAdjustmentDialogs {
         builder: (ctx) => AlertDialog(
           title: const Text('Thêm học sinh phát sinh'),
           content: const Text(
-            'Không có học sinh phù hợp để thêm vào buổi này.',
+            'Không có học sinh có lớp hợp lệ để thêm vào buổi này.',
           ),
           actions: [
             TextButton(
@@ -470,11 +503,9 @@ class SessionAdjustmentDialogs {
                   Consumer(
                     builder: (context, ref, _) {
                       final previewAsync = ref.watch(
-                        oneOffConflictPreviewProvider((
+                        oneOffSessionConflictPreviewProvider((
                           selectedOpt.studentId,
-                          targetSession.ngay,
-                          targetSession.gioBatDau,
-                          targetSession.gioKetThuc,
+                          targetSessionId,
                           null,
                         )),
                       );
@@ -495,20 +526,18 @@ class SessionAdjustmentDialogs {
               ),
               Consumer(
                 builder: (context, ref, _) {
-                  bool isBlocked = false;
                   final previewAsync = ref.watch(
-                    oneOffConflictPreviewProvider((
+                    oneOffSessionConflictPreviewProvider((
                       selectedOpt.studentId,
-                      targetSession.ngay,
-                      targetSession.gioBatDau,
-                      targetSession.gioKetThuc,
+                      targetSessionId,
                       null,
                     )),
                   );
-                  if (previewAsync.value != null &&
-                      !previewAsync.value!.canAssign) {
-                    isBlocked = true;
-                  }
+                  final isBlocked = previewAsync.when(
+                    data: (res) => !res.canAssign,
+                    loading: () => true,
+                    error: (_, __) => true,
+                  );
 
                   return ElevatedButton(
                     onPressed: isBlocked

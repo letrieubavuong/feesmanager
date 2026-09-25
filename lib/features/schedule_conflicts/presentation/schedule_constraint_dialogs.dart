@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:tuition2027/core/utils/date_and_time_validators.dart';
 import '../domain/schedule_constraint.dart';
 import 'schedule_conflict_providers.dart';
 
@@ -210,8 +211,54 @@ void showAddConstraintDialog(
           ElevatedButton(
             onPressed: () async {
               try {
+                final startTime = startController.text.trim();
+                final endTime = endController.text.trim();
+
+                DateAndTimeValidators.validateTimeOrder(
+                  startTime,
+                  endTime,
+                  'startTime',
+                  'endTime',
+                );
+
                 final bufferMins =
-                    int.tryParse(bufferController.text.trim()) ?? 0;
+                    int.tryParse(bufferController.text.trim()) ?? -1;
+                if (bufferMins < 0) {
+                  throw const FormatException(
+                    'Thời gian di chuyển phải là số nguyên lớn hơn hoặc bằng 0',
+                  );
+                }
+
+                if (selectedType == ConstraintType.OTHER_CENTER &&
+                    sourceController.text.trim().isEmpty) {
+                  throw const FormatException(
+                    'Trường / trung tâm khác không được để trống',
+                  );
+                }
+
+                if (selectedOccurrence == OccurrenceType.DINH_KY) {
+                  final effFrom = effectiveFromController.text.trim();
+                  DateAndTimeValidators.validateDateStr(
+                    effFrom,
+                    'effectiveFrom',
+                  );
+                  final effTo = effectiveToController.text.trim();
+                  if (effTo.isNotEmpty) {
+                    DateAndTimeValidators.validateDateStr(effTo, 'effectiveTo');
+                    if (effTo.compareTo(effFrom) < 0) {
+                      throw const FormatException(
+                        'Hiệu lực đến ngày không được trước hiệu lực từ ngày',
+                      );
+                    }
+                  }
+                } else {
+                  final specDate = dateController.text.trim();
+                  DateAndTimeValidators.validateDateStr(
+                    specDate,
+                    'specificDate',
+                  );
+                }
+
                 final constraint = ScheduleConstraint(
                   studentId: studentId,
                   type: selectedType,
@@ -222,8 +269,8 @@ void showAddConstraintDialog(
                   specificDate: selectedOccurrence == OccurrenceType.MOT_LAN
                       ? dateController.text.trim()
                       : null,
-                  startTime: startController.text.trim(),
-                  endTime: endController.text.trim(),
+                  startTime: startTime,
+                  endTime: endTime,
                   effectiveFrom: selectedOccurrence == OccurrenceType.DINH_KY
                       ? effectiveFromController.text.trim()
                       : null,
@@ -255,9 +302,13 @@ void showAddConstraintDialog(
                 }
               } catch (e) {
                 if (dialogCtx.mounted) {
-                  ScaffoldMessenger.of(
-                    dialogCtx,
-                  ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+                  ScaffoldMessenger.of(dialogCtx).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Lỗi: ${e.toString().replaceAll("FormatException: ", "").replaceAll("Exception: ", "")}',
+                      ),
+                    ),
+                  );
                 }
               }
             },

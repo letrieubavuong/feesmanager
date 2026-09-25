@@ -369,10 +369,11 @@ class AssignmentTab extends ConsumerWidget {
                       a.id,
                     )),
                   );
-                  if (previewAsync.value != null &&
-                      !previewAsync.value!.canAssign) {
-                    isBlocked = true;
-                  }
+                  isBlocked = previewAsync.when(
+                    data: (res) => !res.canAssign,
+                    loading: () => true,
+                    error: (_, __) => true,
+                  );
                 }
 
                 return ElevatedButton(
@@ -591,10 +592,11 @@ class _AssignStudentDialogState extends ConsumerState<AssignStudentDialog> {
                   null,
                 )),
               );
-              if (previewAsync.value != null &&
-                  !previewAsync.value!.canAssign) {
-                isBlocked = true;
-              }
+              isBlocked = previewAsync.when(
+                data: (res) => !res.canAssign,
+                loading: () => true,
+                error: (_, __) => true,
+              );
             }
 
             return ElevatedButton(

@@ -71,6 +71,17 @@ class MembershipRepository {
     return List.generate(maps.length, (i) => ClassMembership.fromMap(maps[i]));
   }
 
+  Future<List<ClassMembership>> getActiveOnDate(String dateStr) async {
+    final List<Map<String, dynamic>> maps = await _db.query(
+      'tham_gia_lop',
+      where: 'tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+      whereArgs: [dateStr, dateStr],
+      orderBy: 'tu_ngay DESC',
+    );
+
+    return List.generate(maps.length, (i) => ClassMembership.fromMap(maps[i]));
+  }
+
   Future<ClassMembership?> getOpenMembership(int studentId, int classId) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'tham_gia_lop',

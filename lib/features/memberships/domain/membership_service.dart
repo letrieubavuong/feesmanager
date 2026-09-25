@@ -174,6 +174,13 @@ class MembershipService {
     );
   }
 
+  Future<List<ClassMembership>> getActiveMembershipsOnDate(
+    DateTime date,
+  ) async {
+    final dateFormat = DateFormat('yyyy-MM-dd');
+    return _repository.getActiveOnDate(dateFormat.format(date));
+  }
+
   Future<bool> hasActiveMemberships(int studentId) async {
     final now = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final active = await _repository.getActiveByStudent(studentId, now);

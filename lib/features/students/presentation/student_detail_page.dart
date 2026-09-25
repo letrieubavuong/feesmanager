@@ -258,9 +258,16 @@ class StudentDetailPage extends ConsumerWidget {
   ) {
     final isCancelled = c.status == ConstraintStatus.DA_HUY;
 
-    final subtitleText = c.occurrenceType == OccurrenceType.DINH_KY
+    var subtitleText = c.occurrenceType == OccurrenceType.DINH_KY
         ? 'Thứ ${c.weekday} (${c.startTime} - ${c.endTime}) | Từ ${c.effectiveFrom}${c.effectiveTo != null ? " đến ${c.effectiveTo}" : ""}'
         : 'Ngày ${c.specificDate} (${c.startTime} - ${c.endTime})';
+
+    if (c.travelBufferMinutes > 0) {
+      subtitleText += ' | Đệm di chuyển: ${c.travelBufferMinutes} phút';
+    }
+    if (c.note != null && c.note!.isNotEmpty) {
+      subtitleText += ' | Ghi chú: ${c.note}';
+    }
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),

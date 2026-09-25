@@ -141,6 +141,7 @@
 ## Phase 11: Schedule Conflicts - IN PROGRESS
 - [x] Phase 11A Core Schedule Conflict Engine: COMPLETE.
 - [x] Phase 11B One-Off Schedule Conflict Integration: COMPLETE.
+- [x] Phase 11C Schedule Conflict UI + Constraint UI Integration: COMPLETE.
 - [x] Forward Database Migration (v12 -> v13) creating `rang_buoc_lich_hoc_sinh` table with Foreign Keys (`ON DELETE RESTRICT`), strict `CHECK` constraints on types (`loai`), occurrence shape (`kieu`), time format (`00:00`..`23:59`), time order (`gio_ket_thuc > gio_bat_dau`), date shape (`YYYY-MM-DD`), non-negative travel buffer, status (`HOAT_DONG`, `DA_HUY`), and performance indexes.
 - [x] Real v12 -> v13 database migration test on real SQLite file (`test/repository/migration_v12_v13_test.dart`) asserting data preservation, FK RESTRICT, strict `CHECK` constraints, and clean `PRAGMA foreign_key_check`.
 - [x] Constraint domain & data models (`ScheduleConstraint`, `ConstraintType`, `OccurrenceType`, `ConstraintStatus`, `ScheduleConstraintRepository`).
@@ -154,12 +155,20 @@
   - `ScheduleDomainService`: `ScheduleConflictService` is a REQUIRED non-nullable dependency across all consumers and tests. Fallback overlap engine removed completely.
   - `changeRecurringShift`: Atomic SQLite transaction (`closeOld` + `insertNew` in one transaction block with real rollback proof).
   - `SessionAdjustmentService`: `ScheduleConflictService` is a REQUIRED non-nullable dependency. Always re-checks `evaluateOneOffSessionCandidate` in `createDoiCa`, `createHocBu`, and `createPhatSinh` prior to persistence.
-- [x] Comprehensive Tests (334 tests passing):
+- [x] Presentation & UI Integration (Phase 11C):
+  - Migrated `SessionAdjustmentDialogs` (`showDoiCaDialog`, `showHocBuDialog`, `showPhatSinhDialog`) from legacy `oneOffConflictPreviewProvider` to canonical `oneOffSessionConflictPreviewProvider`.
+  - Enforced fail-closed preview states across all adjustment & assignment dialogs (Submit button disabled on Loading and Error states; enabled only when `canAssign == true` or soft warnings only).
+  - Fixed HOC_BU target selection: removed magic `classId = 0` workaround; uses `getUpcomingHocBuSessions(fromDate)` and batch fetches class names (`getClassesByIds`) displaying `${className} - ${s.ngay} (${s.gioBatDau} - ${s.gioKetThuc})`.
+  - Fixed PHAT_SINH student selection: derives candidates from active memberships on `targetSession.ngay` using `getActiveMembershipsOnDate`; batch fetches class names; supports cross-class memberships without assuming `originalClassId = targetSession.idLop`; excludes archived students and students with existing adjustments; validates target session type (`PHAT_SINH`) and status (`DU_KIEN`).
+  - Enhanced Constraint Management UI: integrated constraint list and confirmation dialog into `StudentDetailPage`; added UI input validation to `showAddConstraintDialog` (validates HH:mm time order, YYYY-MM-DD date format, travel buffer >= 0, OTHER_CENTER required source name); invalidates `studentConstraintsProvider` on create/cancel.
+  - Added new comprehensive widget tests in `test/presentation/phase11c_schedule_conflict_ui_test.dart`.
+- [x] Comprehensive Tests (341 tests passing):
     - `test/repository/migration_v12_v13_test.dart`
     - `test/schedule_conflicts/schedule_conflict_service_test.dart`
     - `test/session_adjustments/session_adjustment_service_test.dart`
     - `test/schedule/assignment_service_test.dart`
     - `test/schedule/schedule_service_test.dart`
+    - `test/presentation/phase11c_schedule_conflict_ui_test.dart`
 
 ---
 
@@ -168,7 +177,7 @@
 - **Version**: 13
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
-- **Tests**: 334 tests passing
+- **Tests**: 341 tests passing
 - **Quality Gate**:
   - `dart analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (334 tests)
+  - `flutter test`: 100% Pass (341 tests)
