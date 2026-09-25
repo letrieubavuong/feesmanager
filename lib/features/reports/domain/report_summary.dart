@@ -51,14 +51,14 @@ class FinancialReportSummary {
 class ClassReportSummary {
   final int classId;
   final String className;
-  final int activeStudentCount;
+  final int studentCountInScope;
   final AttendanceReportSummary attendance;
   final FinancialReportSummary financial;
 
   const ClassReportSummary({
     required this.classId,
     required this.className,
-    required this.activeStudentCount,
+    required this.studentCountInScope,
     required this.attendance,
     required this.financial,
   });

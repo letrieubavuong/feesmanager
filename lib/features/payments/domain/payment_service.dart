@@ -251,21 +251,42 @@ class PaymentService {
       studentId: studentId,
     );
 
+    if (payments.isEmpty) return [];
+
+    // 1. Fail closed if any payment has null invoiceId
+    final referencedInvoiceIds = <int>{};
     for (final p in payments) {
-      if (p.invoiceId != null) {
-        final inv = await _tuitionRepo.getInvoiceById(p.invoiceId!);
-        if (inv == null) {
-          throw Exception(
-            'Lỗi bất biến thanh toán: Không tìm thấy hóa đơn #${p.invoiceId} thuộc thanh toán #${p.id}',
-          );
-        }
-        if (p.studentId != inv.idHocSinh ||
-            p.classId != inv.idLop ||
-            p.month != inv.thang) {
-          throw Exception(
-            'Lỗi bất biến thanh toán: Thông tin học sinh, lớp hoặc tháng của thanh toán #${p.id} không khớp với hóa đơn #${inv.id}',
-          );
-        }
+      if (p.invoiceId == null) {
+        throw Exception(
+          'Lỗi bất biến thanh toán: Thanh toán #${p.id} không thuộc hóa đơn chốt nào',
+        );
+      }
+      referencedInvoiceIds.add(p.invoiceId!);
+    }
+
+    // 2. Batch load referenced invoices in 1 query pass (no N+1!)
+    final invoiceList = await _tuitionRepo.getInvoicesByIds(
+      referencedInvoiceIds.toList(),
+    );
+    final invoiceMap = {for (var inv in invoiceList) inv.id!: inv};
+
+    // 3. Batch evaluate payment settlements for all referenced invoices (fails closed on status/overpayment corruption)
+    await getPaymentSummariesForInvoices(invoiceList);
+
+    // 4. Validate payment-invoice studentId, classId, month relationships
+    for (final p in payments) {
+      final inv = invoiceMap[p.invoiceId!];
+      if (inv == null) {
+        throw Exception(
+          'Lỗi bất biến thanh toán: Không tìm thấy hóa đơn #${p.invoiceId} thuộc thanh toán #${p.id}',
+        );
+      }
+      if (p.studentId != inv.idHocSinh ||
+          p.classId != inv.idLop ||
+          p.month != inv.thang) {
+        throw Exception(
+          'Lỗi bất biến thanh toán: Thông tin học sinh, lớp hoặc tháng của thanh toán #${p.id} không khớp với hóa đơn #${inv.id}',
+        );
       }
     }
 

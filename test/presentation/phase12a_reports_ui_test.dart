@@ -203,7 +203,7 @@ void main() {
             ClassReportSummary(
               classId: 10,
               className: 'Class 10A',
-              activeStudentCount: 5,
+              studentCountInScope: 5,
               attendance: AttendanceReportSummary(
                 totalSessions: 5,
                 totalEligibleParticipations: 10,

@@ -315,6 +315,9 @@ class TuitionService {
     return true;
   }
 
+  Future<List<TuitionInvoice>> getInvoicesByIds(List<int> ids) =>
+      _tuitionRepo.getInvoicesByIds(ids);
+
   Future<List<TuitionInvoice>> getFinalizedInvoicesInMonthRange({
     required String fromMonth,
     required String toMonth,

@@ -1,10 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../attendance/domain/attendance_service.dart';
-import '../../attendance/domain/attendance_state.dart';
 import '../../classes/domain/class_service.dart';
 import '../../memberships/domain/membership_service.dart';
 import '../../payments/domain/payment_service.dart';
-import '../../roster/domain/roster_service.dart';
 import '../../sessions/domain/session_service.dart';
 import '../../students/domain/student_service.dart';
 import '../../tuition/domain/tuition_invoice.dart';
@@ -20,7 +18,6 @@ Future<ReportService> reportService(ReportServiceRef ref) async {
   final studentService = await ref.watch(studentServiceProvider.future);
   final membershipService = await ref.watch(membershipServiceProvider.future);
   final sessionService = await ref.watch(sessionServiceProvider.future);
-  final rosterService = await ref.watch(rosterServiceProvider.future);
   final attendanceService = await ref.watch(attendanceServiceProvider.future);
   final tuitionService = await ref.watch(tuitionServiceProvider.future);
   final paymentService = await ref.watch(paymentServiceProvider.future);
@@ -30,7 +27,6 @@ Future<ReportService> reportService(ReportServiceRef ref) async {
     studentService,
     membershipService,
     sessionService,
-    rosterService,
     attendanceService,
     tuitionService,
     paymentService,
@@ -42,7 +38,6 @@ class ReportService {
   final StudentService _studentService;
   final MembershipService _membershipService;
   final SessionService _sessionService;
-  final RosterService _rosterService;
   final AttendanceService _attendanceService;
   final TuitionService _tuitionService;
   final PaymentService _paymentService;
@@ -52,7 +47,6 @@ class ReportService {
     this._studentService,
     this._membershipService,
     this._sessionService,
-    this._rosterService,
     this._attendanceService,
     this._tuitionService,
     this._paymentService,
@@ -69,26 +63,30 @@ class ReportService {
       classId: scope.classId,
     );
 
-    int totalSessions = completedSessions.length;
     int totalParticipations = 0;
     int totalPresent = 0;
     int totalLate = 0;
     int totalExcused = 0;
     int totalUnexcused = 0;
 
+    final overallSessionIds = <int>{};
+    final classSessionIdsMap = <int, Set<int>>{};
+    final studentSessionIdsMap = <int, Set<int>>{};
+
     final classAttendanceMap = <int, _AttendanceAccumulator>{};
     final studentAttendanceMap = <int, _AttendanceAccumulator>{};
 
     for (final s in completedSessions) {
-      final roster = await _rosterService.getRosterForSession(s.id!);
       final sheet = await _attendanceService.getAttendanceForSession(s.id!);
-      final memberStateMap = {
-        for (var m in sheet.members) m.rosterMember.student.id!: m.state,
-      };
 
-      for (final p in roster.participants) {
+      for (final m in sheet.members) {
+        final p = m.rosterMember;
         final stId = p.student.id!;
         if (scope.studentId != null && stId != scope.studentId) continue;
+
+        overallSessionIds.add(s.id!);
+        classSessionIdsMap.putIfAbsent(s.idLop, () => <int>{}).add(s.id!);
+        studentSessionIdsMap.putIfAbsent(stId, () => <int>{}).add(s.id!);
 
         totalParticipations++;
         final classAcc = classAttendanceMap.putIfAbsent(
@@ -103,7 +101,7 @@ class ReportService {
         classAcc.participations++;
         studentAcc.participations++;
 
-        final state = memberStateMap[stId] ?? AttendanceState.CHUA_DIEM_DANH;
+        final state = m.state;
 
         if (state.countsAsPresent) {
           totalPresent++;
@@ -133,7 +131,7 @@ class ReportService {
         : 0.0;
 
     final attendanceSummary = AttendanceReportSummary(
-      totalSessions: totalSessions,
+      totalSessions: overallSessionIds.length,
       totalEligibleParticipations: totalParticipations,
       totalPresent: totalPresent,
       totalLate: totalLate,
@@ -254,17 +252,16 @@ class ReportService {
       final cAttRate = cAcc.participations > 0
           ? (cAcc.present / cAcc.participations) * 100
           : 0.0;
-      final activeCount = classMembershipsMap[cId]?.length ?? 0;
+      final studentCountInScope = classMembershipsMap[cId]?.length ?? 0;
+      final classSessionCount = (classSessionIdsMap[cId] ?? {}).length;
 
       classSummaries.add(
         ClassReportSummary(
           classId: cId,
           className: cls.tenLop,
-          activeStudentCount: activeCount,
+          studentCountInScope: studentCountInScope,
           attendance: AttendanceReportSummary(
-            totalSessions: completedSessions
-                .where((s) => s.idLop == cId)
-                .length,
+            totalSessions: classSessionCount,
             totalEligibleParticipations: cAcc.participations,
             totalPresent: cAcc.present,
             totalLate: cAcc.lateCount,
@@ -304,6 +301,7 @@ class ReportService {
       final sAttRate = sAcc.participations > 0
           ? (sAcc.present / sAcc.participations) * 100
           : 0.0;
+      final studentSessionCount = (studentSessionIdsMap[stId] ?? {}).length;
 
       studentSummaries.add(
         StudentReportSummary(
@@ -311,7 +309,7 @@ class ReportService {
           studentName: st.hoTen,
           enrolledClassNames: enrolledClasses,
           attendance: AttendanceReportSummary(
-            totalSessions: totalSessions,
+            totalSessions: studentSessionCount,
             totalEligibleParticipations: sAcc.participations,
             totalPresent: sAcc.present,
             totalLate: sAcc.lateCount,

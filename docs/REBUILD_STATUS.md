@@ -183,8 +183,11 @@
   - Cash revenue receives actual payments in date range via `PaymentService.getValidatedPaymentsInDateRange`.
   - Historical archived classes & students with scope activity are batch loaded and included in report summaries (`ClassService.getClassesByIds`, `StudentService.getStudentsByIds`).
   - Range-aware memberships (`MembershipService.getMembershipsOverlappingDateRange`) accurately filter student enrolled classes for reports.
-  - Implemented `ReportScopeNotifier`, `reportSummaryProvider`, and `ReportsPage` UI with Month selector, Custom date range picker, Class/Student filters, responsive KPI cards, and detail breakdown tables. Wired `ReportsPage` into `AppShell`.
-  - Added unit & integration tests (`test/reports/report_service_test.dart` and `test/presentation/phase12a_reports_ui_test.dart`) asserting strict date validation, true cross-module consistency, financial corruption fail-closed protection, completed session filtering, archived entity inclusion, and UI stale data prevention.
+  - Renamed `ClassReportSummary.activeStudentCount` -> `studentCountInScope` representing unique students whose membership overlaps report range.
+  - Removed `RosterService` duplicate resolution; `ReportService` consumes ONLY domain services (`SessionService`, `AttendanceService`, `MembershipService`, `TuitionService`, `PaymentService`, `ClassService`, `StudentService`).
+  - Added `TuitionRepository.getInvoicesByIds` and `TuitionService.getInvoicesByIds` to eliminate N+1 queries in `PaymentService.getValidatedPaymentsInDateRange`.
+  - Implemented `ReportScopeNotifier`, `reportSummaryProvider`, and `ReportsPage` UI with Month selector, Custom date range picker with safe UX bound validation, Class/Student filters, responsive KPI cards (labeled `Dư nợ hiện tại của hóa đơn trong kỳ`), and detail breakdown tables. Wired `ReportsPage` into `AppShell`.
+  - Added unit & integration tests (`test/reports/report_service_test.dart` and `test/presentation/phase12a_reports_ui_test.dart`) asserting strict date validation, leap day `2028-02-29`, true cross-module consistency, financial corruption fail-closed protection, completed session filtering, archived entity inclusion, student-filtered session count accuracy, DOI_CA / HOC_BU / PHAT_SINH integration, and UI stale data prevention.
 
 ---
 
@@ -193,7 +196,7 @@
 - **Version**: 13
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
-- **Tests**: 393 tests passing
+- **Tests**: 394 tests passing
 - **Quality Gate**:
   - `dart analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (393 tests)
+  - `flutter test`: 100% Pass (394 tests)

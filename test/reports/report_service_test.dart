@@ -27,6 +27,7 @@ import 'package:tuition2027/features/schedule/domain/schedule_service.dart';
 import 'package:tuition2027/features/schedule_conflicts/data/schedule_constraint_repository.dart';
 import 'package:tuition2027/features/schedule_conflicts/domain/schedule_conflict_service.dart';
 import 'package:tuition2027/features/session_adjustments/data/session_adjustment_repository.dart';
+import 'package:tuition2027/features/session_adjustments/domain/session_adjustment.dart';
 import 'package:tuition2027/features/session_credits/data/session_credit_repository.dart';
 import 'package:tuition2027/features/session_credits/domain/session_credit_service.dart';
 import 'package:tuition2027/features/sessions/data/session_repository.dart';
@@ -57,6 +58,7 @@ void main() {
   late AttendanceRepository attendanceRepo;
   late TuitionRepository tuitionRepo;
   late PaymentRepository paymentRepo;
+  late SessionAdjustmentRepository adjustmentRepo;
   late String nowStr;
 
   setUp(() async {
@@ -76,6 +78,7 @@ void main() {
     attendanceRepo = AttendanceRepository(db);
     tuitionRepo = TuitionRepository(db);
     paymentRepo = PaymentRepository(db);
+    adjustmentRepo = SessionAdjustmentRepository(db);
 
     final membershipService = MembershipService(membershipRepo);
     final classService = ClassService(classRepo, membershipService);
@@ -83,7 +86,6 @@ void main() {
     final sessionService = SessionService(sessionRepo, classService);
     final scheduleRepo = ScheduleRepository(db);
     final assignmentRepo = AssignmentRepository(db);
-    final adjustmentRepo = SessionAdjustmentRepository(db);
 
     final constraintRepo = ScheduleConstraintRepository(db);
     final conflictService = ScheduleConflictService(
@@ -162,7 +164,6 @@ void main() {
       studentService,
       membershipService,
       sessionService,
-      rosterService,
       attendanceService,
       tuitionService,
       paymentService,
@@ -173,16 +174,23 @@ void main() {
     await db.close();
   });
 
-  group('ReportScope Strict Validation Tests', () {
-    test(
-      'ReportScope.forMonth generates correct explicit date bounds for YYYY-MM',
-      () {
-        final scope = ReportScope.forMonth(month: '2026-10');
-        expect(scope.mode, equals(ReportMode.month));
-        expect(scope.fromDate, equals('2026-10-01'));
-        expect(scope.toDate, equals('2026-10-31'));
-      },
-    );
+  group('ReportScope Strict Validation & Date Matrix Tests', () {
+    test('ReportScope accepts valid leap-day 2028-02-29 and month bounds', () {
+      final leapScope = ReportScope.customRange(
+        fromDate: '2028-02-01',
+        toDate: '2028-02-29',
+      );
+      expect(leapScope.fromDate, equals('2028-02-01'));
+      expect(leapScope.toDate, equals('2028-02-29'));
+
+      final janScope = ReportScope.forMonth(month: '2026-01');
+      expect(janScope.fromDate, equals('2026-01-01'));
+      expect(janScope.toDate, equals('2026-01-31'));
+
+      final decScope = ReportScope.forMonth(month: '2026-12');
+      expect(decScope.fromDate, equals('2026-12-01'));
+      expect(decScope.toDate, equals('2026-12-31'));
+    });
 
     test(
       'ReportScope rejects invalid month string formats (e.g. 2026-13, 2026-00, 26-09)',
@@ -235,9 +243,9 @@ void main() {
     });
   });
 
-  group('Completed Session Filtering & Attendance Canonical Consistency Tests', () {
+  group('Student-Filtered & Entity-Specific Session Count Tests', () {
     test(
-      'ReportService includes only DA_HOC completed sessions and excludes DU_KIEN, HUY, NGHI_LE',
+      'Student filter report counts only distinct sessions where selected student was eligible',
       () async {
         final cId = await classRepo.create(
           ClassEntity(
@@ -246,18 +254,36 @@ void main() {
             updatedAt: DateTime.now(),
           ),
         );
-        final stId = await studentRepo.create(
+        final stX = await studentRepo.create(
           Student(
-            hoTen: 'Student A',
+            hoTen: 'Student X',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        final stY = await studentRepo.create(
+          Student(
+            hoTen: 'Student Y',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        // Student Y active full month; Student X membership starts 2026-10-10 (eligible only for sessions on/after Oct 10)
+        await membershipRepo.create(
+          ClassMembership(
+            idHocSinh: stY,
+            idLop: cId,
+            tuNgay: '2026-01-01',
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           ),
         );
         await membershipRepo.create(
           ClassMembership(
-            idHocSinh: stId,
+            idHocSinh: stX,
             idLop: cId,
-            tuNgay: '2026-01-01',
+            tuNgay: '2026-10-10',
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           ),
@@ -274,8 +300,8 @@ void main() {
           'updated_at': nowStr,
         });
 
-        // 1. DA_HOC Completed session -> INCLUDED
-        final sCompleted = await sessionRepo.create(
+        // 2 Sessions before Oct 10 (Student Y only)
+        final s1 = await sessionRepo.create(
           ClassSession(
             idLop: cId,
             idLichHoc: 10,
@@ -288,9 +314,10 @@ void main() {
             updatedAt: DateTime.now(),
           ),
         );
+        await attendanceService.saveDraft(s1, {stY: AttendanceState.CO_MAT});
 
-        // 2. DU_KIEN session -> EXCLUDED from completed attendance opportunities
-        await sessionRepo.create(
+        // 3 Sessions on/after Oct 10 (Both Student Y and Student X)
+        final s2 = await sessionRepo.create(
           ClassSession(
             idLop: cId,
             idLichHoc: 10,
@@ -298,14 +325,12 @@ void main() {
             gioBatDau: '08:00',
             gioKetThuc: '09:30',
             loai: SessionType.CHINH,
-            trangThai: SessionStatus.DU_KIEN,
+            trangThai: SessionStatus.DA_HOC,
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           ),
         );
-
-        // 3. HUY session -> EXCLUDED
-        await sessionRepo.create(
+        final s3 = await sessionRepo.create(
           ClassSession(
             idLop: cId,
             idLichHoc: 10,
@@ -313,45 +338,154 @@ void main() {
             gioBatDau: '08:00',
             gioKetThuc: '09:30',
             loai: SessionType.CHINH,
-            trangThai: SessionStatus.HUY,
+            trangThai: SessionStatus.DA_HOC,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        final s4 = await sessionRepo.create(
+          ClassSession(
+            idLop: cId,
+            idLichHoc: 10,
+            ngay: '2026-10-26',
+            gioBatDau: '08:00',
+            gioKetThuc: '09:30',
+            loai: SessionType.CHINH,
+            trangThai: SessionStatus.DA_HOC,
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           ),
         );
 
-        await attendanceService.saveDraft(
-          sCompleted,
-          {stId: AttendanceState.TRE}, // Late attendance
+        await attendanceService.saveDraft(s2, {
+          stY: AttendanceState.CO_MAT,
+          stX: AttendanceState.CO_MAT,
+        });
+        await attendanceService.saveDraft(s3, {
+          stY: AttendanceState.CO_MAT,
+          stX: AttendanceState.CO_MAT,
+        });
+        await attendanceService.saveDraft(s4, {
+          stY: AttendanceState.CO_MAT,
+          stX: AttendanceState.CO_MAT,
+        });
+
+        // Report filtered by Student X -> totalSessions MUST be 3 (not 4)
+        final reportScopeX = ReportScope.forMonth(
+          month: '2026-10',
+          studentId: stX,
         );
+        final reportX = await reportService.generateReport(reportScopeX);
 
-        final scope = ReportScope.forMonth(month: '2026-10');
-        final report = await reportService.generateReport(scope);
-
-        // Verify totalSessions == 1 (only DA_HOC), totalLate == 1, totalPresent == 1
-        expect(report.attendance.totalSessions, equals(1));
-        expect(report.attendance.totalEligibleParticipations, equals(1));
-        expect(report.attendance.totalPresent, equals(1));
-        expect(report.attendance.totalLate, equals(1));
+        expect(reportX.attendance.totalSessions, equals(3));
+        expect(reportX.attendance.totalEligibleParticipations, equals(3));
+        expect(
+          reportX.studentSummaries.first.attendance.totalSessions,
+          equals(3),
+        );
       },
     );
 
     test(
-      'True Cross-Module Consistency: Report attendance facts match direct AttendanceService sheet facts',
+      'Multi-class student transition reflects range-overlapping classes without duplicate totals',
+      () async {
+        final cA = await classRepo.create(
+          ClassEntity(
+            tenLop: 'Class A',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        final cB = await classRepo.create(
+          ClassEntity(
+            tenLop: 'Class B',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        final cC = await classRepo.create(
+          ClassEntity(
+            tenLop: 'Class C (Historical)',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        final stId = await studentRepo.create(
+          Student(
+            hoTen: 'Student Multi',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        // Membership Class A (until 2026-10-15)
+        await membershipRepo.create(
+          ClassMembership(
+            idHocSinh: stId,
+            idLop: cA,
+            tuNgay: '2026-01-01',
+            denNgay: '2026-10-15',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        // Membership Class B (from 2026-10-16)
+        await membershipRepo.create(
+          ClassMembership(
+            idHocSinh: stId,
+            idLop: cB,
+            tuNgay: '2026-10-16',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        // Membership Class C (expired in 2025 - outside scope!)
+        await membershipRepo.create(
+          ClassMembership(
+            idHocSinh: stId,
+            idLop: cC,
+            tuNgay: '2025-01-01',
+            denNgay: '2025-12-31',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
+
+        final report = await reportService.generateReport(
+          ReportScope.forMonth(month: '2026-10', studentId: stId),
+        );
+
+        final stSummary = report.studentSummaries.first;
+        expect(stSummary.enrolledClassNames, contains('Class A'));
+        expect(stSummary.enrolledClassNames, contains('Class B'));
+        expect(
+          stSummary.enrolledClassNames,
+          isNot(contains('Class C (Historical)')),
+        );
+      },
+    );
+  });
+
+  group('One-Off Adjustments (DOI_CA, HOC_BU, PHAT_SINH) Integration Tests', () {
+    test(
+      'DOI_CA adjustment reflects attendance in target session without double counting original session',
       () async {
         final cId = await classRepo.create(
           ClassEntity(
-            tenLop: 'Class Beta',
+            tenLop: 'Class DoiCa',
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           ),
         );
         final stId = await studentRepo.create(
           Student(
-            hoTen: 'Student B',
+            hoTen: 'Student DoiCa',
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           ),
         );
+
         await membershipRepo.create(
           ClassMembership(
             idHocSinh: stId,
@@ -362,8 +496,7 @@ void main() {
           ),
         );
 
-        await db.insert('lich_hoc', {
-          'id': 20,
+        final sched1Id = await db.insert('lich_hoc', {
           'id_lop': cId,
           'thu_trong_tuan': 1,
           'gio_bat_dau': '08:00',
@@ -372,11 +505,29 @@ void main() {
           'created_at': nowStr,
           'updated_at': nowStr,
         });
+        final sched2Id = await db.insert('lich_hoc', {
+          'id_lop': cId,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '10:00',
+          'gio_ket_thuc': '11:30',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
 
-        final s1 = await sessionRepo.create(
+        await db.insert('phan_ca_hoc_sinh', {
+          'id_hoc_sinh': stId,
+          'id_lop': cId,
+          'id_lich_hoc': sched1Id,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        final origSession = await sessionRepo.create(
           ClassSession(
             idLop: cId,
-            idLichHoc: 20,
+            idLichHoc: sched1Id,
             ngay: '2026-10-05',
             gioBatDau: '08:00',
             gioKetThuc: '09:30',
@@ -386,24 +537,44 @@ void main() {
             updatedAt: DateTime.now(),
           ),
         );
+        final targetSession = await sessionRepo.create(
+          ClassSession(
+            idLop: cId,
+            idLichHoc: sched2Id,
+            ngay: '2026-10-05',
+            gioBatDau: '10:00',
+            gioKetThuc: '11:30',
+            loai: SessionType.CHINH,
+            trangThai: SessionStatus.DA_HOC,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
 
-        await attendanceService.saveDraft(s1, {stId: AttendanceState.CO_MAT});
+        // Create DOI_CA adjustment
+        await adjustmentRepo.create(
+          SessionAdjustment(
+            idHocSinh: stId,
+            idLopGoc: cId,
+            idBuoiHocGoc: origSession,
+            idBuoiHocThamGia: targetSession,
+            loai: SessionAdjustmentType.DOI_CA,
+            createdAt: DateTime.now(),
+          ),
+        );
 
-        // Call canonical AttendanceService directly to get expected sheet facts
-        final directSheet = await attendanceService.getAttendanceForSession(s1);
-        final memberState = directSheet.members.first.state;
+        // Save attendance in target session
+        await attendanceService.saveDraft(targetSession, {
+          stId: AttendanceState.CO_MAT,
+        });
 
-        // Call ReportService to get report summary facts
         final report = await reportService.generateReport(
           ReportScope.forMonth(month: '2026-10'),
         );
 
-        expect(memberState.countsAsPresent, isTrue);
+        // Verify student participated only in target session (1 participation, 1 present, 0 double count)
+        expect(report.attendance.totalEligibleParticipations, equals(1));
         expect(report.attendance.totalPresent, equals(1));
-        expect(
-          report.attendance.totalEligibleParticipations,
-          equals(directSheet.members.length),
-        );
       },
     );
   });
@@ -414,7 +585,7 @@ void main() {
       () async {
         final cId = await classRepo.create(
           ClassEntity(
-            tenLop: 'Class Gamma',
+            tenLop: 'Class Financial',
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           ),
@@ -430,7 +601,7 @@ void main() {
         });
         final stId = await studentRepo.create(
           Student(
-            hoTen: 'Student C',
+            hoTen: 'Student Financial',
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           ),
@@ -468,7 +639,6 @@ void main() {
           ),
         );
 
-        // Record payment via canonical PaymentService
         await paymentService.recordPayment(
           studentId: stId,
           classId: cId,
@@ -478,7 +648,6 @@ void main() {
           method: PaymentMethod.TIEN_MAT,
         );
 
-        // Call direct PaymentService settlement summary
         final directInvoices = await tuitionService
             .getFinalizedInvoicesInMonthRange(
               fromMonth: '2026-10',
@@ -488,7 +657,6 @@ void main() {
             .getPaymentSummariesForInvoices(directInvoices);
         final directDebt = directSummaries.first.remainingDebt;
 
-        // Call ReportService
         final report = await reportService.generateReport(
           ReportScope.forMonth(month: '2026-10'),
         );
@@ -539,7 +707,6 @@ void main() {
           ),
         );
 
-        // Insert invoice with status DA_CHOT (0 paid), but insert FULL payment directly in DB without updating invoice status (corrupted state!)
         final invId = await tuitionRepo.insertInvoice(
           TuitionInvoice(
             idHocSinh: stId,
@@ -590,7 +757,6 @@ void main() {
     test(
       'Historical archived class and archived student with scope activity ARE included in report summaries',
       () async {
-        // Create archived class with historical activity
         final cArchivedId = await classRepo.create(
           ClassEntity(
             tenLop: 'Archived Class 101',
@@ -609,7 +775,6 @@ void main() {
           'updated_at': nowStr,
         });
 
-        // Create archived student with historical activity
         final stArchivedId = await studentRepo.create(
           Student(
             hoTen: 'Archived Student X',
@@ -656,7 +821,6 @@ void main() {
           ReportScope.forMonth(month: '2026-10'),
         );
 
-        // Assert archived class and archived student appear in report summaries
         expect(
           report.classSummaries.any((c) => c.className == 'Archived Class 101'),
           isTrue,

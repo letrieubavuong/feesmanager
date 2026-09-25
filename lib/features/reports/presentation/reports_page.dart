@@ -107,21 +107,15 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                             context: context,
                             label: 'Từ ngày',
                             dateStr: scope.fromDate,
-                            onDateSelected: (selectedDate) {
-                              ref
-                                  .read(reportScopeNotifierProvider.notifier)
-                                  .setCustomRange(selectedDate, scope.toDate);
-                            },
+                            oppositeDateStr: scope.toDate,
+                            isFromDate: true,
                           ),
                           _buildDatePickerButton(
                             context: context,
                             label: 'Đến ngày',
                             dateStr: scope.toDate,
-                            onDateSelected: (selectedDate) {
-                              ref
-                                  .read(reportScopeNotifierProvider.notifier)
-                                  .setCustomRange(scope.fromDate, selectedDate);
-                            },
+                            oppositeDateStr: scope.fromDate,
+                            isFromDate: false,
                           ),
                         ],
 
@@ -313,7 +307,8 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
     required BuildContext context,
     required String label,
     required String dateStr,
-    required ValueChanged<String> onDateSelected,
+    required String oppositeDateStr,
+    required bool isFromDate,
   }) {
     return OutlinedButton.icon(
       icon: const Icon(Icons.event, size: 18),
@@ -327,7 +322,22 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
           lastDate: DateTime(2030),
         );
         if (picked != null) {
-          onDateSelected(DateFormat('yyyy-MM-dd').format(picked));
+          final selectedStr = DateFormat('yyyy-MM-dd').format(picked);
+          if (isFromDate) {
+            final toStr = selectedStr.compareTo(oppositeDateStr) > 0
+                ? selectedStr
+                : oppositeDateStr;
+            ref
+                .read(reportScopeNotifierProvider.notifier)
+                .setCustomRange(selectedStr, toStr);
+          } else {
+            final fromStr = selectedStr.compareTo(oppositeDateStr) < 0
+                ? selectedStr
+                : oppositeDateStr;
+            ref
+                .read(reportScopeNotifierProvider.notifier)
+                .setCustomRange(fromStr, selectedStr);
+          }
         }
       },
     );
@@ -457,7 +467,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                               ),
                             ),
                           ),
-                          DataCell(Text('${c.activeStudentCount}')),
+                          DataCell(Text('${c.studentCountInScope}')),
                           DataCell(
                             Text(
                               '${c.attendance.attendanceRatePercentage.toStringAsFixed(1)}%',

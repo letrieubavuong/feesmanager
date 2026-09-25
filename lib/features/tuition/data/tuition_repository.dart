@@ -42,6 +42,17 @@ class TuitionRepository {
     return TuitionInvoice.fromMap(maps.first);
   }
 
+  Future<List<TuitionInvoice>> getInvoicesByIds(List<int> ids) async {
+    if (ids.isEmpty) return [];
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final maps = await _db.query(
+      'hoc_phi_thang',
+      where: 'id IN ($placeholders)',
+      whereArgs: ids,
+    );
+    return maps.map((m) => TuitionInvoice.fromMap(m)).toList();
+  }
+
   Future<TuitionInvoice?> getInvoice(
     int studentId,
     int classId,
