@@ -40,10 +40,7 @@ class ReportPdfService {
       ttfBold = pw.Font.ttf(boldData);
     }
 
-    final theme = pw.ThemeData.withFont(
-      base: ttfRegular,
-      bold: ttfBold,
-    );
+    final theme = pw.ThemeData.withFont(base: ttfRegular, bold: ttfBold);
 
     final scope = summary.scope;
     final scopeStr = scope.mode == ReportMode.month
@@ -186,7 +183,10 @@ class ReportPdfService {
         pw.SizedBox(height: 2),
         pw.Text(
           value,
-          style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+          style: const pw.TextStyle(
+            fontSize: 10,
+            fontWeight: pw.FontWeight.bold,
+          ),
         ),
       ],
     );
