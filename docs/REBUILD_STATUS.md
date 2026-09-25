@@ -173,11 +173,11 @@
 
 ---
 
-## Phase 12: Reports - IN PROGRESS
+## Phase 12: Reports - COMPLETE
 - [x] Phase 12A Canonical Report Foundation + Report UI: COMPLETE.
   - Implemented immutable presentation-independent read models (`ReportScope`, `ReportSummary`, `AttendanceReportSummary`, `FinancialReportSummary`, `ClassReportSummary`, `StudentReportSummary`).
   - Strict date parsing validation in `ReportScope` (`YYYY-MM-DD` and `YYYY-MM`).
-  - Refactored `ReportService` canonical composition engine to consume ONLY domain services (`SessionService`, `AttendanceService`, `MembershipService`, `TuitionService`, `PaymentService`, `ClassService`, `StudentService`, `RosterService`) with zero duplicated business formulas.
+  - Refactored `ReportService` canonical composition engine to consume ONLY domain services (`SessionService`, `AttendanceService`, `MembershipService`, `TuitionService`, `PaymentService`, `ClassService`, `StudentService`) with zero duplicated business formulas.
   - Attendance reporting includes `DA_HOC` completed sessions only (excluding `DU_KIEN`, `HUY`, `NGHI_LE`) and uses canonical `AttendanceState` getters (`countsAsPresent`, `isLate`, `isExcusedAbsence`, `isUnexcusedAbsence`). Field `totalEligibleParticipations` explicitly tracks attendance opportunities; `totalSessions` tracks session count; `totalLate` tracks late participations.
   - Financial settlement & debt calculation delegates to `PaymentService.getPaymentSummariesForInvoices` using `PaymentSettlementRules.evaluate`, failing closed on corrupted invoice/payment relationships or status mismatches.
   - Cash revenue receives actual payments in date range via `PaymentService.getValidatedPaymentsInDateRange`.
@@ -188,6 +188,12 @@
   - Added `TuitionRepository.getInvoicesByIds` and `TuitionService.getInvoicesByIds` to eliminate N+1 queries in `PaymentService.getValidatedPaymentsInDateRange`.
   - Implemented `ReportScopeNotifier`, `reportSummaryProvider`, and `ReportsPage` UI with Month selector, Custom date range picker with safe UX bound validation, Class/Student filters, responsive KPI cards (labeled `Dư nợ hiện tại của hóa đơn trong kỳ`), and detail breakdown tables. Wired `ReportsPage` into `AppShell`.
   - Added comprehensive unit & integration tests (`test/reports/report_service_test.dart` and `test/presentation/phase12a_reports_ui_test.dart`) asserting strict date validation, leap day `2028-02-29`, true cross-module consistency, 4-status session filtering (`DA_HOC` included; `DU_KIEN`, `HUY`, `NGHI_LE` excluded), financial corruption fail-closed protection (missing invoice, relationship mismatch, overpayment), Month A invoice / Month B payment timing, all-class & student sum invariants, canonical `DOI_CA`, `HOC_BU`, and `PHAT_SINH` adjustment integration, relevant historical archived inclusion, and UI stale data prevention.
+- [x] Phase 12B PDF Export: COMPLETE.
+  - Implemented pure presentation `ReportPdfService` converting canonical `ReportSummary` directly into A4 Landscape PDF bytes without database queries, repository calls, or business formula recalculations.
+  - Integrated offline Vietnamese TTF font assets (`assets/fonts/Roboto-Regular.ttf` and `assets/fonts/Roboto-Bold.ttf`) for 100% offline Unicode PDF rendering.
+  - PDF layout features header metadata, overall KPI card summary, Class breakdown table (`studentCountInScope`, sessions, participations, present, late, excused, unexcused, attendance rate, invoiced, paid, debt), and Student breakdown table (enrolled class names, sessions, participations, present, late, excused, unexcused, attendance rate, invoiced, paid, debt).
+  - Integrated PDF export button on `ReportsPage` with fail-closed state protection (disabled during loading, error, or scope change resolving).
+  - Comprehensive unit & widget tests (`test/reports/report_pdf_service_test.dart` and `test/presentation/phase12b_pdf_export_ui_test.dart`) proving PDF byte generation (`%PDF-`), offline Vietnamese Unicode, multi-page layout without page limit exceptions, PDF ↔ UI figure parity, and export UI button lifecycle states.
 
 ---
 
@@ -196,7 +202,7 @@
 - **Version**: 13
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
-- **Tests**: 400 tests passing
+- **Tests**: 410 tests passing
 - **Quality Gate**:
   - `dart analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (400 tests)
+  - `flutter test`: 100% Pass (410 tests)

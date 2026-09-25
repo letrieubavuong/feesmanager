@@ -433,5 +433,165 @@ void main() {
         await tester.runAsync(() async => db.close());
       },
     );
+
+    testWidgets(
+      'ReportsPage SegmentedButton switches mode between Month and Custom Range',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+        });
+
+        late WidgetRef capturedRef;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWith((ref) async => db),
+              reportSummaryProvider.overrideWith(
+                (ref) async => ReportSummary(
+                  scope: ref.watch(reportScopeNotifierProvider),
+                  generatedAt: DateTime.now(),
+                  attendance: AttendanceReportSummary.zero(),
+                  financial: FinancialReportSummary.zero(),
+                  classSummaries: [],
+                  studentSummaries: [],
+                ),
+              ),
+            ],
+            child: Consumer(
+              builder: (context, ref, child) {
+                capturedRef = ref;
+                return const MaterialApp(home: ReportsPage());
+              },
+            ),
+          ),
+        );
+
+        await waitForAsyncProviders(tester);
+
+        expect(find.text('Khoảng ngày'), findsOneWidget);
+        await tester.tap(find.text('Khoảng ngày'));
+        await tester.pumpAndSettle();
+
+        final scope = capturedRef.read(reportScopeNotifierProvider);
+        expect(scope.mode, equals(ReportMode.customRange));
+
+        await tester.runAsync(() async => db.close());
+      },
+    );
+
+    testWidgets(
+      'Class filter dropdown selects class and resets to all classes',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+        });
+
+        late WidgetRef capturedRef;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWith((ref) async => db),
+              reportSummaryProvider.overrideWith(
+                (ref) async => ReportSummary(
+                  scope: ref.watch(reportScopeNotifierProvider),
+                  generatedAt: DateTime.now(),
+                  attendance: AttendanceReportSummary.zero(),
+                  financial: FinancialReportSummary.zero(),
+                  classSummaries: [],
+                  studentSummaries: [],
+                ),
+              ),
+            ],
+            child: Consumer(
+              builder: (context, ref, child) {
+                capturedRef = ref;
+                return const MaterialApp(home: ReportsPage());
+              },
+            ),
+          ),
+        );
+
+        await waitForAsyncProviders(tester);
+
+        // Verify class dropdown is present
+        expect(find.text('Tất cả các lớp'), findsAtLeast(1));
+
+        // Tap class dropdown
+        await tester.tap(find.text('Tất cả các lớp').first);
+        await tester.pumpAndSettle();
+
+        // Select Class 10A
+        expect(find.text('Class 10A').last, findsOneWidget);
+        await tester.tap(find.text('Class 10A').last);
+        await tester.pumpAndSettle();
+
+        final selectedScope = capturedRef.read(reportScopeNotifierProvider);
+        expect(selectedScope.classId, equals(10));
+
+        await tester.runAsync(() async => db.close());
+      },
+    );
+
+    testWidgets(
+      'Student filter dropdown selects student and resets to all students',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+        });
+
+        late WidgetRef capturedRef;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWith((ref) async => db),
+              reportSummaryProvider.overrideWith(
+                (ref) async => ReportSummary(
+                  scope: ref.watch(reportScopeNotifierProvider),
+                  generatedAt: DateTime.now(),
+                  attendance: AttendanceReportSummary.zero(),
+                  financial: FinancialReportSummary.zero(),
+                  classSummaries: [],
+                  studentSummaries: [],
+                ),
+              ),
+            ],
+            child: Consumer(
+              builder: (context, ref, child) {
+                capturedRef = ref;
+                return const MaterialApp(home: ReportsPage());
+              },
+            ),
+          ),
+        );
+
+        await waitForAsyncProviders(tester);
+
+        // Verify student dropdown is present
+        expect(find.text('Tất cả học sinh'), findsAtLeast(1));
+
+        // Tap student dropdown
+        await tester.tap(find.text('Tất cả học sinh').first);
+        await tester.pumpAndSettle();
+
+        // Select Student A
+        expect(find.text('Student A').last, findsOneWidget);
+        await tester.tap(find.text('Student A').last);
+        await tester.pumpAndSettle();
+
+        final selectedScope = capturedRef.read(reportScopeNotifierProvider);
+        expect(selectedScope.studentId, equals(1));
+
+        await tester.runAsync(() async => db.close());
+      },
+    );
   });
 }

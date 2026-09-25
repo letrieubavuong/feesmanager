@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:printing/printing.dart';
 import '../../classes/presentation/class_controller.dart';
 import '../../students/presentation/student_controller.dart';
 import '../domain/report_scope.dart';
 import '../domain/report_summary.dart';
+import '../export/report_pdf_service.dart';
 import 'report_controller.dart';
 
 class ReportsPage extends ConsumerStatefulWidget {
@@ -17,6 +19,30 @@ class ReportsPage extends ConsumerStatefulWidget {
 class _ReportsPageState extends ConsumerState<ReportsPage> {
   final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
 
+  Future<void> _exportPdf(BuildContext context, ReportSummary summary) async {
+    try {
+      final pdfService = ReportPdfService();
+      final pdfBytes = await pdfService.buildPdf(summary);
+      final fileName = summary.scope.mode == ReportMode.month
+          ? 'BaoCao_${summary.scope.fromDate.substring(0, 7)}.pdf'
+          : 'BaoCao_${summary.scope.fromDate}_${summary.scope.toDate}.pdf';
+
+      await Printing.layoutPdf(
+        onLayout: (format) async => pdfBytes,
+        name: fileName,
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi xuất PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final scope = ref.watch(reportScopeNotifierProvider);
@@ -28,6 +54,23 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
       appBar: AppBar(
         title: const Text('Báo cáo & Thống kê'),
         actions: [
+          summaryAsync.when(
+            data: (summary) => IconButton(
+              icon: const Icon(Icons.picture_as_pdf),
+              onPressed: () => _exportPdf(context, summary),
+              tooltip: 'Xuất báo cáo PDF',
+            ),
+            loading: () => const IconButton(
+              icon: Icon(Icons.picture_as_pdf),
+              onPressed: null,
+              tooltip: 'Đang tổng hợp báo cáo...',
+            ),
+            error: (_, __) => const IconButton(
+              icon: Icon(Icons.picture_as_pdf),
+              onPressed: null,
+              tooltip: 'Không thể xuất PDF',
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => ref.invalidate(reportSummaryProvider),
