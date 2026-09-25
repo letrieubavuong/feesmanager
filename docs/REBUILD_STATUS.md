@@ -138,10 +138,11 @@
   - `PaymentController.recordPayment` invalidates `classMonthInvoicesProvider`, `studentInvoiceProvider`, `invoicePaymentSummaryProvider`, `classMonthPaymentSummariesProvider`, and `invoicePaymentsProvider` to trigger instant live UI refresh across all views.
 - [x] Comprehensive Tests (277 tests passing).
 
-## Phase 11: Schedule Conflicts - IN PROGRESS
+## Phase 11: Schedule Conflicts - COMPLETE
 - [x] Phase 11A Core Schedule Conflict Engine: COMPLETE.
 - [x] Phase 11B One-Off Schedule Conflict Integration: COMPLETE.
 - [x] Phase 11C Schedule Conflict UI + Constraint UI Integration: COMPLETE.
+- [x] Phase 11D Final Audit & Hardening: COMPLETE.
 - [x] Forward Database Migration (v12 -> v13) creating `rang_buoc_lich_hoc_sinh` table with Foreign Keys (`ON DELETE RESTRICT`), strict `CHECK` constraints on types (`loai`), occurrence shape (`kieu`), time format (`00:00`..`23:59`), time order (`gio_ket_thuc > gio_bat_dau`), date shape (`YYYY-MM-DD`), non-negative travel buffer, status (`HOAT_DONG`, `DA_HUY`), and performance indexes.
 - [x] Real v12 -> v13 database migration test on real SQLite file (`test/repository/migration_v12_v13_test.dart`) asserting data preservation, FK RESTRICT, strict `CHECK` constraints, and clean `PRAGMA foreign_key_check`.
 - [x] Constraint domain & data models (`ScheduleConstraint`, `ConstraintType`, `OccurrenceType`, `ConstraintStatus`, `ScheduleConstraintRepository`).
@@ -151,17 +152,17 @@
   - Evaluates one-off session commitments with exact `DOI_CA` replacement semantics, outgoing `DOI_CA` commitment removal, and multi-shift roster precision (`assignment.idLichHoc == session.idLichHoc`).
   - Fail-closed error handling: Missing schedule references, corrupted time formats, or malformed constraint shapes throw `StateError` / `FormatException` instead of silently continuing.
   - Narrow targeted queries (`getActiveForRecurringCandidate`) and batch queries eliminating N+1 overhead (`getByIds` for schedules and classes, `getByTargetSessionIds`/`getByOriginalSessionIds` for adjustments).
-- [x] Consumer Refactoring:
+- [x] Consumer Refactoring & Double-Gate Protection:
   - `ScheduleDomainService`: `ScheduleConflictService` is a REQUIRED non-nullable dependency across all consumers and tests. Fallback overlap engine removed completely.
   - `changeRecurringShift`: Atomic SQLite transaction (`closeOld` + `insertNew` in one transaction block with real rollback proof).
   - `SessionAdjustmentService`: `ScheduleConflictService` is a REQUIRED non-nullable dependency. Always re-checks `evaluateOneOffSessionCandidate` in `createDoiCa`, `createHocBu`, and `createPhatSinh` prior to persistence.
-- [x] Presentation & UI Integration (Phase 11C):
+- [x] Presentation & UI Integration (Phase 11C / 11D):
   - Migrated `SessionAdjustmentDialogs` (`showDoiCaDialog`, `showHocBuDialog`, `showPhatSinhDialog`) from legacy `oneOffConflictPreviewProvider` to canonical `oneOffSessionConflictPreviewProvider`.
   - Enforced fail-closed preview states across all adjustment & assignment dialogs (Submit button disabled on Loading and Error states; enabled only when `canAssign == true` or soft warnings only).
-  - Fixed HOC_BU target selection: removed magic `classId = 0` workaround; uses `getUpcomingHocBuSessions(fromDate)` and batch fetches class names (`getClassesByIds`) displaying `${className} - ${s.ngay} (${s.gioBatDau} - ${s.gioKetThuc})`.
+  - Bounded HOC_BU target selection API (`getUpcomingHocBuSessions({fromDate, toDate})`) and 90-day lookahead policy (`fromDate = TODAY`, `toDate = TODAY + 90 days`); batch fetches class names (`getClassesByIds`) displaying `${className} - ${s.ngay} (${s.gioBatDau} - ${s.gioKetThuc})`.
   - Fixed PHAT_SINH student selection: derives candidates from active memberships on `targetSession.ngay` using `getActiveMembershipsOnDate`; batch fetches class names; supports cross-class memberships without assuming `originalClassId = targetSession.idLop`; excludes archived students and students with existing adjustments; validates target session type (`PHAT_SINH`) and status (`DU_KIEN`).
   - Enhanced Constraint Management UI: integrated constraint list and confirmation dialog into `StudentDetailPage`; added UI input validation to `showAddConstraintDialog` (validates HH:mm time order, YYYY-MM-DD date format, travel buffer >= 0, OTHER_CENTER required source name); invalidates `studentConstraintsProvider` on create/cancel.
-  - Added new comprehensive widget tests in `test/presentation/phase11c_schedule_conflict_ui_test.dart`.
+  - Comprehensive test suite in `test/presentation/phase11c_schedule_conflict_ui_test.dart` (43/43 passing) proving fail-closed states, constraint validation matrix, DB persistence assertions, and ChangeShift canonical provider argument tuple.
 - [x] Comprehensive Tests (379 tests passing):
     - `test/repository/migration_v12_v13_test.dart`
     - `test/schedule_conflicts/schedule_conflict_service_test.dart`
