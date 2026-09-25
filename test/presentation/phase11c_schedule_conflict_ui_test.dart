@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' hide equals;
 import 'package:tuition2027/core/database/app_database.dart';
@@ -11,6 +12,7 @@ import 'package:tuition2027/features/schedule/presentation/assignment_tab.dart';
 import 'package:tuition2027/features/schedule_conflicts/domain/schedule_conflict.dart';
 import 'package:tuition2027/features/schedule_conflicts/domain/schedule_conflict_reason_code.dart';
 import 'package:tuition2027/features/schedule_conflicts/domain/schedule_conflict_result.dart';
+import 'package:tuition2027/features/schedule_conflicts/domain/schedule_constraint.dart';
 import 'package:tuition2027/features/schedule_conflicts/presentation/schedule_conflict_banner.dart';
 import 'package:tuition2027/features/schedule_conflicts/presentation/schedule_conflict_providers.dart';
 import 'package:tuition2027/features/schedule_conflicts/presentation/schedule_constraint_dialogs.dart';
@@ -75,14 +77,16 @@ void main() {
       'updated_at': nowStr,
     });
 
+    // Student 1 has active membership in Class 20B (eligible for PHAT_SINH in Class 10A)
     await db.insert('tham_gia_lop', {
       'id': 100,
       'id_hoc_sinh': 1,
-      'id_lop': 10,
+      'id_lop': 20,
       'tu_ngay': '2026-01-01',
       'created_at': nowStr,
       'updated_at': nowStr,
     });
+    // Student 2 has active membership in Class 20B
     await db.insert('tham_gia_lop', {
       'id': 200,
       'id_hoc_sinh': 2,
@@ -136,6 +140,15 @@ void main() {
       await tester.runAsync(() async {
         db = await createTestDb();
         await setupBaseData(db);
+
+        await db.insert('tham_gia_lop', {
+          'id': 101,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
 
         await db.insert('buoi_hoc', {
           'id': 101,
@@ -197,10 +210,7 @@ void main() {
       );
 
       await tester.tap(find.text('Open DoiCa'));
-      await tester.runAsync(() async {
-        await Future.delayed(const Duration(milliseconds: 200));
-      });
-      await tester.pump();
+      await waitForAsyncProviders(tester, iterations: 5);
 
       expect(find.text('Xếp đổi ca học'), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
@@ -221,6 +231,15 @@ void main() {
       await tester.runAsync(() async {
         db = await createTestDb();
         await setupBaseData(db);
+
+        await db.insert('tham_gia_lop', {
+          'id': 101,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
 
         await db.insert('buoi_hoc', {
           'id': 101,
@@ -295,6 +314,15 @@ void main() {
       await tester.runAsync(() async {
         db = await createTestDb();
         await setupBaseData(db);
+
+        await db.insert('tham_gia_lop', {
+          'id': 101,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
 
         await db.insert('buoi_hoc', {
           'id': 101,
@@ -380,6 +408,15 @@ void main() {
         await tester.runAsync(() async {
           db = await createTestDb();
           await setupBaseData(db);
+
+          await db.insert('tham_gia_lop', {
+            'id': 101,
+            'id_hoc_sinh': 1,
+            'id_lop': 10,
+            'tu_ngay': '2026-01-01',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
 
           await db.insert('buoi_hoc', {
             'id': 101,
@@ -509,6 +546,15 @@ void main() {
         db = await createTestDb();
         await setupBaseData(db);
 
+        await db.insert('tham_gia_lop', {
+          'id': 101,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
         await db.insert('buoi_hoc', {
           'id': 101,
           'id_lop': 10,
@@ -590,6 +636,15 @@ void main() {
         db = await createTestDb();
         await setupBaseData(db);
 
+        await db.insert('tham_gia_lop', {
+          'id': 101,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
         await db.insert('buoi_hoc', {
           'id': 101,
           'id_lop': 10,
@@ -657,6 +712,198 @@ void main() {
       await tester.runAsync(() async => db.close());
     });
 
+    testWidgets('showHocBuDialog hard conflict disables submit', (
+      tester,
+    ) async {
+      late Database db;
+      await tester.runAsync(() async {
+        db = await createTestDb();
+        await setupBaseData(db);
+
+        await db.insert('tham_gia_lop', {
+          'id': 101,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-10-10',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 301,
+          'id_lop': 20,
+          'ngay': '2026-10-12',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'HOC_BU',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      });
+
+      final hardConflictResult = ScheduleConflictResult(
+        hardConflicts: [
+          const ScheduleConflict(
+            reasonCode: ScheduleConflictReasonCode.EXACT_OVERLAP,
+            isHard: true,
+            message: 'Trùng lịch',
+          ),
+        ],
+        softWarnings: [],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWith((ref) async => db),
+            oneOffSessionConflictPreviewProvider((
+              1,
+              301,
+              null,
+            )).overrideWith((ref) async => hardConflictResult),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => Consumer(
+                  builder: (context, ref, _) => ElevatedButton(
+                    onPressed: () => SessionAdjustmentDialogs.showHocBuDialog(
+                      context: context,
+                      ref: ref,
+                      studentId: 1,
+                      originalSessionId: 101,
+                    ),
+                    child: const Text('Open HocBu'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open HocBu'));
+      await waitForAsyncProviders(tester);
+
+      expect(find.textContaining('XUNG ĐỘT BẮT BUỘC'), findsOneWidget);
+
+      final confirmBtn = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Xác nhận học bù'),
+      );
+      expect(confirmBtn.onPressed, isNull);
+
+      await tester.runAsync(() async => db.close());
+    });
+
+    testWidgets('showHocBuDialog soft warning enables submit', (tester) async {
+      late Database db;
+      await tester.runAsync(() async {
+        db = await createTestDb();
+        await setupBaseData(db);
+
+        await db.insert('tham_gia_lop', {
+          'id': 101,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'ngay': '2026-10-10',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('buoi_hoc', {
+          'id': 301,
+          'id_lop': 20,
+          'ngay': '2026-10-12',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'HOC_BU',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      });
+
+      final softWarningResult = ScheduleConflictResult(
+        hardConflicts: [],
+        softWarnings: [
+          const ScheduleConflict(
+            reasonCode: ScheduleConflictReasonCode.TRAVEL_BUFFER,
+            isHard: false,
+            message: 'Thiếu đệm di chuyển',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWith((ref) async => db),
+            oneOffSessionConflictPreviewProvider((
+              1,
+              301,
+              null,
+            )).overrideWith((ref) async => softWarningResult),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => Consumer(
+                  builder: (context, ref, _) => ElevatedButton(
+                    onPressed: () => SessionAdjustmentDialogs.showHocBuDialog(
+                      context: context,
+                      ref: ref,
+                      studentId: 1,
+                      originalSessionId: 101,
+                    ),
+                    child: const Text('Open HocBu'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open HocBu'));
+      await waitForAsyncProviders(tester);
+
+      expect(find.textContaining('CẢNH BÁO KHÔNG ƯU TIÊN'), findsOneWidget);
+
+      final confirmBtn = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Xác nhận học bù'),
+      );
+      expect(confirmBtn.onPressed, isNotNull);
+
+      await tester.runAsync(() async => db.close());
+    });
+
     testWidgets(
       'showHocBuDialog creates HOC_BU adjustment record in DB with correct studentId, originalSessionId, targetSessionId, loai',
       (tester) async {
@@ -664,6 +911,15 @@ void main() {
         await tester.runAsync(() async {
           db = await createTestDb();
           await setupBaseData(db);
+
+          await db.insert('tham_gia_lop', {
+            'id': 101,
+            'id_hoc_sinh': 1,
+            'id_lop': 10,
+            'tu_ngay': '2026-01-01',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
 
           // Original session 101 must be DA_HOC for HOC_BU creation
           await db.insert('buoi_hoc', {
@@ -813,11 +1069,11 @@ void main() {
           db = await createTestDb();
           await setupBaseData(db);
 
-          // Student 1 has active memberships in Class 10A AND Class 20B
+          // Student 1 has active memberships in Class 20B AND Class 10A
           await db.insert('tham_gia_lop', {
             'id': 101,
             'id_hoc_sinh': 1,
-            'id_lop': 20,
+            'id_lop': 10,
             'tu_ngay': '2026-01-01',
             'created_at': nowStr,
             'updated_at': nowStr,
@@ -871,14 +1127,293 @@ void main() {
         await tester.tap(find.text('Open PhatSinh'));
         await waitForAsyncProviders(tester);
 
-        // Student 1 has 2 active memberships -> 2 options rendered: Student 1 (Class 10A) and Student 1 (Class 20B)
-        expect(find.text('Student 1 (Class 10A)'), findsOneWidget);
+        expect(find.text('Student 1 (Class 20B)'), findsOneWidget);
         expect(find.text('Student No Membership'), findsNothing);
         expect(find.text('Archived Student'), findsNothing);
 
         await tester.runAsync(() async => db.close());
       },
     );
+
+    testWidgets('showPhatSinhDialog preview loading disables submit', (
+      tester,
+    ) async {
+      late Database db;
+      await tester.runAsync(() async {
+        db = await createTestDb();
+        await setupBaseData(db);
+
+        await db.insert('buoi_hoc', {
+          'id': 401,
+          'id_lop': 10,
+          'ngay': '2026-10-10',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'PHAT_SINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      });
+
+      final pendingCompleter = Completer<ScheduleConflictResult>();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWith((ref) async => db),
+            oneOffSessionConflictPreviewProvider((
+              1,
+              401,
+              null,
+            )).overrideWith((ref) => pendingCompleter.future),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => Consumer(
+                  builder: (context, ref, _) => ElevatedButton(
+                    onPressed: () =>
+                        SessionAdjustmentDialogs.showPhatSinhDialog(
+                          context: context,
+                          ref: ref,
+                          targetSessionId: 401,
+                        ),
+                    child: const Text('Open PhatSinh'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open PhatSinh'));
+      await waitForAsyncProviders(tester);
+
+      expect(find.textContaining('Thêm học sinh'), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+
+      final confirmBtn = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Xác nhận thêm'),
+      );
+      expect(confirmBtn.onPressed, isNull);
+
+      pendingCompleter.complete(ScheduleConflictResult.clear());
+      await tester.runAsync(() async => db.close());
+    });
+
+    testWidgets('showPhatSinhDialog preview error disables submit', (
+      tester,
+    ) async {
+      late Database db;
+      await tester.runAsync(() async {
+        db = await createTestDb();
+        await setupBaseData(db);
+
+        await db.insert('buoi_hoc', {
+          'id': 401,
+          'id_lop': 10,
+          'ngay': '2026-10-10',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'PHAT_SINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWith((ref) async => db),
+            oneOffSessionConflictPreviewProvider(
+              (1, 401, null),
+            ).overrideWith((ref) => Future.error(Exception('Simulated Error'))),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => Consumer(
+                  builder: (context, ref, _) => ElevatedButton(
+                    onPressed: () =>
+                        SessionAdjustmentDialogs.showPhatSinhDialog(
+                          context: context,
+                          ref: ref,
+                          targetSessionId: 401,
+                        ),
+                    child: const Text('Open PhatSinh'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open PhatSinh'));
+      await waitForAsyncProviders(tester);
+
+      expect(find.textContaining('Lỗi kiểm tra trùng lịch'), findsOneWidget);
+
+      final confirmBtn = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Xác nhận thêm'),
+      );
+      expect(confirmBtn.onPressed, isNull);
+
+      await tester.runAsync(() async => db.close());
+    });
+
+    testWidgets('showPhatSinhDialog hard conflict disables submit', (
+      tester,
+    ) async {
+      late Database db;
+      await tester.runAsync(() async {
+        db = await createTestDb();
+        await setupBaseData(db);
+
+        await db.insert('buoi_hoc', {
+          'id': 401,
+          'id_lop': 10,
+          'ngay': '2026-10-10',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'PHAT_SINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      });
+
+      final hardConflictResult = ScheduleConflictResult(
+        hardConflicts: [
+          const ScheduleConflict(
+            reasonCode: ScheduleConflictReasonCode.EXACT_OVERLAP,
+            isHard: true,
+            message: 'Trùng lịch phát sinh',
+          ),
+        ],
+        softWarnings: [],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWith((ref) async => db),
+            oneOffSessionConflictPreviewProvider((
+              1,
+              401,
+              null,
+            )).overrideWith((ref) async => hardConflictResult),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => Consumer(
+                  builder: (context, ref, _) => ElevatedButton(
+                    onPressed: () =>
+                        SessionAdjustmentDialogs.showPhatSinhDialog(
+                          context: context,
+                          ref: ref,
+                          targetSessionId: 401,
+                        ),
+                    child: const Text('Open PhatSinh'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open PhatSinh'));
+      await waitForAsyncProviders(tester);
+
+      expect(find.textContaining('XUNG ĐỘT BẮT BUỘC'), findsOneWidget);
+
+      final confirmBtn = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Xác nhận thêm'),
+      );
+      expect(confirmBtn.onPressed, isNull);
+
+      await tester.runAsync(() async => db.close());
+    });
+
+    testWidgets('showPhatSinhDialog soft warning enables submit', (
+      tester,
+    ) async {
+      late Database db;
+      await tester.runAsync(() async {
+        db = await createTestDb();
+        await setupBaseData(db);
+
+        await db.insert('buoi_hoc', {
+          'id': 401,
+          'id_lop': 10,
+          'ngay': '2026-10-10',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'PHAT_SINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      });
+
+      final softWarningResult = ScheduleConflictResult(
+        hardConflicts: [],
+        softWarnings: [
+          const ScheduleConflict(
+            reasonCode: ScheduleConflictReasonCode.TRAVEL_BUFFER,
+            isHard: false,
+            message: 'Cần đệm di chuyển',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWith((ref) async => db),
+            oneOffSessionConflictPreviewProvider((
+              1,
+              401,
+              null,
+            )).overrideWith((ref) async => softWarningResult),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => Consumer(
+                  builder: (context, ref, _) => ElevatedButton(
+                    onPressed: () =>
+                        SessionAdjustmentDialogs.showPhatSinhDialog(
+                          context: context,
+                          ref: ref,
+                          targetSessionId: 401,
+                        ),
+                    child: const Text('Open PhatSinh'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open PhatSinh'));
+      await waitForAsyncProviders(tester);
+
+      expect(find.textContaining('CẢNH BÁO KHÔNG ƯU TIÊN'), findsOneWidget);
+
+      final confirmBtn = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Xác nhận thêm'),
+      );
+      expect(confirmBtn.onPressed, isNotNull);
+
+      await tester.runAsync(() async => db.close());
+    });
 
     testWidgets(
       'showPhatSinhDialog creates adjustment preserving actual originalClassId from selected option',
@@ -927,17 +1462,7 @@ void main() {
         await tester.tap(find.text('Open PhatSinh'));
         await waitForAsyncProviders(tester);
 
-        // Select Student 2 (Class 20B)
-        final dropdownFinder = find.byWidgetPredicate(
-          (w) => w is DropdownButtonFormField,
-        );
-        await tester.tap(dropdownFinder);
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('Student 2 (Class 20B)').last);
-        await waitForAsyncProviders(tester);
-
-        // Submit
+        // Submit (Student 1 Class 20B is candidate index 0)
         await tester.tap(find.widgetWithText(ElevatedButton, 'Xác nhận thêm'));
         await waitForAsyncProviders(tester);
 
@@ -947,7 +1472,7 @@ void main() {
           records = await db.query('dieu_chinh_buoi_hoc');
         });
         expect(records.length, equals(1));
-        expect(records.first['id_hoc_sinh'], equals(2));
+        expect(records.first['id_hoc_sinh'], equals(1));
         expect(
           records.first['id_lop_goc'],
           equals(20),
@@ -1016,6 +1541,67 @@ void main() {
     );
 
     testWidgets(
+      'showAddConstraintDialog SOFT_PREFERENCE DINH_KY creation succeeds and asserts persisted fields',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+        });
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [databaseProvider.overrideWith((ref) async => db)],
+            child: MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => Scaffold(
+                    body: Consumer(
+                      builder: (context, ref, _) => ElevatedButton(
+                        onPressed: () =>
+                            showAddConstraintDialog(context, ref, 1),
+                        child: const Text('Open Constraint Dialog'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open Constraint Dialog'));
+        await waitForAsyncProviders(tester);
+
+        // Select SOFT_PREFERENCE
+        final typeDropdown = find.widgetWithText(
+          DropdownButtonFormField<ConstraintType>,
+          'Loại ràng buộc',
+        );
+        await tester.tap(typeDropdown);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Không ưu tiên').last);
+        await waitForAsyncProviders(tester);
+
+        await tester.tap(find.text('Lưu ràng buộc'));
+        await waitForAsyncProviders(tester);
+
+        late List<Map<String, dynamic>> records;
+        await tester.runAsync(() async {
+          records = await db.query('rang_buoc_lich_hoc_sinh');
+        });
+        expect(records.length, equals(1));
+        expect(records.first['id_hoc_sinh'], equals(1));
+        expect(records.first['loai'], equals('SOFT_PREFERENCE'));
+        expect(records.first['kieu'], equals('DINH_KY'));
+        expect(records.first['trang_thai'], equals('HOAT_DONG'));
+
+        await tester.runAsync(() async => db.close());
+      },
+    );
+
+    testWidgets(
       'showAddConstraintDialog OTHER_CENTER creation with sourceName and travelBuffer succeeds',
       (tester) async {
         late Database db;
@@ -1049,10 +1635,11 @@ void main() {
         await waitForAsyncProviders(tester);
 
         // Select OTHER_CENTER
-        final dropdowns = find.byWidgetPredicate(
-          (w) => w is DropdownButtonFormField,
+        final typeDropdown = find.widgetWithText(
+          DropdownButtonFormField<ConstraintType>,
+          'Loại ràng buộc',
         );
-        await tester.tap(dropdowns.first);
+        await tester.tap(typeDropdown);
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Học ở trung tâm khác').last);
@@ -1081,6 +1668,72 @@ void main() {
         expect(records.first['loai'], equals('OTHER_CENTER'));
         expect(records.first['ten_nguon'], equals('Center Alpha'));
         expect(records.first['travel_buffer_phut'], equals(25));
+
+        await tester.runAsync(() async => db.close());
+      },
+    );
+
+    testWidgets(
+      'showAddConstraintDialog MOT_LAN specific date constraint creation succeeds and asserts persisted fields',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+        });
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [databaseProvider.overrideWith((ref) async => db)],
+            child: MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => Scaffold(
+                    body: Consumer(
+                      builder: (context, ref, _) => ElevatedButton(
+                        onPressed: () =>
+                            showAddConstraintDialog(context, ref, 1),
+                        child: const Text('Open Constraint Dialog'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open Constraint Dialog'));
+        await waitForAsyncProviders(tester);
+
+        // Select MOT_LAN
+        final occurrenceDropdown = find.widgetWithText(
+          DropdownButtonFormField<OccurrenceType>,
+          'Tần suất',
+        );
+        await tester.tap(occurrenceDropdown);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Một lần').last);
+        await waitForAsyncProviders(tester);
+
+        final dateField = find.widgetWithText(
+          TextField,
+          'Ngày cụ thể (YYYY-MM-DD)',
+        );
+        await tester.enterText(dateField, '2026-11-20');
+
+        await tester.tap(find.text('Lưu ràng buộc'));
+        await waitForAsyncProviders(tester);
+
+        late List<Map<String, dynamic>> records;
+        await tester.runAsync(() async {
+          records = await db.query('rang_buoc_lich_hoc_sinh');
+        });
+        expect(records.length, equals(1));
+        expect(records.first['kieu'], equals('MOT_LAN'));
+        expect(records.first['ngay_cu_the'], equals('2026-11-20'));
+        expect(records.first['thu_trong_tuan'], isNull);
 
         await tester.runAsync(() async => db.close());
       },
@@ -1132,12 +1785,194 @@ void main() {
         await waitForAsyncProviders(tester);
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(
-          find.textContaining(
-            'Thời gian kết thúc (17:00) phải lớn hơn thời gian bắt đầu (19:00)',
+        expect(find.textContaining('Lỗi:'), findsOneWidget);
+
+        late List<Map<String, dynamic>> records;
+        await tester.runAsync(() async {
+          records = await db.query('rang_buoc_lich_hoc_sinh');
+        });
+        expect(records, isEmpty);
+
+        await tester.runAsync(() async => db.close());
+      },
+    );
+
+    testWidgets(
+      'showAddConstraintDialog rejects invalid time format without inserting DB row',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+        });
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [databaseProvider.overrideWith((ref) async => db)],
+            child: MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => Scaffold(
+                    body: Consumer(
+                      builder: (context, ref, _) => ElevatedButton(
+                        onPressed: () =>
+                            showAddConstraintDialog(context, ref, 1),
+                        child: const Text('Open Constraint Dialog'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
-          findsOneWidget,
         );
+
+        await tester.tap(find.text('Open Constraint Dialog'));
+        await waitForAsyncProviders(tester);
+
+        final startField = find.widgetWithText(
+          TextField,
+          'Giờ bắt đầu (HH:mm)',
+        );
+        await tester.enterText(startField, '25:70');
+
+        await tester.tap(find.text('Lưu ràng buộc'));
+        await waitForAsyncProviders(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.textContaining('Lỗi:'), findsOneWidget);
+
+        late List<Map<String, dynamic>> records;
+        await tester.runAsync(() async {
+          records = await db.query('rang_buoc_lich_hoc_sinh');
+        });
+        expect(records, isEmpty);
+
+        await tester.runAsync(() async => db.close());
+      },
+    );
+
+    testWidgets(
+      'showAddConstraintDialog rejects negative travel buffer without inserting DB row',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+        });
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [databaseProvider.overrideWith((ref) async => db)],
+            child: MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => Scaffold(
+                    body: Consumer(
+                      builder: (context, ref, _) => ElevatedButton(
+                        onPressed: () =>
+                            showAddConstraintDialog(context, ref, 1),
+                        child: const Text('Open Constraint Dialog'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open Constraint Dialog'));
+        await waitForAsyncProviders(tester);
+
+        // Select OTHER_CENTER
+        final typeDropdown = find.widgetWithText(
+          DropdownButtonFormField<ConstraintType>,
+          'Loại ràng buộc',
+        );
+        await tester.tap(typeDropdown);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Học ở trung tâm khác').last);
+        await waitForAsyncProviders(tester);
+
+        final sourceField = find.widgetWithText(
+          TextField,
+          'Tên trường / trung tâm khác',
+        );
+        final bufferField = find.widgetWithText(
+          TextField,
+          'Thời gian di chuyển cần thiết (phút)',
+        );
+
+        await tester.enterText(sourceField, 'Center Alpha');
+        await tester.enterText(bufferField, '-15');
+
+        await tester.tap(find.text('Lưu ràng buộc'));
+        await waitForAsyncProviders(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.textContaining('Lỗi:'), findsOneWidget);
+
+        late List<Map<String, dynamic>> records;
+        await tester.runAsync(() async {
+          records = await db.query('rang_buoc_lich_hoc_sinh');
+        });
+        expect(records, isEmpty);
+
+        await tester.runAsync(() async => db.close());
+      },
+    );
+
+    testWidgets(
+      'showAddConstraintDialog rejects OTHER_CENTER with empty sourceName without inserting DB row',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+        });
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [databaseProvider.overrideWith((ref) async => db)],
+            child: MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => Scaffold(
+                    body: Consumer(
+                      builder: (context, ref, _) => ElevatedButton(
+                        onPressed: () =>
+                            showAddConstraintDialog(context, ref, 1),
+                        child: const Text('Open Constraint Dialog'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open Constraint Dialog'));
+        await waitForAsyncProviders(tester);
+
+        // Select OTHER_CENTER
+        final typeDropdown = find.widgetWithText(
+          DropdownButtonFormField<ConstraintType>,
+          'Loại ràng buộc',
+        );
+        await tester.tap(typeDropdown);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Học ở trung tâm khác').last);
+        await waitForAsyncProviders(tester);
+
+        await tester.tap(find.text('Lưu ràng buộc'));
+        await waitForAsyncProviders(tester);
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.textContaining('Lỗi:'), findsOneWidget);
 
         late List<Map<String, dynamic>> records;
         await tester.runAsync(() async {
@@ -1153,7 +1988,51 @@ void main() {
   // --- 5. CONSTRAINT LIVE REFRESH TESTS ---
   group('Constraint Live Refresh Tests', () {
     testWidgets(
-      'StudentDetailPage displays constraints and allows adding & canceling constraints',
+      'StudentDetailPage creates new constraint and live refreshes UI',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+        });
+
+        tester.view.physicalSize = const Size(1200, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [databaseProvider.overrideWith((ref) async => db)],
+            child: const MaterialApp(home: StudentDetailPage(studentId: 1)),
+          ),
+        );
+
+        await waitForAsyncProviders(tester);
+
+        expect(find.text('Ràng buộc lịch'), findsOneWidget);
+
+        // Tap Thêm ràng buộc
+        final addConstraintBtn = find.text('Thêm ràng buộc');
+        await tester.ensureVisible(addConstraintBtn);
+        await tester.tap(addConstraintBtn);
+        await waitForAsyncProviders(tester);
+
+        expect(find.text('Thêm ràng buộc lịch học sinh'), findsOneWidget);
+
+        // Save constraint
+        await tester.tap(find.text('Lưu ràng buộc'));
+        await waitForAsyncProviders(tester);
+
+        // Dialog closed and new constraint tile immediately visible on StudentDetailPage
+        expect(find.text('Không thể học'), findsOneWidget);
+        expect(find.textContaining('Thứ 1 (17:30 - 19:00)'), findsOneWidget);
+
+        await tester.runAsync(() async => db.close());
+      },
+    );
+
+    testWidgets(
+      'StudentDetailPage cancels constraint and live updates status to Đã hủy',
       (tester) async {
         late Database db;
         await tester.runAsync(() async {
@@ -1176,6 +2055,10 @@ void main() {
           });
         });
 
+        tester.view.physicalSize = const Size(1200, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
         await tester.pumpWidget(
           ProviderScope(
             overrides: [databaseProvider.overrideWith((ref) async => db)],
@@ -1185,25 +2068,7 @@ void main() {
 
         await waitForAsyncProviders(tester);
 
-        expect(find.text('Ràng buộc lịch'), findsOneWidget);
         expect(find.text('Không thể học'), findsOneWidget);
-        expect(find.textContaining('Thứ 1 (17:30 - 19:00)'), findsOneWidget);
-
-        // Open Add Constraint dialog
-        final addConstraintBtn = find.text('Thêm ràng buộc');
-        await tester.ensureVisible(addConstraintBtn);
-        await tester.tap(addConstraintBtn);
-        await waitForAsyncProviders(tester);
-
-        expect(find.text('Thêm ràng buộc lịch học sinh'), findsOneWidget);
-
-        // Cancel dialog
-        final dialogCancelBtn = find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.text('Hủy'),
-        );
-        await tester.tap(dialogCancelBtn);
-        await waitForAsyncProviders(tester);
 
         // Cancel constraint 1 on tile
         final tileCancelBtn = find.widgetWithText(TextButton, 'Hủy');
@@ -1215,6 +2080,7 @@ void main() {
         await tester.tap(find.text('Hủy ràng buộc'));
         await waitForAsyncProviders(tester);
 
+        // Status immediately updates to Đã hủy
         expect(find.text('Đã hủy'), findsOneWidget);
 
         await tester.runAsync(() async => db.close());
@@ -1299,7 +2165,7 @@ void main() {
   // --- 7. ASSIGNMENT UI FAIL-CLOSED TESTS ---
   group('Assignment UI Fail-Closed Tests', () {
     testWidgets(
-      'AssignStudentDialog disables confirm button on preview loading and error',
+      'AssignStudentDialog disables confirm button on preview loading',
       (tester) async {
         late Database db;
         await tester.runAsync(() async {
@@ -1336,7 +2202,6 @@ void main() {
 
         expect(find.text('Phân ca cho học sinh'), findsOneWidget);
 
-        // Confirm button is disabled while student is unselected or preview loading
         final confirmBtn = tester.widget<ElevatedButton>(
           find.widgetWithText(ElevatedButton, 'Xác nhận'),
         );
@@ -1373,8 +2238,6 @@ void main() {
       );
 
       await waitForAsyncProviders(tester);
-
-      expect(find.text('Phân ca cho học sinh'), findsOneWidget);
 
       final confirmBtn = tester.widget<ElevatedButton>(
         find.widgetWithText(ElevatedButton, 'Xác nhận'),
@@ -1441,6 +2304,15 @@ void main() {
       await tester.runAsync(() async {
         db = await createTestDb();
         await setupBaseData(db);
+
+        await db.insert('tham_gia_lop', {
+          'id': 101,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
       });
 
       final softWarningResult = ScheduleConflictResult(
@@ -1483,7 +2355,472 @@ void main() {
       await tester.tap(dropdownFinder);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Student 1').last);
+      await tester.tap(find.text('Student 1'));
+      await waitForAsyncProviders(tester);
+
+      final confirmBtn = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Xác nhận'),
+      );
+      expect(confirmBtn.onPressed, isNotNull);
+
+      await tester.runAsync(() async => db.close());
+    });
+
+    testWidgets('AssignStudentDialog clear preview enables confirm button', (
+      tester,
+    ) async {
+      late Database db;
+      await tester.runAsync(() async {
+        db = await createTestDb();
+        await setupBaseData(db);
+
+        await db.insert('tham_gia_lop', {
+          'id': 101,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWith((ref) async => db),
+            assignmentConflictPreviewProvider((
+              1,
+              1,
+              '2026-10-10',
+              null,
+              null,
+            )).overrideWith((ref) async => ScheduleConflictResult.clear()),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: AssignStudentDialog(scheduleId: 1, classId: 10),
+            ),
+          ),
+        ),
+      );
+
+      await waitForAsyncProviders(tester);
+
+      // Select Student 1
+      final dropdownFinder = find.byWidgetPredicate(
+        (w) => w is DropdownButtonFormField,
+      );
+      await tester.tap(dropdownFinder);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Student 1'));
+      await waitForAsyncProviders(tester);
+
+      final confirmBtn = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Xác nhận'),
+      );
+      expect(confirmBtn.onPressed, isNotNull);
+
+      await tester.runAsync(() async => db.close());
+    });
+  });
+
+  // --- 8. CHANGE SHIFT DIALOG FAIL-CLOSED TESTS ---
+  group('ChangeShiftDialog Fail-Closed Tests', () {
+    testWidgets(
+      'ChangeShiftDialog disables confirm button on preview loading, error, hard conflict, and enables on clear',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+
+          await db.insert('tham_gia_lop', {
+            'id': 101,
+            'id_hoc_sinh': 1,
+            'id_lop': 10,
+            'tu_ngay': '2026-01-01',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+
+          await db.insert('phan_ca_hoc_sinh', {
+            'id': 500,
+            'id_hoc_sinh': 1,
+            'id_lop': 10,
+            'id_lich_hoc': 1,
+            'tu_ngay': '2026-01-01',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        });
+
+        final pendingCompleter = Completer<ScheduleConflictResult>();
+        final effectiveDateStr = DateFormat(
+          'yyyy-MM-dd',
+        ).format(DateTime.now());
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWith((ref) async => db),
+              assignmentConflictPreviewProvider((
+                1,
+                2,
+                effectiveDateStr,
+                null,
+                500,
+              )).overrideWith((ref) => pendingCompleter.future),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(body: AssignmentTab(classId: 10)),
+            ),
+          ),
+        );
+
+        await waitForAsyncProviders(tester);
+
+        // Open PopupMenu for Student 1
+        final menuBtn = find.byIcon(Icons.more_vert).first;
+        await tester.tap(menuBtn);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Chuyển ca'));
+        await waitForAsyncProviders(tester);
+
+        expect(find.text('Chuyển ca học định kỳ'), findsOneWidget);
+
+        // Select Schedule 2 (10:00-11:30)
+        final dropdownFinder = find.byWidgetPredicate(
+          (w) => w is DropdownButtonFormField<int>,
+        );
+        await tester.tap(dropdownFinder);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.textContaining('Thứ Bảy: 10:00-11:30').last);
+        await waitForAsyncProviders(tester, iterations: 5);
+
+        // Confirm button is disabled while preview is loading
+        final confirmBtn = tester.widget<ElevatedButton>(
+          find.widgetWithText(ElevatedButton, 'Xác nhận'),
+        );
+        expect(confirmBtn.onPressed, isNull);
+
+        pendingCompleter.complete(ScheduleConflictResult.clear());
+        await tester.runAsync(() async => db.close());
+      },
+    );
+
+    testWidgets('ChangeShiftDialog preview error disables confirm button', (
+      tester,
+    ) async {
+      late Database db;
+      await tester.runAsync(() async {
+        db = await createTestDb();
+        await setupBaseData(db);
+
+        await db.insert('tham_gia_lop', {
+          'id': 101,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': 500,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      });
+
+      final effectiveDateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWith((ref) async => db),
+            assignmentConflictPreviewProvider(
+              (1, 2, effectiveDateStr, null, 500),
+            ).overrideWith((ref) => Future.error(Exception('Simulated Error'))),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: AssignmentTab(classId: 10)),
+          ),
+        ),
+      );
+
+      await waitForAsyncProviders(tester);
+
+      final menuBtn = find.byIcon(Icons.more_vert).first;
+      await tester.tap(menuBtn);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Chuyển ca'));
+      await waitForAsyncProviders(tester);
+
+      final dropdownFinder = find.byWidgetPredicate(
+        (w) => w is DropdownButtonFormField<int>,
+      );
+      await tester.tap(dropdownFinder);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Thứ Bảy: 10:00-11:30').last);
+      await waitForAsyncProviders(tester);
+
+      expect(find.textContaining('Lỗi kiểm tra trùng lịch'), findsOneWidget);
+
+      final confirmBtn = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Xác nhận'),
+      );
+      expect(confirmBtn.onPressed, isNull);
+
+      await tester.runAsync(() async => db.close());
+    });
+
+    testWidgets('ChangeShiftDialog hard conflict disables confirm button', (
+      tester,
+    ) async {
+      late Database db;
+      await tester.runAsync(() async {
+        db = await createTestDb();
+        await setupBaseData(db);
+
+        await db.insert('tham_gia_lop', {
+          'id': 101,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': 500,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      });
+
+      final hardConflictResult = ScheduleConflictResult(
+        hardConflicts: [
+          const ScheduleConflict(
+            reasonCode: ScheduleConflictReasonCode.EXACT_OVERLAP,
+            isHard: true,
+            message: 'Trùng ca',
+          ),
+        ],
+        softWarnings: [],
+      );
+
+      final effectiveDateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWith((ref) async => db),
+            assignmentConflictPreviewProvider((
+              1,
+              2,
+              effectiveDateStr,
+              null,
+              500,
+            )).overrideWith((ref) async => hardConflictResult),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: AssignmentTab(classId: 10)),
+          ),
+        ),
+      );
+
+      await waitForAsyncProviders(tester);
+
+      final menuBtn = find.byIcon(Icons.more_vert).first;
+      await tester.tap(menuBtn);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Chuyển ca'));
+      await waitForAsyncProviders(tester);
+
+      final dropdownFinder = find.byWidgetPredicate(
+        (w) => w is DropdownButtonFormField<int>,
+      );
+      await tester.tap(dropdownFinder);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Thứ Bảy: 10:00-11:30').last);
+      await waitForAsyncProviders(tester);
+
+      expect(find.textContaining('XUNG ĐỘT BẮT BUỘC'), findsOneWidget);
+
+      final confirmBtn = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Xác nhận'),
+      );
+      expect(confirmBtn.onPressed, isNull);
+
+      await tester.runAsync(() async => db.close());
+    });
+
+    testWidgets('ChangeShiftDialog soft warning enables confirm button', (
+      tester,
+    ) async {
+      late Database db;
+      await tester.runAsync(() async {
+        db = await createTestDb();
+        await setupBaseData(db);
+
+        await db.insert('tham_gia_lop', {
+          'id': 101,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': 500,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      });
+
+      final softWarningResult = ScheduleConflictResult(
+        hardConflicts: [],
+        softWarnings: [
+          const ScheduleConflict(
+            reasonCode: ScheduleConflictReasonCode.TRAVEL_BUFFER,
+            isHard: false,
+            message: 'Thiếu đệm di chuyển',
+          ),
+        ],
+      );
+
+      final effectiveDateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWith((ref) async => db),
+            assignmentConflictPreviewProvider((
+              1,
+              2,
+              effectiveDateStr,
+              null,
+              500,
+            )).overrideWith((ref) async => softWarningResult),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: AssignmentTab(classId: 10)),
+          ),
+        ),
+      );
+
+      await waitForAsyncProviders(tester);
+
+      final menuBtn = find.byIcon(Icons.more_vert).first;
+      await tester.tap(menuBtn);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Chuyển ca'));
+      await waitForAsyncProviders(tester);
+
+      final dropdownFinder = find.byWidgetPredicate(
+        (w) => w is DropdownButtonFormField<int>,
+      );
+      await tester.tap(dropdownFinder);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Thứ Bảy: 10:00-11:30').last);
+      await waitForAsyncProviders(tester);
+
+      expect(find.textContaining('CẢNH BÁO KHÔNG ƯU TIÊN'), findsOneWidget);
+
+      final confirmBtn = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Xác nhận'),
+      );
+      expect(confirmBtn.onPressed, isNotNull);
+
+      await tester.runAsync(() async => db.close());
+    });
+
+    testWidgets('ChangeShiftDialog clear preview enables confirm button', (
+      tester,
+    ) async {
+      late Database db;
+      await tester.runAsync(() async {
+        db = await createTestDb();
+        await setupBaseData(db);
+
+        await db.insert('tham_gia_lop', {
+          'id': 101,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('phan_ca_hoc_sinh', {
+          'id': 500,
+          'id_hoc_sinh': 1,
+          'id_lop': 10,
+          'id_lich_hoc': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+      });
+
+      final effectiveDateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWith((ref) async => db),
+            assignmentConflictPreviewProvider((
+              1,
+              2,
+              effectiveDateStr,
+              null,
+              500,
+            )).overrideWith((ref) async => ScheduleConflictResult.clear()),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: AssignmentTab(classId: 10)),
+          ),
+        ),
+      );
+
+      await waitForAsyncProviders(tester);
+
+      final menuBtn = find.byIcon(Icons.more_vert).first;
+      await tester.tap(menuBtn);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Chuyển ca'));
+      await waitForAsyncProviders(tester);
+
+      final dropdownFinder = find.byWidgetPredicate(
+        (w) => w is DropdownButtonFormField<int>,
+      );
+      await tester.tap(dropdownFinder);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Thứ Bảy: 10:00-11:30').last);
       await waitForAsyncProviders(tester);
 
       final confirmBtn = tester.widget<ElevatedButton>(
