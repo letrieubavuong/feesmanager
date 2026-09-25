@@ -41,15 +41,21 @@ class InvoicePaymentSummaryFamily
   const InvoicePaymentSummaryFamily();
 
   /// See also [invoicePaymentSummary].
-  InvoicePaymentSummaryProvider call((int, int, String) arg) {
-    return InvoicePaymentSummaryProvider(arg);
+  InvoicePaymentSummaryProvider call(
+    (int, int, String) arg,
+  ) {
+    return InvoicePaymentSummaryProvider(
+      arg,
+    );
   }
 
   @override
   InvoicePaymentSummaryProvider getProviderOverride(
     covariant InvoicePaymentSummaryProvider provider,
   ) {
-    return call(provider.arg);
+    return call(
+      provider.arg,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -71,19 +77,24 @@ class InvoicePaymentSummaryFamily
 class InvoicePaymentSummaryProvider
     extends AutoDisposeFutureProvider<InvoicePaymentSummary?> {
   /// See also [invoicePaymentSummary].
-  InvoicePaymentSummaryProvider((int, int, String) arg)
-    : this._internal(
-        (ref) => invoicePaymentSummary(ref as InvoicePaymentSummaryRef, arg),
-        from: invoicePaymentSummaryProvider,
-        name: r'invoicePaymentSummaryProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$invoicePaymentSummaryHash,
-        dependencies: InvoicePaymentSummaryFamily._dependencies,
-        allTransitiveDependencies:
-            InvoicePaymentSummaryFamily._allTransitiveDependencies,
-        arg: arg,
-      );
+  InvoicePaymentSummaryProvider(
+    (int, int, String) arg,
+  ) : this._internal(
+          (ref) => invoicePaymentSummary(
+            ref as InvoicePaymentSummaryRef,
+            arg,
+          ),
+          from: invoicePaymentSummaryProvider,
+          name: r'invoicePaymentSummaryProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$invoicePaymentSummaryHash,
+          dependencies: InvoicePaymentSummaryFamily._dependencies,
+          allTransitiveDependencies:
+              InvoicePaymentSummaryFamily._allTransitiveDependencies,
+          arg: arg,
+        );
 
   InvoicePaymentSummaryProvider._internal(
     super._createNotifier, {
@@ -100,7 +111,7 @@ class InvoicePaymentSummaryProvider
   @override
   Override overrideWith(
     FutureOr<InvoicePaymentSummary?> Function(InvoicePaymentSummaryRef provider)
-    create,
+        create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -164,15 +175,21 @@ class ClassMonthPaymentSummariesFamily
   const ClassMonthPaymentSummariesFamily();
 
   /// See also [classMonthPaymentSummaries].
-  ClassMonthPaymentSummariesProvider call((int, String) arg) {
-    return ClassMonthPaymentSummariesProvider(arg);
+  ClassMonthPaymentSummariesProvider call(
+    (int, String) arg,
+  ) {
+    return ClassMonthPaymentSummariesProvider(
+      arg,
+    );
   }
 
   @override
   ClassMonthPaymentSummariesProvider getProviderOverride(
     covariant ClassMonthPaymentSummariesProvider provider,
   ) {
-    return call(provider.arg);
+    return call(
+      provider.arg,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -194,22 +211,24 @@ class ClassMonthPaymentSummariesFamily
 class ClassMonthPaymentSummariesProvider
     extends AutoDisposeFutureProvider<Map<int, InvoicePaymentSummary>> {
   /// See also [classMonthPaymentSummaries].
-  ClassMonthPaymentSummariesProvider((int, String) arg)
-    : this._internal(
-        (ref) => classMonthPaymentSummaries(
-          ref as ClassMonthPaymentSummariesRef,
-          arg,
-        ),
-        from: classMonthPaymentSummariesProvider,
-        name: r'classMonthPaymentSummariesProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$classMonthPaymentSummariesHash,
-        dependencies: ClassMonthPaymentSummariesFamily._dependencies,
-        allTransitiveDependencies:
-            ClassMonthPaymentSummariesFamily._allTransitiveDependencies,
-        arg: arg,
-      );
+  ClassMonthPaymentSummariesProvider(
+    (int, String) arg,
+  ) : this._internal(
+          (ref) => classMonthPaymentSummaries(
+            ref as ClassMonthPaymentSummariesRef,
+            arg,
+          ),
+          from: classMonthPaymentSummariesProvider,
+          name: r'classMonthPaymentSummariesProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$classMonthPaymentSummariesHash,
+          dependencies: ClassMonthPaymentSummariesFamily._dependencies,
+          allTransitiveDependencies:
+              ClassMonthPaymentSummariesFamily._allTransitiveDependencies,
+          arg: arg,
+        );
 
   ClassMonthPaymentSummariesProvider._internal(
     super._createNotifier, {
@@ -226,9 +245,8 @@ class ClassMonthPaymentSummariesProvider
   @override
   Override overrideWith(
     FutureOr<Map<int, InvoicePaymentSummary>> Function(
-      ClassMonthPaymentSummariesRef provider,
-    )
-    create,
+            ClassMonthPaymentSummariesRef provider)
+        create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -246,7 +264,7 @@ class ClassMonthPaymentSummariesProvider
 
   @override
   AutoDisposeFutureProviderElement<Map<int, InvoicePaymentSummary>>
-  createElement() {
+      createElement() {
     return _ClassMonthPaymentSummariesProviderElement(this);
   }
 
@@ -291,15 +309,21 @@ class InvoicePaymentsFamily extends Family<AsyncValue<List<Payment>>> {
   const InvoicePaymentsFamily();
 
   /// See also [invoicePayments].
-  InvoicePaymentsProvider call((int, int, String) arg) {
-    return InvoicePaymentsProvider(arg);
+  InvoicePaymentsProvider call(
+    (int, int, String) arg,
+  ) {
+    return InvoicePaymentsProvider(
+      arg,
+    );
   }
 
   @override
   InvoicePaymentsProvider getProviderOverride(
     covariant InvoicePaymentsProvider provider,
   ) {
-    return call(provider.arg);
+    return call(
+      provider.arg,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -320,19 +344,24 @@ class InvoicePaymentsFamily extends Family<AsyncValue<List<Payment>>> {
 /// See also [invoicePayments].
 class InvoicePaymentsProvider extends AutoDisposeFutureProvider<List<Payment>> {
   /// See also [invoicePayments].
-  InvoicePaymentsProvider((int, int, String) arg)
-    : this._internal(
-        (ref) => invoicePayments(ref as InvoicePaymentsRef, arg),
-        from: invoicePaymentsProvider,
-        name: r'invoicePaymentsProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$invoicePaymentsHash,
-        dependencies: InvoicePaymentsFamily._dependencies,
-        allTransitiveDependencies:
-            InvoicePaymentsFamily._allTransitiveDependencies,
-        arg: arg,
-      );
+  InvoicePaymentsProvider(
+    (int, int, String) arg,
+  ) : this._internal(
+          (ref) => invoicePayments(
+            ref as InvoicePaymentsRef,
+            arg,
+          ),
+          from: invoicePaymentsProvider,
+          name: r'invoicePaymentsProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$invoicePaymentsHash,
+          dependencies: InvoicePaymentsFamily._dependencies,
+          allTransitiveDependencies:
+              InvoicePaymentsFamily._allTransitiveDependencies,
+          arg: arg,
+        );
 
   InvoicePaymentsProvider._internal(
     super._createNotifier, {
@@ -403,14 +432,14 @@ String _$paymentControllerHash() => r'2c8e2b86b463e0fe4705e9c30c5b02cf12a1115a';
 @ProviderFor(PaymentController)
 final paymentControllerProvider =
     AsyncNotifierProvider<PaymentController, void>.internal(
-      PaymentController.new,
-      name: r'paymentControllerProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$paymentControllerHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  PaymentController.new,
+  name: r'paymentControllerProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$paymentControllerHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$PaymentController = AsyncNotifier<void>;
 // ignore_for_file: type=lint

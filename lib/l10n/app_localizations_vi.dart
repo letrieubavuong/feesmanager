@@ -39,6 +39,30 @@ class AppLocalizationsVi extends AppLocalizations {
   String get menuSubtitle => 'Quản lý trung tâm dạy thêm';
 
   @override
+  String get palettePhysicsBlue => 'Xanh Vật lý';
+
+  @override
+  String get paletteEmerald => 'Xanh Ngọc Emerald';
+
+  @override
+  String get paletteIndigo => 'Xanh Chàm Indigo';
+
+  @override
+  String get paletteAmber => 'Vàng Hổ Phách';
+
+  @override
+  String get paletteSlate => 'Xám Đá Slate';
+
+  @override
+  String get paletteOceanCyan => 'Xanh Lam Cyan';
+
+  @override
+  String get paletteBurgundy => 'Đỏ Rượu Burgundy';
+
+  @override
+  String get paletteHighContrast => 'Tương Phản Cao';
+
+  @override
   String get dashboardTitle => 'Trang chủ';
 
   @override
@@ -124,6 +148,68 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get dbVersion => 'Cơ sở dữ liệu: v13';
+
+  @override
+  String get studentFormTitleAdd => 'Thêm học sinh';
+
+  @override
+  String get studentFormTitleEdit => 'Sửa thông tin học sinh';
+
+  @override
+  String get studentFullName => 'Họ và tên *';
+
+  @override
+  String get studentGrade => 'Khối';
+
+  @override
+  String studentGradeItem(Object grade) {
+    return 'Khối $grade';
+  }
+
+  @override
+  String get studentGender => 'Giới tính';
+
+  @override
+  String get studentGenderMale => 'Nam';
+
+  @override
+  String get studentGenderFemale => 'Nữ';
+
+  @override
+  String get studentGenderOther => 'Khác';
+
+  @override
+  String get studentSchool => 'Trường đang học';
+
+  @override
+  String get studentParentSection => 'Thông tin phụ huynh';
+
+  @override
+  String get studentParentName => 'Tên phụ huynh';
+
+  @override
+  String get studentParentPhone => 'SĐT phụ huynh';
+
+  @override
+  String get studentOtherContactSection => 'Liên hệ khác';
+
+  @override
+  String get studentPhone => 'SĐT học sinh';
+
+  @override
+  String get studentEmail => 'Email';
+
+  @override
+  String get studentAddress => 'Địa chỉ';
+
+  @override
+  String get studentFacebook => 'Facebook';
+
+  @override
+  String get studentNotes => 'Ghi chú';
+
+  @override
+  String get studentValidationName => 'Vui lòng nhập họ tên';
 
   @override
   String get commonLoading => 'Đang tải dữ liệu...';

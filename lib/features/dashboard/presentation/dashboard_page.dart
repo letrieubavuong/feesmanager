@@ -7,6 +7,7 @@ import '../../../app/navigation/app_destination.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/navigation_controller.dart';
 import '../../../app/navigation/ui_keys.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../classes/domain/class.dart';
 import '../../classes/presentation/class_controller.dart';
 import '../../classes/presentation/class_detail_page.dart';
@@ -47,7 +48,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
 
     final classesAsync = ref.watch(classListControllerProvider);
@@ -70,7 +71,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       drawer: const AppGlobalDrawer(),
       appBar: AppBar(
         leading: const GlobalMenuButton(),
-        title: Text(isEn ? 'Home' : 'Trang chủ'),
+        title: Text(l10n.dashboardTitle),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -99,7 +100,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            isEn ? 'Welcome, Teacher!' : 'Xin chào, Thầy/Cô!',
+                            l10n.dashboardGreeting,
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: theme.colorScheme.onPrimaryContainer,
@@ -128,9 +129,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               key: UiKeys.dashboardSearchInput,
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: isEn
-                    ? 'Search students or classes...'
-                    : 'Tìm học sinh hoặc lớp học...',
+                hintText: l10n.dashboardSearchPlaceholder,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -149,10 +148,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               const SizedBox(height: 12),
               _buildSearchResults(
                 context,
+                l10n: l10n,
                 query: _searchQuery,
                 classes: classesAsync.asData?.value ?? [],
                 students: studentsAsync.asData?.value ?? [],
-                isEn: isEn,
               ),
             ],
 
@@ -160,7 +159,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
             // --- C. CENTER OVERVIEW / KPIS ---
             Text(
-              isEn ? 'Center Overview' : 'Tổng quan trung tâm',
+              l10n.dashboardOverview,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -171,7 +170,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 Expanded(
                   child: _buildKpiCard(
                     context,
-                    title: isEn ? 'Active Classes' : 'Lớp học đang mở',
+                    title: l10n.dashboardActiveClasses,
                     value: '$activeClassesCount',
                     icon: Icons.class_outlined,
                     color: theme.colorScheme.primary,
@@ -181,7 +180,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 Expanded(
                   child: _buildKpiCard(
                     context,
-                    title: isEn ? 'Active Students' : 'Học sinh đang học',
+                    title: l10n.dashboardActiveStudents,
                     value: '$activeStudentsCount',
                     icon: Icons.people_outline,
                     color: theme.colorScheme.secondary,
@@ -194,7 +193,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
             // --- D. QUICK ACTIONS ---
             Text(
-              isEn ? 'Quick Actions' : 'Thao tác nhanh',
+              l10n.dashboardQuickActions,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -208,7 +207,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   key: UiKeys.dashboardQuickAddStudent,
                   context: context,
                   icon: Icons.person_add_alt_1_outlined,
-                  label: isEn ? 'Add Student' : 'Thêm học sinh',
+                  label: l10n.actionAddStudent,
                   onTap: () async {
                     await Navigator.of(context).push(
                       MaterialPageRoute(
@@ -222,7 +221,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   key: UiKeys.dashboardQuickManageClasses,
                   context: context,
                   icon: Icons.class_outlined,
-                  label: isEn ? 'Manage Classes' : 'Quản lý lớp học',
+                  label: l10n.actionManageClasses,
                   onTap: () {
                     ref
                         .read(navigationControllerProvider.notifier)
@@ -233,7 +232,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   key: UiKeys.dashboardQuickViewTuition,
                   context: context,
                   icon: Icons.payments_outlined,
-                  label: isEn ? 'View Tuition' : 'Xem học phí',
+                  label: l10n.actionViewTuition,
                   onTap: () {
                     ref
                         .read(navigationControllerProvider.notifier)
@@ -244,7 +243,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   key: UiKeys.dashboardQuickViewReports,
                   context: context,
                   icon: Icons.bar_chart_outlined,
-                  label: isEn ? 'View Reports' : 'Xem báo cáo',
+                  label: l10n.actionViewReports,
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const ReportsPage()),
@@ -258,7 +257,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
             // --- E. TODAY'S SCHEDULE ---
             Text(
-              isEn ? "Today's Schedule" : 'Lịch học hôm nay',
+              l10n.dashboardToday,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -272,9 +271,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                       padding: const EdgeInsets.all(24.0),
                       child: Center(
                         child: Text(
-                          isEn
-                              ? 'No sessions scheduled for today.'
-                              : 'Hôm nay không có buổi học nào.',
+                          l10n.dashboardNoSessionsToday,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.outline,
                           ),
@@ -301,7 +298,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                           ),
                         ),
                         title: Text(
-                          '${isEn ? "Class #" : "Lớp ID "}${session.idLop}',
+                          '${l10n.navClasses} #${session.idLop}',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(
@@ -328,7 +325,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               error: (err, _) => Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Text('Error loading today\'s schedule: $err'),
+                  child: Text('${l10n.commonError}: $err'),
                 ),
               ),
             ),
@@ -397,7 +394,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         key: key,
         onPressed: onTap,
         icon: Icon(icon, size: 20),
-        label: Text(label, overflow: TextOverflow.ellipsis),
+        label: Text(
+          label,
+          overflow: TextOverflow.ellipsis,
+        ),
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           alignment: Alignment.centerLeft,
@@ -409,22 +409,22 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   Widget _buildSearchResults(
     BuildContext context, {
+    required AppLocalizations l10n,
     required String query,
     required List<ClassEntity> classes,
     required List<Student> students,
-    required bool isEn,
   }) {
     final theme = Theme.of(context);
     final lowerQuery = query.toLowerCase();
 
     final matchedClasses = classes
-        .where(
-          (c) => !c.daLuuTru && c.tenLop.toLowerCase().contains(lowerQuery),
-        )
+        .where((c) =>
+            !c.daLuuTru && c.tenLop.toLowerCase().contains(lowerQuery))
         .toList();
 
     final matchedStudents = students
-        .where((s) => !s.daLuuTru && s.hoTen.toLowerCase().contains(lowerQuery))
+        .where((s) =>
+            !s.daLuuTru && s.hoTen.toLowerCase().contains(lowerQuery))
         .toList();
 
     if (matchedClasses.isEmpty && matchedStudents.isEmpty) {
@@ -432,9 +432,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text(
-            isEn
-                ? 'No students or classes found.'
-                : 'Không tìm thấy học sinh hoặc lớp học nào.',
+            l10n.searchNoResults,
             style: TextStyle(color: theme.colorScheme.outline),
           ),
         ),
@@ -450,7 +448,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Text(
-              isEn ? 'Search Results' : 'Kết quả tìm kiếm',
+              l10n.searchResults,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.primary,
                 fontWeight: FontWeight.bold,
@@ -463,7 +461,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               (c) => ListTile(
                 leading: const Icon(Icons.class_outlined),
                 title: Text(c.tenLop),
-                subtitle: Text(isEn ? 'Class' : 'Lớp học'),
+                subtitle: Text(l10n.navClasses),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
@@ -479,7 +477,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               (s) => ListTile(
                 leading: const Icon(Icons.person_outline),
                 title: Text(s.hoTen),
-                subtitle: Text(isEn ? 'Student' : 'Học sinh'),
+                subtitle: Text(l10n.navStudents),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(

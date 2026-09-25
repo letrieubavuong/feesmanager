@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../app/navigation/app_global_drawer.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../roster/domain/roster_member.dart';
 import '../../roster/domain/roster_result.dart';
@@ -44,10 +45,14 @@ class AttendancePage extends ConsumerWidget {
     final sheetAsync = ref.watch(attendanceControllerProvider(sessionId));
 
     return Scaffold(
+      drawer: const AppGlobalDrawer(),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: const BackButton(),
         title: const Text('Điểm danh'),
         actions: sheetAsync.when(
           data: (sheet) => [
+            const GlobalMenuButton(),
             if (_isEditable(sheet)) ...[
               if (sheet.session.loai == SessionType.HOC_BU)
                 TextButton.icon(

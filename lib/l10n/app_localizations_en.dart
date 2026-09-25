@@ -39,6 +39,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuSubtitle => 'Tuition Management System';
 
   @override
+  String get palettePhysicsBlue => 'Physics Blue';
+
+  @override
+  String get paletteEmerald => 'Emerald Green';
+
+  @override
+  String get paletteIndigo => 'Indigo';
+
+  @override
+  String get paletteAmber => 'Amber';
+
+  @override
+  String get paletteSlate => 'Slate Grey';
+
+  @override
+  String get paletteOceanCyan => 'Ocean Cyan';
+
+  @override
+  String get paletteBurgundy => 'Burgundy Rose';
+
+  @override
+  String get paletteHighContrast => 'High Contrast';
+
+  @override
   String get dashboardTitle => 'Home';
 
   @override
@@ -124,6 +148,68 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dbVersion => 'Database: v13';
+
+  @override
+  String get studentFormTitleAdd => 'Add Student';
+
+  @override
+  String get studentFormTitleEdit => 'Edit Student';
+
+  @override
+  String get studentFullName => 'Full Name *';
+
+  @override
+  String get studentGrade => 'Grade';
+
+  @override
+  String studentGradeItem(Object grade) {
+    return 'Grade $grade';
+  }
+
+  @override
+  String get studentGender => 'Gender';
+
+  @override
+  String get studentGenderMale => 'Male';
+
+  @override
+  String get studentGenderFemale => 'Female';
+
+  @override
+  String get studentGenderOther => 'Other';
+
+  @override
+  String get studentSchool => 'School';
+
+  @override
+  String get studentParentSection => 'Parent Information';
+
+  @override
+  String get studentParentName => 'Parent Name';
+
+  @override
+  String get studentParentPhone => 'Parent Phone';
+
+  @override
+  String get studentOtherContactSection => 'Other Contacts';
+
+  @override
+  String get studentPhone => 'Student Phone';
+
+  @override
+  String get studentEmail => 'Email';
+
+  @override
+  String get studentAddress => 'Address';
+
+  @override
+  String get studentFacebook => 'Facebook';
+
+  @override
+  String get studentNotes => 'Notes';
+
+  @override
+  String get studentValidationName => 'Please enter full name';
 
   @override
   String get commonLoading => 'Loading data...';

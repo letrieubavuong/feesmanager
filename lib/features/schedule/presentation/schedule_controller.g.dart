@@ -34,7 +34,9 @@ abstract class _$ClassScheduleController
     extends BuildlessAutoDisposeAsyncNotifier<List<ClassSchedule>> {
   late final int classId;
 
-  FutureOr<List<ClassSchedule>> build(int classId);
+  FutureOr<List<ClassSchedule>> build(
+    int classId,
+  );
 }
 
 /// See also [ClassScheduleController].
@@ -48,15 +50,21 @@ class ClassScheduleControllerFamily
   const ClassScheduleControllerFamily();
 
   /// See also [ClassScheduleController].
-  ClassScheduleControllerProvider call(int classId) {
-    return ClassScheduleControllerProvider(classId);
+  ClassScheduleControllerProvider call(
+    int classId,
+  ) {
+    return ClassScheduleControllerProvider(
+      classId,
+    );
   }
 
   @override
   ClassScheduleControllerProvider getProviderOverride(
     covariant ClassScheduleControllerProvider provider,
   ) {
-    return call(provider.classId);
+    return call(
+      provider.classId,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -76,25 +84,24 @@ class ClassScheduleControllerFamily
 
 /// See also [ClassScheduleController].
 class ClassScheduleControllerProvider
-    extends
-        AutoDisposeAsyncNotifierProviderImpl<
-          ClassScheduleController,
-          List<ClassSchedule>
-        > {
+    extends AutoDisposeAsyncNotifierProviderImpl<ClassScheduleController,
+        List<ClassSchedule>> {
   /// See also [ClassScheduleController].
-  ClassScheduleControllerProvider(int classId)
-    : this._internal(
-        () => ClassScheduleController()..classId = classId,
-        from: classScheduleControllerProvider,
-        name: r'classScheduleControllerProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$classScheduleControllerHash,
-        dependencies: ClassScheduleControllerFamily._dependencies,
-        allTransitiveDependencies:
-            ClassScheduleControllerFamily._allTransitiveDependencies,
-        classId: classId,
-      );
+  ClassScheduleControllerProvider(
+    int classId,
+  ) : this._internal(
+          () => ClassScheduleController()..classId = classId,
+          from: classScheduleControllerProvider,
+          name: r'classScheduleControllerProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$classScheduleControllerHash,
+          dependencies: ClassScheduleControllerFamily._dependencies,
+          allTransitiveDependencies:
+              ClassScheduleControllerFamily._allTransitiveDependencies,
+          classId: classId,
+        );
 
   ClassScheduleControllerProvider._internal(
     super._createNotifier, {
@@ -112,7 +119,9 @@ class ClassScheduleControllerProvider
   FutureOr<List<ClassSchedule>> runNotifierBuild(
     covariant ClassScheduleController notifier,
   ) {
-    return notifier.build(classId);
+    return notifier.build(
+      classId,
+    );
   }
 
   @override
@@ -132,11 +141,8 @@ class ClassScheduleControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<
-    ClassScheduleController,
-    List<ClassSchedule>
-  >
-  createElement() {
+  AutoDisposeAsyncNotifierProviderElement<ClassScheduleController,
+      List<ClassSchedule>> createElement() {
     return _ClassScheduleControllerProviderElement(this);
   }
 
@@ -161,12 +167,8 @@ mixin ClassScheduleControllerRef
 }
 
 class _ClassScheduleControllerProviderElement
-    extends
-        AutoDisposeAsyncNotifierProviderElement<
-          ClassScheduleController,
-          List<ClassSchedule>
-        >
-    with ClassScheduleControllerRef {
+    extends AutoDisposeAsyncNotifierProviderElement<ClassScheduleController,
+        List<ClassSchedule>> with ClassScheduleControllerRef {
   _ClassScheduleControllerProviderElement(super.provider);
 
   @override

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'class_controller.dart';
 import 'class_form_page.dart';
+import '../../../app/navigation/app_global_drawer.dart';
 import '../domain/class.dart';
 import '../domain/class_service.dart';
 import '../../memberships/domain/membership_service.dart';
@@ -39,13 +40,18 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
     );
 
     return Scaffold(
+      drawer: const AppGlobalDrawer(),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: const BackButton(),
         title: const Text('Chi tiết lớp học'),
         actions: [
+          const GlobalMenuButton(),
           classAsync.when(
             data: (cls) => cls == null
                 ? const SizedBox.shrink()
                 : Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit),

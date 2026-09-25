@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../app/navigation/app_global_drawer.dart';
 import '../domain/student.dart';
 import '../domain/student_service.dart';
 import '../../memberships/domain/membership.dart';
@@ -29,9 +30,13 @@ class StudentDetailPage extends ConsumerWidget {
     final studentAsync = ref.watch(studentDetailProvider(studentId));
 
     return Scaffold(
+      drawer: const AppGlobalDrawer(),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: const BackButton(),
         title: const Text('Chi tiết học sinh'),
         actions: [
+          const GlobalMenuButton(),
           studentAsync.when(
             data: (student) => student == null
                 ? const SizedBox.shrink()
@@ -215,8 +220,9 @@ class StudentDetailPage extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             _buildSectionTitle(context, 'Ràng buộc lịch'),
             ElevatedButton.icon(

@@ -41,15 +41,21 @@ class ClassTuitionPoliciesFamily
   const ClassTuitionPoliciesFamily();
 
   /// See also [classTuitionPolicies].
-  ClassTuitionPoliciesProvider call(int classId) {
-    return ClassTuitionPoliciesProvider(classId);
+  ClassTuitionPoliciesProvider call(
+    int classId,
+  ) {
+    return ClassTuitionPoliciesProvider(
+      classId,
+    );
   }
 
   @override
   ClassTuitionPoliciesProvider getProviderOverride(
     covariant ClassTuitionPoliciesProvider provider,
   ) {
-    return call(provider.classId);
+    return call(
+      provider.classId,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -71,19 +77,24 @@ class ClassTuitionPoliciesFamily
 class ClassTuitionPoliciesProvider
     extends AutoDisposeFutureProvider<List<TuitionPolicy>> {
   /// See also [classTuitionPolicies].
-  ClassTuitionPoliciesProvider(int classId)
-    : this._internal(
-        (ref) => classTuitionPolicies(ref as ClassTuitionPoliciesRef, classId),
-        from: classTuitionPoliciesProvider,
-        name: r'classTuitionPoliciesProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$classTuitionPoliciesHash,
-        dependencies: ClassTuitionPoliciesFamily._dependencies,
-        allTransitiveDependencies:
-            ClassTuitionPoliciesFamily._allTransitiveDependencies,
-        classId: classId,
-      );
+  ClassTuitionPoliciesProvider(
+    int classId,
+  ) : this._internal(
+          (ref) => classTuitionPolicies(
+            ref as ClassTuitionPoliciesRef,
+            classId,
+          ),
+          from: classTuitionPoliciesProvider,
+          name: r'classTuitionPoliciesProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$classTuitionPoliciesHash,
+          dependencies: ClassTuitionPoliciesFamily._dependencies,
+          allTransitiveDependencies:
+              ClassTuitionPoliciesFamily._allTransitiveDependencies,
+          classId: classId,
+        );
 
   ClassTuitionPoliciesProvider._internal(
     super._createNotifier, {
@@ -100,7 +111,7 @@ class ClassTuitionPoliciesProvider
   @override
   Override overrideWith(
     FutureOr<List<TuitionPolicy>> Function(ClassTuitionPoliciesRef provider)
-    create,
+        create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -163,15 +174,21 @@ class EffectiveTuitionPolicyFamily extends Family<AsyncValue<TuitionPolicy?>> {
   const EffectiveTuitionPolicyFamily();
 
   /// See also [effectiveTuitionPolicy].
-  EffectiveTuitionPolicyProvider call((int, String) arg) {
-    return EffectiveTuitionPolicyProvider(arg);
+  EffectiveTuitionPolicyProvider call(
+    (int, String) arg,
+  ) {
+    return EffectiveTuitionPolicyProvider(
+      arg,
+    );
   }
 
   @override
   EffectiveTuitionPolicyProvider getProviderOverride(
     covariant EffectiveTuitionPolicyProvider provider,
   ) {
-    return call(provider.arg);
+    return call(
+      provider.arg,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -193,19 +210,24 @@ class EffectiveTuitionPolicyFamily extends Family<AsyncValue<TuitionPolicy?>> {
 class EffectiveTuitionPolicyProvider
     extends AutoDisposeFutureProvider<TuitionPolicy?> {
   /// See also [effectiveTuitionPolicy].
-  EffectiveTuitionPolicyProvider((int, String) arg)
-    : this._internal(
-        (ref) => effectiveTuitionPolicy(ref as EffectiveTuitionPolicyRef, arg),
-        from: effectiveTuitionPolicyProvider,
-        name: r'effectiveTuitionPolicyProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$effectiveTuitionPolicyHash,
-        dependencies: EffectiveTuitionPolicyFamily._dependencies,
-        allTransitiveDependencies:
-            EffectiveTuitionPolicyFamily._allTransitiveDependencies,
-        arg: arg,
-      );
+  EffectiveTuitionPolicyProvider(
+    (int, String) arg,
+  ) : this._internal(
+          (ref) => effectiveTuitionPolicy(
+            ref as EffectiveTuitionPolicyRef,
+            arg,
+          ),
+          from: effectiveTuitionPolicyProvider,
+          name: r'effectiveTuitionPolicyProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$effectiveTuitionPolicyHash,
+          dependencies: EffectiveTuitionPolicyFamily._dependencies,
+          allTransitiveDependencies:
+              EffectiveTuitionPolicyFamily._allTransitiveDependencies,
+          arg: arg,
+        );
 
   EffectiveTuitionPolicyProvider._internal(
     super._createNotifier, {
@@ -222,7 +244,7 @@ class EffectiveTuitionPolicyProvider
   @override
   Override overrideWith(
     FutureOr<TuitionPolicy?> Function(EffectiveTuitionPolicyRef provider)
-    create,
+        create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -286,15 +308,21 @@ class ClassMonthInvoicesFamily
   const ClassMonthInvoicesFamily();
 
   /// See also [classMonthInvoices].
-  ClassMonthInvoicesProvider call((int, String) arg) {
-    return ClassMonthInvoicesProvider(arg);
+  ClassMonthInvoicesProvider call(
+    (int, String) arg,
+  ) {
+    return ClassMonthInvoicesProvider(
+      arg,
+    );
   }
 
   @override
   ClassMonthInvoicesProvider getProviderOverride(
     covariant ClassMonthInvoicesProvider provider,
   ) {
-    return call(provider.arg);
+    return call(
+      provider.arg,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -316,19 +344,24 @@ class ClassMonthInvoicesFamily
 class ClassMonthInvoicesProvider
     extends AutoDisposeFutureProvider<List<TuitionInvoice>> {
   /// See also [classMonthInvoices].
-  ClassMonthInvoicesProvider((int, String) arg)
-    : this._internal(
-        (ref) => classMonthInvoices(ref as ClassMonthInvoicesRef, arg),
-        from: classMonthInvoicesProvider,
-        name: r'classMonthInvoicesProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$classMonthInvoicesHash,
-        dependencies: ClassMonthInvoicesFamily._dependencies,
-        allTransitiveDependencies:
-            ClassMonthInvoicesFamily._allTransitiveDependencies,
-        arg: arg,
-      );
+  ClassMonthInvoicesProvider(
+    (int, String) arg,
+  ) : this._internal(
+          (ref) => classMonthInvoices(
+            ref as ClassMonthInvoicesRef,
+            arg,
+          ),
+          from: classMonthInvoicesProvider,
+          name: r'classMonthInvoicesProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$classMonthInvoicesHash,
+          dependencies: ClassMonthInvoicesFamily._dependencies,
+          allTransitiveDependencies:
+              ClassMonthInvoicesFamily._allTransitiveDependencies,
+          arg: arg,
+        );
 
   ClassMonthInvoicesProvider._internal(
     super._createNotifier, {
@@ -345,7 +378,7 @@ class ClassMonthInvoicesProvider
   @override
   Override overrideWith(
     FutureOr<List<TuitionInvoice>> Function(ClassMonthInvoicesRef provider)
-    create,
+        create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -407,15 +440,27 @@ class StudentInvoiceFamily extends Family<AsyncValue<TuitionInvoice?>> {
   const StudentInvoiceFamily();
 
   /// See also [studentInvoice].
-  StudentInvoiceProvider call(int studentId, int classId, String month) {
-    return StudentInvoiceProvider(studentId, classId, month);
+  StudentInvoiceProvider call(
+    int studentId,
+    int classId,
+    String month,
+  ) {
+    return StudentInvoiceProvider(
+      studentId,
+      classId,
+      month,
+    );
   }
 
   @override
   StudentInvoiceProvider getProviderOverride(
     covariant StudentInvoiceProvider provider,
   ) {
-    return call(provider.studentId, provider.classId, provider.month);
+    return call(
+      provider.studentId,
+      provider.classId,
+      provider.month,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -437,22 +482,30 @@ class StudentInvoiceFamily extends Family<AsyncValue<TuitionInvoice?>> {
 class StudentInvoiceProvider
     extends AutoDisposeFutureProvider<TuitionInvoice?> {
   /// See also [studentInvoice].
-  StudentInvoiceProvider(int studentId, int classId, String month)
-    : this._internal(
-        (ref) =>
-            studentInvoice(ref as StudentInvoiceRef, studentId, classId, month),
-        from: studentInvoiceProvider,
-        name: r'studentInvoiceProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$studentInvoiceHash,
-        dependencies: StudentInvoiceFamily._dependencies,
-        allTransitiveDependencies:
-            StudentInvoiceFamily._allTransitiveDependencies,
-        studentId: studentId,
-        classId: classId,
-        month: month,
-      );
+  StudentInvoiceProvider(
+    int studentId,
+    int classId,
+    String month,
+  ) : this._internal(
+          (ref) => studentInvoice(
+            ref as StudentInvoiceRef,
+            studentId,
+            classId,
+            month,
+          ),
+          from: studentInvoiceProvider,
+          name: r'studentInvoiceProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$studentInvoiceHash,
+          dependencies: StudentInvoiceFamily._dependencies,
+          allTransitiveDependencies:
+              StudentInvoiceFamily._allTransitiveDependencies,
+          studentId: studentId,
+          classId: classId,
+          month: month,
+        );
 
   StudentInvoiceProvider._internal(
     super._createNotifier, {
@@ -545,14 +598,14 @@ String _$tuitionPolicyControllerHash() =>
 @ProviderFor(TuitionPolicyController)
 final tuitionPolicyControllerProvider =
     AutoDisposeAsyncNotifierProvider<TuitionPolicyController, void>.internal(
-      TuitionPolicyController.new,
-      name: r'tuitionPolicyControllerProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$tuitionPolicyControllerHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  TuitionPolicyController.new,
+  name: r'tuitionPolicyControllerProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$tuitionPolicyControllerHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$TuitionPolicyController = AutoDisposeAsyncNotifier<void>;
 String _$tuitionPreviewControllerHash() =>
@@ -564,7 +617,11 @@ abstract class _$TuitionPreviewController
   late final int classId;
   late final String month;
 
-  FutureOr<TuitionPreview> build(int studentId, int classId, String month);
+  FutureOr<TuitionPreview> build(
+    int studentId,
+    int classId,
+    String month,
+  );
 }
 
 /// See also [TuitionPreviewController].
@@ -583,14 +640,22 @@ class TuitionPreviewControllerFamily
     int classId,
     String month,
   ) {
-    return TuitionPreviewControllerProvider(studentId, classId, month);
+    return TuitionPreviewControllerProvider(
+      studentId,
+      classId,
+      month,
+    );
   }
 
   @override
   TuitionPreviewControllerProvider getProviderOverride(
     covariant TuitionPreviewControllerProvider provider,
   ) {
-    return call(provider.studentId, provider.classId, provider.month);
+    return call(
+      provider.studentId,
+      provider.classId,
+      provider.month,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -610,30 +675,31 @@ class TuitionPreviewControllerFamily
 
 /// See also [TuitionPreviewController].
 class TuitionPreviewControllerProvider
-    extends
-        AutoDisposeAsyncNotifierProviderImpl<
-          TuitionPreviewController,
-          TuitionPreview
-        > {
+    extends AutoDisposeAsyncNotifierProviderImpl<TuitionPreviewController,
+        TuitionPreview> {
   /// See also [TuitionPreviewController].
-  TuitionPreviewControllerProvider(int studentId, int classId, String month)
-    : this._internal(
-        () => TuitionPreviewController()
-          ..studentId = studentId
-          ..classId = classId
-          ..month = month,
-        from: tuitionPreviewControllerProvider,
-        name: r'tuitionPreviewControllerProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$tuitionPreviewControllerHash,
-        dependencies: TuitionPreviewControllerFamily._dependencies,
-        allTransitiveDependencies:
-            TuitionPreviewControllerFamily._allTransitiveDependencies,
-        studentId: studentId,
-        classId: classId,
-        month: month,
-      );
+  TuitionPreviewControllerProvider(
+    int studentId,
+    int classId,
+    String month,
+  ) : this._internal(
+          () => TuitionPreviewController()
+            ..studentId = studentId
+            ..classId = classId
+            ..month = month,
+          from: tuitionPreviewControllerProvider,
+          name: r'tuitionPreviewControllerProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$tuitionPreviewControllerHash,
+          dependencies: TuitionPreviewControllerFamily._dependencies,
+          allTransitiveDependencies:
+              TuitionPreviewControllerFamily._allTransitiveDependencies,
+          studentId: studentId,
+          classId: classId,
+          month: month,
+        );
 
   TuitionPreviewControllerProvider._internal(
     super._createNotifier, {
@@ -655,7 +721,11 @@ class TuitionPreviewControllerProvider
   FutureOr<TuitionPreview> runNotifierBuild(
     covariant TuitionPreviewController notifier,
   ) {
-    return notifier.build(studentId, classId, month);
+    return notifier.build(
+      studentId,
+      classId,
+      month,
+    );
   }
 
   @override
@@ -680,11 +750,8 @@ class TuitionPreviewControllerProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<
-    TuitionPreviewController,
-    TuitionPreview
-  >
-  createElement() {
+  AutoDisposeAsyncNotifierProviderElement<TuitionPreviewController,
+      TuitionPreview> createElement() {
     return _TuitionPreviewControllerProviderElement(this);
   }
 
@@ -720,12 +787,8 @@ mixin TuitionPreviewControllerRef
 }
 
 class _TuitionPreviewControllerProviderElement
-    extends
-        AutoDisposeAsyncNotifierProviderElement<
-          TuitionPreviewController,
-          TuitionPreview
-        >
-    with TuitionPreviewControllerRef {
+    extends AutoDisposeAsyncNotifierProviderElement<TuitionPreviewController,
+        TuitionPreview> with TuitionPreviewControllerRef {
   _TuitionPreviewControllerProviderElement(super.provider);
 
   @override
@@ -742,14 +805,14 @@ String _$invoiceControllerHash() => r'26c0b55db0537ac74fc5518c0d72a6f0ad080c94';
 @ProviderFor(InvoiceController)
 final invoiceControllerProvider =
     AutoDisposeAsyncNotifierProvider<InvoiceController, void>.internal(
-      InvoiceController.new,
-      name: r'invoiceControllerProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$invoiceControllerHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  InvoiceController.new,
+  name: r'invoiceControllerProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$invoiceControllerHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$InvoiceController = AutoDisposeAsyncNotifier<void>;
 // ignore_for_file: type=lint

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'app_palettes.dart';
 import 'app_radius.dart';
 import 'app_semantic_colors.dart';
+import 'app_typography.dart';
 
 class AppTheme {
   AppTheme._();
@@ -59,6 +60,7 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       brightness: brightness,
+      textTheme: AppTypography.createTextTheme(colorScheme),
       extensions: [semanticColors],
       appBarTheme: AppBarTheme(
         centerTitle: false,

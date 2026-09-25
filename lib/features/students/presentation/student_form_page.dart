@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/common_widgets/dirty_form_scope.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../app/navigation/app_global_drawer.dart';
 import '../domain/student.dart';
 import 'student_controller.dart';
 
@@ -42,26 +44,16 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
   void initState() {
     super.initState();
     final s = widget.student;
-    _hoTenController = TextEditingController(text: s?.hoTen)
-      ..addListener(_onChanged);
-    _ngaySinhController = TextEditingController(text: s?.ngaySinh)
-      ..addListener(_onChanged);
-    _tenPhuHuynhController = TextEditingController(text: s?.tenPhuHuynh)
-      ..addListener(_onChanged);
-    _sdtPhuHuynhController = TextEditingController(text: s?.sdtPhuHuynh)
-      ..addListener(_onChanged);
-    _sdtHocSinhController = TextEditingController(text: s?.sdtHocSinh)
-      ..addListener(_onChanged);
-    _emailController = TextEditingController(text: s?.email)
-      ..addListener(_onChanged);
-    _truongController = TextEditingController(text: s?.truongDangHoc)
-      ..addListener(_onChanged);
-    _diaChiController = TextEditingController(text: s?.diaChi)
-      ..addListener(_onChanged);
-    _facebookController = TextEditingController(text: s?.facebook)
-      ..addListener(_onChanged);
-    _ghiChuController = TextEditingController(text: s?.ghiChu)
-      ..addListener(_onChanged);
+    _hoTenController = TextEditingController(text: s?.hoTen)..addListener(_onChanged);
+    _ngaySinhController = TextEditingController(text: s?.ngaySinh)..addListener(_onChanged);
+    _tenPhuHuynhController = TextEditingController(text: s?.tenPhuHuynh)..addListener(_onChanged);
+    _sdtPhuHuynhController = TextEditingController(text: s?.sdtPhuHuynh)..addListener(_onChanged);
+    _sdtHocSinhController = TextEditingController(text: s?.sdtHocSinh)..addListener(_onChanged);
+    _emailController = TextEditingController(text: s?.email)..addListener(_onChanged);
+    _truongController = TextEditingController(text: s?.truongDangHoc)..addListener(_onChanged);
+    _diaChiController = TextEditingController(text: s?.diaChi)..addListener(_onChanged);
+    _facebookController = TextEditingController(text: s?.facebook)..addListener(_onChanged);
+    _ghiChuController = TextEditingController(text: s?.ghiChu)..addListener(_onChanged);
     _khoi = s?.khoi;
     _gioiTinh = s?.gioiTinh;
   }
@@ -83,14 +75,24 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return DirtyFormScope(
       isDirty: _isDirty,
+      title: l10n.dirtyFormTitle,
+      message: l10n.dirtyFormMessage,
       child: Scaffold(
+        drawer: const AppGlobalDrawer(),
         appBar: AppBar(
+          automaticallyImplyLeading: false,
+          leading: const BackButton(),
           title: Text(
-            widget.student == null ? 'Thêm học sinh' : 'Sửa học sinh',
+            widget.student == null
+                ? l10n.studentFormTitleAdd
+                : l10n.studentFormTitleEdit,
           ),
           actions: [
+            const GlobalMenuButton(),
             IconButton(icon: const Icon(Icons.check), onPressed: _save),
           ],
         ),
@@ -103,12 +105,12 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
               children: [
                 TextFormField(
                   controller: _hoTenController,
-                  decoration: const InputDecoration(
-                    labelText: 'Họ và tên *',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.studentFullName,
+                    border: const OutlineInputBorder(),
                   ),
                   validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Vui lòng nhập họ tên'
+                      ? l10n.studentValidationName
                       : null,
                 ),
                 const SizedBox(height: 16),
@@ -117,15 +119,15 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
                     Expanded(
                       child: DropdownButtonFormField<int>(
                         initialValue: _khoi,
-                        decoration: const InputDecoration(
-                          labelText: 'Khối',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: l10n.studentGrade,
+                          border: const OutlineInputBorder(),
                         ),
                         items: List.generate(12, (index) => index + 1)
                             .map(
                               (k) => DropdownMenuItem(
                                 value: k,
-                                child: Text('Khối $k'),
+                                child: Text(l10n.studentGradeItem(k)),
                               ),
                             )
                             .toList(),
@@ -139,14 +141,23 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         initialValue: _gioiTinh,
-                        decoration: const InputDecoration(
-                          labelText: 'Giới tính',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: l10n.studentGender,
+                          border: const OutlineInputBorder(),
                         ),
-                        items: const [
-                          DropdownMenuItem(value: 'NAM', child: Text('Nam')),
-                          DropdownMenuItem(value: 'NU', child: Text('Nữ')),
-                          DropdownMenuItem(value: 'KHAC', child: Text('Khác')),
+                        items: [
+                          DropdownMenuItem(
+                            value: 'NAM',
+                            child: Text(l10n.studentGenderMale),
+                          ),
+                          DropdownMenuItem(
+                            value: 'NU',
+                            child: Text(l10n.studentGenderFemale),
+                          ),
+                          DropdownMenuItem(
+                            value: 'KHAC',
+                            child: Text(l10n.studentGenderOther),
+                          ),
                         ],
                         onChanged: (v) {
                           _onChanged();
@@ -159,80 +170,80 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _truongController,
-                  decoration: const InputDecoration(
-                    labelText: 'Trường đang học',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.studentSchool,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 16),
                 const Divider(),
-                const Text(
-                  'Thông tin phụ huynh',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                Text(
+                  l10n.studentParentSection,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _tenPhuHuynhController,
-                  decoration: const InputDecoration(
-                    labelText: 'Tên phụ huynh',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.studentParentName,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _sdtPhuHuynhController,
-                  decoration: const InputDecoration(
-                    labelText: 'SĐT phụ huynh',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.studentParentPhone,
+                    border: const OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 16),
                 const Divider(),
-                const Text(
-                  'Liên hệ khác',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                Text(
+                  l10n.studentOtherContactSection,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _sdtHocSinhController,
-                  decoration: const InputDecoration(
-                    labelText: 'SĐT học sinh',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.studentPhone,
+                    border: const OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.studentEmail,
+                    border: const OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _diaChiController,
-                  decoration: const InputDecoration(
-                    labelText: 'Địa chỉ',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.studentAddress,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _facebookController,
-                  decoration: const InputDecoration(
-                    labelText: 'Facebook',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.studentFacebook,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _ghiChuController,
-                  decoration: const InputDecoration(
-                    labelText: 'Ghi chú',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.studentNotes,
+                    border: const OutlineInputBorder(),
                   ),
                   maxLines: 3,
                 ),

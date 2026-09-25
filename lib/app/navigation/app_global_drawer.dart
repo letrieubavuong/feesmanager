@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../l10n/app_localizations.dart';
+import '../common_widgets/app_page_scaffold.dart';
 import 'app_destination.dart';
 import 'navigation_controller.dart';
 import 'ui_keys.dart';
@@ -11,7 +13,7 @@ class AppGlobalDrawer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentDestId = ref.watch(navigationControllerProvider);
     final theme = Theme.of(context);
-    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    final l10n = AppLocalizations.of(context);
 
     return Drawer(
       key: UiKeys.globalDrawer,
@@ -47,9 +49,7 @@ class AppGlobalDrawer extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        isEn
-                            ? 'Tuition Management System'
-                            : 'Quản lý trung tâm dạy thêm',
+                        l10n?.menuSubtitle ?? 'Quản lý trung tâm dạy thêm',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onPrimaryContainer
                               .withValues(alpha: 0.8),
@@ -66,7 +66,7 @@ class AppGlobalDrawer extends ConsumerWidget {
               padding: EdgeInsets.zero,
               children: AppDestination.globalMenuDestinations.map((dest) {
                 final isSelected = dest.id == currentDestId;
-                final label = isEn ? dest.enLabel : dest.viLabel;
+                final label = l10n != null ? dest.label(l10n) : dest.id.name;
 
                 return ListTile(
                   key: dest.drawerKey,
@@ -91,10 +91,18 @@ class AppGlobalDrawer extends ConsumerWidget {
                   selectedTileColor: theme.colorScheme.primaryContainer
                       .withValues(alpha: 0.4),
                   onTap: () {
-                    ref
-                        .read(navigationControllerProvider.notifier)
-                        .goTo(dest.id);
-                    Navigator.of(context).pop(); // Close drawer
+                    if (Navigator.of(context).canPop()) {
+                      AppPageScaffold.goToGlobalDestination(
+                        context,
+                        ref,
+                        dest.id,
+                      );
+                    } else {
+                      ref
+                          .read(navigationControllerProvider.notifier)
+                          .goTo(dest.id);
+                      Navigator.of(context).pop(); // Close drawer
+                    }
                   },
                 );
               }).toList(),

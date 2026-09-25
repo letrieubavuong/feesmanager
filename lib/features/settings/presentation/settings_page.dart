@@ -5,6 +5,7 @@ import '../../../app/design_system/theme_controller.dart';
 import '../../../app/localization/locale_controller.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
+import '../../../l10n/app_localizations.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -12,7 +13,7 @@ class SettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    final l10n = AppLocalizations.of(context)!;
 
     final themeState = ref.watch(themeControllerProvider);
     final localeMode = ref.watch(localeControllerProvider);
@@ -21,7 +22,7 @@ class SettingsPage extends ConsumerWidget {
       drawer: const AppGlobalDrawer(),
       appBar: AppBar(
         leading: const GlobalMenuButton(),
-        title: Text(isEn ? 'Settings' : 'Cài đặt'),
+        title: Text(l10n.settingsTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
@@ -29,7 +30,7 @@ class SettingsPage extends ConsumerWidget {
           // --- 1. APPEARANCE & THEME SECTION ---
           _buildSectionHeader(
             context,
-            title: isEn ? 'APPEARANCE & THEME' : 'GIAO DIỆN & CHỦ ĐỀ',
+            title: l10n.settingsAppearance,
             icon: Icons.palette_outlined,
           ),
           const SizedBox(height: 12),
@@ -40,7 +41,7 @@ class SettingsPage extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isEn ? 'Theme Mode' : 'Chế độ hiển thị',
+                    l10n.settingsThemeMode,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -51,7 +52,7 @@ class SettingsPage extends ConsumerWidget {
                       ButtonSegment(
                         value: ThemeMode.system,
                         label: Text(
-                          isEn ? 'System' : 'Tự động',
+                          l10n.themeSystem,
                           key: UiKeys.settingsThemeModeSystem,
                         ),
                         icon: const Icon(Icons.brightness_auto),
@@ -59,7 +60,7 @@ class SettingsPage extends ConsumerWidget {
                       ButtonSegment(
                         value: ThemeMode.light,
                         label: Text(
-                          isEn ? 'Light' : 'Sáng',
+                          l10n.themeLight,
                           key: UiKeys.settingsThemeModeLight,
                         ),
                         icon: const Icon(Icons.light_mode),
@@ -67,7 +68,7 @@ class SettingsPage extends ConsumerWidget {
                       ButtonSegment(
                         value: ThemeMode.dark,
                         label: Text(
-                          isEn ? 'Dark' : 'Tối',
+                          l10n.themeDark,
                           key: UiKeys.settingsThemeModeDark,
                         ),
                         icon: const Icon(Icons.dark_mode),
@@ -86,7 +87,7 @@ class SettingsPage extends ConsumerWidget {
                   const SizedBox(height: 16),
 
                   Text(
-                    isEn ? 'Color Palette' : 'Tông màu ứng dụng',
+                    l10n.settingsPalette,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -97,14 +98,14 @@ class SettingsPage extends ConsumerWidget {
                     runSpacing: 12,
                     children: AppPaletteInfo.all.map((info) {
                       final isSelected = themeState.palette == info.palette;
-                      final paletteName = isEn ? info.enName : info.viName;
+                      final paletteName = info.name(l10n);
 
                       return InkWell(
                         key: info.palette == AppPalette.physicsBlue
                             ? UiKeys.settingsPalettePhysicsBlue
                             : info.palette == AppPalette.emerald
-                            ? UiKeys.settingsPaletteEmerald
-                            : null,
+                                ? UiKeys.settingsPaletteEmerald
+                                : null,
                         borderRadius: BorderRadius.circular(8),
                         onTap: () {
                           ref
@@ -126,9 +127,8 @@ class SettingsPage extends ConsumerWidget {
                               width: isSelected ? 2 : 1,
                             ),
                             color: isSelected
-                                ? theme.colorScheme.primaryContainer.withValues(
-                                    alpha: 0.3,
-                                  )
+                                ? theme.colorScheme.primaryContainer
+                                    .withValues(alpha: 0.3)
                                 : null,
                           ),
                           child: Row(
@@ -172,7 +172,7 @@ class SettingsPage extends ConsumerWidget {
           // --- 2. LANGUAGE SECTION ---
           _buildSectionHeader(
             context,
-            title: isEn ? 'LANGUAGE' : 'NGÔN NGỮ',
+            title: l10n.settingsLanguage,
             icon: Icons.language,
           ),
           const SizedBox(height: 12),
@@ -183,7 +183,7 @@ class SettingsPage extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isEn ? 'Display Language' : 'Ngôn ngữ hiển thị',
+                    l10n.settingsLanguage,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -194,20 +194,23 @@ class SettingsPage extends ConsumerWidget {
                       ButtonSegment(
                         value: AppLocaleMode.system,
                         label: Text(
-                          isEn ? 'System' : 'Tự động',
+                          l10n.langSystem,
                           key: UiKeys.settingsLanguageSystem,
                         ),
                       ),
-                      const ButtonSegment(
+                      ButtonSegment(
                         value: AppLocaleMode.vi,
                         label: Text(
-                          'Tiếng Việt',
+                          l10n.langVietnamese,
                           key: UiKeys.settingsLanguageVi,
                         ),
                       ),
-                      const ButtonSegment(
+                      ButtonSegment(
                         value: AppLocaleMode.en,
-                        label: Text('English', key: UiKeys.settingsLanguageEn),
+                        label: Text(
+                          l10n.langEnglish,
+                          key: UiKeys.settingsLanguageEn,
+                        ),
                       ),
                     ],
                     selected: {localeMode},
@@ -227,7 +230,7 @@ class SettingsPage extends ConsumerWidget {
           // --- 3. APPLICATION INFO SECTION ---
           _buildSectionHeader(
             context,
-            title: isEn ? 'APPLICATION INFO' : 'THÔNG TIN ỨNG DỤNG',
+            title: l10n.settingsAppInfo,
             icon: Icons.info_outline,
           ),
           const SizedBox(height: 12),
@@ -237,23 +240,17 @@ class SettingsPage extends ConsumerWidget {
                 ListTile(
                   leading: const Icon(Icons.school_outlined),
                   title: const Text('Tuition2027'),
-                  subtitle: Text(
-                    isEn
-                        ? 'Tuition Center Management'
-                        : 'Quản lý trung tâm dạy thêm',
-                  ),
+                  subtitle: Text(l10n.menuSubtitle),
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.verified_outlined),
-                  title: Text(isEn ? 'Version' : 'Phiên bản'),
-                  subtitle: const Text('1.0.0+1'),
+                  title: Text(l10n.appVersion),
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.storage_outlined),
-                  title: Text(isEn ? 'Database Version' : 'Cơ sở dữ liệu'),
-                  subtitle: const Text('v13 (SQLite)'),
+                  title: Text(l10n.dbVersion),
                 ),
               ],
             ),

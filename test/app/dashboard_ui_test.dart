@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,60 +19,49 @@ void main() {
   });
 
   group('Phase 13A Dashboard UI Widget Tests', () {
-    testWidgets(
-      'DashboardPage renders header, search, quick actions and KPIs',
-      (tester) async {
-        final testClass = ClassEntity(
-          id: 1,
-          tenLop: 'Lớp Luyện Thi A1',
-          daLuuTru: false,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
+    testWidgets('DashboardPage renders header, search, quick actions and KPIs', (tester) async {
+      final testClass = ClassEntity(
+        id: 1,
+        tenLop: 'Lớp Luyện Thi A1',
+        daLuuTru: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
 
-        final testStudent = Student(
-          id: 1,
-          hoTen: 'Nguyễn Văn An',
-          daLuuTru: false,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
+      final testStudent = Student(
+        id: 1,
+        hoTen: 'Nguyễn Văn An',
+        daLuuTru: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
 
-        await tester.pumpWidget(
-          createTestApp(
-            home: const DashboardPage(),
-            overrides: [
-              classListControllerProvider.overrideWith(
-                () => MockClassListController([testClass]),
-              ),
-              studentListControllerProvider.overrideWith(
-                () => MockStudentListController([testStudent]),
-              ),
-              todaySessionsProvider.overrideWith(
-                (ref) async => <ClassSession>[],
-              ),
-            ],
-          ),
-        );
+      await tester.pumpWidget(
+        createTestApp(
+          home: const DashboardPage(),
+          overrides: [
+            classListControllerProvider.overrideWith(() => MockClassListController([testClass])),
+            studentListControllerProvider.overrideWith(() => MockStudentListController([testStudent])),
+            todaySessionsProvider.overrideWith((ref) async => <ClassSession>[]),
+          ],
+        ),
+      );
 
-        await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-        expect(find.text('Xin chào, Thầy/Cô!'), findsOneWidget);
-        expect(find.byKey(UiKeys.dashboardSearchInput), findsOneWidget);
-        expect(find.text('Thao tác nhanh'), findsOneWidget);
-        expect(find.byKey(UiKeys.dashboardQuickAddStudent), findsOneWidget);
-        expect(find.byKey(UiKeys.dashboardQuickManageClasses), findsOneWidget);
-        expect(find.byKey(UiKeys.dashboardQuickViewTuition), findsOneWidget);
-        expect(find.byKey(UiKeys.dashboardQuickViewReports), findsOneWidget);
+      expect(find.text('Xin chào, Thầy/Cô!'), findsOneWidget);
+      expect(find.byKey(UiKeys.dashboardSearchInput), findsOneWidget);
+      expect(find.text('Thao tác nhanh'), findsOneWidget);
+      expect(find.byKey(UiKeys.dashboardQuickAddStudent), findsOneWidget);
+      expect(find.byKey(UiKeys.dashboardQuickManageClasses), findsOneWidget);
+      expect(find.byKey(UiKeys.dashboardQuickViewTuition), findsOneWidget);
+      expect(find.byKey(UiKeys.dashboardQuickViewReports), findsOneWidget);
 
-        expect(find.text('Lớp học đang mở'), findsOneWidget);
-        expect(find.text('Học sinh đang học'), findsOneWidget);
-      },
-    );
+      expect(find.text('Lớp học đang mở'), findsOneWidget);
+      expect(find.text('Học sinh đang học'), findsOneWidget);
+    });
 
-    testWidgets('Global Search filters students and classes in DashboardPage', (
-      tester,
-    ) async {
+    testWidgets('Global Search filters students and classes in DashboardPage', (tester) async {
       final testClass = ClassEntity(
         id: 10,
         tenLop: 'Lớp Toán 12A',
@@ -94,12 +82,8 @@ void main() {
         createTestApp(
           home: const DashboardPage(),
           overrides: [
-            classListControllerProvider.overrideWith(
-              () => MockClassListController([testClass]),
-            ),
-            studentListControllerProvider.overrideWith(
-              () => MockStudentListController([testStudent]),
-            ),
+            classListControllerProvider.overrideWith(() => MockClassListController([testClass])),
+            studentListControllerProvider.overrideWith(() => MockStudentListController([testStudent])),
             todaySessionsProvider.overrideWith((ref) async => <ClassSession>[]),
           ],
         ),
@@ -120,16 +104,21 @@ void main() {
       expect(find.text('Trần Thị Bình'), findsOneWidget);
     });
 
-    testWidgets('Quick Actions navigate to target canonical domains', (
-      tester,
-    ) async {
+    testWidgets('Quick Actions navigate to target canonical domains', (tester) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(home: DashboardPage()),
+          child: createTestApp(
+            home: const DashboardPage(),
+            overrides: [
+              classListControllerProvider.overrideWith(() => MockClassListController([])),
+              studentListControllerProvider.overrideWith(() => MockStudentListController([])),
+              todaySessionsProvider.overrideWith((ref) async => <ClassSession>[]),
+            ],
+          ),
         ),
       );
 
@@ -139,10 +128,7 @@ void main() {
       await tester.tap(find.byKey(UiKeys.dashboardQuickManageClasses));
       await tester.pumpAndSettle();
 
-      expect(
-        container.read(navigationControllerProvider),
-        equals(AppDestinationId.classes),
-      );
+      expect(container.read(navigationControllerProvider), equals(AppDestinationId.classes));
     });
   });
 }

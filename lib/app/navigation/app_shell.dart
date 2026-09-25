@@ -6,6 +6,7 @@ import '../../features/reports/presentation/reports_page.dart';
 import '../../features/settings/presentation/settings_page.dart';
 import '../../features/students/presentation/student_list_page.dart';
 import '../../features/tuition/presentation/global_tuition_page.dart';
+import '../../l10n/app_localizations.dart';
 import 'app_destination.dart';
 import 'app_global_drawer.dart';
 import 'navigation_controller.dart';
@@ -18,9 +19,12 @@ class AppShell extends ConsumerWidget {
     final currentDestId = ref.watch(navigationControllerProvider);
     final width = MediaQuery.of(context).size.width;
     final useSidebar = width >= 600;
-    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    final l10n = AppLocalizations.of(context)!;
 
     final bottomDestinations = AppDestination.bottomNavDestinations;
+    final currentDest = AppDestination.fromId(currentDestId);
+    final inBottomNav = currentDest.inBottomNav;
+    final selectedBottomIndex = inBottomNav ? currentDest.bottomNavIndex : null;
 
     // Active content widget based on active destination ID
     Widget content;
@@ -45,10 +49,6 @@ class AppShell extends ConsumerWidget {
         break;
     }
 
-    // Active bottom navigation index
-    final currentDest = AppDestination.fromId(currentDestId);
-    final selectedBottomIndex = currentDest.bottomNavIndex ?? 0;
-
     return Scaffold(
       drawer: const AppGlobalDrawer(),
       body: Row(
@@ -66,11 +66,10 @@ class AppShell extends ConsumerWidget {
                   ? NavigationRailLabelType.none
                   : NavigationRailLabelType.all,
               destinations: bottomDestinations.map((dest) {
-                final label = isEn ? dest.enLabel : dest.viLabel;
                 return NavigationRailDestination(
                   icon: Icon(dest.icon, key: dest.key),
                   selectedIcon: Icon(dest.selectedIcon),
-                  label: Text(label),
+                  label: Text(dest.label(l10n)),
                 );
               }).toList(),
             ),
@@ -78,25 +77,24 @@ class AppShell extends ConsumerWidget {
           Expanded(child: content),
         ],
       ),
-      bottomNavigationBar: useSidebar
-          ? null
-          : NavigationBar(
-              selectedIndex: selectedBottomIndex,
+      bottomNavigationBar: (!useSidebar && inBottomNav)
+          ? NavigationBar(
+              selectedIndex: selectedBottomIndex!,
               onDestinationSelected: (index) {
                 ref
                     .read(navigationControllerProvider.notifier)
                     .goToBottomIndex(index);
               },
               destinations: bottomDestinations.map((dest) {
-                final label = isEn ? dest.enLabel : dest.viLabel;
                 return NavigationDestination(
                   key: dest.key,
                   icon: Icon(dest.icon),
                   selectedIcon: Icon(dest.selectedIcon),
-                  label: label,
+                  label: dest.label(l10n),
                 );
               }).toList(),
-            ),
+            )
+          : null,
     );
   }
 }

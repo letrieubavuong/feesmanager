@@ -13,14 +13,14 @@ String _$tuitionPolicyRepositoryHash() =>
 @ProviderFor(tuitionPolicyRepository)
 final tuitionPolicyRepositoryProvider =
     FutureProvider<TuitionPolicyRepository>.internal(
-      tuitionPolicyRepository,
-      name: r'tuitionPolicyRepositoryProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$tuitionPolicyRepositoryHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  tuitionPolicyRepository,
+  name: r'tuitionPolicyRepositoryProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$tuitionPolicyRepositoryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef TuitionPolicyRepositoryRef = FutureProviderRef<TuitionPolicyRepository>;
 String _$tuitionPolicyServiceHash() =>
@@ -30,14 +30,14 @@ String _$tuitionPolicyServiceHash() =>
 @ProviderFor(tuitionPolicyService)
 final tuitionPolicyServiceProvider =
     FutureProvider<TuitionPolicyService>.internal(
-      tuitionPolicyService,
-      name: r'tuitionPolicyServiceProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$tuitionPolicyServiceHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  tuitionPolicyService,
+  name: r'tuitionPolicyServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$tuitionPolicyServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef TuitionPolicyServiceRef = FutureProviderRef<TuitionPolicyService>;
 // ignore_for_file: type=lint

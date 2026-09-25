@@ -158,6 +158,54 @@ abstract class AppLocalizations {
   /// **'Quản lý trung tâm dạy thêm'**
   String get menuSubtitle;
 
+  /// No description provided for @palettePhysicsBlue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xanh Vật lý'**
+  String get palettePhysicsBlue;
+
+  /// No description provided for @paletteEmerald.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xanh Ngọc Emerald'**
+  String get paletteEmerald;
+
+  /// No description provided for @paletteIndigo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xanh Chàm Indigo'**
+  String get paletteIndigo;
+
+  /// No description provided for @paletteAmber.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vàng Hổ Phách'**
+  String get paletteAmber;
+
+  /// No description provided for @paletteSlate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xám Đá Slate'**
+  String get paletteSlate;
+
+  /// No description provided for @paletteOceanCyan.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xanh Lam Cyan'**
+  String get paletteOceanCyan;
+
+  /// No description provided for @paletteBurgundy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đỏ Rượu Burgundy'**
+  String get paletteBurgundy;
+
+  /// No description provided for @paletteHighContrast.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tương Phản Cao'**
+  String get paletteHighContrast;
+
   /// No description provided for @dashboardTitle.
   ///
   /// In vi, this message translates to:
@@ -331,6 +379,126 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Cơ sở dữ liệu: v13'**
   String get dbVersion;
+
+  /// No description provided for @studentFormTitleAdd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm học sinh'**
+  String get studentFormTitleAdd;
+
+  /// No description provided for @studentFormTitleEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa thông tin học sinh'**
+  String get studentFormTitleEdit;
+
+  /// No description provided for @studentFullName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Họ và tên *'**
+  String get studentFullName;
+
+  /// No description provided for @studentGrade.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khối'**
+  String get studentGrade;
+
+  /// No description provided for @studentGradeItem.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khối {grade}'**
+  String studentGradeItem(Object grade);
+
+  /// No description provided for @studentGender.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giới tính'**
+  String get studentGender;
+
+  /// No description provided for @studentGenderMale.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nam'**
+  String get studentGenderMale;
+
+  /// No description provided for @studentGenderFemale.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nữ'**
+  String get studentGenderFemale;
+
+  /// No description provided for @studentGenderOther.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác'**
+  String get studentGenderOther;
+
+  /// No description provided for @studentSchool.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trường đang học'**
+  String get studentSchool;
+
+  /// No description provided for @studentParentSection.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông tin phụ huynh'**
+  String get studentParentSection;
+
+  /// No description provided for @studentParentName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên phụ huynh'**
+  String get studentParentName;
+
+  /// No description provided for @studentParentPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'SĐT phụ huynh'**
+  String get studentParentPhone;
+
+  /// No description provided for @studentOtherContactSection.
+  ///
+  /// In vi, this message translates to:
+  /// **'Liên hệ khác'**
+  String get studentOtherContactSection;
+
+  /// No description provided for @studentPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'SĐT học sinh'**
+  String get studentPhone;
+
+  /// No description provided for @studentEmail.
+  ///
+  /// In vi, this message translates to:
+  /// **'Email'**
+  String get studentEmail;
+
+  /// No description provided for @studentAddress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa chỉ'**
+  String get studentAddress;
+
+  /// No description provided for @studentFacebook.
+  ///
+  /// In vi, this message translates to:
+  /// **'Facebook'**
+  String get studentFacebook;
+
+  /// No description provided for @studentNotes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú'**
+  String get studentNotes;
+
+  /// No description provided for @studentValidationName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vui lòng nhập họ tên'**
+  String get studentValidationName;
 
   /// No description provided for @commonLoading.
   ///

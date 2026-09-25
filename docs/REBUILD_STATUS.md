@@ -163,57 +163,39 @@
   - Fixed PHAT_SINH student selection: derives candidates from active memberships on `targetSession.ngay` using `getActiveMembershipsOnDate`; batch fetches class names; supports cross-class memberships without assuming `originalClassId = targetSession.idLop`; excludes archived students and students with existing adjustments; validates target session type (`PHAT_SINH`) and status (`DU_KIEN`).
   - Enhanced Constraint Management UI: integrated constraint list and confirmation dialog into `StudentDetailPage`; added UI input validation to `showAddConstraintDialog` (validates HH:mm time order, YYYY-MM-DD date format, travel buffer >= 0, OTHER_CENTER required source name); invalidates `studentConstraintsProvider` on create/cancel.
   - Comprehensive test suite in `test/presentation/phase11c_schedule_conflict_ui_test.dart` (43/43 passing) proving fail-closed states, constraint validation matrix, DB persistence assertions, and ChangeShift canonical provider argument tuple.
-- [x] Comprehensive Tests (379 tests passing):
-    - `test/repository/migration_v12_v13_test.dart`
-    - `test/schedule_conflicts/schedule_conflict_service_test.dart`
-    - `test/session_adjustments/session_adjustment_service_test.dart`
-    - `test/schedule/assignment_service_test.dart`
-    - `test/schedule/schedule_service_test.dart`
-    - `test/presentation/phase11c_schedule_conflict_ui_test.dart`
-
----
+- [x] Comprehensive Tests (379 tests passing).
 
 ## Phase 12: Reports - COMPLETE
 - [x] Phase 12A Canonical Report Foundation + Report UI: COMPLETE.
-  - Implemented immutable presentation-independent read models (`ReportScope`, `ReportSummary`, `AttendanceReportSummary`, `FinancialReportSummary`, `ClassReportSummary`, `StudentReportSummary`).
-  - Strict date parsing validation in `ReportScope` (`YYYY-MM-DD` and `YYYY-MM`).
-  - Refactored `ReportService` canonical composition engine to consume ONLY domain services (`SessionService`, `AttendanceService`, `MembershipService`, `TuitionService`, `PaymentService`, `ClassService`, `StudentService`) with zero duplicated business formulas.
-  - Attendance reporting includes `DA_HOC` completed sessions only (excluding `DU_KIEN`, `HUY`, `NGHI_LE`) and uses canonical `AttendanceState` getters (`countsAsPresent`, `isLate`, `isExcusedAbsence`, `isUnexcusedAbsence`). Field `totalEligibleParticipations` explicitly tracks attendance opportunities; `totalSessions` tracks session count; `totalLate` tracks late participations.
-  - Financial settlement & debt calculation delegates to `PaymentService.getPaymentSummariesForInvoices` using `PaymentSettlementRules.evaluate`, failing closed on corrupted invoice/payment relationships or status mismatches.
-  - Cash revenue receives actual payments in date range via `PaymentService.getValidatedPaymentsInDateRange`.
-  - Historical archived classes & students with scope activity are batch loaded and included in report summaries (`ClassService.getClassesByIds`, `StudentService.getStudentsByIds`).
-  - Range-aware memberships (`MembershipService.getMembershipsOverlappingDateRange`) accurately filter student enrolled classes for reports.
-  - Renamed `ClassReportSummary.activeStudentCount` -> `studentCountInScope` representing unique students whose membership overlaps report range.
-  - Removed `RosterService` duplicate resolution; `ReportService` consumes ONLY domain services (`SessionService`, `AttendanceService`, `MembershipService`, `TuitionService`, `PaymentService`, `ClassService`, `StudentService`).
-  - Added `TuitionRepository.getInvoicesByIds` and `TuitionService.getInvoicesByIds` to eliminate N+1 queries in `PaymentService.getValidatedPaymentsInDateRange`.
-  - Implemented `ReportScopeNotifier`, `reportSummaryProvider`, and `ReportsPage` UI with Month selector, Custom date range picker with safe UX bound validation, Class/Student filters, responsive KPI cards (labeled `Dư nợ hiện tại của hóa đơn trong kỳ`), and detail breakdown tables. Wired `ReportsPage` into `AppShell`.
-  - Added comprehensive unit & integration tests (`test/reports/report_service_test.dart` and `test/presentation/phase12a_reports_ui_test.dart`) asserting strict date validation, leap day `2028-02-29`, true cross-module consistency, 4-status session filtering (`DA_HOC` included; `DU_KIEN`, `HUY`, `NGHI_LE` excluded), financial corruption fail-closed protection (missing invoice, relationship mismatch, overpayment), Month A invoice / Month B payment timing, all-class & student sum invariants, canonical `DOI_CA`, `HOC_BU`, and `PHAT_SINH` adjustment integration, relevant historical archived inclusion, and UI stale data prevention.
 - [x] Phase 12B PDF Export: COMPLETE.
-  - Implemented pure presentation `ReportPdfService` converting canonical `ReportSummary` directly into A4 Landscape PDF bytes without database queries, repository calls, or business formula recalculations.
-  - Created injectable `ReportPdfExporter` interface and Riverpod provider (`reportPdfExporterProvider`) separating PDF rendering from platform printing orchestration (`Printing.layoutPdf`).
-  - Added anti-double-tap `_isExporting` state lifecycle and error SnackBar handling to `ReportsPage`.
-  - Integrated offline Vietnamese TTF font assets (`assets/fonts/Roboto-Regular.ttf` and `assets/fonts/Roboto-Bold.ttf`) with font license documentation (`assets/fonts/LICENSE.txt`).
-  - PDF layout features header metadata, overall KPI card summary (labeled `Dư nợ hiện tại của hóa đơn trong kỳ`), Class breakdown table (`studentCountInScope`, sessions, participations, present, late, excused, unexcused, attendance rate, invoiced, paid, debt), and Student breakdown table (enrolled class names, sessions, participations, present, late, excused, unexcused, attendance rate, invoiced, paid, debt).
-  - Integrated PDF export button on `ReportsPage` with fail-closed state protection (disabled during loading, error, or scope change resolving).
-  - Comprehensive unit & widget tests (`test/reports/report_pdf_service_test.dart`, `test/presentation/phase12a_reports_ui_test.dart`, and `test/presentation/phase12b_pdf_export_ui_test.dart`) proving PDF byte generation (`%PDF-`), offline Vietnamese Unicode, multi-page layout without page limit exceptions, PDF ↔ UI figure parity, filter reset interaction truthfulness, double-tap single invocation, stale scope protection, and export UI button lifecycle states.
 
-## Phase 13A: Android App Foundation - COMPLETE
+## Phase 13A: Android App Foundation (Final Acceptance Repair) - COMPLETE
 - [x] Android-first UI with exactly 4 bottom navigation items (`Home`, `Classes`, `Students`, `Tuition`).
-- [x] Attendance function ownership strictly under Class domain (no standalone Attendance bottom navigation item).
-- [x] Global Navigation Drawer (`AppGlobalDrawer`) accessible from top-level and nested screens.
-- [x] Centralized Navigation Model (`AppDestination`) with stable UI test keys (`UiKeys`).
-- [x] Real Dashboard Page (`DashboardPage`) with header greeting, global search for students/classes, today's schedule overview, quick action buttons, and active center KPIs.
-- [x] Real Settings Page (`SettingsPage`) with Theme Mode selector (System/Light/Dark), 8 curated color palettes with swatch previews, Language selector (System/Vi/En), and App/Database info.
-- [x] Material 3 Design System & Theme Engine (`AppSpacing`, `AppRadius`, `AppTypography`, `AppSemanticColors`, `AppPaletteInfo`, `AppTheme`).
-- [x] Semantic color extensions for Attendance states (`CO_MAT`, `TRE`, `NGHI_CO_PHEP`, `NGHI_KHONG_PHEP`, `CHUA_DIEM_DANH`), Tuition states (`DA_THANH_TOAN`, `CON_NO`, `NHAP`, `DA_CHOT`), and Schedule conflict states (`normal`, `softWarning`, `hardConflict`).
-- [x] Flutter l10n localization architecture (`app_vi.arb`, `app_en.arb`, `AppLocalizations`) with `LocaleController` state management and `SharedPreferences` persistence.
-- [x] Presentation formatting foundation (`AppFormatter`) for locale-aware currency, dates, months, numbers, and weekdays.
-- [x] Domain values remain 100% untranslated in database/models (`DA_HOC`, `DU_KIEN`, `HUY`, `NGHI_LE`, `DA_THANH_TOAN`, `CON_NO`, etc.).
-- [x] Reusable standard UI components (`AppLoadingState`, `AppEmptyState`, `AppErrorState`, `AppFeedback` SnackBars/Dialogs).
-- [x] Dirty Form Protection foundation (`DirtyFormScope`) with unsaved changes confirmation dialog.
-- [x] Accessibility & responsiveness verified on narrow 320px viewports and 1.5x text scale.
-- [x] Real Android Integration Smoke Test (`integration_test/phase13a_android_smoke_test.dart`) executed and passed on real Android emulator (`emulator-5554`, Android 13, API 33).
-- [x] Debug APK (`app-debug.apk`) built successfully.
+- [x] Attendance function ownership strictly under Class domain.
+- [x] True Nested Global Navigation (`AppPageScaffold` & `AppGlobalDrawer`):
+  - Global drawer accessible from root `AppShell` and nested/full-screen operational pages (`StudentDetailPage`, `StudentFormPage`, `ClassDetailPage`, `ClassFormPage`, `AttendancePage`, `LeaveRequestPage`, `SessionCreditPage`).
+  - Nested AppBars explicitly preserve BOTH Back button AND Global Menu button (`GlobalMenuButton`).
+  - Canonical global destination transition (`goToGlobalDestination`) closes drawer, pops nested routes back to root `AppShell`, selects destination (`Tuition`), and eliminates hidden duplicate routes.
+- [x] Fixed False Bottom Nav Selection:
+  - Secondary non-bottom pages (`Reports`, `Settings`) hide `NavigationBar` so `Home` is never falsely highlighted.
+- [x] True Localization Resolvers & Zero Two-Language Branching:
+  - Removed `isEn ? 'Home' : 'Trang chủ'`, `viLabel`/`enLabel` from `AppDestination`, and `viName`/`enName` from `AppPaletteInfo`.
+  - All UI strings resolve via generated `AppLocalizations` (`l10n.navHome`, `l10n.paletteEmerald`, `l10n.studentFormTitleAdd`, etc.) supporting arbitrary future locales without destination or palette model changes.
+  - Fully localized `StudentFormPage` fields, titles, section headers, validation messages, and gender labels (`studentGenderMale`, `studentGenderFemale`, `studentGenderOther`). Stored canonical enum values (`NAM`, `NU`, `KHAC`) remain untouched.
+- [x] Centralized Design System & Real App Typography (`AppTypography`):
+  - Implemented Material 3 typography scale in `lib/app/design_system/app_typography.dart` and wired directly into `AppTheme.createTheme`.
+- [x] Dirty Form Protection & Discard Proof (`DirtyFormScope`):
+  - Form dirty state tracking on `StudentFormPage` and nested operational forms. Android Back or route pop presents confirmation dialog (`dirtyFormTitle`, `dirtyFormMessage`).
+  - Executable widget tests (`test/app/dirty_form_test.dart`) proving dirty detection, cancel keeping user on form, discard popping form, and global menu confirmation.
+- [x] Real SharedPreferences Persistence & Visual Theme Assertions:
+  - Widget and integration tests verify ThemeData brightness (`Brightness.dark`) and ColorScheme primary changes on theme/palette switch.
+  - Values persisted across `SharedPreferences` keys (`pref_theme_mode`, `pref_app_palette`, `pref_locale_mode`).
+- [x] Real Android Integration Smoke Test (`integration_test/phase13a_android_smoke_test.dart`):
+  - Executed on connected Android Emulator (`emulator-5554`, Android 13, API 33).
+  - Verifies launch, 4 bottom tabs, Global Menu, Settings page without false Home highlight, Light/Dark theme mode, Emerald palette, English/Vietnamese l10n switching, real nested flow (`Home` -> `Add Student` -> `StudentFormPage` -> Back + Global Menu -> `Tuition`), and SharedPreferences persistence. 100% PASS.
+- [x] GitHub Actions CI Update:
+  - Updated `.github/workflows/flutter_ci.yml` with `flutter build apk --debug` and reactive Android emulator integration runner job (`reactivecircus/android-emulator-runner@v2`).
+- [x] Debug APK (`app-debug.apk`) built and verified locally (`build/app/outputs/flutter-apk/app-debug.apk`).
 
 ---
 
@@ -221,9 +203,11 @@
 - **Database**: `tuition_next.db`
 - **Version**: 13
 - **State Management**: Riverpod (Generator used)
-- **Navigation**: Centralized `AppDestination` + Riverpod `NavigationController` + `AppGlobalDrawer`
-- **Tests**: 435 tests passing
+- **Navigation**: Centralized `AppDestination` + Riverpod `NavigationController` + `AppGlobalDrawer` + `AppPageScaffold`
+- **Tests**: 438 tests passing (100% PASS)
 - **Quality Gate**:
-  - `dart analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (435 tests)
-  - `integration_test`: 100% Pass on Android Emulator (API 33)
+  - `dart format`: Passed
+  - `flutter analyze`: Clean (0 errors, 0 warnings)
+  - `flutter test`: 100% Pass (438 tests)
+  - `flutter build apk --debug`: Passed (`app-debug.apk`)
+  - `integration_test`: 100% Pass on Android Emulator `emulator-5554` (API 33)
