@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' hide equals;
 import 'package:tuition2027/core/database/app_database.dart';
@@ -534,6 +535,17 @@ void main() {
         final selectedScope = capturedRef.read(reportScopeNotifierProvider);
         expect(selectedScope.classId, equals(10));
 
+        // Tap class dropdown again and reset to 'Tất cả các lớp'
+        await tester.tap(find.text('Class 10A').first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Tất cả các lớp').last, findsOneWidget);
+        await tester.tap(find.text('Tất cả các lớp').last);
+        await tester.pumpAndSettle();
+
+        final resetScope = capturedRef.read(reportScopeNotifierProvider);
+        expect(resetScope.classId, isNull);
+
         await tester.runAsync(() async => db.close());
       },
     );
@@ -589,6 +601,76 @@ void main() {
 
         final selectedScope = capturedRef.read(reportScopeNotifierProvider);
         expect(selectedScope.studentId, equals(1));
+
+        // Tap student dropdown again and reset to 'Tất cả học sinh'
+        await tester.tap(find.text('Student A').first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Tất cả học sinh').last, findsOneWidget);
+        await tester.tap(find.text('Tất cả học sinh').last);
+        await tester.pumpAndSettle();
+
+        final resetScope = capturedRef.read(reportScopeNotifierProvider);
+        expect(resetScope.studentId, isNull);
+
+        await tester.runAsync(() async => db.close());
+      },
+    );
+
+    testWidgets(
+      'Month selector dropdown updates ReportScope calendar month bounds',
+      (tester) async {
+        late Database db;
+        await tester.runAsync(() async {
+          db = await createTestDb();
+          await setupBaseData(db);
+        });
+
+        late WidgetRef capturedRef;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWith((ref) async => db),
+              reportSummaryProvider.overrideWith(
+                (ref) async => ReportSummary(
+                  scope: ref.watch(reportScopeNotifierProvider),
+                  generatedAt: DateTime.now(),
+                  attendance: AttendanceReportSummary.zero(),
+                  financial: FinancialReportSummary.zero(),
+                  classSummaries: [],
+                  studentSummaries: [],
+                ),
+              ),
+            ],
+            child: Consumer(
+              builder: (context, ref, child) {
+                capturedRef = ref;
+                return const MaterialApp(home: ReportsPage());
+              },
+            ),
+          ),
+        );
+
+        await waitForAsyncProviders(tester);
+
+        // Tap month dropdown
+        final currentMonthStr =
+            'Tháng ${DateFormat('yyyy-MM').format(DateTime.now())}';
+        expect(find.text(currentMonthStr), findsAtLeast(1));
+
+        await tester.tap(find.text(currentMonthStr).first);
+        await tester.pumpAndSettle();
+
+        // Select 'Tháng 2026-09'
+        expect(find.text('Tháng 2026-09').last, findsOneWidget);
+        await tester.tap(find.text('Tháng 2026-09').last);
+        await tester.pumpAndSettle();
+
+        final monthScope = capturedRef.read(reportScopeNotifierProvider);
+        expect(monthScope.mode, equals(ReportMode.month));
+        expect(monthScope.fromDate, equals('2026-09-01'));
+        expect(monthScope.toDate, equals('2026-09-30'));
 
         await tester.runAsync(() async => db.close());
       },

@@ -165,7 +165,7 @@ class ReportPdfService {
             _currencyFormatter.format(fin.totalPaid),
           ),
           _buildKpiItem(
-            'Dư nợ hiện tại',
+            'Dư nợ hiện tại của hóa đơn trong kỳ',
             _currencyFormatter.format(fin.totalOutstandingDebt),
           ),
         ],

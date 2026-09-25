@@ -190,10 +190,12 @@
   - Added comprehensive unit & integration tests (`test/reports/report_service_test.dart` and `test/presentation/phase12a_reports_ui_test.dart`) asserting strict date validation, leap day `2028-02-29`, true cross-module consistency, 4-status session filtering (`DA_HOC` included; `DU_KIEN`, `HUY`, `NGHI_LE` excluded), financial corruption fail-closed protection (missing invoice, relationship mismatch, overpayment), Month A invoice / Month B payment timing, all-class & student sum invariants, canonical `DOI_CA`, `HOC_BU`, and `PHAT_SINH` adjustment integration, relevant historical archived inclusion, and UI stale data prevention.
 - [x] Phase 12B PDF Export: COMPLETE.
   - Implemented pure presentation `ReportPdfService` converting canonical `ReportSummary` directly into A4 Landscape PDF bytes without database queries, repository calls, or business formula recalculations.
-  - Integrated offline Vietnamese TTF font assets (`assets/fonts/Roboto-Regular.ttf` and `assets/fonts/Roboto-Bold.ttf`) for 100% offline Unicode PDF rendering.
-  - PDF layout features header metadata, overall KPI card summary, Class breakdown table (`studentCountInScope`, sessions, participations, present, late, excused, unexcused, attendance rate, invoiced, paid, debt), and Student breakdown table (enrolled class names, sessions, participations, present, late, excused, unexcused, attendance rate, invoiced, paid, debt).
+  - Created injectable `ReportPdfExporter` interface and Riverpod provider (`reportPdfExporterProvider`) separating PDF rendering from platform printing orchestration (`Printing.layoutPdf`).
+  - Added anti-double-tap `_isExporting` state lifecycle and error SnackBar handling to `ReportsPage`.
+  - Integrated offline Vietnamese TTF font assets (`assets/fonts/Roboto-Regular.ttf` and `assets/fonts/Roboto-Bold.ttf`) with font license documentation (`assets/fonts/LICENSE.txt`).
+  - PDF layout features header metadata, overall KPI card summary (labeled `Dư nợ hiện tại của hóa đơn trong kỳ`), Class breakdown table (`studentCountInScope`, sessions, participations, present, late, excused, unexcused, attendance rate, invoiced, paid, debt), and Student breakdown table (enrolled class names, sessions, participations, present, late, excused, unexcused, attendance rate, invoiced, paid, debt).
   - Integrated PDF export button on `ReportsPage` with fail-closed state protection (disabled during loading, error, or scope change resolving).
-  - Comprehensive unit & widget tests (`test/reports/report_pdf_service_test.dart` and `test/presentation/phase12b_pdf_export_ui_test.dart`) proving PDF byte generation (`%PDF-`), offline Vietnamese Unicode, multi-page layout without page limit exceptions, PDF ↔ UI figure parity, and export UI button lifecycle states.
+  - Comprehensive unit & widget tests (`test/reports/report_pdf_service_test.dart`, `test/presentation/phase12a_reports_ui_test.dart`, and `test/presentation/phase12b_pdf_export_ui_test.dart`) proving PDF byte generation (`%PDF-`), offline Vietnamese Unicode, multi-page layout without page limit exceptions, PDF ↔ UI figure parity, filter reset interaction truthfulness, double-tap single invocation, stale scope protection, and export UI button lifecycle states.
 
 ---
 
@@ -202,7 +204,7 @@
 - **Version**: 13
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Manual shell implementation (Responsive)
-- **Tests**: 410 tests passing
+- **Tests**: 414 tests passing
 - **Quality Gate**:
   - `dart analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (410 tests)
+  - `flutter test`: 100% Pass (414 tests)

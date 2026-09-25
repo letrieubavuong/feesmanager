@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:printing/printing.dart';
 import '../../classes/presentation/class_controller.dart';
 import '../../students/presentation/student_controller.dart';
 import '../domain/report_scope.dart';
 import '../domain/report_summary.dart';
-import '../export/report_pdf_service.dart';
+import '../export/report_pdf_exporter.dart';
 import 'report_controller.dart';
 
 class ReportsPage extends ConsumerStatefulWidget {
@@ -18,19 +17,18 @@ class ReportsPage extends ConsumerStatefulWidget {
 
 class _ReportsPageState extends ConsumerState<ReportsPage> {
   final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+  bool _isExporting = false;
 
   Future<void> _exportPdf(BuildContext context, ReportSummary summary) async {
-    try {
-      final pdfService = ReportPdfService();
-      final pdfBytes = await pdfService.buildPdf(summary);
-      final fileName = summary.scope.mode == ReportMode.month
-          ? 'BaoCao_${summary.scope.fromDate.substring(0, 7)}.pdf'
-          : 'BaoCao_${summary.scope.fromDate}_${summary.scope.toDate}.pdf';
+    if (_isExporting) return;
 
-      await Printing.layoutPdf(
-        onLayout: (format) async => pdfBytes,
-        name: fileName,
-      );
+    setState(() {
+      _isExporting = true;
+    });
+
+    try {
+      final exporter = ref.read(reportPdfExporterProvider);
+      await exporter.export(summary);
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -39,6 +37,12 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
             backgroundColor: Colors.red,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isExporting = false;
+        });
       }
     }
   }
@@ -56,9 +60,17 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
         actions: [
           summaryAsync.when(
             data: (summary) => IconButton(
-              icon: const Icon(Icons.picture_as_pdf),
-              onPressed: () => _exportPdf(context, summary),
-              tooltip: 'Xuất báo cáo PDF',
+              icon: _isExporting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.picture_as_pdf),
+              onPressed: _isExporting
+                  ? null
+                  : () => _exportPdf(context, summary),
+              tooltip: _isExporting ? 'Đang xuất PDF...' : 'Xuất báo cáo PDF',
             ),
             loading: () => const IconButton(
               icon: Icon(Icons.picture_as_pdf),
