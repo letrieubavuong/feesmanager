@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../app/navigation/app_global_drawer.dart';
 import '../../memberships/domain/membership_service.dart';
 import '../../students/domain/student_service.dart';
 import '../domain/leave_request.dart';
@@ -22,7 +23,13 @@ class _LeaveRequestPageState extends ConsumerState<LeaveRequestPage> {
     final listAsync = ref.watch(leaveRequestControllerProvider(widget.classId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Đơn nghỉ học')),
+      drawer: const AppGlobalDrawer(),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: const BackButton(),
+        title: const Text('Đơn nghỉ học'),
+        actions: const [GlobalMenuButton()],
+      ),
       body: Column(
         children: [
           _buildFilterBar(),

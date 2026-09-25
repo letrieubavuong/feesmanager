@@ -50,10 +50,11 @@ class AttendancePage extends ConsumerWidget {
         automaticallyImplyLeading: false,
         leading: const BackButton(),
         title: const Text('Điểm danh'),
-        actions: sheetAsync.when(
-          data: (sheet) => [
-            const GlobalMenuButton(),
-            if (_isEditable(sheet)) ...[
+        actions: [
+          const GlobalMenuButton(),
+          ...sheetAsync.when(
+            data: (sheet) => [
+              if (_isEditable(sheet)) ...[
               if (sheet.session.loai == SessionType.HOC_BU)
                 TextButton.icon(
                   onPressed: () => ref
@@ -88,6 +89,7 @@ class AttendancePage extends ConsumerWidget {
           loading: () => [],
           error: (_, __) => [],
         ),
+      ],
       ),
       body: sheetAsync.when(
         data: (sheet) => _buildContent(context, ref, sheet),

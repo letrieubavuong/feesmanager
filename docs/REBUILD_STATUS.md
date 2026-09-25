@@ -146,68 +146,52 @@
 - [x] Forward Database Migration (v12 -> v13) creating `rang_buoc_lich_hoc_sinh` table with Foreign Keys (`ON DELETE RESTRICT`), strict `CHECK` constraints on types (`loai`), occurrence shape (`kieu`), time format (`00:00`..`23:59`), time order (`gio_ket_thuc > gio_bat_dau`), date shape (`YYYY-MM-DD`), non-negative travel buffer, status (`HOAT_DONG`, `DA_HUY`), and performance indexes.
 - [x] Real v12 -> v13 database migration test on real SQLite file (`test/repository/migration_v12_v13_test.dart`) asserting data preservation, FK RESTRICT, strict `CHECK` constraints, and clean `PRAGMA foreign_key_check`.
 - [x] Constraint domain & data models (`ScheduleConstraint`, `ConstraintType`, `OccurrenceType`, `ConstraintStatus`, `ScheduleConstraintRepository`).
-- [x] Single Canonical Owner `ScheduleConflictService`:
-  - Single canonical overlap logic for `[start, end)` time intervals classifying `EXACT_OVERLAP`, `CONTAINED_OVERLAP`, `PARTIAL_OVERLAP`.
-  - Evaluates student constraints: `HARD_BLOCK` (hard conflict), `SOFT_PREFERENCE` (soft warning), `OTHER_CENTER` (hard conflict on overlap, soft warning on `TRAVEL_BUFFER` gap).
-  - Evaluates one-off session commitments with exact `DOI_CA` replacement semantics, outgoing `DOI_CA` commitment removal, and multi-shift roster precision (`assignment.idLichHoc == session.idLichHoc`).
-  - Fail-closed error handling: Missing schedule references, corrupted time formats, or malformed constraint shapes throw `StateError` / `FormatException` instead of silently continuing.
-  - Narrow targeted queries (`getActiveForRecurringCandidate`) and batch queries eliminating N+1 overhead (`getByIds` for schedules and classes, `getByTargetSessionIds`/`getByOriginalSessionIds` for adjustments).
-- [x] Consumer Refactoring & Double-Gate Protection:
-  - `ScheduleDomainService`: `ScheduleConflictService` is a REQUIRED non-nullable dependency across all consumers and tests. Fallback overlap engine removed completely.
-  - `changeRecurringShift`: Atomic SQLite transaction (`closeOld` + `insertNew` in one transaction block with real rollback proof).
-  - `SessionAdjustmentService`: `ScheduleConflictService` is a REQUIRED non-nullable dependency. Always re-checks `evaluateOneOffSessionCandidate` in `createDoiCa`, `createHocBu`, and `createPhatSinh` prior to persistence.
-- [x] Presentation & UI Integration (Phase 11C / 11D):
-  - Migrated `SessionAdjustmentDialogs` (`showDoiCaDialog`, `showHocBuDialog`, `showPhatSinhDialog`) from legacy `oneOffConflictPreviewProvider` to canonical `oneOffSessionConflictPreviewProvider`.
-  - Enforced fail-closed preview states across all adjustment & assignment dialogs (Submit button disabled on Loading and Error states; enabled only when `canAssign == true` or soft warnings only).
-  - Bounded HOC_BU target selection API (`getUpcomingHocBuSessions({fromDate, toDate})`) and 90-day lookahead policy (`fromDate = TODAY`, `toDate = TODAY + 90 days`); batch fetches class names (`getClassesByIds`) displaying `${className} - ${s.ngay} (${s.gioBatDau} - ${s.gioKetThuc})`.
-  - Fixed PHAT_SINH student selection: derives candidates from active memberships on `targetSession.ngay` using `getActiveMembershipsOnDate`; batch fetches class names; supports cross-class memberships without assuming `originalClassId = targetSession.idLop`; excludes archived students and students with existing adjustments; validates target session type (`PHAT_SINH`) and status (`DU_KIEN`).
-  - Enhanced Constraint Management UI: integrated constraint list and confirmation dialog into `StudentDetailPage`; added UI input validation to `showAddConstraintDialog` (validates HH:mm time order, YYYY-MM-DD date format, travel buffer >= 0, OTHER_CENTER required source name); invalidates `studentConstraintsProvider` on create/cancel.
-  - Comprehensive test suite in `test/presentation/phase11c_schedule_conflict_ui_test.dart` (43/43 passing) proving fail-closed states, constraint validation matrix, DB persistence assertions, and ChangeShift canonical provider argument tuple.
+- [x] Single Canonical Owner `ScheduleConflictService`.
+- [x] Consumer Refactoring & Double-Gate Protection.
+- [x] Presentation & UI Integration (Phase 11C / 11D).
 - [x] Comprehensive Tests (379 tests passing).
 
 ## Phase 12: Reports - COMPLETE
 - [x] Phase 12A Canonical Report Foundation + Report UI: COMPLETE.
 - [x] Phase 12B PDF Export: COMPLETE.
 
-## Phase 13A: Android App Foundation (Final Acceptance Repair) - COMPLETE
-- [x] Android-first UI with exactly 4 bottom navigation items (`Home`, `Classes`, `Students`, `Tuition`).
-- [x] Attendance function ownership strictly under Class domain.
-- [x] True Nested Global Navigation (`AppPageScaffold` & `AppGlobalDrawer`):
-  - Global drawer accessible from root `AppShell` and nested/full-screen operational pages (`StudentDetailPage`, `StudentFormPage`, `ClassDetailPage`, `ClassFormPage`, `AttendancePage`, `LeaveRequestPage`, `SessionCreditPage`).
-  - Nested AppBars explicitly preserve BOTH Back button AND Global Menu button (`GlobalMenuButton`).
-  - Canonical global destination transition (`goToGlobalDestination`) closes drawer, pops nested routes back to root `AppShell`, selects destination (`Tuition`), and eliminates hidden duplicate routes.
+## Phase 13A: Android App Foundation (Final Closure Repair) - COMPLETE
+- [x] CI SDK Compatibility Fix:
+  - Configured Flutter version `3.47.5` in `.github/workflows/flutter_ci.yml` for both `build` and `android-integration-test` jobs, resolving Dart ^3.12.0 SDK constraint requirement without lowering project constraints.
+- [x] True Nested Global Navigation Matrix:
+  - All 7 required nested operational screens (`StudentDetailPage`, `StudentFormPage`, `ClassDetailPage`, `ClassFormPage`, `AttendancePage`, `LeaveRequestPage`, `SessionCreditPage`) provide a leading `BackButton`, `GlobalMenuButton`, and `AppGlobalDrawer`.
+  - Executable test matrix in `test/app/nested_pages_matrix_test.dart` (7/7 passing) proves Back button and Global Menu button availability across all 7 screens.
+- [x] Dirty Form Global Navigation Safety:
+  - `DirtyFormScope.isFormDirty(context)` and `AppPageScaffold.confirmCanLeave` guard global menu navigation.
+  - Tapping Global Menu from a dirty form displays the unsaved changes dialog (`dirtyFormTitle`, `dirtyFormMessage`).
+  - Selecting Cancel keeps the user on the form with typed input intact and destination unchanged.
+  - Selecting Discard closes the nested route stack cleanly, switches destination, and prevents hidden duplicate routes.
+  - Tested and proven in `test/app/dirty_form_test.dart` (4/4 passing).
 - [x] Fixed False Bottom Nav Selection:
-  - Secondary non-bottom pages (`Reports`, `Settings`) hide `NavigationBar` so `Home` is never falsely highlighted.
-- [x] True Localization Resolvers & Zero Two-Language Branching:
-  - Removed `isEn ? 'Home' : 'Trang chủ'`, `viLabel`/`enLabel` from `AppDestination`, and `viName`/`enName` from `AppPaletteInfo`.
-  - All UI strings resolve via generated `AppLocalizations` (`l10n.navHome`, `l10n.paletteEmerald`, `l10n.studentFormTitleAdd`, etc.) supporting arbitrary future locales without destination or palette model changes.
-  - Fully localized `StudentFormPage` fields, titles, section headers, validation messages, and gender labels (`studentGenderMale`, `studentGenderFemale`, `studentGenderOther`). Stored canonical enum values (`NAM`, `NU`, `KHAC`) remain untouched.
-- [x] Centralized Design System & Real App Typography (`AppTypography`):
-  - Implemented Material 3 typography scale in `lib/app/design_system/app_typography.dart` and wired directly into `AppTheme.createTheme`.
-- [x] Dirty Form Protection & Discard Proof (`DirtyFormScope`):
-  - Form dirty state tracking on `StudentFormPage` and nested operational forms. Android Back or route pop presents confirmation dialog (`dirtyFormTitle`, `dirtyFormMessage`).
-  - Executable widget tests (`test/app/dirty_form_test.dart`) proving dirty detection, cancel keeping user on form, discard popping form, and global menu confirmation.
-- [x] Real SharedPreferences Persistence & Visual Theme Assertions:
-  - Widget and integration tests verify ThemeData brightness (`Brightness.dark`) and ColorScheme primary changes on theme/palette switch.
-  - Values persisted across `SharedPreferences` keys (`pref_theme_mode`, `pref_app_palette`, `pref_locale_mode`).
+  - Non-bottom secondary global pages (`Reports`, `Settings`) hide `NavigationBar` so `Home` is never falsely highlighted.
+- [x] Fully Localized Shared UI & Tooltips:
+  - Tooltip on `GlobalMenuButton` localized via `l10n.globalMenu`. Zero hardcoded bilingual branching (`isEn ? ... : ...`).
+  - AppShell, AppGlobalDrawer, DashboardPage, SettingsPage, feedback, and DirtyFormScope fully localized via ARB.
+- [x] Visual ThemeData Assertions & Real SharedPreferences Persistence:
+  - Integration test asserts `brightness == Brightness.dark` and `colorScheme.primary` palette color change on theme/palette switch.
+  - Verified persistence across `pref_theme_mode`, `pref_app_palette`, and `pref_locale_mode`.
 - [x] Real Android Integration Smoke Test (`integration_test/phase13a_android_smoke_test.dart`):
   - Executed on connected Android Emulator (`emulator-5554`, Android 13, API 33).
-  - Verifies launch, 4 bottom tabs, Global Menu, Settings page without false Home highlight, Light/Dark theme mode, Emerald palette, English/Vietnamese l10n switching, real nested flow (`Home` -> `Add Student` -> `StudentFormPage` -> Back + Global Menu -> `Tuition`), and SharedPreferences persistence. 100% PASS.
-- [x] GitHub Actions CI Update:
-  - Updated `.github/workflows/flutter_ci.yml` with `flutter build apk --debug` and reactive Android emulator integration runner job (`reactivecircus/android-emulator-runner@v2`).
-- [x] Debug APK (`app-debug.apk`) built and verified locally (`build/app/outputs/flutter-apk/app-debug.apk`).
+  - Verifies launch, 4 bottom tabs, Global Menu, Reports/Settings state, Light/Dark theme mode, Emerald palette, English/Vietnamese l10n switching, real dirty form global menu flow (Cancel keeps form + typed text, Discard switches route), clean Android Back, and SharedPreferences persistence. 100% PASS.
+- [x] Debug APK (`app-debug.apk`) built successfully (`build/app/outputs/flutter-apk/app-debug.apk`).
 
 ---
 
 ## Technical Details
 - **Database**: `tuition_next.db`
 - **Version**: 13
+- **Flutter SDK**: `3.47.5`
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Centralized `AppDestination` + Riverpod `NavigationController` + `AppGlobalDrawer` + `AppPageScaffold`
-- **Tests**: 438 tests passing (100% PASS)
+- **Tests**: 447 tests passing (100% PASS)
 - **Quality Gate**:
   - `dart format`: Passed
   - `flutter analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (438 tests)
+  - `flutter test`: 100% Pass (447 tests)
   - `flutter build apk --debug`: Passed (`app-debug.apk`)
   - `integration_test`: 100% Pass on Android Emulator `emulator-5554` (API 33)

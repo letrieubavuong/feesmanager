@@ -2,6 +2,20 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import 'app_feedback.dart';
 
+class _DirtyFormScopeInherited extends InheritedWidget {
+  final bool isDirty;
+
+  const _DirtyFormScopeInherited({
+    required this.isDirty,
+    required super.child,
+  });
+
+  @override
+  bool updateShouldNotify(_DirtyFormScopeInherited oldWidget) {
+    return isDirty != oldWidget.isDirty;
+  }
+}
+
 class DirtyFormScope extends StatelessWidget {
   final bool isDirty;
   final Widget child;
@@ -16,29 +30,38 @@ class DirtyFormScope extends StatelessWidget {
     this.message,
   });
 
+  static bool isFormDirty(BuildContext context) {
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<_DirtyFormScopeInherited>();
+    return inherited?.isDirty ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return PopScope(
-      canPop: !isDirty,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-        final confirmDiscard = await AppFeedback.showConfirmDialog(
-          context,
-          title: title ?? l10n?.dirtyFormTitle ?? 'Rời khỏi trang?',
-          message: message ??
-              l10n?.dirtyFormMessage ??
-              'Bạn có thay đổi chưa lưu. Bạn có chắc muốn rời đi và bỏ các thay đổi này không?',
-          confirmLabel: l10n?.dirtyFormDiscard ?? 'Bỏ thay đổi',
-          cancelLabel: l10n?.dirtyFormKeepEditing ?? 'Tiếp tục chỉnh sửa',
-          isDestructive: true,
-        );
-        if (confirmDiscard && context.mounted) {
-          Navigator.of(context).pop(result);
-        }
-      },
-      child: child,
+    return _DirtyFormScopeInherited(
+      isDirty: isDirty,
+      child: PopScope(
+        canPop: !isDirty,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop) return;
+          final confirmDiscard = await AppFeedback.showConfirmDialog(
+            context,
+            title: title ?? l10n?.dirtyFormTitle ?? 'Rời khỏi trang?',
+            message: message ??
+                l10n?.dirtyFormMessage ??
+                'Bạn có thay đổi chưa lưu. Bạn có chắc muốn rời đi và bỏ các thay đổi này không?',
+            confirmLabel: l10n?.dirtyFormDiscard ?? 'Bỏ thay đổi',
+            cancelLabel: l10n?.dirtyFormKeepEditing ?? 'Tiếp tục chỉnh sửa',
+            isDestructive: true,
+          );
+          if (confirmDiscard && context.mounted) {
+            Navigator.of(context).pop(result);
+          }
+        },
+        child: child,
+      ),
     );
   }
 }

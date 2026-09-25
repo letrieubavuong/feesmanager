@@ -91,18 +91,11 @@ class AppGlobalDrawer extends ConsumerWidget {
                   selectedTileColor: theme.colorScheme.primaryContainer
                       .withValues(alpha: 0.4),
                   onTap: () {
-                    if (Navigator.of(context).canPop()) {
-                      AppPageScaffold.goToGlobalDestination(
-                        context,
-                        ref,
-                        dest.id,
-                      );
-                    } else {
-                      ref
-                          .read(navigationControllerProvider.notifier)
-                          .goTo(dest.id);
-                      Navigator.of(context).pop(); // Close drawer
-                    }
+                    AppPageScaffold.goToGlobalDestination(
+                      context,
+                      ref,
+                      dest.id,
+                    );
                   },
                 );
               }).toList(),
@@ -142,10 +135,11 @@ class GlobalMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return IconButton(
       key: UiKeys.globalMenuButton,
       icon: const Icon(Icons.menu),
-      tooltip: 'Menu',
+      tooltip: l10n?.globalMenu ?? 'Global Menu',
       onPressed: () {
         Scaffold.of(context).openDrawer();
       },

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../app/navigation/app_global_drawer.dart';
 import '../../classes/presentation/class_controller.dart';
 import '../../students/presentation/student_detail_page.dart';
 import '../domain/credit_ledger_entry.dart';
@@ -55,7 +56,13 @@ class _SessionCreditPageState extends ConsumerState<SessionCreditPage> {
     final classAsync = ref.watch(classDetailProvider(widget.classId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Buổi dư & Credit')),
+      drawer: const AppGlobalDrawer(),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: const BackButton(),
+        title: const Text('Buổi dư & Credit'),
+        actions: const [GlobalMenuButton()],
+      ),
       body: summaryAsync.when(
         data: (summary) {
           final studentName = studentAsync.value?.hoTen ?? 'Học sinh';
