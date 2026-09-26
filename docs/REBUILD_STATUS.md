@@ -183,8 +183,17 @@
   - `flutter analyze`: Clean (0 errors, 0 warnings).
   - `flutter test`: 450/450 passed (100% pass).
   - `flutter build apk --debug`: Passed (`build/app/outputs/flutter-apk/app-debug.apk`).
-  - **Exact Final SHA**: `c3543c85234cb45175cea6e887a6e6e58eac02b6`
+  - **Exact Final Phase 13B SHA**: `5965298b18247ccf24fc3467aa2ce10a4caf9784`
   - Android Integration Tests: Both `phase13a_android_smoke_test.dart` and `phase13b_core_data_flow_test.dart` 100% PASS on Android Emulator `emulator-5554` (API 33).
+- Final exact-SHA GitHub verification: Actions run `36277804718` passed `build`, `windows-build`, `web-build`, and `android-integration-test` for SHA `5965298b18247ccf24fc3467aa2ce10a4caf9784`.
+
+## Post-Phase 13B Platform Strategy — ANDROID FIRST
+- Android is the only active development and acceptance target after Phase 13B.
+- Primary UI/UX loop: local Android Emulator -> `flutter run` -> Hot Reload/Hot Restart -> targeted tests -> teacher manual acceptance.
+- GitHub Actions is reduced to Android quality gates only: format, analyze, unit/widget tests, Debug APK, and Android emulator integration tests.
+- Windows development/build verification is paused. Keep existing `windows/` source intact; do not spend repair effort on it.
+- Web development/build verification is paused until Android UI/UX and business flows are teacher-approved. Web parity will be implemented later from the frozen Android contract.
+- iOS and any other platforms are outside the active acceptance scope unless explicitly re-enabled later.
 
 ---
 
