@@ -17,54 +17,75 @@ void main() {
   });
 
   group('Phase 13A Accessibility & Narrow Screen Viewport Tests', () {
-    testWidgets('AppShell renders without RenderFlex overflow on narrow 320px phone viewport', (tester) async {
-      tester.view.physicalSize = const Size(320, 568); // Narrow iPhone SE size
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'AppShell renders without RenderFlex overflow on narrow 320px phone viewport',
+      (tester) async {
+        tester.view.physicalSize = const Size(
+          320,
+          568,
+        ); // Narrow iPhone SE size
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(
-        createTestApp(
-          home: const AppShell(),
-          overrides: [
-            classListControllerProvider.overrideWith(() => MockClassListController([])),
-            studentListControllerProvider.overrideWith(() => MockStudentListController([])),
-            todaySessionsProvider.overrideWith((ref) async => <ClassSession>[]),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Verify no overflow errors occurred during build or layout
-      expect(tester.takeException(), isNull);
-      expect(find.byType(NavigationBar), findsOneWidget);
-    });
-
-    testWidgets('AppShell handles high text scale factor (1.5x) without critical layout exceptions', (tester) async {
-      tester.view.physicalSize = const Size(360, 640);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(
-            textScaler: TextScaler.linear(1.5), // High text scale
-          ),
-          child: createTestApp(
+        await tester.pumpWidget(
+          createTestApp(
             home: const AppShell(),
             overrides: [
-              classListControllerProvider.overrideWith(() => MockClassListController([])),
-              studentListControllerProvider.overrideWith(() => MockStudentListController([])),
-              todaySessionsProvider.overrideWith((ref) async => <ClassSession>[]),
+              classListControllerProvider.overrideWith(
+                () => MockClassListController([]),
+              ),
+              studentListControllerProvider.overrideWith(
+                () => MockStudentListController([]),
+              ),
+              todaySessionsProvider.overrideWith(
+                (ref) async => <ClassSession>[],
+              ),
             ],
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-    });
+        // Verify no overflow errors occurred during build or layout
+        expect(tester.takeException(), isNull);
+        expect(find.byType(NavigationBar), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'AppShell handles high text scale factor (1.5x) without critical layout exceptions',
+      (tester) async {
+        tester.view.physicalSize = const Size(360, 640);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(
+              textScaler: TextScaler.linear(1.5), // High text scale
+            ),
+            child: createTestApp(
+              home: const AppShell(),
+              overrides: [
+                classListControllerProvider.overrideWith(
+                  () => MockClassListController([]),
+                ),
+                studentListControllerProvider.overrideWith(
+                  () => MockStudentListController([]),
+                ),
+                todaySessionsProvider.overrideWith(
+                  (ref) async => <ClassSession>[],
+                ),
+              ],
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }
 

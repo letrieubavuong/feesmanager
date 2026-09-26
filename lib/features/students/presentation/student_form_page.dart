@@ -44,16 +44,26 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
   void initState() {
     super.initState();
     final s = widget.student;
-    _hoTenController = TextEditingController(text: s?.hoTen)..addListener(_onChanged);
-    _ngaySinhController = TextEditingController(text: s?.ngaySinh)..addListener(_onChanged);
-    _tenPhuHuynhController = TextEditingController(text: s?.tenPhuHuynh)..addListener(_onChanged);
-    _sdtPhuHuynhController = TextEditingController(text: s?.sdtPhuHuynh)..addListener(_onChanged);
-    _sdtHocSinhController = TextEditingController(text: s?.sdtHocSinh)..addListener(_onChanged);
-    _emailController = TextEditingController(text: s?.email)..addListener(_onChanged);
-    _truongController = TextEditingController(text: s?.truongDangHoc)..addListener(_onChanged);
-    _diaChiController = TextEditingController(text: s?.diaChi)..addListener(_onChanged);
-    _facebookController = TextEditingController(text: s?.facebook)..addListener(_onChanged);
-    _ghiChuController = TextEditingController(text: s?.ghiChu)..addListener(_onChanged);
+    _hoTenController = TextEditingController(text: s?.hoTen)
+      ..addListener(_onChanged);
+    _ngaySinhController = TextEditingController(text: s?.ngaySinh)
+      ..addListener(_onChanged);
+    _tenPhuHuynhController = TextEditingController(text: s?.tenPhuHuynh)
+      ..addListener(_onChanged);
+    _sdtPhuHuynhController = TextEditingController(text: s?.sdtPhuHuynh)
+      ..addListener(_onChanged);
+    _sdtHocSinhController = TextEditingController(text: s?.sdtHocSinh)
+      ..addListener(_onChanged);
+    _emailController = TextEditingController(text: s?.email)
+      ..addListener(_onChanged);
+    _truongController = TextEditingController(text: s?.truongDangHoc)
+      ..addListener(_onChanged);
+    _diaChiController = TextEditingController(text: s?.diaChi)
+      ..addListener(_onChanged);
+    _facebookController = TextEditingController(text: s?.facebook)
+      ..addListener(_onChanged);
+    _ghiChuController = TextEditingController(text: s?.ghiChu)
+      ..addListener(_onChanged);
     _khoi = s?.khoi;
     _gioiTinh = s?.gioiTinh;
   }

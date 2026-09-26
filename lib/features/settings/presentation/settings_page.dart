@@ -104,8 +104,8 @@ class SettingsPage extends ConsumerWidget {
                         key: info.palette == AppPalette.physicsBlue
                             ? UiKeys.settingsPalettePhysicsBlue
                             : info.palette == AppPalette.emerald
-                                ? UiKeys.settingsPaletteEmerald
-                                : null,
+                            ? UiKeys.settingsPaletteEmerald
+                            : null,
                         borderRadius: BorderRadius.circular(8),
                         onTap: () {
                           ref
@@ -127,8 +127,9 @@ class SettingsPage extends ConsumerWidget {
                               width: isSelected ? 2 : 1,
                             ),
                             color: isSelected
-                                ? theme.colorScheme.primaryContainer
-                                    .withValues(alpha: 0.3)
+                                ? theme.colorScheme.primaryContainer.withValues(
+                                    alpha: 0.3,
+                                  )
                                 : null,
                           ),
                           child: Row(

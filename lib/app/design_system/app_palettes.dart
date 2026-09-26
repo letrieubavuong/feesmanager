@@ -16,10 +16,7 @@ class AppPaletteInfo {
   final AppPalette palette;
   final Color primaryColor;
 
-  const AppPaletteInfo({
-    required this.palette,
-    required this.primaryColor,
-  });
+  const AppPaletteInfo({required this.palette, required this.primaryColor});
 
   String name(AppLocalizations l10n) {
     switch (palette) {
@@ -51,18 +48,9 @@ class AppPaletteInfo {
       palette: AppPalette.emerald,
       primaryColor: Color(0xFF00875A),
     ),
-    AppPaletteInfo(
-      palette: AppPalette.indigo,
-      primaryColor: Color(0xFF3F51B5),
-    ),
-    AppPaletteInfo(
-      palette: AppPalette.amber,
-      primaryColor: Color(0xFFFF8F00),
-    ),
-    AppPaletteInfo(
-      palette: AppPalette.slate,
-      primaryColor: Color(0xFF455A64),
-    ),
+    AppPaletteInfo(palette: AppPalette.indigo, primaryColor: Color(0xFF3F51B5)),
+    AppPaletteInfo(palette: AppPalette.amber, primaryColor: Color(0xFFFF8F00)),
+    AppPaletteInfo(palette: AppPalette.slate, primaryColor: Color(0xFF455A64)),
     AppPaletteInfo(
       palette: AppPalette.oceanCyan,
       primaryColor: Color(0xFF00838F),

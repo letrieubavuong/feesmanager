@@ -2,14 +2,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import 'ui_keys.dart';
 
-enum AppDestinationId {
-  home,
-  classes,
-  students,
-  tuition,
-  reports,
-  settings,
-}
+enum AppDestinationId { home, classes, students, tuition, reports, settings }
 
 class AppDestination {
   final AppDestinationId id;

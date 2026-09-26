@@ -12,162 +12,172 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('Phase 13A Real Android App Foundation Smoke Integration Test', () {
-    testWidgets('Verify bottom nav, nested global menu, theme/l10n assertions & dirty form safety on Android', (tester) async {
-      // Clear all SharedPreferences before test start
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
+    testWidgets(
+      'Verify bottom nav, nested global menu, theme/l10n assertions & dirty form safety on Android',
+      (tester) async {
+        // Clear all SharedPreferences before test start
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.clear();
 
-      app.main();
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+        app.main();
+        await tester.pumpAndSettle(const Duration(seconds: 2));
 
-      // 1. Verify 4 bottom destinations on phone on app launch
-      expect(find.byKey(UiKeys.bottomHome), findsOneWidget);
-      expect(find.byKey(UiKeys.bottomClasses), findsOneWidget);
-      expect(find.byKey(UiKeys.bottomStudents), findsOneWidget);
-      expect(find.byKey(UiKeys.bottomTuition), findsOneWidget);
+        // 1. Verify 4 bottom destinations on phone on app launch
+        expect(find.byKey(UiKeys.bottomHome), findsOneWidget);
+        expect(find.byKey(UiKeys.bottomClasses), findsOneWidget);
+        expect(find.byKey(UiKeys.bottomStudents), findsOneWidget);
+        expect(find.byKey(UiKeys.bottomTuition), findsOneWidget);
 
-      // 2. Navigate all 4 bottom tabs
-      await tester.tap(find.byKey(UiKeys.bottomClasses));
-      await tester.pumpAndSettle();
+        // 2. Navigate all 4 bottom tabs
+        await tester.tap(find.byKey(UiKeys.bottomClasses));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(UiKeys.bottomStudents));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(UiKeys.bottomStudents));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(UiKeys.bottomTuition));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(UiKeys.bottomTuition));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(UiKeys.bottomHome));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(UiKeys.bottomHome));
+        await tester.pumpAndSettle();
 
-      // 3. Open Reports from Global Menu -> verify NavigationBar absent
-      await tester.tap(find.byKey(UiKeys.globalMenuButton));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(UiKeys.drawerReports));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(ReportsPage), findsOneWidget);
-      expect(find.byType(NavigationBar), findsNothing);
-
-      // 4. Open Settings from Global Menu -> verify NavigationBar absent
-      await tester.tap(find.byKey(UiKeys.globalMenuButton));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(UiKeys.drawerSettings));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(SettingsPage), findsOneWidget);
-      expect(find.byType(NavigationBar), findsNothing);
-
-      // Capture initial ThemeData
-      final initialTheme = Theme.of(tester.element(find.byType(SettingsPage)));
-      final initialPrimary = initialTheme.colorScheme.primary;
-
-      // 5. Test Theme Mode Dark & assert Theme.brightness == Brightness.dark
-      await tester.tap(find.byKey(UiKeys.settingsThemeModeDark));
-      await tester.pumpAndSettle();
-
-      final darkTheme = Theme.of(tester.element(find.byType(SettingsPage)));
-      expect(darkTheme.brightness, equals(Brightness.dark));
-
-      // 6. Test Emerald Palette & assert colorScheme.primary differs
-      await tester.tap(find.byKey(UiKeys.settingsPaletteEmerald));
-      await tester.pumpAndSettle();
-
-      final emeraldTheme = Theme.of(tester.element(find.byType(SettingsPage)));
-      expect(emeraldTheme.colorScheme.primary, isNot(equals(initialPrimary)));
-
-      // 7. Test Language Switching explicitly: VI -> EN
-      await tester.tap(find.byKey(UiKeys.settingsLanguageVi));
-      await tester.pumpAndSettle(const Duration(seconds: 1));
-
-      await tester.tap(find.byKey(UiKeys.settingsLanguageEn));
-      await tester.pumpAndSettle(const Duration(seconds: 1));
-
-      expect(find.text('Settings'), findsOneWidget);
-      expect(find.text('APPEARANCE & THEME'), findsOneWidget);
-
-      // 8. Verify preference values stored in real SharedPreferences
-      expect(prefs.getString('pref_theme_mode'), equals('dark'));
-      expect(prefs.getString('pref_app_palette'), equals('emerald'));
-      expect(prefs.getString('pref_locale_mode'), equals('en'));
-
-      // 9. Real Dirty-Form Global Menu Flow on Android
-      // Navigate to Home via drawer
-      if (find.byKey(UiKeys.globalDrawer).evaluate().isEmpty) {
+        // 3. Open Reports from Global Menu -> verify NavigationBar absent
         await tester.tap(find.byKey(UiKeys.globalMenuButton));
         await tester.pumpAndSettle();
-      }
 
-      await tester.tap(find.byKey(UiKeys.drawerHome));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(UiKeys.drawerReports));
+        await tester.pumpAndSettle();
 
-      // Tap Quick Action 'Add Student' -> opens StudentFormPage
-      await tester.tap(find.byKey(UiKeys.dashboardQuickAddStudent));
-      await tester.pumpAndSettle();
+        expect(find.byType(ReportsPage), findsOneWidget);
+        expect(find.byType(NavigationBar), findsNothing);
 
-      expect(find.byType(StudentFormPage), findsOneWidget);
-
-      // Enter text into Full Name field so form becomes DIRTY
-      await tester.enterText(find.byType(TextFormField).first, 'Student Dirty Android Test');
-      await tester.pumpAndSettle();
-
-      // Open Global Menu -> tap Tuition
-      if (find.byKey(UiKeys.globalDrawer).evaluate().isEmpty) {
+        // 4. Open Settings from Global Menu -> verify NavigationBar absent
         await tester.tap(find.byKey(UiKeys.globalMenuButton));
         await tester.pumpAndSettle();
-      }
 
-      await tester.tap(find.byKey(UiKeys.drawerTuition));
-      await tester.pumpAndSettle();
-
-      // Assert discard confirmation appears
-      expect(find.text('Discard changes?'), findsOneWidget);
-
-      // Choose Cancel -> stay on form, entered text preserved
-      await tester.tap(find.text('Keep Editing'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(StudentFormPage), findsOneWidget);
-      expect(find.text('Student Dirty Android Test'), findsOneWidget);
-
-      // Repeat: Global Menu -> tap Tuition -> choose Discard
-      if (find.byKey(UiKeys.globalDrawer).evaluate().isEmpty) {
-        await tester.tap(find.byKey(UiKeys.globalMenuButton));
+        await tester.tap(find.byKey(UiKeys.drawerSettings));
         await tester.pumpAndSettle();
-      }
 
-      await tester.tap(find.byKey(UiKeys.drawerTuition));
-      await tester.pumpAndSettle();
+        expect(find.byType(SettingsPage), findsOneWidget);
+        expect(find.byType(NavigationBar), findsNothing);
 
-      await tester.tap(find.text('Discard'));
-      await tester.pumpAndSettle();
+        // Capture initial ThemeData
+        final initialTheme = Theme.of(
+          tester.element(find.byType(SettingsPage)),
+        );
+        final initialPrimary = initialTheme.colorScheme.primary;
 
-      // Assert StudentFormPage is gone and Tuition is visible
-      expect(find.byType(StudentFormPage), findsNothing);
-      expect(find.text('Tuition'), findsAtLeast(1));
-
-      // 10. Android Back Integration Flow on real emulator
-      // Re-enter StudentFormPage from Home
-      if (find.byKey(UiKeys.globalDrawer).evaluate().isEmpty) {
-        await tester.tap(find.byKey(UiKeys.globalMenuButton));
+        // 5. Test Theme Mode Dark & assert Theme.brightness == Brightness.dark
+        await tester.tap(find.byKey(UiKeys.settingsThemeModeDark));
         await tester.pumpAndSettle();
-      }
 
-      await tester.tap(find.byKey(UiKeys.drawerHome));
-      await tester.pumpAndSettle();
+        final darkTheme = Theme.of(tester.element(find.byType(SettingsPage)));
+        expect(darkTheme.brightness, equals(Brightness.dark));
 
-      await tester.tap(find.byKey(UiKeys.dashboardQuickAddStudent));
-      await tester.pumpAndSettle();
+        // 6. Test Emerald Palette & assert colorScheme.primary differs
+        await tester.tap(find.byKey(UiKeys.settingsPaletteEmerald));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(StudentFormPage), findsOneWidget);
+        final emeraldTheme = Theme.of(
+          tester.element(find.byType(SettingsPage)),
+        );
+        expect(emeraldTheme.colorScheme.primary, isNot(equals(initialPrimary)));
 
-      // Clean StudentFormPage -> Android Back returns one level
-      final dynamic widgetsAppState = tester.state(find.byType(WidgetsApp));
-      widgetsAppState.didPopRoute();
-      await tester.pumpAndSettle();
+        // 7. Test Language Switching explicitly: VI -> EN
+        await tester.tap(find.byKey(UiKeys.settingsLanguageVi));
+        await tester.pumpAndSettle(const Duration(seconds: 1));
 
-      expect(find.byType(StudentFormPage), findsNothing);
-    });
+        await tester.tap(find.byKey(UiKeys.settingsLanguageEn));
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+
+        expect(find.text('Settings'), findsOneWidget);
+        expect(find.text('APPEARANCE & THEME'), findsOneWidget);
+
+        // 8. Verify preference values stored in real SharedPreferences
+        expect(prefs.getString('pref_theme_mode'), equals('dark'));
+        expect(prefs.getString('pref_app_palette'), equals('emerald'));
+        expect(prefs.getString('pref_locale_mode'), equals('en'));
+
+        // 9. Real Dirty-Form Global Menu Flow on Android
+        // Navigate to Home via drawer
+        if (find.byKey(UiKeys.globalDrawer).evaluate().isEmpty) {
+          await tester.tap(find.byKey(UiKeys.globalMenuButton));
+          await tester.pumpAndSettle();
+        }
+
+        await tester.tap(find.byKey(UiKeys.drawerHome));
+        await tester.pumpAndSettle();
+
+        // Tap Quick Action 'Add Student' -> opens StudentFormPage
+        await tester.tap(find.byKey(UiKeys.dashboardQuickAddStudent));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(StudentFormPage), findsOneWidget);
+
+        // Enter text into Full Name field so form becomes DIRTY
+        await tester.enterText(
+          find.byType(TextFormField).first,
+          'Student Dirty Android Test',
+        );
+        await tester.pumpAndSettle();
+
+        // Open Global Menu -> tap Tuition
+        if (find.byKey(UiKeys.globalDrawer).evaluate().isEmpty) {
+          await tester.tap(find.byKey(UiKeys.globalMenuButton));
+          await tester.pumpAndSettle();
+        }
+
+        await tester.tap(find.byKey(UiKeys.drawerTuition));
+        await tester.pumpAndSettle();
+
+        // Assert discard confirmation appears
+        expect(find.text('Discard changes?'), findsOneWidget);
+
+        // Choose Cancel -> stay on form, entered text preserved
+        await tester.tap(find.text('Keep Editing'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(StudentFormPage), findsOneWidget);
+        expect(find.text('Student Dirty Android Test'), findsOneWidget);
+
+        // Repeat: Global Menu -> tap Tuition -> choose Discard
+        if (find.byKey(UiKeys.globalDrawer).evaluate().isEmpty) {
+          await tester.tap(find.byKey(UiKeys.globalMenuButton));
+          await tester.pumpAndSettle();
+        }
+
+        await tester.tap(find.byKey(UiKeys.drawerTuition));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Discard'));
+        await tester.pumpAndSettle();
+
+        // Assert StudentFormPage is gone and Tuition is visible
+        expect(find.byType(StudentFormPage), findsNothing);
+        expect(find.text('Tuition'), findsAtLeast(1));
+
+        // 10. Android Back Integration Flow on real emulator
+        // Re-enter StudentFormPage from Home
+        if (find.byKey(UiKeys.globalDrawer).evaluate().isEmpty) {
+          await tester.tap(find.byKey(UiKeys.globalMenuButton));
+          await tester.pumpAndSettle();
+        }
+
+        await tester.tap(find.byKey(UiKeys.drawerHome));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(UiKeys.dashboardQuickAddStudent));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(StudentFormPage), findsOneWidget);
+
+        // Clean StudentFormPage -> Android Back returns one level
+        final dynamic widgetsAppState = tester.state(find.byType(WidgetsApp));
+        widgetsAppState.didPopRoute();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(StudentFormPage), findsNothing);
+      },
+    );
   });
 }

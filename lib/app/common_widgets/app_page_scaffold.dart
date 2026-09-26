@@ -33,7 +33,10 @@ class AppPageScaffold extends StatelessWidget {
     this.dirtyTitle,
     this.dirtyMessage,
     this.showGlobalMenu = true,
-  }) : assert(title != null || titleWidget != null, 'Provide either title or titleWidget');
+  }) : assert(
+         title != null || titleWidget != null,
+         'Provide either title or titleWidget',
+       );
 
   static Future<bool> confirmCanLeave(
     BuildContext context, {
@@ -47,7 +50,8 @@ class AppPageScaffold extends StatelessWidget {
     final confirmDiscard = await AppFeedback.showConfirmDialog(
       context,
       title: dirtyTitle ?? l10n?.dirtyFormTitle ?? 'Rời khỏi trang?',
-      message: dirtyMessage ??
+      message:
+          dirtyMessage ??
           l10n?.dirtyFormMessage ??
           'Bạn có thay đổi chưa lưu. Bạn có chắc muốn rời đi và bỏ các thay đổi này không?',
       confirmLabel: l10n?.dirtyFormDiscard ?? 'Bỏ thay đổi',

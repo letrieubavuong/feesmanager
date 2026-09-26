@@ -41,9 +41,9 @@ void main() {
         home: Scaffold(
           body: Builder(
             builder: (context) => ElevatedButton(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => child),
-              ),
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => child)),
               child: const Text('Open Page'),
             ),
           ),
@@ -58,34 +58,41 @@ void main() {
   }
 
   group('Phase 13A Nested Operational Pages Navigation Matrix Tests', () {
-    testWidgets('StudentDetailPage provides Back button and Global Menu button', (tester) async {
-      final testStudent = Student(
-        id: 10,
-        hoTen: 'Student Alpha',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+    testWidgets(
+      'StudentDetailPage provides Back button and Global Menu button',
+      (tester) async {
+        final testStudent = Student(
+          id: 10,
+          hoTen: 'Student Alpha',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
 
-      await pumpNestedScreen(
-        tester,
-        const StudentDetailPage(studentId: 10),
-        overrides: [
-          studentDetailProvider(10).overrideWith((ref) async => testStudent),
-        ],
-      );
+        await pumpNestedScreen(
+          tester,
+          const StudentDetailPage(studentId: 10),
+          overrides: [
+            studentDetailProvider(10).overrideWith((ref) async => testStudent),
+          ],
+        );
 
-      expect(find.byType(BackButton), findsOneWidget);
-      expect(find.byKey(UiKeys.globalMenuButton), findsOneWidget);
-    });
+        expect(find.byType(BackButton), findsOneWidget);
+        expect(find.byKey(UiKeys.globalMenuButton), findsOneWidget);
+      },
+    );
 
-    testWidgets('StudentFormPage provides Back button and Global Menu button', (tester) async {
+    testWidgets('StudentFormPage provides Back button and Global Menu button', (
+      tester,
+    ) async {
       await pumpNestedScreen(tester, const StudentFormPage());
 
       expect(find.byType(BackButton), findsOneWidget);
       expect(find.byKey(UiKeys.globalMenuButton), findsOneWidget);
     });
 
-    testWidgets('ClassDetailPage provides Back button and Global Menu button', (tester) async {
+    testWidgets('ClassDetailPage provides Back button and Global Menu button', (
+      tester,
+    ) async {
       final testClass = ClassEntity(
         id: 20,
         tenLop: 'Class Beta',
@@ -105,19 +112,25 @@ void main() {
       expect(find.byKey(UiKeys.globalMenuButton), findsOneWidget);
     });
 
-    testWidgets('ClassFormPage provides Back button and Global Menu button', (tester) async {
+    testWidgets('ClassFormPage provides Back button and Global Menu button', (
+      tester,
+    ) async {
       await pumpNestedScreen(tester, const ClassFormPage());
 
       expect(find.byType(BackButton), findsOneWidget);
       expect(find.byKey(UiKeys.globalMenuButton), findsOneWidget);
     });
 
-    testWidgets('AttendancePage provides Back button and Global Menu button', (tester) async {
+    testWidgets('AttendancePage provides Back button and Global Menu button', (
+      tester,
+    ) async {
       await pumpNestedScreen(
         tester,
         const AttendancePage(sessionId: 100),
         overrides: [
-          attendanceControllerProvider(100).overrideWith(() => MockAttendanceController()),
+          attendanceControllerProvider(
+            100,
+          ).overrideWith(() => MockAttendanceController()),
         ],
       );
 
@@ -125,33 +138,49 @@ void main() {
       expect(find.byKey(UiKeys.globalMenuButton), findsOneWidget);
     });
 
-    testWidgets('LeaveRequestPage provides Back button and Global Menu button', (tester) async {
-      await pumpNestedScreen(
-        tester,
-        const LeaveRequestPage(classId: 30),
-        overrides: [
-          leaveRequestControllerProvider(30).overrideWith(() => MockLeaveRequestController()),
-        ],
-      );
+    testWidgets(
+      'LeaveRequestPage provides Back button and Global Menu button',
+      (tester) async {
+        await pumpNestedScreen(
+          tester,
+          const LeaveRequestPage(classId: 30),
+          overrides: [
+            leaveRequestControllerProvider(
+              30,
+            ).overrideWith(() => MockLeaveRequestController()),
+          ],
+        );
 
-      expect(find.byType(BackButton), findsOneWidget);
-      expect(find.byKey(UiKeys.globalMenuButton), findsOneWidget);
-    });
+        expect(find.byType(BackButton), findsOneWidget);
+        expect(find.byKey(UiKeys.globalMenuButton), findsOneWidget);
+      },
+    );
 
-    testWidgets('SessionCreditPage provides Back button and Global Menu button', (tester) async {
-      await pumpNestedScreen(
-        tester,
-        const SessionCreditPage(studentId: 1, classId: 2, initialMonth: '2026-10'),
-        overrides: [
-          sessionCreditControllerProvider(1, 2, '2026-10').overrideWith(() => MockSessionCreditController()),
-          studentDetailProvider(1).overrideWith((ref) async => null),
-          classDetailProvider(2).overrideWith((ref) async => null),
-        ],
-      );
+    testWidgets(
+      'SessionCreditPage provides Back button and Global Menu button',
+      (tester) async {
+        await pumpNestedScreen(
+          tester,
+          const SessionCreditPage(
+            studentId: 1,
+            classId: 2,
+            initialMonth: '2026-10',
+          ),
+          overrides: [
+            sessionCreditControllerProvider(
+              1,
+              2,
+              '2026-10',
+            ).overrideWith(() => MockSessionCreditController()),
+            studentDetailProvider(1).overrideWith((ref) async => null),
+            classDetailProvider(2).overrideWith((ref) async => null),
+          ],
+        );
 
-      expect(find.byType(BackButton), findsOneWidget);
-      expect(find.byKey(UiKeys.globalMenuButton), findsOneWidget);
-    });
+        expect(find.byType(BackButton), findsOneWidget);
+        expect(find.byKey(UiKeys.globalMenuButton), findsOneWidget);
+      },
+    );
   });
 }
 
@@ -169,7 +198,11 @@ class MockLeaveRequestController extends LeaveRequestController {
 
 class MockSessionCreditController extends SessionCreditController {
   @override
-  FutureOr<MonthlyCreditSummary> build(int studentId, int classId, String month) async {
+  FutureOr<MonthlyCreditSummary> build(
+    int studentId,
+    int classId,
+    String month,
+  ) async {
     return MonthlyCreditSummary(
       studentId: studentId,
       classId: classId,

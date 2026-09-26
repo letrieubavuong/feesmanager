@@ -55,41 +55,41 @@ class AttendancePage extends ConsumerWidget {
           ...sheetAsync.when(
             data: (sheet) => [
               if (_isEditable(sheet)) ...[
-              if (sheet.session.loai == SessionType.HOC_BU)
-                TextButton.icon(
+                if (sheet.session.loai == SessionType.HOC_BU)
+                  TextButton.icon(
+                    onPressed: () => ref
+                        .read(attendanceControllerProvider(sessionId).notifier)
+                        .markAllHocBu(),
+                    icon: const Icon(Icons.done_all, color: Colors.white),
+                    label: const Text(
+                      'Học bù hết',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  )
+                else
+                  TextButton.icon(
+                    onPressed: () => ref
+                        .read(attendanceControllerProvider(sessionId).notifier)
+                        .markAllPresent(),
+                    icon: const Icon(Icons.done_all, color: Colors.white),
+                    label: const Text(
+                      'Có mặt hết',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.undo),
                   onPressed: () => ref
                       .read(attendanceControllerProvider(sessionId).notifier)
-                      .markAllHocBu(),
-                  icon: const Icon(Icons.done_all, color: Colors.white),
-                  label: const Text(
-                    'Học bù hết',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                )
-              else
-                TextButton.icon(
-                  onPressed: () => ref
-                      .read(attendanceControllerProvider(sessionId).notifier)
-                      .markAllPresent(),
-                  icon: const Icon(Icons.done_all, color: Colors.white),
-                  label: const Text(
-                    'Có mặt hết',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                      .undoChanges(),
+                  tooltip: 'Hoàn tác',
                 ),
-              IconButton(
-                icon: const Icon(Icons.undo),
-                onPressed: () => ref
-                    .read(attendanceControllerProvider(sessionId).notifier)
-                    .undoChanges(),
-                tooltip: 'Hoàn tác',
-              ),
+              ],
             ],
-          ],
-          loading: () => [],
-          error: (_, __) => [],
-        ),
-      ],
+            loading: () => [],
+            error: (_, __) => [],
+          ),
+        ],
       ),
       body: sheetAsync.when(
         data: (sheet) => _buildContent(context, ref, sheet),

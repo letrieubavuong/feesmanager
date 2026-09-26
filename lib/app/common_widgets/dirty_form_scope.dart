@@ -5,10 +5,7 @@ import 'app_feedback.dart';
 class _DirtyFormScopeInherited extends InheritedWidget {
   final bool isDirty;
 
-  const _DirtyFormScopeInherited({
-    required this.isDirty,
-    required super.child,
-  });
+  const _DirtyFormScopeInherited({required this.isDirty, required super.child});
 
   @override
   bool updateShouldNotify(_DirtyFormScopeInherited oldWidget) {
@@ -31,8 +28,8 @@ class DirtyFormScope extends StatelessWidget {
   });
 
   static bool isFormDirty(BuildContext context) {
-    final inherited =
-        context.dependOnInheritedWidgetOfExactType<_DirtyFormScopeInherited>();
+    final inherited = context
+        .dependOnInheritedWidgetOfExactType<_DirtyFormScopeInherited>();
     return inherited?.isDirty ?? false;
   }
 
@@ -49,7 +46,8 @@ class DirtyFormScope extends StatelessWidget {
           final confirmDiscard = await AppFeedback.showConfirmDialog(
             context,
             title: title ?? l10n?.dirtyFormTitle ?? 'Rời khỏi trang?',
-            message: message ??
+            message:
+                message ??
                 l10n?.dirtyFormMessage ??
                 'Bạn có thay đổi chưa lưu. Bạn có chắc muốn rời đi và bỏ các thay đổi này không?',
             confirmLabel: l10n?.dirtyFormDiscard ?? 'Bỏ thay đổi',

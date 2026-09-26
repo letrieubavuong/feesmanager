@@ -34,12 +34,14 @@ class _ClassFormPageState extends ConsumerState<ClassFormPage> {
   void initState() {
     super.initState();
     final c = widget.cls;
-    _tenLopController = TextEditingController(text: c?.tenLop)..addListener(_onChanged);
-    _monHocController = TextEditingController(text: c?.monHoc)..addListener(_onChanged);
-    _siSoToiDaController = TextEditingController(
-      text: c?.siSoToiDa?.toString(),
-    )..addListener(_onChanged);
-    _ghiChuController = TextEditingController(text: c?.ghiChu)..addListener(_onChanged);
+    _tenLopController = TextEditingController(text: c?.tenLop)
+      ..addListener(_onChanged);
+    _monHocController = TextEditingController(text: c?.monHoc)
+      ..addListener(_onChanged);
+    _siSoToiDaController = TextEditingController(text: c?.siSoToiDa?.toString())
+      ..addListener(_onChanged);
+    _ghiChuController = TextEditingController(text: c?.ghiChu)
+      ..addListener(_onChanged);
     _khoi = c?.khoi;
   }
 

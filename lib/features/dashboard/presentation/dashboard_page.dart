@@ -394,10 +394,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         key: key,
         onPressed: onTap,
         icon: Icon(icon, size: 20),
-        label: Text(
-          label,
-          overflow: TextOverflow.ellipsis,
-        ),
+        label: Text(label, overflow: TextOverflow.ellipsis),
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           alignment: Alignment.centerLeft,
@@ -418,13 +415,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final lowerQuery = query.toLowerCase();
 
     final matchedClasses = classes
-        .where((c) =>
-            !c.daLuuTru && c.tenLop.toLowerCase().contains(lowerQuery))
+        .where(
+          (c) => !c.daLuuTru && c.tenLop.toLowerCase().contains(lowerQuery),
+        )
         .toList();
 
     final matchedStudents = students
-        .where((s) =>
-            !s.daLuuTru && s.hoTen.toLowerCase().contains(lowerQuery))
+        .where((s) => !s.daLuuTru && s.hoTen.toLowerCase().contains(lowerQuery))
         .toList();
 
     if (matchedClasses.isEmpty && matchedStudents.isEmpty) {
