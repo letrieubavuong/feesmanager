@@ -11,9 +11,11 @@ class StudentRepository {
   }
 
   Future<int> update(Student student) async {
+    final map = student.toMap();
+    map.remove('id');
     return await _db.update(
       'hoc_sinh',
-      student.toMap(),
+      map,
       where: 'id = ?',
       whereArgs: [student.id],
     );

@@ -276,6 +276,11 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
   void _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    String? nullIfEmpty(String text) {
+      final trimmed = text.trim();
+      return trimmed.isEmpty ? null : trimmed;
+    }
+
     final student =
         (widget.student ??
                 Student(
@@ -284,18 +289,18 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
                   hoTen: '',
                 ))
             .copyWith(
-              hoTen: _hoTenController.text,
-              ngaySinh: _ngaySinhController.text,
-              tenPhuHuynh: _tenPhuHuynhController.text,
-              sdtPhuHuynh: _sdtPhuHuynhController.text,
-              sdtHocSinh: _sdtHocSinhController.text,
-              email: _emailController.text,
-              truongDangHoc: _truongController.text,
+              hoTen: _hoTenController.text.trim(),
+              ngaySinh: nullIfEmpty(_ngaySinhController.text),
+              tenPhuHuynh: nullIfEmpty(_tenPhuHuynhController.text),
+              sdtPhuHuynh: nullIfEmpty(_sdtPhuHuynhController.text),
+              sdtHocSinh: nullIfEmpty(_sdtHocSinhController.text),
+              email: nullIfEmpty(_emailController.text),
+              truongDangHoc: nullIfEmpty(_truongController.text),
               khoi: _khoi,
               gioiTinh: _gioiTinh,
-              diaChi: _diaChiController.text,
-              facebook: _facebookController.text,
-              ghiChu: _ghiChuController.text,
+              diaChi: nullIfEmpty(_diaChiController.text),
+              facebook: nullIfEmpty(_facebookController.text),
+              ghiChu: nullIfEmpty(_ghiChuController.text),
             );
 
     try {
@@ -309,7 +314,8 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
         AppFeedback.showSuccessSnackBar(context, 'Đã lưu thông tin học sinh');
         Navigator.of(context).pop();
       }
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('STUDENT SAVE ERROR: $e\n$st');
       if (mounted) {
         AppFeedback.showErrorSnackBar(
           context,

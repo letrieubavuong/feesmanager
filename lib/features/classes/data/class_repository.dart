@@ -12,9 +12,11 @@ class ClassRepository {
   }
 
   Future<int> update(ClassEntity classEntity) async {
+    final map = classEntity.toMap();
+    map.remove('id');
     return await _db.update(
       'lop',
-      classEntity.toMap(),
+      map,
       where: 'id = ?',
       whereArgs: [classEntity.id],
     );

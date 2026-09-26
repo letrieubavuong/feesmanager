@@ -3,13 +3,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:tuition2027/app/navigation/ui_keys.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:tuition2027/features/classes/presentation/class_detail_page.dart';
 import 'package:tuition2027/features/settings/presentation/settings_page.dart';
 import 'package:tuition2027/features/students/presentation/student_detail_page.dart';
 import 'package:tuition2027/features/students/presentation/student_form_page.dart';
 import 'package:tuition2027/main.dart' as app;
+
+Future<void> awaitDataReload(
+  WidgetTester tester,
+  String text, {
+  int maxAttempts = 20,
+}) async {
+  for (int i = 0; i < maxAttempts; i++) {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+    if (find.text(text).evaluate().isNotEmpty) return;
+    if (find.textContaining(text).evaluate().isNotEmpty) return;
+  }
+}
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -32,19 +45,23 @@ void main() {
         await tester.tap(find.byKey(UiKeys.bottomStudents));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byType(FloatingActionButton));
+        await tester.tap(
+          find.byType(FloatingActionButton),
+          warnIfMissed: false,
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(StudentFormPage), findsOneWidget);
 
-        await tester.enterText(
-          find.byKey(const Key('student_form_name_input')),
-          'Nguyễn Văn A',
-        );
+        final nameField = find.byKey(const Key('student_form_name_input'));
+        await tester.tap(nameField);
+        await tester.pumpAndSettle();
+        await tester.enterText(nameField, 'Nguyễn Văn A');
         await tester.pumpAndSettle();
 
         await tester.tap(find.byKey(UiKeys.studentFormSave));
-        await tester.pumpAndSettle(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+        await awaitDataReload(tester, 'Nguyễn Văn A');
 
         expect(find.byType(StudentFormPage), findsNothing);
         expect(find.text('Nguyễn Văn A'), findsOneWidget);
@@ -61,14 +78,17 @@ void main() {
 
         expect(find.byType(StudentFormPage), findsOneWidget);
 
-        await tester.enterText(
-          find.byKey(const Key('student_form_name_input')),
-          'Nguyễn Văn A Prime',
-        );
+        await tester.tap(nameField);
+        await tester.pumpAndSettle();
+        await tester.enterText(nameField, 'Nguyễn Văn A Prime');
         await tester.pumpAndSettle();
 
         await tester.tap(find.byKey(UiKeys.studentFormSave));
-        await tester.pumpAndSettle(const Duration(seconds: 2));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(StudentFormPage), findsNothing);
+
+        await awaitDataReload(tester, 'Nguyễn Văn A Prime');
 
         // Verify edited name appears on Detail page immediately
         expect(find.text('Nguyễn Văn A Prime'), findsAtLeast(1));
@@ -76,7 +96,7 @@ void main() {
         // Pop back to Students list
         final dynamic widgetsAppState = tester.state(find.byType(WidgetsApp));
         widgetsAppState.didPopRoute();
-        await tester.pumpAndSettle();
+        await tester.pumpAndSettle(const Duration(seconds: 4));
 
         expect(find.text('Nguyễn Văn A Prime'), findsOneWidget);
 
@@ -84,17 +104,21 @@ void main() {
         await tester.tap(find.byKey(UiKeys.bottomClasses));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byType(FloatingActionButton));
-        await tester.pumpAndSettle();
-
-        await tester.enterText(
-          find.byKey(UiKeys.classFormNameInput),
-          'Vật lý 10',
+        await tester.tap(
+          find.byType(FloatingActionButton),
+          warnIfMissed: false,
         );
         await tester.pumpAndSettle();
 
+        final classNameField = find.byKey(UiKeys.classFormNameInput);
+        await tester.tap(classNameField);
+        await tester.pumpAndSettle();
+        await tester.enterText(classNameField, 'Vật lý 10');
+        await tester.pumpAndSettle();
+
         await tester.tap(find.byKey(UiKeys.classFormSave));
-        await tester.pumpAndSettle(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+        await awaitDataReload(tester, 'Vật lý 10');
 
         expect(find.text('Vật lý 10'), findsOneWidget);
 
@@ -108,14 +132,15 @@ void main() {
         await tester.tap(find.byIcon(Icons.edit));
         await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.byKey(UiKeys.classFormNameInput),
-          'Vật lý 10 Chuyên',
-        );
+        await tester.tap(classNameField);
+        await tester.pumpAndSettle();
+        await tester.enterText(classNameField, 'Vật lý 10 Chuyên');
         await tester.pumpAndSettle();
 
         await tester.tap(find.byKey(UiKeys.classFormSave));
-        await tester.pumpAndSettle(const Duration(seconds: 2));
+        await tester.pumpAndSettle();
+
+        await awaitDataReload(tester, 'Vật lý 10 Chuyên');
 
         // Verify edited class name on Class Detail page immediately
         expect(find.text('Vật lý 10 Chuyên'), findsAtLeast(1));
@@ -131,7 +156,9 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.tap(find.byKey(UiKeys.enrollStudentSubmit));
-        await tester.pumpAndSettle(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+
+        await awaitDataReload(tester, 'Nguyễn Văn A Prime');
 
         expect(find.text('Nguyễn Văn A Prime'), findsAtLeast(1));
 
@@ -146,7 +173,9 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.tap(find.byKey(UiKeys.tuitionPolicySave));
-        await tester.pumpAndSettle(const Duration(seconds: 2));
+        await tester.pumpAndSettle();
+
+        await awaitDataReload(tester, 'Chính sách học phí');
 
         expect(find.textContaining('Chính sách học phí'), findsAtLeast(1));
 
@@ -166,10 +195,9 @@ void main() {
         await tester.tap(find.byKey(UiKeys.dashboardQuickAddStudent));
         await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.byType(TextFormField).first,
-          'Dirty Student Test B',
-        );
+        await tester.tap(nameField);
+        await tester.pumpAndSettle();
+        await tester.enterText(nameField, 'Dirty Student Test B');
         await tester.pumpAndSettle();
 
         if (find.byKey(UiKeys.globalDrawer).evaluate().isEmpty) {
