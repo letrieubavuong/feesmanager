@@ -189,6 +189,8 @@
   - `flutter test`: 447/447 passed (100% pass).
   - `flutter build apk --debug`: Passed (`build/app/outputs/flutter-apk/app-debug.apk`).
   - Android Integration Tests: Both `phase13a_android_smoke_test.dart` and `phase13b_core_data_flow_test.dart` 100% PASS on Android Emulator `emulator-5554` (API 33).
+  - **Exact Final SHA**: `8e6045c2990ec392dfb0d0bb8e2c3e3d4048adb9`
+  - **GitHub Actions CI Status**: SUCCESS (Run 36236284447) across all 4 jobs (`build`, `web-build`, `windows-build`, `android-integration-test`).
 
 ---
 
