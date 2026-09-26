@@ -1,12 +1,33 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tuition2027/app/navigation/ui_keys.dart';
+import 'package:tuition2027/features/classes/domain/class.dart';
+import 'package:tuition2027/features/classes/presentation/class_controller.dart';
 import 'package:tuition2027/features/classes/presentation/class_form_bottom_sheet.dart';
 import 'package:tuition2027/features/memberships/presentation/enroll_student_bottom_sheet.dart';
 import 'package:tuition2027/features/tuition/presentation/create_tuition_policy_bottom_sheet.dart';
 import 'package:tuition2027/l10n/app_localizations.dart';
+
+class _MockClassFormController extends ClassFormController {
+  final Future<void> Function(ClassEntity cls) onSave;
+  _MockClassFormController({required this.onSave});
+
+  @override
+  Future<void> save(ClassEntity classEntity) async {
+    await onSave(classEntity);
+  }
+}
+
+class _MockClassListController extends ClassListController {
+  @override
+  FutureOr<List<ClassEntity>> build() => [];
+
+  @override
+  Future<void> refresh() async {}
+}
 
 Widget buildTestApp(Widget child) {
   return ProviderScope(
@@ -155,5 +176,84 @@ void main() {
 
       expect(find.byType(CreateTuitionPolicyBottomSheet), findsNothing);
     });
+
+    testWidgets(
+      'ClassFormBottomSheet anti-double-submit: rapid repeated save taps trigger save once and disable button',
+      (tester) async {
+        int saveCallCount = 0;
+        final completer = Completer<void>();
+
+        final overrideController = _MockClassFormController(
+          onSave: (cls) async {
+            saveCallCount++;
+            await completer.future;
+          },
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              classFormControllerProvider.overrideWith(
+                () => overrideController,
+              ),
+              classListControllerProvider.overrideWith(
+                () => _MockClassListController(),
+              ),
+            ],
+            child: MaterialApp(
+              locale: const Locale('vi'),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () => showClassFormBottomSheet(context),
+                    child: const Text('Open Sheet'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+
+        // Enter valid class name
+        await tester.enterText(
+          find.byKey(UiKeys.classFormNameInput),
+          'Toán 12 AntiDoubleSubmit',
+        );
+        await tester.pumpAndSettle();
+
+        // Rapid double tap on Save button
+        final saveBtn = find.byKey(UiKeys.classFormSave);
+        await tester.tap(saveBtn);
+        await tester
+            .pump(); // Start save, setting _isSaving = true synchronously
+
+        // Save button should now be disabled (onPressed is null) and showing CircularProgressIndicator
+        final buttonWidget = tester.widget<ElevatedButton>(saveBtn);
+        expect(buttonWidget.onPressed, isNull);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        // Attempt second tap while saving
+        await tester.tap(saveBtn, warnIfMissed: false);
+        await tester.pump();
+
+        // Complete the async save
+        completer.complete();
+        await tester.pumpAndSettle();
+
+        // Verify save was called EXACTLY ONCE
+        expect(saveCallCount, equals(1));
+      },
+    );
   });
 }

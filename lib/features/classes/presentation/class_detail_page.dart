@@ -101,6 +101,35 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
           }
           return Column(
             children: [
+              if (cls.daLuuTru)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.archive_outlined,
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Lớp đã lưu trữ. Dữ liệu lịch sử vẫn được giữ nguyên. Khôi phục lớp để tiếp tục hoạt động.',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onErrorContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               _buildHeader(context, cls),
               Expanded(
                 child: DefaultTabController(
@@ -125,14 +154,27 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                               children: [
                                 _buildDateSelector(context),
                                 Expanded(
-                                  child: _buildRosterTab(context, rosterAsync),
+                                  child: _buildRosterTab(
+                                    context,
+                                    rosterAsync,
+                                    cls.daLuuTru,
+                                  ),
                                 ),
                               ],
                             ),
                             _buildHistoryTab(context, historyAsync),
-                            ScheduleTab(classId: widget.classId),
-                            AssignmentTab(classId: widget.classId),
-                            SessionTab(classId: widget.classId),
+                            ScheduleTab(
+                              classId: widget.classId,
+                              isArchived: cls.daLuuTru,
+                            ),
+                            AssignmentTab(
+                              classId: widget.classId,
+                              isArchived: cls.daLuuTru,
+                            ),
+                            SessionTab(
+                              classId: widget.classId,
+                              isArchived: cls.daLuuTru,
+                            ),
                             ClassTuitionTab(classId: widget.classId),
                           ],
                         ),
@@ -146,10 +188,6 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Lỗi: $e')),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddStudentDialog(context),
-        child: const Icon(Icons.person_add),
       ),
     );
   }
@@ -219,24 +257,52 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
   Widget _buildRosterTab(
     BuildContext context,
     AsyncValue<List<ClassMembership>> rosterAsync,
+    bool isArchived,
   ) {
-    return rosterAsync.when(
-      data: (memberships) {
-        if (memberships.isEmpty) {
-          return const Center(
-            child: Text('Không có học sinh nào trong ngày này.'),
-          );
-        }
-        return ListView.builder(
-          itemCount: memberships.length,
-          itemBuilder: (context, index) {
-            final m = memberships[index];
-            return RosterItem(membership: m);
-          },
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Lỗi: $e')),
+    return Column(
+      children: [
+        if (!isArchived)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Danh sách học sinh',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () => _showAddStudentDialog(context),
+                  icon: const Icon(Icons.person_add, size: 16),
+                  label: const Text('Thêm học sinh'),
+                ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: rosterAsync.when(
+            data: (memberships) {
+              if (memberships.isEmpty) {
+                return const Center(
+                  child: Text('Không có học sinh nào trong ngày này.'),
+                );
+              }
+              return ListView.builder(
+                itemCount: memberships.length,
+                itemBuilder: (context, index) {
+                  final m = memberships[index];
+                  return RosterItem(membership: m);
+                },
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Lỗi: $e')),
+          ),
+        ),
+      ],
     );
   }
 
@@ -263,48 +329,60 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
   }
 
   void _handleArchiveToggle(BuildContext context, ClassEntity cls) async {
-    if (!cls.daLuuTru) {
-      final activeCount = await ref
-          .read(classServiceProvider.future)
-          .then((s) => s.getActiveMemberCount(cls.id!));
-      if (activeCount > 0 && context.mounted) {
+    final isArchived = cls.daLuuTru;
+    try {
+      if (!isArchived) {
+        final activeCount = await ref
+            .read(classServiceProvider.future)
+            .then((s) => s.getActiveMemberCount(cls.id!));
+        if (activeCount > 0) {
+          if (context.mounted) {
+            AppFeedback.showErrorSnackBar(
+              context,
+              'Lớp hiện có $activeCount học sinh đang học. Hãy kết thúc các membership trước khi lưu trữ lớp.',
+            );
+          }
+          return;
+        }
+        if (!context.mounted) return;
         final confirm = await AppFeedback.showConfirmBottomSheet(
           context,
           title: 'Lưu trữ lớp học',
           message:
-              'Lớp hiện còn $activeCount học sinh đang học. Bạn vẫn muốn lưu trữ lớp này?',
-          confirmLabel: 'Vẫn lưu trữ',
-          isDestructive: true,
-        );
-        if (confirm != true) return;
-      } else if (context.mounted) {
-        final confirm = await AppFeedback.showConfirmBottomSheet(
-          context,
-          title: 'Lưu trữ lớp học',
-          message: 'Bạn có chắc chắn muốn lưu trữ lớp "${cls.tenLop}"?',
+              'Lưu trữ lớp "${cls.tenLop}" nghĩa là lớp dừng hoạt động.\n\n'
+              '• Dữ liệu lịch sử, điểm danh và học phí vẫn được GIỮ NGUYÊN.\n'
+              '• Lớp sẽ chuyển sang danh sách Đã lưu trữ.\n'
+              '• Bạn có thể khôi phục lớp bất kỳ lúc nào.',
           confirmLabel: 'Lưu trữ',
           isDestructive: true,
         );
-        if (confirm != true) return;
+        if (confirm != true || !context.mounted) return;
+        await ref.read(classListControllerProvider.notifier).archive(cls.id!);
+      } else {
+        final confirm = await AppFeedback.showConfirmBottomSheet(
+          context,
+          title: 'Khôi phục lớp học',
+          message: 'Bạn có chắc chắn muốn khôi phục lớp "${cls.tenLop}"?',
+          confirmLabel: 'Khôi phục',
+        );
+        if (confirm != true || !context.mounted) return;
+        await ref.read(classListControllerProvider.notifier).restore(cls.id!);
       }
-      await ref.read(classListControllerProvider.notifier).archive(cls.id!);
-    } else {
-      final confirm = await AppFeedback.showConfirmBottomSheet(
-        context,
-        title: 'Khôi phục lớp học',
-        message: 'Bạn có chắc chắn muốn khôi phục lớp "${cls.tenLop}"?',
-        confirmLabel: 'Khôi phục',
-      );
-      if (confirm != true) return;
-      await ref.read(classListControllerProvider.notifier).restore(cls.id!);
-    }
-    if (context.mounted) {
-      ref.invalidate(classDetailProvider(cls.id!));
-      ref.read(classListControllerProvider.notifier).refresh();
-      AppFeedback.showSuccessSnackBar(
-        context,
-        cls.daLuuTru ? 'Đã khôi phục lớp học' : 'Đã lưu trữ lớp học',
-      );
+      if (context.mounted) {
+        ref.invalidate(classDetailProvider(cls.id!));
+        ref.read(classListControllerProvider.notifier).refresh();
+        AppFeedback.showSuccessSnackBar(
+          context,
+          isArchived ? 'Đã khôi phục lớp học' : 'Đã lưu trữ lớp học',
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        AppFeedback.showErrorSnackBar(
+          context,
+          e.toString().replaceAll('Exception: ', ''),
+        );
+      }
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../app/common_widgets/app_feedback.dart';
+import '../../../app/common_widgets/searchable_selectors.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
@@ -147,9 +148,6 @@ class StudentDetailPage extends ConsumerWidget {
                 _buildScheduleSection(context, ref, student.id!),
                 const SizedBox(height: 16),
                 _buildConstraintSection(context, ref, student.id!),
-                const SizedBox(height: 16),
-                _buildPlaceholderSection(context, 'Lịch sử điểm danh'),
-                _buildPlaceholderSection(context, 'Học phí & Thanh toán'),
               ],
             ),
           );
@@ -181,17 +179,29 @@ class StudentDetailPage extends ConsumerWidget {
                 final classList = await ref.read(
                   classListControllerProvider.future,
                 );
-                if (!context.mounted || classList.isEmpty) return;
-                final activeClass = classList.firstWhere(
-                  (c) => !c.daLuuTru,
-                  orElse: () => classList.first,
-                );
-                await showEnrollStudentBottomSheet(
+                if (!context.mounted) return;
+                final activeClasses = classList
+                    .where((c) => !c.daLuuTru)
+                    .toList();
+                if (activeClasses.isEmpty) {
+                  AppFeedback.showErrorSnackBar(
+                    context,
+                    'Không có lớp học nào đang hoạt động.',
+                  );
+                  return;
+                }
+                final chosenClass = await showClassSelectorDialog(
                   context,
-                  classId: activeClass.id!,
-                  initialStudentId: studentId,
+                  classes: activeClasses,
                 );
-                ref.invalidate(studentMembershipHistoryProvider(studentId));
+                if (chosenClass != null && context.mounted) {
+                  await showEnrollStudentBottomSheet(
+                    context,
+                    classId: chosenClass.id!,
+                    initialStudentId: studentId,
+                  );
+                  ref.invalidate(studentMembershipHistoryProvider(studentId));
+                }
               },
               icon: const Icon(Icons.add, size: 16),
               label: const Text('Thêm vào lớp'),
@@ -349,24 +359,13 @@ class StudentDetailPage extends ConsumerWidget {
         trailing: !isCancelled
             ? TextButton(
                 onPressed: () async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text('Xác nhận hủy ràng buộc'),
-                      content: const Text(
-                        'Bạn có chắc chắn muốn hủy ràng buộc lịch này?',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Không'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text('Hủy ràng buộc'),
-                        ),
-                      ],
-                    ),
+                  final confirm = await AppFeedback.showConfirmBottomSheet(
+                    context,
+                    title: 'Xác nhận hủy ràng buộc',
+                    message: 'Bạn có chắc chắn muốn hủy ràng buộc lịch này?',
+                    confirmLabel: 'Hủy ràng buộc',
+                    cancelLabel: 'Không',
+                    isDestructive: true,
                   );
 
                   if (confirm == true && c.id != null) {
@@ -560,29 +559,6 @@ class StudentDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildPlaceholderSection(BuildContext context, String title) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(
-              'Chức năng sẽ được triển khai ở phase tiếp theo.',
-              style: TextStyle(
-                color: Theme.of(context).disabledColor,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _toggleArchiveStatus(
     BuildContext context,
     WidgetRef ref,
@@ -594,7 +570,11 @@ class StudentDetailPage extends ConsumerWidget {
       title: isArchived ? 'Khôi phục học sinh' : 'Lưu trữ học sinh',
       message: isArchived
           ? 'Bạn có chắc muốn khôi phục học sinh "${student.hoTen}"?'
-          : 'Bạn có chắc muốn lưu trữ học sinh "${student.hoTen}"?',
+          : 'Lưu trữ học sinh "${student.hoTen}" nghĩa là học sinh dừng hoạt động tại trung tâm.\n\n'
+                '• Lịch sử học, điểm danh, học phí và thanh toán được GIỮ NGUYÊN.\n'
+                '• Học sinh sẽ ẩn khỏi danh sách và bộ chọn active.\n'
+                '• Không thể lưu trữ nếu học sinh còn lớp đang học.\n'
+                '• Bạn có thể khôi phục học sinh bất kỳ lúc nào.',
       confirmLabel: isArchived ? 'Khôi phục' : 'Lưu trữ',
       isDestructive: !isArchived,
     );

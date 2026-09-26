@@ -6,6 +6,7 @@ import '../../../app/localization/locale_controller.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../l10n/app_localizations.dart';
+import 'tuition_policy_settings_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -223,6 +224,33 @@ class SettingsPage extends ConsumerWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // --- TUITION POLICY SECTION ---
+          _buildSectionHeader(
+            context,
+            title: 'CHÍNH SÁCH HỌC PHÍ',
+            icon: Icons.policy_outlined,
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.monetization_on_outlined),
+              title: const Text('Chính sách học phí các lớp'),
+              subtitle: const Text(
+                'Thiết lập đơn giá và số buổi chuẩn tháng cho từng lớp',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const TuitionPolicySettingsPage(),
+                  ),
+                );
+              },
             ),
           ),
 

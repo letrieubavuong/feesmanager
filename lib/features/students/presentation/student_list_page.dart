@@ -165,7 +165,9 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                             StudentDetailPage(studentId: student.id!),
                       ),
                     );
-                    ref.read(studentListControllerProvider.notifier).refresh();
+                    if (context.mounted) {
+                      ref.read(studentListControllerProvider.notifier).refresh();
+                    }
                   },
                 );
               },

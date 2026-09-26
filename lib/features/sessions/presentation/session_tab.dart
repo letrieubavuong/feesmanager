@@ -8,7 +8,8 @@ import '../../../core/utils/date_formatter.dart';
 
 class SessionTab extends ConsumerStatefulWidget {
   final int classId;
-  const SessionTab({super.key, required this.classId});
+  final bool isArchived;
+  const SessionTab({super.key, required this.classId, this.isArchived = false});
 
   @override
   ConsumerState<SessionTab> createState() => _SessionTabState();
@@ -133,24 +134,26 @@ class _SessionTabState extends ConsumerState<SessionTab> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Lỗi: $e')),
       ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'gen_sessions',
-            onPressed: () => _showGenerateDialog(context, ref),
-            tooltip: 'Sinh buổi học',
-            child: const Icon(Icons.auto_awesome),
-          ),
-          const SizedBox(height: 8),
-          FloatingActionButton.small(
-            heroTag: 'add_manual_session',
-            onPressed: () => _showManualDialog(context, ref),
-            tooltip: 'Thêm buổi học bù/phát sinh',
-            child: const Icon(Icons.add),
-          ),
-        ],
-      ),
+      floatingActionButton: widget.isArchived
+          ? null
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FloatingActionButton.small(
+                  heroTag: 'gen_sessions',
+                  onPressed: () => _showGenerateDialog(context, ref),
+                  tooltip: 'Sinh buổi học',
+                  child: const Icon(Icons.auto_awesome),
+                ),
+                const SizedBox(height: 8),
+                FloatingActionButton.small(
+                  heroTag: 'add_manual_session',
+                  onPressed: () => _showManualDialog(context, ref),
+                  tooltip: 'Thêm buổi học bù/phát sinh',
+                  child: const Icon(Icons.add),
+                ),
+              ],
+            ),
     );
   }
 

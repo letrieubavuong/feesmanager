@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../memberships/presentation/membership_providers.dart';
-import 'create_tuition_policy_bottom_sheet.dart';
+import '../../settings/presentation/tuition_policy_settings_page.dart';
 import '../../payments/domain/invoice_payment_summary.dart';
 import '../../payments/domain/payment.dart';
 import '../../payments/domain/payment_method.dart';
@@ -155,10 +155,18 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                           icon: const Icon(Icons.history, size: 16),
                           label: const Text('Lịch sử CS'),
                         ),
-                        ElevatedButton.icon(
-                          onPressed: () => _showCreatePolicyDialog(context),
-                          icon: const Icon(Icons.add, size: 16),
-                          label: const Text('Thêm CS'),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (ctx) => TuitionPolicySettingsPage(
+                                  initialClassId: widget.classId,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.settings, size: 16),
+                          label: const Text('Quản lý trong Cài đặt'),
                         ),
                       ],
                     ),
@@ -307,18 +315,6 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
         ],
       ),
     );
-  }
-
-  void _showCreatePolicyDialog(BuildContext context) async {
-    final success = await showCreateTuitionPolicyBottomSheet(
-      context,
-      classId: widget.classId,
-      initialMonth: _selectedMonth,
-    );
-    if (success == true) {
-      ref.invalidate(classTuitionPoliciesProvider(widget.classId));
-      ref.invalidate(effectiveTuitionPolicyProvider);
-    }
   }
 
   void _showFinalizeClassDialog(BuildContext context) async {

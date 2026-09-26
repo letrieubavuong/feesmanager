@@ -221,7 +221,9 @@ class ClassListTile extends ConsumerWidget {
             builder: (context) => ClassDetailPage(classId: cls.id!),
           ),
         );
-        ref.read(classListControllerProvider.notifier).refresh();
+        if (context.mounted) {
+          ref.read(classListControllerProvider.notifier).refresh();
+        }
       },
     );
   }

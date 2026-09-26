@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as p;
@@ -6,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:tuition2027/app/navigation/ui_keys.dart';
 import 'package:tuition2027/features/classes/presentation/class_detail_page.dart';
+import 'package:tuition2027/features/memberships/domain/membership_service.dart';
 import 'package:tuition2027/features/settings/presentation/settings_page.dart';
 import 'package:tuition2027/features/students/presentation/student_detail_page.dart';
 import 'package:tuition2027/features/students/presentation/student_form_page.dart';
@@ -216,6 +218,61 @@ void main() {
         // Verify edited class name on Class Detail page immediately
         expect(find.text('Vật lý 10 Chuyên'), findsAtLeast(1));
 
+        // Archive Class from Detail page
+        await tester.tap(find.byKey(UiKeys.classArchiveAction));
+        await tester.pumpAndSettle();
+
+        // Confirm archive in bottom sheet
+        await tester.tap(
+          find.descendant(
+            of: find.byType(BottomSheet).last,
+            matching: find.byType(ElevatedButton),
+          ),
+        );
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+
+        // Pop back to Class list
+        widgetsAppState.didPopRoute();
+        await tester.pumpAndSettle(const Duration(seconds: 2));
+
+        // Active filter should no longer show archived class
+        expect(find.text('Vật lý 10 Chuyên'), findsNothing);
+
+        // Switch to Archived filter
+        await tester.tap(find.byKey(UiKeys.classArchivedFilter));
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+
+        expect(find.text('Vật lý 10 Chuyên'), findsOneWidget);
+
+        // Re-open Detail for archived class and Restore
+        await tester.tap(find.text('Vật lý 10 Chuyên'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(UiKeys.classRestoreAction));
+        await tester.pumpAndSettle();
+
+        // Confirm restore in bottom sheet
+        await tester.tap(
+          find.descendant(
+            of: find.byType(BottomSheet).last,
+            matching: find.byType(ElevatedButton),
+          ),
+        );
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+
+        widgetsAppState.didPopRoute();
+        await tester.pumpAndSettle();
+
+        // Switch back to Active filter
+        await tester.tap(find.byKey(UiKeys.classActiveFilter));
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+
+        expect(find.text('Vật lý 10 Chuyên'), findsOneWidget);
+
+        // Re-open Class Detail for active restored class to proceed to Membership flow
+        await tester.tap(find.text('Vật lý 10 Chuyên'));
+        await tester.pumpAndSettle();
+
         // ==========================================
         // 4. MEMBERSHIP FLOW & OVERLAP REJECTION PROOF
         // ==========================================
@@ -236,40 +293,47 @@ void main() {
 
         expect(find.text('Nguyễn Văn A Prime'), findsAtLeast(1));
 
-        // Duplicate Enrollment attempt -> must reject overlap
-        await tester.tap(find.byIcon(Icons.person_add));
+        // Reopen Enroll Student Bottom Sheet -> candidate selector must EXCLUDE 'Nguyễn Văn A Prime'
+        await tester.tap(find.text('Thêm học sinh'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byType(InputDecorator).first);
+        await tester.tap(find.byKey(UiKeys.enrollStudentSelector));
         await tester.pumpAndSettle();
 
-        await tester.tap(
+        // Enrolled student must NOT appear in candidate selector
+        expect(
           find.descendant(
             of: find.byType(AlertDialog),
             matching: find.text('Nguyễn Văn A Prime'),
           ),
+          findsNothing,
         );
-        await tester.pumpAndSettle();
 
-        await tester.tap(find.byKey(UiKeys.enrollStudentSubmit));
-        await tester.pumpAndSettle();
-
-        // Assert error SnackBar is displayed and sheet remains open
-        expect(find.byType(SnackBar), findsOneWidget);
-
-        // Close/Cancel duplicate enrollment sheet
-        await dismissSnackBar(tester);
-        await tester.tap(find.byIcon(Icons.close));
-        await tester.pumpAndSettle();
-
-        // Discard changes in dirty confirmation prompt (topmost BottomSheet)
+        // Cancel candidate dialog
         await tester.tap(
           find.descendant(
-            of: find.byType(BottomSheet).last,
-            matching: find.byType(ElevatedButton),
+            of: find.byType(AlertDialog),
+            matching: find.byType(TextButton),
           ),
         );
         await tester.pumpAndSettle();
+
+        // Close enroll sheet
+        await tester.tap(find.byIcon(Icons.close));
+        await tester.pumpAndSettle();
+
+        // Query canonical MembershipRepository directly to assert exactly ONE active membership exists
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(MaterialApp)),
+        );
+        final membershipRepo = await container.read(
+          membershipRepositoryProvider.future,
+        );
+        final memberships = await membershipRepo.getByStudent(1);
+        final activeMemberships = memberships
+            .where((m) => m.denNgay == null)
+            .toList();
+        expect(activeMemberships.length, equals(1));
 
         // ==========================================
         // 5. TUITION POLICY PERSISTENCE PROOF WITH DISTINCTIVE VALUES
@@ -279,8 +343,12 @@ void main() {
           tester.element(find.byType(TabBarView)),
         ).animateTo(5);
         await tester.pumpAndSettle();
-        await awaitDataReload(tester, 'Thêm CS');
+        await awaitDataReload(tester, 'Quản lý trong Cài đặt');
 
+        await tester.tap(find.text('Quản lý trong Cài đặt'));
+        await tester.pumpAndSettle();
+
+        await awaitDataReload(tester, 'Thêm CS');
         await tester.tap(find.text('Thêm CS'));
         await tester.pumpAndSettle();
 
@@ -342,6 +410,10 @@ void main() {
             matching: find.byType(ElevatedButton),
           ),
         );
+        await tester.pumpAndSettle();
+
+        // Pop TuitionPolicySettingsPage back to ClassDetailPage
+        widgetsAppState.didPopRoute();
         await tester.pumpAndSettle();
 
         // Pop ClassDetailPage back to ClassList

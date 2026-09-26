@@ -199,6 +199,23 @@ class MembershipService {
     return active.isNotEmpty;
   }
 
+  Future<bool> hasOverlappingMembership({
+    required int studentId,
+    required int classId,
+    required DateTime joinDate,
+    DateTime? endDate,
+  }) async {
+    final dateFormat = DateFormat('yyyy-MM-dd');
+    final startStr = dateFormat.format(joinDate);
+    final endStr = endDate != null ? dateFormat.format(endDate) : null;
+    return _repository.hasOverlappingMembership(
+      studentId,
+      classId,
+      startStr,
+      endStr,
+    );
+  }
+
   Future<List<int>> getActiveStudentIdsInClass(
     int classId,
     DateTime date,

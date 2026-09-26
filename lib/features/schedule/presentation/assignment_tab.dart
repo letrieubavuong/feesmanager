@@ -14,8 +14,13 @@ import 'schedule_controller.dart';
 
 class AssignmentTab extends ConsumerWidget {
   final int classId;
+  final bool isArchived;
 
-  const AssignmentTab({super.key, required this.classId});
+  const AssignmentTab({
+    super.key,
+    required this.classId,
+    this.isArchived = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -123,19 +128,20 @@ class AssignmentTab extends ConsumerWidget {
                     ),
                   ],
                 ),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AssignStudentDialog(
-                        classId: classId,
-                        scheduleId: schedule.id!,
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.person_add, size: 16),
-                  label: const Text('Phân ca HS'),
-                ),
+                if (!isArchived)
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AssignStudentDialog(
+                          classId: classId,
+                          scheduleId: schedule.id!,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.person_add, size: 16),
+                    label: const Text('Phân ca HS'),
+                  ),
               ],
             ),
             const Divider(height: 24),
@@ -216,47 +222,56 @@ class AssignmentTab extends ConsumerWidget {
         'Áp dụng từ: ${a.tuNgay}${a.denNgay != null ? ' - ${a.denNgay}' : ''}',
         style: const TextStyle(fontSize: 12),
       ),
-      trailing: PopupMenuButton<String>(
-        onSelected: (value) {
-          if (value == 'change_shift') {
-            _showChangeShiftDialog(context, ref, a, currentSchedule);
-          } else if (value == 'close_assignment') {
-            _showCloseAssignmentDialog(context, ref, a);
-          }
-        },
-        itemBuilder: (context) => [
-          const PopupMenuItem(
-            value: 'change_shift',
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.swap_horiz, size: 18),
-                SizedBox(width: 8),
-                Flexible(
-                  child: Text('Chuyển ca', overflow: TextOverflow.ellipsis),
+      trailing: isArchived
+          ? null
+          : PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'change_shift') {
+                  _showChangeShiftDialog(context, ref, a, currentSchedule);
+                } else if (value == 'close_assignment') {
+                  _showCloseAssignmentDialog(context, ref, a);
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'change_shift',
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.swap_horiz, size: 18),
+                      SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'Chuyển ca',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
-          ),
-          const PopupMenuItem(
-            value: 'close_assignment',
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.stop_circle_outlined, size: 18, color: Colors.red),
-                SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    'Kết thúc phân ca',
-                    style: TextStyle(color: Colors.red),
-                    overflow: TextOverflow.ellipsis,
+                const PopupMenuItem(
+                  value: 'close_assignment',
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.stop_circle_outlined,
+                        size: 18,
+                        color: Colors.red,
+                      ),
+                      SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'Kết thúc phân ca',
+                          style: TextStyle(color: Colors.red),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
     );
   }
 

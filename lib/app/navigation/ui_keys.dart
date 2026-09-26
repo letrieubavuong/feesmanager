@@ -50,6 +50,7 @@ class UiKeys {
   static const Key studentFormSave = Key('student_form_save');
   static const Key classFormNameInput = Key('class_form_name_input');
   static const Key classFormSave = Key('class_form_save');
+  static const Key enrollStudentSelector = Key('enroll_student_selector');
   static const Key enrollStudentSubmit = Key('enroll_student_submit');
   static const Key tuitionPolicySave = Key('tuition_policy_save');
 

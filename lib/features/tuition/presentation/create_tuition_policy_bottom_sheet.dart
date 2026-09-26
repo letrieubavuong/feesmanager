@@ -31,12 +31,22 @@ class _CreateTuitionPolicyBottomSheetState
   late TextEditingController _standardController;
   late TextEditingController _capController;
   late TextEditingController _noteController;
+  late String _initialFrom;
+  late String _initialFee;
+  late String _initialStandard;
   bool _isDirty = false;
   bool _isSaving = false;
+  String? _inlineError;
 
-  void _onChanged() {
-    if (!_isDirty) {
-      setState(() => _isDirty = true);
+  void _checkDirty() {
+    final isChanged =
+        _fromController.text != _initialFrom ||
+        _feeController.text != _initialFee ||
+        _standardController.text != _initialStandard ||
+        _capController.text.trim().isNotEmpty ||
+        _noteController.text.trim().isNotEmpty;
+    if (_isDirty != isChanged) {
+      setState(() => _isDirty = isChanged);
     }
   }
 
@@ -45,14 +55,18 @@ class _CreateTuitionPolicyBottomSheetState
     super.initState();
     final monthStr =
         widget.initialMonth ?? DateFormat('yyyy-MM').format(DateTime.now());
-    _fromController = TextEditingController(text: '$monthStr-01')
-      ..addListener(_onChanged);
-    _feeController = TextEditingController(text: '50000')
-      ..addListener(_onChanged);
-    _standardController = TextEditingController(text: '12')
-      ..addListener(_onChanged);
-    _capController = TextEditingController()..addListener(_onChanged);
-    _noteController = TextEditingController()..addListener(_onChanged);
+    _initialFrom = '$monthStr-01';
+    _initialFee = '50000';
+    _initialStandard = '12';
+
+    _fromController = TextEditingController(text: _initialFrom)
+      ..addListener(_checkDirty);
+    _feeController = TextEditingController(text: _initialFee)
+      ..addListener(_checkDirty);
+    _standardController = TextEditingController(text: _initialStandard)
+      ..addListener(_checkDirty);
+    _capController = TextEditingController()..addListener(_checkDirty);
+    _noteController = TextEditingController()..addListener(_checkDirty);
   }
 
   @override
@@ -122,6 +136,26 @@ class _CreateTuitionPolicyBottomSheetState
                       ],
                     ),
                     const SizedBox(height: 16),
+                    if (_inlineError != null) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.errorContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _inlineError!,
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onErrorContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     TextFormField(
                       controller: _fromController,
                       decoration: const InputDecoration(
@@ -230,7 +264,10 @@ class _CreateTuitionPolicyBottomSheetState
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isSaving = true);
+    setState(() {
+      _isSaving = true;
+      _inlineError = null;
+    });
 
     try {
       final fee = int.parse(_feeController.text.trim());
@@ -260,11 +297,10 @@ class _CreateTuitionPolicyBottomSheetState
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isSaving = false);
-        AppFeedback.showErrorSnackBar(
-          context,
-          e.toString().replaceAll('Exception: ', ''),
-        );
+        setState(() {
+          _isSaving = false;
+          _inlineError = e.toString().replaceAll('Exception: ', '');
+        });
       }
     }
   }

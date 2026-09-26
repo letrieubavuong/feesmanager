@@ -70,7 +70,12 @@ class _EnrollStudentBottomSheetState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final studentsAsync = ref.watch(studentListProvider);
+    final candidatesAsync = ref.watch(
+      enrollmentCandidatesProvider((
+        classId: widget.classId,
+        joinDate: _joinDate,
+      )),
+    );
 
     return PopScope(
       canPop: !_isDirty,
@@ -124,12 +129,13 @@ class _EnrollStudentBottomSheetState
                     ],
                   ),
                   const SizedBox(height: 16),
-                  studentsAsync.when(
-                    data: (students) => InkWell(
+                  candidatesAsync.when(
+                    data: (candidates) => InkWell(
+                      key: UiKeys.enrollStudentSelector,
                       onTap: () async {
                         final picked = await showStudentSelectorDialog(
                           context,
-                          students: students.where((s) => !s.daLuuTru).toList(),
+                          students: candidates,
                         );
                         if (picked != null) {
                           _onChanged();
@@ -157,7 +163,7 @@ class _EnrollStudentBottomSheetState
                       ),
                     ),
                     loading: () => const CircularProgressIndicator(),
-                    error: (e, _) => Text('${l10n.commonError}: $e'),
+                    error: (e, st) => Text('ERROR_CANDIDATES: $e'),
                   ),
                   const SizedBox(height: 16),
                   ListTile(
@@ -258,6 +264,9 @@ class _EnrollStudentBottomSheetState
         ghiChu: _ghiChuController.text.trim(),
       );
 
+      ref.invalidate(enrollmentCandidatesProvider);
+      ref.invalidate(studentListProvider);
+
       if (mounted) {
         setState(() => _isSaving = false);
         _isDirty = false;
@@ -296,6 +305,37 @@ Future<bool?> showEnrollStudentBottomSheet(
     ),
   );
 }
+
+typedef EnrollmentCandidateArgs = ({int classId, DateTime joinDate});
+
+final enrollmentCandidatesProvider =
+    FutureProvider.family<List<Student>, EnrollmentCandidateArgs>((
+      ref,
+      arg,
+    ) async {
+      final studentService = await ref.watch(studentServiceProvider.future);
+      final membershipService = await ref.watch(
+        membershipServiceProvider.future,
+      );
+
+      final allStudents = await studentService.getStudents();
+      final candidates = <Student>[];
+
+      for (final student in allStudents) {
+        if (student.daLuuTru) continue;
+        if (student.id == null) continue;
+
+        final isOverlap = await membershipService.hasOverlappingMembership(
+          studentId: student.id!,
+          classId: arg.classId,
+          joinDate: arg.joinDate,
+        );
+        if (!isOverlap) {
+          candidates.add(student);
+        }
+      }
+      return candidates;
+    });
 
 final studentListProvider = FutureProvider<List<Student>>((ref) async {
   final service = await ref.watch(studentServiceProvider.future);

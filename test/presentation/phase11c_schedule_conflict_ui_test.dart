@@ -2420,7 +2420,7 @@ void main() {
           });
         });
 
-        tester.view.physicalSize = const Size(1200, 1600);
+        tester.view.physicalSize = const Size(1200, 2400);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
 
@@ -2438,11 +2438,13 @@ void main() {
         // Cancel constraint 1 on tile
         final tileCancelBtn = find.widgetWithText(TextButton, 'Hủy');
         await tester.tap(tileCancelBtn);
-        await waitForAsyncProviders(tester);
+        await tester.pumpAndSettle();
 
         expect(find.text('Xác nhận hủy ràng buộc'), findsOneWidget);
 
-        await tester.tap(find.text('Hủy ràng buộc'));
+        final confirmBtn = find.widgetWithText(ElevatedButton, 'Hủy ràng buộc');
+        await tester.tap(confirmBtn);
+        await tester.pumpAndSettle();
         await waitForAsyncProviders(tester);
 
         // Status immediately updates to Đã hủy

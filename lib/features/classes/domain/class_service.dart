@@ -58,6 +58,12 @@ class ClassService {
   }
 
   Future<void> archiveClass(int id) async {
+    final size = await _membershipService.getClassSize(id);
+    if (size > 0) {
+      throw Exception(
+        'Lớp đang có $size học sinh đang học. Hãy kết thúc các membership trước khi lưu trữ lớp.',
+      );
+    }
     await _repository.setArchiveStatus(id, true);
   }
 
