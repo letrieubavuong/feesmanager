@@ -103,3 +103,13 @@ Use archive/state transitions and explicit adjustments.
 ## Tests
 
 For every changed service/repository, add focused tests around its contract and edge cases from the domain constitution.
+
+## Android UI verification
+
+Presentation work under `lib/` is Android-first.
+
+For every visible UI/UX change, keep the Android Emulator attached through `flutter run` and verify the result with Hot Reload after the edit. Do not consider a UI task complete until the changed screen/flow has been exercised on the emulator.
+
+Use Hot Restart or a full relaunch only when Hot Reload is technically insufficient, and report that explicitly.
+
+Windows, Web, and iOS parity work is paused unless the user explicitly re-enables it.

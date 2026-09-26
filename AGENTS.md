@@ -239,3 +239,30 @@ It is complete only when:
 - `flutter analyze` has no new errors
 - `flutter test` passes for the affected scope
 - legacy/cloud compatibility implications are documented
+
+## 18. Android-first execution rule
+
+After Phase 13B, Android is the only active development and acceptance target unless the user explicitly re-enables another platform.
+
+For every code change that can affect the Android app UI, navigation, state, interaction, or visible behavior:
+
+1. Keep a local Android Emulator running.
+2. Run the app with `flutter run` on that emulator.
+3. After each meaningful edit, trigger Hot Reload and visually verify the changed flow on the emulator.
+4. If the change cannot be applied safely by Hot Reload (for example native Android code, plugin registration, startup initialization, generated code, or other restart-sensitive changes), use Hot Restart or a full relaunch instead and state which was required.
+5. Do not declare the task complete based only on static analysis, widget tests, or GitHub Actions. The changed Android flow must be exercised on the emulator.
+6. Prefer targeted tests during iteration. Run the broader Android quality gate only after the related feature cluster is stable.
+7. Do not spend implementation or CI time on Windows, Web, iOS, or other platforms unless the user explicitly re-enables them.
+
+Required iteration loop:
+
+`edit -> Hot Reload/Hot Restart on Android Emulator -> visual/manual verification -> targeted test -> continue`
+
+When reporting completion, include:
+- emulator/device used;
+- whether Hot Reload, Hot Restart, or full relaunch was used;
+- the exact Android flow manually verified;
+- targeted test results;
+- any limitation that prevented emulator verification.
+
+If no Android Emulator is available or `flutter run` cannot attach, do not substitute a different platform. Report the Android verification blocker explicitly.
