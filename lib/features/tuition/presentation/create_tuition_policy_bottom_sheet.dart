@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/common_widgets/app_feedback.dart';
+import '../../../app/common_widgets/app_page_scaffold.dart';
+import '../../../app/common_widgets/dirty_form_scope.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../l10n/app_localizations.dart';
 import 'tuition_controller.dart';
@@ -29,18 +31,28 @@ class _CreateTuitionPolicyBottomSheetState
   late TextEditingController _standardController;
   late TextEditingController _capController;
   late TextEditingController _noteController;
+  bool _isDirty = false;
   bool _isSaving = false;
+
+  void _onChanged() {
+    if (!_isDirty) {
+      setState(() => _isDirty = true);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     final monthStr =
         widget.initialMonth ?? DateFormat('yyyy-MM').format(DateTime.now());
-    _fromController = TextEditingController(text: '$monthStr-01');
-    _feeController = TextEditingController(text: '50000');
-    _standardController = TextEditingController(text: '12');
-    _capController = TextEditingController();
-    _noteController = TextEditingController();
+    _fromController = TextEditingController(text: '$monthStr-01')
+      ..addListener(_onChanged);
+    _feeController = TextEditingController(text: '50000')
+      ..addListener(_onChanged);
+    _standardController = TextEditingController(text: '12')
+      ..addListener(_onChanged);
+    _capController = TextEditingController()..addListener(_onChanged);
+    _noteController = TextEditingController()..addListener(_onChanged);
   }
 
   @override
@@ -57,120 +69,157 @@ class _CreateTuitionPolicyBottomSheetState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 20,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-        ),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return PopScope(
+      canPop: !_isDirty,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final canLeave = await AppPageScaffold.confirmCanLeave(
+          context,
+          isDirty: _isDirty,
+        );
+        if (canLeave && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: DirtyFormScope(
+        isDirty: _isDirty,
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            ),
+            child: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      l10n.actionCreatePolicy,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          l10n.actionCreatePolicy,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () async {
+                            final canLeave =
+                                await AppPageScaffold.confirmCanLeave(
+                                  context,
+                                  isDirty: _isDirty,
+                                );
+                            if (canLeave && context.mounted) {
+                              Navigator.of(context).pop();
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _fromController,
+                      decoration: const InputDecoration(
+                        labelText: 'Hiệu lực từ ngày (YYYY-MM-DD) *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? l10n.policyValidationMonth
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _feeController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: l10n.policyFeePerSession,
+                        border: const OutlineInputBorder(),
+                      ),
+                      validator: (v) {
+                        final fee = int.tryParse(v?.trim() ?? '');
+                        if (fee == null || fee < 0) {
+                          return l10n.policyValidationFee;
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _standardController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: l10n.policyStandardSessions,
+                        border: const OutlineInputBorder(),
+                      ),
+                      validator: (v) {
+                        final std = int.tryParse(v?.trim() ?? '');
+                        if (std == null || std <= 0) {
+                          return l10n.policyValidationSessions;
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _capController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Trần học phí tháng (để trống nếu không có)',
+                        border: OutlineInputBorder(),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(context).pop(),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _noteController,
+                      decoration: InputDecoration(
+                        labelText: l10n.studentNotes,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: _isSaving
+                              ? null
+                              : () async {
+                                  final canLeave =
+                                      await AppPageScaffold.confirmCanLeave(
+                                        context,
+                                        isDirty: _isDirty,
+                                      );
+                                  if (canLeave && context.mounted) {
+                                    Navigator.of(context).pop();
+                                  }
+                                },
+                          child: Text(l10n.commonCancel),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          key: UiKeys.tuitionPolicySave,
+                          onPressed: _isSaving ? null : _submit,
+                          icon: _isSaving
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.check),
+                          label: Text(l10n.commonSave),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _fromController,
-                  decoration: const InputDecoration(
-                    labelText: 'Hiệu lực từ ngày (YYYY-MM-DD) *',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? l10n.policyValidationMonth
-                      : null,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _feeController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: l10n.policyFeePerSession,
-                    border: const OutlineInputBorder(),
-                  ),
-                  validator: (v) {
-                    final fee = int.tryParse(v?.trim() ?? '');
-                    if (fee == null || fee < 0) return l10n.policyValidationFee;
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _standardController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: l10n.policyStandardSessions,
-                    border: const OutlineInputBorder(),
-                  ),
-                  validator: (v) {
-                    final std = int.tryParse(v?.trim() ?? '');
-                    if (std == null || std <= 0) {
-                      return l10n.policyValidationSessions;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _capController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Trần học phí tháng (để trống nếu không có)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _noteController,
-                  decoration: InputDecoration(
-                    labelText: l10n.studentNotes,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: _isSaving
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      child: Text(l10n.commonCancel),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      key: UiKeys.tuitionPolicySave,
-                      onPressed: _isSaving ? null : _submit,
-                      icon: _isSaving
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.check),
-                      label: Text(l10n.commonSave),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -202,6 +251,7 @@ class _CreateTuitionPolicyBottomSheetState
 
       if (mounted) {
         setState(() => _isSaving = false);
+        _isDirty = false;
         AppFeedback.showSuccessSnackBar(
           context,
           'Đã tạo chính sách học phí thành công',
@@ -228,6 +278,8 @@ Future<bool?> showCreateTuitionPolicyBottomSheet(
   return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
+    isDismissible: false,
+    enableDrag: false,
     useSafeArea: true,
     builder: (_) => CreateTuitionPolicyBottomSheet(
       classId: classId,

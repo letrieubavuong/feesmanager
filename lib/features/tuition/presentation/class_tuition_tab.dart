@@ -59,26 +59,24 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
       classMonthPaymentSummariesProvider((widget.classId, _selectedMonth)),
     );
 
-    return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildMonthSelector(context),
-            const SizedBox(height: 16),
-            _buildPolicyHeader(context, effectivePolicyAsync, policiesAsync),
-            const SizedBox(height: 16),
-            _buildClassFinalizeHeader(context),
-            const SizedBox(height: 16),
-            _buildStudentTuitionList(
-              context,
-              rosterAsync,
-              invoicesAsync,
-              paymentSummariesAsync,
-            ),
-          ],
-        ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildMonthSelector(context),
+          const SizedBox(height: 16),
+          _buildPolicyHeader(context, effectivePolicyAsync, policiesAsync),
+          const SizedBox(height: 16),
+          _buildClassFinalizeHeader(context),
+          const SizedBox(height: 16),
+          _buildStudentTuitionList(
+            context,
+            rosterAsync,
+            invoicesAsync,
+            paymentSummariesAsync,
+          ),
+        ],
       ),
     );
   }

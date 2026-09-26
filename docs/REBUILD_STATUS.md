@@ -156,41 +156,35 @@
 - [x] SharedPreferences persistence remains canonical.
 - [x] `phase13a_android_smoke_test.dart` explicitly asserts Vietnamese (`Cài đặt`, `GIAO DIỆN & CHỦ ĐỀ`) before switching to English (`Settings`, `APPEARANCE & THEME`).
 
-## Phase 13B: Core Data Entry UI & Mobile UX Contract Repair - COMPLETE
-- [x] **Mobile UX Contract & Bottom Sheet Architecture**:
-  - Full-screen route maintained for long Student profile form (`StudentFormPage`).
-  - Modal Bottom Sheet used for compact mobile forms: Create/Edit Class (`ClassFormBottomSheet`), Enroll Student into Class (`EnrollStudentBottomSheet`), Create Tuition Policy (`CreateTuitionPolicyBottomSheet`).
-  - Shared confirmation bottom sheet helper (`AppFeedback.showConfirmBottomSheet`) replacing `AlertDialog` for short confirmations (Archive/Restore, Cancel constraint, Finalize tuition, Dirty-form discard).
-- [x] **Bottom Sheet Safety**:
-  - Unsaved dirty state protection with Keep Editing / Discard prompts.
-  - Safe area and keyboard-aware bottom padding (`MediaQuery.of(context).viewInsets.bottom`).
-  - Single-submit protection during async save (`_isSaving` state).
-- [x] **Student Flow**:
-  - Full flow: Create -> Search -> View -> Edit -> Archive -> Restore.
-  - `StudentDetailPage` archive state fixed: Active -> Archive (`Icons.archive_outlined`), Archived -> Restore (`Icons.unarchive`).
-  - Immediate persisted data display on detail and list views after editing without leaving/reopening module.
-- [x] **Class Flow**:
-  - Create/Edit converted to Modal Bottom Sheet (`ClassFormBottomSheet`).
-  - Active membership warning guard preserved on Archive.
-  - Immediate provider invalidation (`classDetailProvider`, `classListControllerProvider`).
-- [x] **Membership & Tuition Policy Flows**:
-  - `AddStudentToClassDialog` refactored to `EnrollStudentBottomSheet`.
-  - Tuition policy creation refactored to `CreateTuitionPolicyBottomSheet`.
-  - Canonical `MembershipService` and `TuitionPolicyService` validations enforced.
-- [x] **Error Handling**:
-  - `StudentFormController` and `ClassFormController` propagate typed errors to UI SnackBars (`AppFeedback.showErrorSnackBar`).
-  - Forms remain open and entered input data remains 100% intact on validation error.
-- [x] **Stable UiKeys & Integration Acceptance**:
-  - Added stable keys: `UiKeys.studentFormSave`, `UiKeys.classFormNameInput`, `UiKeys.classFormSave`, `UiKeys.enrollStudentSubmit`, `UiKeys.tuitionPolicySave`.
-  - Real Android integration test `integration_test/phase13b_core_data_flow_test.dart` asserts: Create Student -> Edit Student -> Verify persisted Detail -> Create Class -> Edit Class -> Enroll Student -> Create Tuition Policy -> Dirty Form Guard -> L10n/Theme.
+## Phase 13B: Core Data Entry UI & Mobile UX Contract Repair Round 2 - COMPLETE
+- [x] **Class Save Error Propagation**:
+  - `ClassFormController.save` refactored to return `Future<void>` and propagate exceptions to UI without swallowing.
+  - Sheets close ONLY on actual persistence success; on failure, form stays open, typed data remains 100% intact, error SnackBar is displayed.
+- [x] **Editable Bottom Sheet Safety**:
+  - Dirty input tracking across `ClassFormBottomSheet`, `EnrollStudentBottomSheet`, `CreateTuitionPolicyBottomSheet`.
+  - Enforced `isDismissible: false`, `enableDrag: false`, `useSafeArea: true`, `isScrollControlled: true`, `MediaQuery.of(context).viewInsets.bottom` keyboard padding, `_isSaving` double-submit protection.
+  - `PopScope` and close buttons guarded by `AppPageScaffold.confirmCanLeave` Keep Editing vs Discard dialog.
+  - Added 3 widget tests in `test/presentation/bottom_sheet_safety_test.dart`.
+- [x] **Eliminated Short AlertDialogs**:
+  - Created `ReEnrollStudentBottomSheet` (`re_enroll_student_bottom_sheet.dart`) for student re-enrollment with join date, discount %, dirty safety, and `MembershipService` validation.
+  - Created `LeaveClassBottomSheet` (`leave_class_bottom_sheet.dart`) for student class exit with end date, reason, dirty safety, and `MembershipService` execution.
+  - Refactored `ClassDetailPage` `HistoryItem` and `RosterItem` to invoke the new bottom sheets.
+- [x] **Search Acceptance & Stable UiKeys**:
+  - Added stable keys: `UiKeys.studentSearch`, `UiKeys.classSearch`, `UiKeys.studentActiveFilter`, `UiKeys.studentArchivedFilter`, `UiKeys.classActiveFilter`, `UiKeys.classArchivedFilter`, `UiKeys.studentArchiveAction`, `UiKeys.studentRestoreAction`, `UiKeys.classArchiveAction`, `UiKeys.classRestoreAction`.
+  - Extended `integration_test/phase13b_core_data_flow_test.dart` to prove full Search, View, Edit, Archive, and Restore lifecycle for both Student and Class entities.
+- [x] **Tuition Policy & Membership Persistence Proofs**:
+  - Distinctive policy assertion in integration test: Fee = `73,000`, N = `11`, Cap = `800,000`.
+  - Validation failure proof: Entering invalid N = 0 displays validation error, sheet stays open, typed data remains intact.
+  - Membership overlap rejection proof: Enrolling the same student twice into the same class triggers `MembershipService` overlap rejection SnackBar, sheet stays open, no duplicate membership row created.
+- [x] **CI Workflow Hardening**:
+  - Updated `.github/workflows/flutter_ci.yml` `android-integration-test` job to run `dart run build_runner build --delete-conflicting-outputs` and `flutter devices` before launching the emulator.
 - [x] **Quality Gate**:
   - `dart format`: 100% compliant.
   - `flutter analyze`: Clean (0 errors, 0 warnings).
-  - `flutter test`: 447/447 passed (100% pass).
+  - `flutter test`: 450/450 passed (100% pass).
   - `flutter build apk --debug`: Passed (`build/app/outputs/flutter-apk/app-debug.apk`).
+  - **Exact Final SHA**: `c3543c85234cb45175cea6e887a6e6e58eac02b6`
   - Android Integration Tests: Both `phase13a_android_smoke_test.dart` and `phase13b_core_data_flow_test.dart` 100% PASS on Android Emulator `emulator-5554` (API 33).
-  - **Exact Final SHA**: `8e6045c2990ec392dfb0d0bb8e2c3e3d4048adb9`
-  - **GitHub Actions CI Status**: SUCCESS (Run 36236284447) across all 4 jobs (`build`, `web-build`, `windows-build`, `android-integration-test`).
 
 ---
 
@@ -200,10 +194,10 @@
 - **Flutter SDK**: `3.47.5`
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Centralized `AppDestination` + Riverpod `NavigationController` + `AppGlobalDrawer` + `AppPageScaffold`
-- **Tests**: 447 tests passing (100% PASS)
+- **Tests**: 450 tests passing (100% PASS)
 - **Quality Gate**:
   - `dart format`: Passed (0 changed)
   - `flutter analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (447 tests)
+  - `flutter test`: 100% Pass (450 tests)
   - `flutter build apk --debug`: Passed (`app-debug.apk`)
   - `integration_test`: 100% Pass on Local Android Emulator (`emulator-5554`, API 33) and CI Emulator (API 31)

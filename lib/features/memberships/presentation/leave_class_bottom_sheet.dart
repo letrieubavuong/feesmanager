@@ -4,34 +4,28 @@ import 'package:intl/intl.dart';
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/app_page_scaffold.dart';
 import '../../../app/common_widgets/dirty_form_scope.dart';
-import '../../../app/common_widgets/searchable_selectors.dart';
-import '../../../app/navigation/ui_keys.dart';
-import '../../../l10n/app_localizations.dart';
-import '../../students/domain/student.dart';
-import '../../students/domain/student_service.dart';
 import '../domain/membership_service.dart';
 
-class EnrollStudentBottomSheet extends ConsumerStatefulWidget {
+class LeaveClassBottomSheet extends ConsumerStatefulWidget {
+  final int studentId;
   final int classId;
-  final int? initialStudentId;
+  final String studentName;
 
-  const EnrollStudentBottomSheet({
+  const LeaveClassBottomSheet({
     super.key,
+    required this.studentId,
     required this.classId,
-    this.initialStudentId,
+    required this.studentName,
   });
 
   @override
-  ConsumerState<EnrollStudentBottomSheet> createState() =>
-      _EnrollStudentBottomSheetState();
+  ConsumerState<LeaveClassBottomSheet> createState() =>
+      _LeaveClassBottomSheetState();
 }
 
-class _EnrollStudentBottomSheetState
-    extends ConsumerState<EnrollStudentBottomSheet> {
-  Student? _selectedStudent;
-  DateTime _joinDate = DateTime.now();
-  late TextEditingController _mienGiamController;
-  late TextEditingController _ghiChuController;
+class _LeaveClassBottomSheetState extends ConsumerState<LeaveClassBottomSheet> {
+  DateTime _endDate = DateTime.now();
+  String _selectedReason = 'NGHI_HOC';
   bool _isDirty = false;
   bool _isSaving = false;
 
@@ -42,36 +36,7 @@ class _EnrollStudentBottomSheetState
   }
 
   @override
-  void initState() {
-    super.initState();
-    _mienGiamController = TextEditingController(text: '0')
-      ..addListener(_onChanged);
-    _ghiChuController = TextEditingController()..addListener(_onChanged);
-    if (widget.initialStudentId != null) {
-      _loadInitialStudent();
-    }
-  }
-
-  void _loadInitialStudent() async {
-    final service = await ref.read(studentServiceProvider.future);
-    final s = await service.getStudentById(widget.initialStudentId!);
-    if (mounted && s != null) {
-      setState(() => _selectedStudent = s);
-    }
-  }
-
-  @override
-  void dispose() {
-    _mienGiamController.dispose();
-    _ghiChuController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final studentsAsync = ref.watch(studentListProvider);
-
     return PopScope(
       canPop: !_isDirty,
       onPopInvokedWithResult: (didPop, result) async {
@@ -102,10 +67,12 @@ class _EnrollStudentBottomSheetState
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        l10n.actionEnrollStudent,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          'Cho ${widget.studentName} nghỉ lớp',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       IconButton(
@@ -124,77 +91,47 @@ class _EnrollStudentBottomSheetState
                     ],
                   ),
                   const SizedBox(height: 16),
-                  studentsAsync.when(
-                    data: (students) => InkWell(
-                      onTap: () async {
-                        final picked = await showStudentSelectorDialog(
-                          context,
-                          students: students.where((s) => !s.daLuuTru).toList(),
-                        );
-                        if (picked != null) {
-                          _onChanged();
-                          setState(() => _selectedStudent = picked);
-                        }
-                      },
-                      child: InputDecorator(
-                        decoration: InputDecoration(
-                          labelText: l10n.selectStudent,
-                          border: const OutlineInputBorder(),
-                          suffixIcon: const Icon(Icons.search),
-                        ),
-                        child: Text(
-                          _selectedStudent?.hoTen ??
-                              l10n.studentSearchPlaceholder,
-                          style: TextStyle(
-                            color: _selectedStudent == null
-                                ? Theme.of(context).hintColor
-                                : null,
-                            fontWeight: _selectedStudent != null
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    ),
-                    loading: () => const CircularProgressIndicator(),
-                    error: (e, _) => Text('${l10n.commonError}: $e'),
-                  ),
-                  const SizedBox(height: 16),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: Text(l10n.membershipStartDate),
-                    subtitle: Text(DateFormat('yyyy-MM-dd').format(_joinDate)),
+                    title: const Text('Ngày nghỉ học'),
+                    subtitle: Text(DateFormat('yyyy-MM-dd').format(_endDate)),
                     trailing: const Icon(Icons.calendar_today),
                     onTap: () async {
                       final picked = await showDatePicker(
                         context: context,
-                        initialDate: _joinDate,
+                        initialDate: _endDate,
                         firstDate: DateTime(2020),
                         lastDate: DateTime(2100),
                       );
                       if (picked != null) {
                         _onChanged();
-                        setState(() => _joinDate = picked);
+                        setState(() => _endDate = picked);
                       }
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextField(
-                    controller: _mienGiamController,
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedReason,
                     decoration: const InputDecoration(
-                      labelText: 'Miễn giảm (%)',
+                      labelText: 'Lý do nghỉ',
                       border: OutlineInputBorder(),
                     ),
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _ghiChuController,
-                    decoration: InputDecoration(
-                      labelText: l10n.studentNotes,
-                      border: const OutlineInputBorder(),
-                    ),
-                    maxLines: 2,
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'TAM_NGUNG',
+                        child: Text('Tạm nghỉ'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'NGHI_HOC',
+                        child: Text('Nghỉ hẳn'),
+                      ),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) {
+                        _onChanged();
+                        setState(() => _selectedReason = v);
+                      }
+                    },
                   ),
                   const SizedBox(height: 24),
                   Row(
@@ -213,14 +150,11 @@ class _EnrollStudentBottomSheetState
                                   Navigator.of(context).pop();
                                 }
                               },
-                        child: Text(l10n.commonCancel),
+                        child: const Text('Hủy'),
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton.icon(
-                        key: UiKeys.enrollStudentSubmit,
-                        onPressed: (_selectedStudent == null || _isSaving)
-                            ? null
-                            : _submit,
+                        onPressed: _isSaving ? null : _submit,
                         icon: _isSaving
                             ? const SizedBox(
                                 width: 16,
@@ -230,7 +164,7 @@ class _EnrollStudentBottomSheetState
                                 ),
                               )
                             : const Icon(Icons.check),
-                        label: Text(l10n.commonSave),
+                        label: const Text('Xác nhận'),
                       ),
                     ],
                   ),
@@ -244,18 +178,15 @@ class _EnrollStudentBottomSheetState
   }
 
   void _submit() async {
-    if (_selectedStudent == null) return;
-
     setState(() => _isSaving = true);
 
     try {
       final service = await ref.read(membershipServiceProvider.future);
-      await service.enrollStudent(
-        studentId: _selectedStudent!.id!,
+      await service.leaveClass(
+        studentId: widget.studentId,
         classId: widget.classId,
-        joinDate: _joinDate,
-        mienGiam: int.tryParse(_mienGiamController.text.trim()) ?? 0,
-        ghiChu: _ghiChuController.text.trim(),
+        endDate: _endDate,
+        reason: _selectedReason,
       );
 
       if (mounted) {
@@ -263,7 +194,7 @@ class _EnrollStudentBottomSheetState
         _isDirty = false;
         AppFeedback.showSuccessSnackBar(
           context,
-          'Đã thêm ${_selectedStudent!.hoTen} vào lớp',
+          'Đã cập nhật trạng thái nghỉ học',
         );
         Navigator.of(context).pop(true);
       }
@@ -279,10 +210,11 @@ class _EnrollStudentBottomSheetState
   }
 }
 
-Future<bool?> showEnrollStudentBottomSheet(
+Future<bool?> showLeaveClassBottomSheet(
   BuildContext context, {
+  required int studentId,
   required int classId,
-  int? initialStudentId,
+  required String studentName,
 }) {
   return showModalBottomSheet<bool>(
     context: context,
@@ -290,14 +222,10 @@ Future<bool?> showEnrollStudentBottomSheet(
     isDismissible: false,
     enableDrag: false,
     useSafeArea: true,
-    builder: (_) => EnrollStudentBottomSheet(
+    builder: (_) => LeaveClassBottomSheet(
+      studentId: studentId,
       classId: classId,
-      initialStudentId: initialStudentId,
+      studentName: studentName,
     ),
   );
 }
-
-final studentListProvider = FutureProvider<List<Student>>((ref) async {
-  final service = await ref.watch(studentServiceProvider.future);
-  return service.getStudents();
-});

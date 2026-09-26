@@ -4,6 +4,7 @@ import '../../../app/common_widgets/app_empty_state.dart';
 import '../../../app/common_widgets/app_error_state.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
 import '../../../app/navigation/app_global_drawer.dart';
+import '../../../app/navigation/ui_keys.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../memberships/presentation/membership_providers.dart';
 import '../domain/class.dart';
@@ -49,6 +50,7 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
                   vertical: 4,
                 ),
                 child: SearchBar(
+                  key: UiKeys.classSearch,
                   controller: _searchController,
                   hintText: l10n.classSearchPlaceholder,
                   onChanged: (value) {
@@ -80,6 +82,7 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
                 child: Row(
                   children: [
                     FilterChip(
+                      key: UiKeys.classActiveFilter,
                       label: Text(l10n.filterActive),
                       selected: _filter == ClassFilter.active,
                       onSelected: (_) {
@@ -91,6 +94,7 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
                     ),
                     const SizedBox(width: 8),
                     FilterChip(
+                      key: UiKeys.classArchivedFilter,
                       label: Text(l10n.filterArchived),
                       selected: _filter == ClassFilter.archived,
                       onSelected: (_) {

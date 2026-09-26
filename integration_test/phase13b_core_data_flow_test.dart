@@ -3,13 +3,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tuition2027/app/navigation/ui_keys.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:tuition2027/app/navigation/ui_keys.dart';
 import 'package:tuition2027/features/classes/presentation/class_detail_page.dart';
 import 'package:tuition2027/features/settings/presentation/settings_page.dart';
 import 'package:tuition2027/features/students/presentation/student_detail_page.dart';
 import 'package:tuition2027/features/students/presentation/student_form_page.dart';
 import 'package:tuition2027/main.dart' as app;
+
+Future<void> dismissSnackBar(WidgetTester tester) async {
+  final scaffolds = find.byType(Scaffold).evaluate();
+  if (scaffolds.isNotEmpty) {
+    try {
+      ScaffoldMessenger.of(scaffolds.first).clearSnackBars();
+      await tester.pump();
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+    } catch (_) {}
+  }
+}
 
 Future<void> awaitDataReload(
   WidgetTester tester,
@@ -29,7 +40,7 @@ void main() {
 
   group('Phase 13B Real Android Core Data Entry Flow Integration Test', () {
     testWidgets(
-      'Complete workflow: Student -> Class -> Membership -> Tuition Policy -> Search/Edit -> Dirty Form -> L10n/Theme',
+      'Complete workflow: Student Search/Edit/Archive -> Class Search/Edit/Archive -> Membership Overlap Guard -> Tuition Policy Distinctive Values -> Dirty Form -> L10n/Theme',
       (tester) async {
         // 1. Clear SharedPreferences and clean SQLite DB
         final prefs = await SharedPreferences.getInstance();
@@ -41,14 +52,14 @@ void main() {
         app.main();
         await tester.pumpAndSettle(const Duration(seconds: 2));
 
-        // 2. Create Student: 'Nguyễn Văn A'
+        // ==========================================
+        // 2. STUDENT LIFECYCLE: Create -> Search -> View -> Edit -> Archive -> Restore
+        // ==========================================
         await tester.tap(find.byKey(UiKeys.bottomStudents));
         await tester.pumpAndSettle();
 
-        await tester.tap(
-          find.byType(FloatingActionButton),
-          warnIfMissed: false,
-        );
+        await dismissSnackBar(tester);
+        await tester.tap(find.byType(FloatingActionButton));
         await tester.pumpAndSettle();
 
         expect(find.byType(StudentFormPage), findsOneWidget);
@@ -66,7 +77,15 @@ void main() {
         expect(find.byType(StudentFormPage), findsNothing);
         expect(find.text('Nguyễn Văn A'), findsOneWidget);
 
-        // 3. Open Student Detail & Edit to 'Nguyễn Văn A Prime'
+        // Search Student by partial name
+        await tester.tap(find.byKey(UiKeys.studentSearch));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(UiKeys.studentSearch), 'Nguyễn');
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+
+        expect(find.text('Nguyễn Văn A'), findsOneWidget);
+
+        // Open Student Detail & Edit to 'Nguyễn Văn A Prime'
         await tester.tap(find.text('Nguyễn Văn A'));
         await tester.pumpAndSettle();
 
@@ -87,27 +106,71 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(StudentFormPage), findsNothing);
-
         await awaitDataReload(tester, 'Nguyễn Văn A Prime');
 
         // Verify edited name appears on Detail page immediately
         expect(find.text('Nguyễn Văn A Prime'), findsAtLeast(1));
 
+        // Archive Student from Detail page
+        await tester.tap(find.byKey(UiKeys.studentArchiveAction));
+        await tester.pumpAndSettle();
+
+        // Confirm archive in bottom sheet
+        await tester.tap(
+          find.descendant(
+            of: find.byType(BottomSheet).last,
+            matching: find.byType(ElevatedButton),
+          ),
+        );
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+
         // Pop back to Students list
         final dynamic widgetsAppState = tester.state(find.byType(WidgetsApp));
         widgetsAppState.didPopRoute();
-        await tester.pumpAndSettle(const Duration(seconds: 4));
+        await tester.pumpAndSettle(const Duration(seconds: 2));
+
+        // Active filter should no longer show archived student
+        expect(find.text('Nguyễn Văn A Prime'), findsNothing);
+
+        // Switch to Archived filter
+        await tester.tap(find.byKey(UiKeys.studentArchivedFilter));
+        await tester.pumpAndSettle(const Duration(seconds: 1));
 
         expect(find.text('Nguyễn Văn A Prime'), findsOneWidget);
 
-        // 4. Create Class: 'Vật lý 10' via Bottom Sheet
+        // Re-open Detail for archived student and Restore
+        await tester.tap(find.text('Nguyễn Văn A Prime'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(UiKeys.studentRestoreAction));
+        await tester.pumpAndSettle();
+
+        // Confirm restore in bottom sheet
+        await tester.tap(
+          find.descendant(
+            of: find.byType(BottomSheet).last,
+            matching: find.byType(ElevatedButton),
+          ),
+        );
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+
+        widgetsAppState.didPopRoute();
+        await tester.pumpAndSettle();
+
+        // Switch back to Active filter
+        await tester.tap(find.byKey(UiKeys.studentActiveFilter));
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+
+        expect(find.text('Nguyễn Văn A Prime'), findsOneWidget);
+
+        // ==========================================
+        // 3. CLASS LIFECYCLE: Create -> Search -> View -> Edit -> Archive -> Restore
+        // ==========================================
         await tester.tap(find.byKey(UiKeys.bottomClasses));
         await tester.pumpAndSettle();
 
-        await tester.tap(
-          find.byType(FloatingActionButton),
-          warnIfMissed: false,
-        );
+        await dismissSnackBar(tester);
+        await tester.tap(find.byType(FloatingActionButton));
         await tester.pumpAndSettle();
 
         final classNameField = find.byKey(UiKeys.classFormNameInput);
@@ -122,7 +185,15 @@ void main() {
 
         expect(find.text('Vật lý 10'), findsOneWidget);
 
-        // 5. Open Class Detail & Edit to 'Vật lý 10 Chuyên'
+        // Search Class
+        await tester.tap(find.byKey(UiKeys.classSearch));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(UiKeys.classSearch), 'Vật lý');
+        await tester.pumpAndSettle(const Duration(seconds: 1));
+
+        expect(find.text('Vật lý 10'), findsOneWidget);
+
+        // Open Class Detail & Edit to 'Vật lý 10 Chuyên'
         await tester.tap(find.text('Vật lý 10'));
         await tester.pumpAndSettle();
 
@@ -145,7 +216,10 @@ void main() {
         // Verify edited class name on Class Detail page immediately
         expect(find.text('Vật lý 10 Chuyên'), findsAtLeast(1));
 
-        // 6. Enroll 'Nguyễn Văn A Prime' into 'Vật lý 10 Chuyên' via Bottom Sheet
+        // ==========================================
+        // 4. MEMBERSHIP FLOW & OVERLAP REJECTION PROOF
+        // ==========================================
+        // Enroll 'Nguyễn Văn A Prime' into 'Vật lý 10 Chuyên' via Bottom Sheet
         await tester.tap(find.byIcon(Icons.person_add));
         await tester.pumpAndSettle();
 
@@ -162,28 +236,121 @@ void main() {
 
         expect(find.text('Nguyễn Văn A Prime'), findsAtLeast(1));
 
-        // 7. Create Tuition Policy for 'Vật lý 10 Chuyên' via Bottom Sheet
-        await tester.drag(find.byType(TabBar), const Offset(-300, 0));
+        // Duplicate Enrollment attempt -> must reject overlap
+        await tester.tap(find.byIcon(Icons.person_add));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Học phí'));
-        await tester.pumpAndSettle(const Duration(seconds: 1));
+        await tester.tap(find.byType(InputDecorator).first);
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.text('Nguyễn Văn A Prime'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(UiKeys.enrollStudentSubmit));
+        await tester.pumpAndSettle();
+
+        // Assert error SnackBar is displayed and sheet remains open
+        expect(find.byType(SnackBar), findsOneWidget);
+
+        // Close/Cancel duplicate enrollment sheet
+        await dismissSnackBar(tester);
+        await tester.tap(find.byIcon(Icons.close));
+        await tester.pumpAndSettle();
+
+        // Discard changes in dirty confirmation prompt (topmost BottomSheet)
+        await tester.tap(
+          find.descendant(
+            of: find.byType(BottomSheet).last,
+            matching: find.byType(ElevatedButton),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // ==========================================
+        // 5. TUITION POLICY PERSISTENCE PROOF WITH DISTINCTIVE VALUES
+        // ==========================================
+        await dismissSnackBar(tester);
+        DefaultTabController.of(
+          tester.element(find.byType(TabBarView)),
+        ).animateTo(5);
+        await tester.pumpAndSettle();
+        await awaitDataReload(tester, 'Thêm CS');
 
         await tester.tap(find.text('Thêm CS'));
+        await tester.pumpAndSettle();
+
+        // Enter distinctive policy values: Fee = 73000, N = 11, Cap = 800000
+        final feeInput = find.byType(TextFormField).at(1);
+        await tester.tap(feeInput);
+        await tester.pumpAndSettle();
+        await tester.enterText(feeInput, '73000');
+        await tester.pumpAndSettle();
+
+        final stdInput = find.byType(TextFormField).at(2);
+        await tester.tap(stdInput);
+        await tester.pumpAndSettle();
+        await tester.enterText(stdInput, '11');
+        await tester.pumpAndSettle();
+
+        final capInput = find.byType(TextFormField).at(3);
+        await tester.tap(capInput);
+        await tester.pumpAndSettle();
+        await tester.enterText(capInput, '800000');
         await tester.pumpAndSettle();
 
         await tester.tap(find.byKey(UiKeys.tuitionPolicySave));
         await tester.pumpAndSettle();
 
-        await awaitDataReload(tester, 'Chính sách học phí');
+        await awaitDataReload(tester, '73,000');
 
-        expect(find.textContaining('Chính sách học phí'), findsAtLeast(1));
+        // Assert distinctive fee, N, and cap values are rendered
+        expect(find.textContaining('73,000'), findsAtLeast(1));
+        expect(find.textContaining('11'), findsAtLeast(1));
+        expect(find.textContaining('800,000'), findsAtLeast(1));
+
+        // Validation Failure Test on Tuition Policy
+        await awaitDataReload(tester, 'Thêm CS');
+        await tester.tap(find.text('Thêm CS'), warnIfMissed: false);
+        await tester.pumpAndSettle();
+
+        // Enter invalid standard sessions N = 0
+        await tester.tap(stdInput);
+        await tester.pumpAndSettle();
+        await tester.enterText(stdInput, '0');
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(UiKeys.tuitionPolicySave));
+        await tester.pumpAndSettle();
+
+        // Assert validation error is shown and sheet remains open
+        expect(find.textContaining('Số buổi chuẩn'), findsAtLeast(1));
+
+        // Close invalid policy sheet
+        await dismissSnackBar(tester);
+        await tester.tap(find.byIcon(Icons.close));
+        await tester.pumpAndSettle();
+
+        // Discard changes
+        await tester.tap(
+          find.descendant(
+            of: find.byType(BottomSheet).last,
+            matching: find.byType(ElevatedButton),
+          ),
+        );
+        await tester.pumpAndSettle();
 
         // Pop ClassDetailPage back to ClassList
         widgetsAppState.didPopRoute();
         await tester.pumpAndSettle();
 
-        // 8. Test Dirty Form Global Menu Safety
+        // ==========================================
+        // 6. DIRTY FORM GLOBAL MENU SAFETY
+        // ==========================================
         if (find.byKey(UiKeys.globalDrawer).evaluate().isEmpty) {
           await tester.tap(find.byKey(UiKeys.globalMenuButton));
           await tester.pumpAndSettle();
@@ -208,14 +375,19 @@ void main() {
         await tester.tap(find.byKey(UiKeys.drawerTuition));
         await tester.pumpAndSettle();
 
-        // Cancel dirty form leave -> stays on StudentFormPage
-        await tester.tap(find.byType(TextButton).last);
+        // Cancel dirty form leave -> stays on StudentFormPage (TextButton in confirm bottom sheet)
+        await tester.tap(
+          find.descendant(
+            of: find.byType(BottomSheet).last,
+            matching: find.byType(TextButton),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(StudentFormPage), findsOneWidget);
         expect(find.text('Dirty Student Test B'), findsOneWidget);
 
-        // Discard dirty form leave -> pops StudentFormPage and opens Tuition tab
+        // Discard dirty form leave -> pops StudentFormPage and opens Tuition tab (ElevatedButton in confirm bottom sheet)
         if (find.byKey(UiKeys.globalDrawer).evaluate().isEmpty) {
           await tester.tap(find.byKey(UiKeys.globalMenuButton));
           await tester.pumpAndSettle();
@@ -224,12 +396,19 @@ void main() {
         await tester.tap(find.byKey(UiKeys.drawerTuition));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byType(ElevatedButton).last);
+        await tester.tap(
+          find.descendant(
+            of: find.byType(BottomSheet).last,
+            matching: find.byType(ElevatedButton),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(StudentFormPage), findsNothing);
 
-        // 9. Test Settings: Dark mode, Emerald palette, English l10n
+        // ==========================================
+        // 7. SETTINGS: Dark mode, Emerald palette, English L10n
+        // ==========================================
         if (find.byKey(UiKeys.globalDrawer).evaluate().isEmpty) {
           await tester.tap(find.byKey(UiKeys.globalMenuButton));
           await tester.pumpAndSettle();

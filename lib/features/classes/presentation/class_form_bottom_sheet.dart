@@ -64,153 +64,165 @@ class _ClassFormBottomSheetState extends ConsumerState<ClassFormBottomSheet> {
     final l10n = AppLocalizations.of(context)!;
     final isEdit = widget.cls != null;
 
-    return DirtyFormScope(
-      isDirty: _isDirty,
-      child: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          ),
-          child: SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        isEdit
-                            ? l10n.classFormTitleEdit
-                            : l10n.classFormTitleAdd,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+    return PopScope(
+      canPop: !_isDirty,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final canLeave = await AppPageScaffold.confirmCanLeave(
+          context,
+          isDirty: _isDirty,
+        );
+        if (canLeave && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: DirtyFormScope(
+        isDirty: _isDirty,
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            ),
+            child: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          isEdit
+                              ? l10n.classFormTitleEdit
+                              : l10n.classFormTitleAdd,
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () async {
-                          final canLeave =
-                              await AppPageScaffold.confirmCanLeave(
-                                context,
-                                isDirty: _isDirty,
-                              );
-                          if (canLeave && context.mounted) {
-                            Navigator.of(context).pop();
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    key: UiKeys.classFormNameInput,
-                    controller: _tenLopController,
-                    decoration: InputDecoration(
-                      labelText: l10n.className,
-                      border: const OutlineInputBorder(),
-                    ),
-                    validator: (value) =>
-                        (value == null || value.trim().isEmpty)
-                        ? l10n.classValidationName
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<int>(
-                          initialValue: _khoi,
-                          decoration: InputDecoration(
-                            labelText: l10n.studentGrade,
-                            border: const OutlineInputBorder(),
-                          ),
-                          items: List.generate(12, (index) => index + 1)
-                              .map(
-                                (k) => DropdownMenuItem(
-                                  value: k,
-                                  child: Text(l10n.studentGradeItem(k)),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (v) {
-                            _onChanged();
-                            setState(() => _khoi = v);
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () async {
+                            final canLeave =
+                                await AppPageScaffold.confirmCanLeave(
+                                  context,
+                                  isDirty: _isDirty,
+                                );
+                            if (canLeave && context.mounted) {
+                              Navigator.of(context).pop();
+                            }
                           },
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      key: UiKeys.classFormNameInput,
+                      controller: _tenLopController,
+                      decoration: InputDecoration(
+                        labelText: l10n.className,
+                        border: const OutlineInputBorder(),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _siSoToiDaController,
-                          decoration: InputDecoration(
-                            labelText: l10n.classMaxStudents,
-                            border: const OutlineInputBorder(),
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty)
+                          ? l10n.classValidationName
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            initialValue: _khoi,
+                            decoration: InputDecoration(
+                              labelText: l10n.studentGrade,
+                              border: const OutlineInputBorder(),
+                            ),
+                            items: List.generate(12, (index) => index + 1)
+                                .map(
+                                  (k) => DropdownMenuItem(
+                                    value: k,
+                                    child: Text(l10n.studentGradeItem(k)),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) {
+                              _onChanged();
+                              setState(() => _khoi = v);
+                            },
                           ),
-                          keyboardType: TextInputType.number,
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _monHocController,
-                    decoration: InputDecoration(
-                      labelText: l10n.classSubject,
-                      border: const OutlineInputBorder(),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _siSoToiDaController,
+                            decoration: InputDecoration(
+                              labelText: l10n.classMaxStudents,
+                              border: const OutlineInputBorder(),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _ghiChuController,
-                    decoration: InputDecoration(
-                      labelText: l10n.classNotes,
-                      border: const OutlineInputBorder(),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _monHocController,
+                      decoration: InputDecoration(
+                        labelText: l10n.classSubject,
+                        border: const OutlineInputBorder(),
+                      ),
                     ),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: _isSaving
-                            ? null
-                            : () async {
-                                final canLeave =
-                                    await AppPageScaffold.confirmCanLeave(
-                                      context,
-                                      isDirty: _isDirty,
-                                    );
-                                if (canLeave && context.mounted) {
-                                  Navigator.of(context).pop();
-                                }
-                              },
-                        child: Text(l10n.commonCancel),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _ghiChuController,
+                      decoration: InputDecoration(
+                        labelText: l10n.classNotes,
+                        border: const OutlineInputBorder(),
                       ),
-                      const SizedBox(width: 12),
-                      ElevatedButton.icon(
-                        key: UiKeys.classFormSave,
-                        onPressed: _isSaving ? null : _save,
-                        icon: _isSaving
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.check),
-                        label: Text(l10n.commonSave),
-                      ),
-                    ],
-                  ),
-                ],
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: _isSaving
+                              ? null
+                              : () async {
+                                  final canLeave =
+                                      await AppPageScaffold.confirmCanLeave(
+                                        context,
+                                        isDirty: _isDirty,
+                                      );
+                                  if (canLeave && context.mounted) {
+                                    Navigator.of(context).pop();
+                                  }
+                                },
+                          child: Text(l10n.commonCancel),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          key: UiKeys.classFormSave,
+                          onPressed: _isSaving ? null : _save,
+                          icon: _isSaving
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.check),
+                          label: Text(l10n.commonSave),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -270,6 +282,8 @@ Future<bool?> showClassFormBottomSheet(
   return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
+    isDismissible: false,
+    enableDrag: false,
     useSafeArea: true,
     builder: (_) => ClassFormBottomSheet(cls: cls),
   );

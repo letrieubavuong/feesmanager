@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/navigation/app_global_drawer.dart';
+import '../../../app/navigation/ui_keys.dart';
 import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
+import '../../memberships/presentation/leave_class_bottom_sheet.dart';
+import '../../memberships/presentation/re_enroll_student_bottom_sheet.dart';
 import '../domain/class.dart';
 import 'class_controller.dart';
 import 'class_form_bottom_sheet.dart';
@@ -76,6 +79,9 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                         ),
                       ),
                       IconButton(
+                        key: cls.daLuuTru
+                            ? UiKeys.classRestoreAction
+                            : UiKeys.classArchiveAction,
                         icon: Icon(
                           cls.daLuuTru ? Icons.unarchive : Icons.archive,
                         ),
@@ -356,62 +362,18 @@ class HistoryItem extends ConsumerWidget {
     );
   }
 
-  void _showReEnrollDialog(BuildContext context, WidgetRef ref) {
-    final dateController = TextEditingController(
-      text: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+  void _showReEnrollDialog(BuildContext context, WidgetRef ref) async {
+    final success = await showReEnrollStudentBottomSheet(
+      context,
+      studentId: membership.idHocSinh,
+      classId: membership.idLop,
+      defaultDiscount: membership.mienGiamPhanTram,
     );
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Học sinh học lại'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Ngày học lại:'),
-            TextField(
-              controller: dateController,
-              decoration: const InputDecoration(hintText: 'YYYY-MM-DD'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
-          ),
-          TextButton(
-            onPressed: () async {
-              try {
-                final service = await ref.read(
-                  membershipServiceProvider.future,
-                );
-                await service.enrollStudent(
-                  studentId: membership.idHocSinh,
-                  classId: membership.idLop,
-                  joinDate: DateTime.parse(dateController.text),
-                  mienGiam: membership.mienGiamPhanTram,
-                );
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  ref.invalidate(classRosterProvider);
-                  ref.invalidate(classSizeProvider);
-                  ref.invalidate(classMembershipHistoryProvider);
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(e.toString().replaceAll('Exception: ', '')),
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text('Xác nhận'),
-          ),
-        ],
-      ),
-    );
+    if (success == true) {
+      ref.invalidate(classRosterProvider);
+      ref.invalidate(classSizeProvider);
+      ref.invalidate(classMembershipHistoryProvider);
+    }
   }
 }
 
@@ -440,81 +402,19 @@ class RosterItem extends ConsumerWidget {
     );
   }
 
-  void _showLeaveDialog(BuildContext context, WidgetRef ref) {
-    DateTime endDate = DateTime.now();
-    String? selectedReason = 'TAM_NGUNG';
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Học sinh nghỉ lớp'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                title: const Text('Ngày nghỉ (Ngày cuối học)'),
-                subtitle: Text(DateFormat('dd/MM/yyyy').format(endDate)),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: endDate,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null) setDialogState(() => endDate = picked);
-                },
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: selectedReason,
-                items: const [
-                  DropdownMenuItem(value: 'TAM_NGUNG', child: Text('Tạm nghỉ')),
-                  DropdownMenuItem(value: 'NGHI_HOC', child: Text('Nghỉ lớp')),
-                ],
-                onChanged: (v) => setDialogState(() => selectedReason = v),
-                decoration: const InputDecoration(labelText: 'Lý do'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Hủy'),
-            ),
-            TextButton(
-              onPressed: () async {
-                try {
-                  final service = await ref.read(
-                    membershipServiceProvider.future,
-                  );
-                  await service.leaveClass(
-                    studentId: membership.idHocSinh,
-                    classId: membership.idLop,
-                    endDate: endDate,
-                    reason: selectedReason,
-                  );
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                    ref.invalidate(classRosterProvider);
-                    ref.invalidate(classSizeProvider);
-                    ref.invalidate(classMembershipHistoryProvider);
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text(e.toString())));
-                  }
-                }
-              },
-              child: const Text('Xác nhận'),
-            ),
-          ],
-        ),
-      ),
+  void _showLeaveDialog(BuildContext context, WidgetRef ref) async {
+    final student = ref.read(studentDetailProvider(membership.idHocSinh)).value;
+    final success = await showLeaveClassBottomSheet(
+      context,
+      studentId: membership.idHocSinh,
+      classId: membership.idLop,
+      studentName: student?.hoTen ?? 'học sinh',
     );
+    if (success == true) {
+      ref.invalidate(classRosterProvider);
+      ref.invalidate(classSizeProvider);
+      ref.invalidate(classMembershipHistoryProvider);
+    }
   }
 }
 

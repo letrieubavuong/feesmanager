@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/dirty_form_scope.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../domain/class.dart';
@@ -165,13 +166,21 @@ class _ClassFormPageState extends ConsumerState<ClassFormPage> {
               ghiChu: _ghiChuController.text,
             );
 
-    final success = await ref
-        .read(classFormControllerProvider.notifier)
-        .save(classEntity);
-    if (success && mounted) {
+    try {
+      await ref.read(classFormControllerProvider.notifier).save(classEntity);
       _isDirty = false;
       ref.read(classListControllerProvider.notifier).refresh();
-      Navigator.of(context).pop();
+      if (mounted) {
+        AppFeedback.showSuccessSnackBar(context, 'Đã lưu thông tin lớp học');
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        AppFeedback.showErrorSnackBar(
+          context,
+          e.toString().replaceAll('Exception: ', ''),
+        );
+      }
     }
   }
 }

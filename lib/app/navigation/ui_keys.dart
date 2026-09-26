@@ -46,10 +46,21 @@ class UiKeys {
   static const Key settingsLanguageVi = Key('settings_language_vi');
   static const Key settingsLanguageEn = Key('settings_language_en');
 
-  // Phase 13B Forms & Actions
+  // Phase 13B Forms, Filters & Actions
   static const Key studentFormSave = Key('student_form_save');
   static const Key classFormNameInput = Key('class_form_name_input');
   static const Key classFormSave = Key('class_form_save');
   static const Key enrollStudentSubmit = Key('enroll_student_submit');
   static const Key tuitionPolicySave = Key('tuition_policy_save');
+
+  static const Key studentSearch = Key('student_search_input');
+  static const Key classSearch = Key('class_search_input');
+  static const Key studentActiveFilter = Key('student_active_filter');
+  static const Key studentArchivedFilter = Key('student_archived_filter');
+  static const Key classActiveFilter = Key('class_active_filter');
+  static const Key classArchivedFilter = Key('class_archived_filter');
+  static const Key studentArchiveAction = Key('student_archive_action');
+  static const Key studentRestoreAction = Key('student_restore_action');
+  static const Key classArchiveAction = Key('class_archive_action');
+  static const Key classRestoreAction = Key('class_restore_action');
 }

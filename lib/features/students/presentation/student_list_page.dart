@@ -4,6 +4,7 @@ import '../../../app/common_widgets/app_empty_state.dart';
 import '../../../app/common_widgets/app_error_state.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
 import '../../../app/navigation/app_global_drawer.dart';
+import '../../../app/navigation/ui_keys.dart';
 import '../../../l10n/app_localizations.dart';
 import 'student_controller.dart';
 import 'student_detail_page.dart';
@@ -46,6 +47,7 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                   vertical: 4,
                 ),
                 child: SearchBar(
+                  key: UiKeys.studentSearch,
                   controller: _searchController,
                   hintText: l10n.studentSearchPlaceholder,
                   onChanged: (value) {
@@ -77,6 +79,7 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                 child: Row(
                   children: [
                     FilterChip(
+                      key: UiKeys.studentActiveFilter,
                       label: Text(l10n.filterActive),
                       selected: _filterArchived == false,
                       onSelected: (_) {
@@ -88,6 +91,7 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                     ),
                     const SizedBox(width: 8),
                     FilterChip(
+                      key: UiKeys.studentArchivedFilter,
                       label: Text(l10n.filterArchived),
                       selected: _filterArchived == true,
                       onSelected: (_) {

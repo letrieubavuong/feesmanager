@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/navigation/app_global_drawer.dart';
+import '../../../app/navigation/ui_keys.dart';
 import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
 import '../domain/student.dart';
 import '../domain/student_service.dart';
@@ -63,6 +64,9 @@ class StudentDetailPage extends ConsumerWidget {
                     },
                   ),
                   IconButton(
+                    key: isArchived
+                        ? UiKeys.studentRestoreAction
+                        : UiKeys.studentArchiveAction,
                     icon: Icon(
                       isArchived ? Icons.unarchive : Icons.archive_outlined,
                     ),
