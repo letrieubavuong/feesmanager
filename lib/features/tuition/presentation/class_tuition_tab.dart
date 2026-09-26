@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../app/common_widgets/app_feedback.dart';
 import '../../memberships/presentation/membership_providers.dart';
+import 'create_tuition_policy_bottom_sheet.dart';
 import '../../payments/domain/invoice_payment_summary.dart';
 import '../../payments/domain/payment.dart';
 import '../../payments/domain/payment_method.dart';
@@ -309,159 +311,47 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     );
   }
 
-  void _showCreatePolicyDialog(BuildContext context) {
-    final fromController = TextEditingController(text: '$_selectedMonth-01');
-    final feeController = TextEditingController(text: '50000');
-    final standardController = TextEditingController(text: '12');
-    final capController = TextEditingController();
-    final noteController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Thêm chính sách học phí'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: fromController,
-                decoration: const InputDecoration(
-                  labelText: 'Hiệu lực từ ngày (YYYY-MM-DD)',
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: feeController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Học phí mỗi buổi (đ)',
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: standardController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Số buổi chuẩn trong tháng',
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: capController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Trần học phí tháng (để trống nếu không có)',
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: noteController,
-                decoration: const InputDecoration(labelText: 'Ghi chú'),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                final feeText = feeController.text.trim();
-                final fee = int.tryParse(feeText);
-                if (fee == null || fee < 0) {
-                  throw Exception('Học phí mỗi buổi không hợp lệ');
-                }
-
-                final standardText = standardController.text.trim();
-                final standard = int.tryParse(standardText);
-                if (standard == null || standard <= 0) {
-                  throw Exception('Số buổi chuẩn tháng phải lớn hơn 0');
-                }
-
-                final capStr = capController.text.trim();
-                int? cap;
-                if (capStr.isNotEmpty) {
-                  cap = int.tryParse(capStr);
-                  if (cap == null || cap < 0) {
-                    throw Exception('Trần học phí tháng không hợp lệ');
-                  }
-                }
-
-                await ref
-                    .read(tuitionPolicyControllerProvider.notifier)
-                    .createPolicy(
-                      classId: widget.classId,
-                      effectiveFrom: fromController.text.trim(),
-                      feePerSession: fee,
-                      standardSessionsPerMonth: standard,
-                      monthlyMaxFee: cap,
-                      note: noteController.text.trim(),
-                    );
-
-                if (dialogCtx.mounted) Navigator.pop(dialogCtx);
-              } catch (e) {
-                if (dialogCtx.mounted) {
-                  ScaffoldMessenger.of(
-                    dialogCtx,
-                  ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
-                }
-              }
-            },
-            child: const Text('Lưu chính sách'),
-          ),
-        ],
-      ),
+  void _showCreatePolicyDialog(BuildContext context) async {
+    final success = await showCreateTuitionPolicyBottomSheet(
+      context,
+      classId: widget.classId,
+      initialMonth: _selectedMonth,
     );
+    if (success == true) {
+      ref.invalidate(classTuitionPoliciesProvider(widget.classId));
+      ref.invalidate(effectiveTuitionPolicyProvider);
+    }
   }
 
-  void _showFinalizeClassDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Chốt học phí cả lớp'),
-        content: Text(
+  void _showFinalizeClassDialog(BuildContext context) async {
+    final confirm = await AppFeedback.showConfirmBottomSheet(
+      context,
+      title: 'Chốt học phí cả lớp',
+      message:
           'Bạn có chắc chắn muốn chốt học phí cả lớp cho tháng $_selectedMonth?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await ref
-                    .read(invoiceControllerProvider.notifier)
-                    .finalizeClassInvoices(
-                      classId: widget.classId,
-                      month: _selectedMonth,
-                    );
-                if (dialogCtx.mounted) {
-                  Navigator.pop(dialogCtx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Đã chốt học phí cả lớp thành công!'),
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (dialogCtx.mounted) {
-                  Navigator.pop(dialogCtx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Lỗi chốt học phí cả lớp: $e')),
-                  );
-                }
-              }
-            },
-            child: const Text('Xác nhận chốt'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Xác nhận chốt',
     );
+
+    if (confirm != true || !context.mounted) return;
+
+    try {
+      await ref
+          .read(invoiceControllerProvider.notifier)
+          .finalizeClassInvoices(
+            classId: widget.classId,
+            month: _selectedMonth,
+          );
+      if (context.mounted) {
+        AppFeedback.showSuccessSnackBar(
+          context,
+          'Đã chốt học phí cả lớp thành công!',
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        AppFeedback.showErrorSnackBar(context, 'Lỗi chốt học phí cả lớp: $e');
+      }
+    }
   }
 }
 

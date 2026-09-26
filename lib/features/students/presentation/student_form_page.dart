@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/dirty_form_scope.dart';
-import '../../../l10n/app_localizations.dart';
 import '../../../app/navigation/app_global_drawer.dart';
+import '../../../app/navigation/ui_keys.dart';
+import '../../../l10n/app_localizations.dart';
 import '../domain/student.dart';
 import 'student_controller.dart';
+import 'student_detail_page.dart';
 
 class StudentFormPage extends ConsumerStatefulWidget {
   final Student? student;
@@ -103,7 +106,11 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
           ),
           actions: [
             const GlobalMenuButton(),
-            IconButton(icon: const Icon(Icons.check), onPressed: _save),
+            IconButton(
+              key: UiKeys.studentFormSave,
+              icon: const Icon(Icons.check),
+              onPressed: _save,
+            ),
           ],
         ),
         body: SingleChildScrollView(
@@ -114,6 +121,7 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextFormField(
+                  key: const Key('student_form_name_input'),
                   controller: _hoTenController,
                   decoration: InputDecoration(
                     labelText: l10n.studentFullName,
@@ -290,13 +298,24 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
               ghiChu: _ghiChuController.text,
             );
 
-    final success = await ref
-        .read(studentFormControllerProvider.notifier)
-        .save(student);
-    if (success && mounted) {
+    try {
+      await ref.read(studentFormControllerProvider.notifier).save(student);
       _isDirty = false;
       ref.read(studentListControllerProvider.notifier).refresh();
-      Navigator.of(context).pop();
+      if (widget.student?.id != null) {
+        ref.invalidate(studentDetailProvider(widget.student!.id!));
+      }
+      if (mounted) {
+        AppFeedback.showSuccessSnackBar(context, 'Đã lưu thông tin học sinh');
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        AppFeedback.showErrorSnackBar(
+          context,
+          e.toString().replaceAll('Exception: ', ''),
+        );
+      }
     }
   }
 }

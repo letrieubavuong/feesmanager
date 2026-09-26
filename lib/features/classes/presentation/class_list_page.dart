@@ -10,7 +10,7 @@ import '../domain/class.dart';
 import '../domain/class_filter.dart';
 import 'class_controller.dart';
 import 'class_detail_page.dart';
-import 'class_form_page.dart';
+import 'class_form_bottom_sheet.dart';
 
 class ClassListPage extends ConsumerStatefulWidget {
   const ClassListPage({super.key});
@@ -146,9 +146,7 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          await Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const ClassFormPage()),
-          );
+          await showClassFormBottomSheet(context);
           ref.read(classListControllerProvider.notifier).refresh();
         },
         child: const Icon(Icons.add),

@@ -45,4 +45,11 @@ class UiKeys {
   static const Key settingsLanguageSystem = Key('settings_language_system');
   static const Key settingsLanguageVi = Key('settings_language_vi');
   static const Key settingsLanguageEn = Key('settings_language_en');
+
+  // Phase 13B Forms & Actions
+  static const Key studentFormSave = Key('student_form_save');
+  static const Key classFormNameInput = Key('class_form_name_input');
+  static const Key classFormSave = Key('class_form_save');
+  static const Key enrollStudentSubmit = Key('enroll_student_submit');
+  static const Key tuitionPolicySave = Key('tuition_policy_save');
 }

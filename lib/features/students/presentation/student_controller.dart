@@ -59,13 +59,8 @@ class StudentFormController extends _$StudentFormController {
   @override
   void build() {}
 
-  Future<bool> save(Student student) async {
+  Future<void> save(Student student) async {
     final service = await ref.read(studentServiceProvider.future);
-    try {
-      await service.saveStudent(student);
-      return true;
-    } catch (e) {
-      return false;
-    }
+    await service.saveStudent(student);
   }
 }

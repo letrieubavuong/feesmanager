@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'class_controller.dart';
-import 'class_form_page.dart';
+import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/navigation/app_global_drawer.dart';
+import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
 import '../domain/class.dart';
+import 'class_controller.dart';
+import 'class_form_bottom_sheet.dart';
 import '../domain/class_service.dart';
 import '../../memberships/domain/membership_service.dart';
 import '../../memberships/domain/membership.dart';
-import '../../memberships/presentation/add_student_to_class_dialog.dart';
 import '../../memberships/presentation/membership_providers.dart';
 import '../../students/presentation/student_detail_page.dart';
 
@@ -55,11 +56,14 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit),
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => ClassFormPage(cls: cls),
-                          ),
-                        ),
+                        tooltip: 'Chỉnh sửa lớp',
+                        onPressed: () async {
+                          await showClassFormBottomSheet(context, cls: cls);
+                          ref.invalidate(classDetailProvider(widget.classId));
+                          ref
+                              .read(classListControllerProvider.notifier)
+                              .refresh();
+                        },
                       ),
                       IconButton(
                         icon: const Icon(Icons.event_note),
@@ -258,48 +262,56 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
           .read(classServiceProvider.future)
           .then((s) => s.getActiveMemberCount(cls.id!));
       if (activeCount > 0 && context.mounted) {
-        final confirm = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Lưu trữ lớp học'),
-            content: Text(
+        final confirm = await AppFeedback.showConfirmBottomSheet(
+          context,
+          title: 'Lưu trữ lớp học',
+          message:
               'Lớp hiện còn $activeCount học sinh đang học. Bạn vẫn muốn lưu trữ lớp này?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Hủy'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Vẫn lưu trữ'),
-              ),
-            ],
-          ),
+          confirmLabel: 'Vẫn lưu trữ',
+          isDestructive: true,
+        );
+        if (confirm != true) return;
+      } else if (context.mounted) {
+        final confirm = await AppFeedback.showConfirmBottomSheet(
+          context,
+          title: 'Lưu trữ lớp học',
+          message: 'Bạn có chắc chắn muốn lưu trữ lớp "${cls.tenLop}"?',
+          confirmLabel: 'Lưu trữ',
+          isDestructive: true,
         );
         if (confirm != true) return;
       }
       await ref.read(classListControllerProvider.notifier).archive(cls.id!);
     } else {
+      final confirm = await AppFeedback.showConfirmBottomSheet(
+        context,
+        title: 'Khôi phục lớp học',
+        message: 'Bạn có chắc chắn muốn khôi phục lớp "${cls.tenLop}"?',
+        confirmLabel: 'Khôi phục',
+      );
+      if (confirm != true) return;
       await ref.read(classListControllerProvider.notifier).restore(cls.id!);
     }
     if (context.mounted) {
       ref.invalidate(classDetailProvider(cls.id!));
+      ref.read(classListControllerProvider.notifier).refresh();
+      AppFeedback.showSuccessSnackBar(
+        context,
+        cls.daLuuTru ? 'Đã khôi phục lớp học' : 'Đã lưu trữ lớp học',
+      );
     }
   }
 
-  void _showAddStudentDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AddStudentToClassDialog(
-        classId: widget.classId,
-        onSuccess: () {
-          ref.invalidate(classRosterProvider);
-          ref.invalidate(classSizeProvider);
-          ref.invalidate(classMembershipHistoryProvider);
-        },
-      ),
+  void _showAddStudentDialog(BuildContext context) async {
+    final success = await showEnrollStudentBottomSheet(
+      context,
+      classId: widget.classId,
     );
+    if (success == true) {
+      ref.invalidate(classRosterProvider);
+      ref.invalidate(classSizeProvider);
+      ref.invalidate(classMembershipHistoryProvider);
+    }
   }
 }
 

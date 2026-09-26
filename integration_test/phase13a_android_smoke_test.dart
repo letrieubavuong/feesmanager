@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:tuition2027/app/navigation/ui_keys.dart';
 import 'package:tuition2027/features/reports/presentation/reports_page.dart';
 import 'package:tuition2027/features/settings/presentation/settings_page.dart';
@@ -15,9 +17,12 @@ void main() {
     testWidgets(
       'Verify bottom nav, nested global menu, theme/l10n assertions, dirty form safety & auto-reload persistence on Android',
       (tester) async {
-        // 1. Clear all SharedPreferences before test start
+        // 1. Clear all SharedPreferences & clean DB before test start
         final prefs = await SharedPreferences.getInstance();
         await prefs.clear();
+
+        final dbDir = await getDatabasesPath();
+        await deleteDatabase(p.join(dbDir, 'tuition_next.db'));
 
         app.main();
         await tester.pumpAndSettle(const Duration(seconds: 2));
@@ -87,6 +92,9 @@ void main() {
         // 7. Test Language Switching explicitly: VI -> EN
         await tester.tap(find.byKey(UiKeys.settingsLanguageVi));
         await tester.pumpAndSettle(const Duration(seconds: 1));
+
+        expect(find.text('Cài đặt'), findsOneWidget);
+        expect(find.text('GIAO DIỆN & CHỦ ĐỀ'), findsOneWidget);
 
         await tester.tap(find.byKey(UiKeys.settingsLanguageEn));
         await tester.pumpAndSettle(const Duration(seconds: 1));

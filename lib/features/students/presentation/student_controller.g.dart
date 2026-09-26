@@ -27,7 +27,7 @@ final studentListControllerProvider =
 
 typedef _$StudentListController = AutoDisposeAsyncNotifier<List<Student>>;
 String _$studentFormControllerHash() =>
-    r'b71fc181298d9590ad10e3fc2105bd7fb50be481';
+    r'8420301bf06469a141c05e355681763ea1cf3951';
 
 /// See also [StudentFormController].
 @ProviderFor(StudentFormController)

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/navigation/app_global_drawer.dart';
+import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
 import '../domain/student.dart';
 import '../domain/student_service.dart';
 import '../../memberships/domain/membership.dart';
@@ -38,25 +40,41 @@ class StudentDetailPage extends ConsumerWidget {
         actions: [
           const GlobalMenuButton(),
           studentAsync.when(
-            data: (student) => student == null
-                ? const SizedBox.shrink()
-                : IconButton(
+            data: (student) {
+              if (student == null) return const SizedBox.shrink();
+              final isArchived = student.daLuuTru;
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
                     icon: const Icon(Icons.edit),
-                    onPressed: () {
-                      Navigator.of(context).push(
+                    tooltip: 'Chỉnh sửa',
+                    onPressed: () async {
+                      await Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) =>
                               StudentFormPage(student: student),
                         ),
                       );
+                      ref.invalidate(studentDetailProvider(studentId));
+                      ref
+                          .read(studentListControllerProvider.notifier)
+                          .refresh();
                     },
                   ),
+                  IconButton(
+                    icon: Icon(
+                      isArchived ? Icons.unarchive : Icons.archive_outlined,
+                    ),
+                    tooltip: isArchived ? 'Khôi phục' : 'Lưu trữ',
+                    onPressed: () =>
+                        _toggleArchiveStatus(context, ref, student),
+                  ),
+                ],
+              );
+            },
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.archive_outlined),
-            onPressed: () => _confirmArchive(context, ref),
           ),
         ],
       ),
@@ -150,7 +168,32 @@ class StudentDetailPage extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle(context, 'Lớp học'),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildSectionTitle(context, 'Lớp học'),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final classList = await ref.read(
+                  classListControllerProvider.future,
+                );
+                if (!context.mounted || classList.isEmpty) return;
+                final activeClass = classList.firstWhere(
+                  (c) => !c.daLuuTru,
+                  orElse: () => classList.first,
+                );
+                await showEnrollStudentBottomSheet(
+                  context,
+                  classId: activeClass.id!,
+                  initialStudentId: studentId,
+                );
+                ref.invalidate(studentMembershipHistoryProvider(studentId));
+              },
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Thêm vào lớp'),
+            ),
+          ],
+        ),
         membershipsAsync.when(
           data: (memberships) {
             if (memberships.isEmpty) {
@@ -536,43 +579,52 @@ class StudentDetailPage extends ConsumerWidget {
     );
   }
 
-  void _confirmArchive(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Lưu trữ học sinh'),
-        content: const Text('Bạn có chắc chắn muốn lưu trữ học sinh này?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
-          ),
-          TextButton(
-            onPressed: () async {
-              try {
-                await ref
-                    .read(studentListControllerProvider.notifier)
-                    .archive(studentId);
-                if (context.mounted) {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.pop(context); // Go back to list
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  Navigator.pop(context); // Close dialog
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(e.toString().replaceAll('Exception: ', '')),
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text('Lưu trữ'),
-          ),
-        ],
-      ),
+  void _toggleArchiveStatus(
+    BuildContext context,
+    WidgetRef ref,
+    Student student,
+  ) async {
+    final isArchived = student.daLuuTru;
+    final confirm = await AppFeedback.showConfirmBottomSheet(
+      context,
+      title: isArchived ? 'Khôi phục học sinh' : 'Lưu trữ học sinh',
+      message: isArchived
+          ? 'Bạn có chắc muốn khôi phục học sinh "${student.hoTen}"?'
+          : 'Bạn có chắc muốn lưu trữ học sinh "${student.hoTen}"?',
+      confirmLabel: isArchived ? 'Khôi phục' : 'Lưu trữ',
+      isDestructive: !isArchived,
     );
+
+    if (!confirm || !context.mounted) return;
+
+    try {
+      if (isArchived) {
+        await ref
+            .read(studentListControllerProvider.notifier)
+            .restore(student.id!);
+      } else {
+        await ref
+            .read(studentListControllerProvider.notifier)
+            .archive(student.id!);
+      }
+      ref.invalidate(studentDetailProvider(student.id!));
+      ref.read(studentListControllerProvider.notifier).refresh();
+      if (context.mounted) {
+        AppFeedback.showSuccessSnackBar(
+          context,
+          isArchived
+              ? 'Đã khôi phục học sinh thành công'
+              : 'Đã lưu trữ học sinh thành công',
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        AppFeedback.showErrorSnackBar(
+          context,
+          e.toString().replaceAll('Exception: ', ''),
+        );
+      }
+    }
   }
 }
 

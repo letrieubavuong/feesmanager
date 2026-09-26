@@ -68,29 +68,92 @@ class AppFeedback {
     String confirmLabel = 'Xác nhận',
     String cancelLabel = 'Hủy',
     bool isDestructive = false,
+  }) {
+    return showConfirmBottomSheet(
+      context,
+      title: title,
+      message: message,
+      confirmLabel: confirmLabel,
+      cancelLabel: cancelLabel,
+      isDestructive: isDestructive,
+    );
+  }
+
+  static Future<bool> showConfirmBottomSheet(
+    BuildContext context, {
+    required String title,
+    required String message,
+    String confirmLabel = 'Xác nhận',
+    String cancelLabel = 'Hủy',
+    bool isDestructive = false,
   }) async {
     final theme = Theme.of(context);
-    final result = await showDialog<bool>(
+    final result = await showModalBottomSheet<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(cancelLabel),
-          ),
-          ElevatedButton(
-            style: isDestructive
-                ? ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.error,
-                    foregroundColor: theme.colorScheme.onError,
-                  )
-                : null,
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(confirmLabel),
-          ),
-        ],
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isDestructive
+                      ? Icons.warning_amber_rounded
+                      : Icons.help_outline_rounded,
+                  color: isDestructive
+                      ? theme.colorScheme.error
+                      : theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: Text(cancelLabel),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  style: isDestructive
+                      ? ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.error,
+                          foregroundColor: theme.colorScheme.onError,
+                        )
+                      : null,
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: Text(confirmLabel),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
     return result ?? false;

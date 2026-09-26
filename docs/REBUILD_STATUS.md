@@ -149,27 +149,46 @@
 - [x] Phase 12A Canonical Report Foundation + Report UI: COMPLETE.
 - [x] Phase 12B PDF Export: COMPLETE.
 
-## Phase 13A: Android App Foundation (Final Persistence Proof) - COMPLETE
-- [x] CI SDK Compatibility Fix:
-  - Configured Flutter version `3.47.5` in `.github/workflows/flutter_ci.yml` for both `build` and `android-integration-test` jobs (Dart ^3.12.0 compliant).
-- [x] True Nested Global Navigation Matrix:
-  - All 7 required nested operational screens (`StudentDetailPage`, `StudentFormPage`, `ClassDetailPage`, `ClassFormPage`, `AttendancePage`, `LeaveRequestPage`, `SessionCreditPage`) provide a leading `BackButton`, `GlobalMenuButton`, and `AppGlobalDrawer`.
-  - Executable test matrix in `test/app/nested_pages_matrix_test.dart` (7/7 passing).
-- [x] Dirty Form Global Navigation Safety:
-  - `DirtyFormScope.isFormDirty(context)` and `AppPageScaffold.confirmCanLeave` guard global menu navigation.
-  - Cancel keeps user on form; Discard closes nested route stack cleanly and switches destination.
-  - Tested in `test/app/dirty_form_test.dart` (4/4 passing).
-- [x] Fixed False Bottom Nav Selection:
-  - Non-bottom secondary global pages (`Reports`, `Settings`) hide `NavigationBar`.
-- [x] Fully Localized Shared UI & Tooltips:
-  - Tooltip on `GlobalMenuButton` localized via `l10n.globalMenu`. Zero hardcoded bilingual branching.
-- [x] Real ProviderScope & Application Widget-Tree Recreation Persistence Proof:
-  - `integration_test/phase13a_android_smoke_test.dart` re-runs `app.main()` to recreate `ProviderScope` and application widget tree without setting provider state manually.
-  - Asserts automatically reloaded state from `SharedPreferences` on disk: ThemeMode `Dark` (`brightness == Brightness.dark`), Emerald palette (`colorScheme.primary == Color(0xFF00875A)`), and English locale (`'Home'`, `'Classes'`, `'Students'`, `'Tuition'`).
-- [x] Emulator Evidence Distinction:
-  - **Local Emulator**: `emulator-5554` (`sdk gphone64 x86_64`), Android 13, API 33.
-  - **Exact-SHA CI Emulator**: `reactivecircus/android-emulator-runner@v2`, Pixel 6, Android API 31.
-- [x] Debug APK (`app-debug.apk`) built successfully (`build/app/outputs/flutter-apk/app-debug.apk`).
+## Phase 13A: Root Locale Wiring Repair - COMPLETE
+- [x] Refactored `TuitionApp` in `lib/main.dart` to watch `localeControllerProvider` directly, deriving `MaterialApp.locale` from the active `AppLocaleMode`.
+- [x] Real MaterialApp rebuilds on System -> Vietnamese -> English transitions.
+- [x] No incidental rebuild dependency on `ThemeController`.
+- [x] SharedPreferences persistence remains canonical.
+- [x] `phase13a_android_smoke_test.dart` explicitly asserts Vietnamese (`Cài đặt`, `GIAO DIỆN & CHỦ ĐỀ`) before switching to English (`Settings`, `APPEARANCE & THEME`).
+
+## Phase 13B: Core Data Entry UI & Mobile UX Contract Repair - COMPLETE
+- [x] **Mobile UX Contract & Bottom Sheet Architecture**:
+  - Full-screen route maintained for long Student profile form (`StudentFormPage`).
+  - Modal Bottom Sheet used for compact mobile forms: Create/Edit Class (`ClassFormBottomSheet`), Enroll Student into Class (`EnrollStudentBottomSheet`), Create Tuition Policy (`CreateTuitionPolicyBottomSheet`).
+  - Shared confirmation bottom sheet helper (`AppFeedback.showConfirmBottomSheet`) replacing `AlertDialog` for short confirmations (Archive/Restore, Cancel constraint, Finalize tuition, Dirty-form discard).
+- [x] **Bottom Sheet Safety**:
+  - Unsaved dirty state protection with Keep Editing / Discard prompts.
+  - Safe area and keyboard-aware bottom padding (`MediaQuery.of(context).viewInsets.bottom`).
+  - Single-submit protection during async save (`_isSaving` state).
+- [x] **Student Flow**:
+  - Full flow: Create -> Search -> View -> Edit -> Archive -> Restore.
+  - `StudentDetailPage` archive state fixed: Active -> Archive (`Icons.archive_outlined`), Archived -> Restore (`Icons.unarchive`).
+  - Immediate persisted data display on detail and list views after editing without leaving/reopening module.
+- [x] **Class Flow**:
+  - Create/Edit converted to Modal Bottom Sheet (`ClassFormBottomSheet`).
+  - Active membership warning guard preserved on Archive.
+  - Immediate provider invalidation (`classDetailProvider`, `classListControllerProvider`).
+- [x] **Membership & Tuition Policy Flows**:
+  - `AddStudentToClassDialog` refactored to `EnrollStudentBottomSheet`.
+  - Tuition policy creation refactored to `CreateTuitionPolicyBottomSheet`.
+  - Canonical `MembershipService` and `TuitionPolicyService` validations enforced.
+- [x] **Error Handling**:
+  - `StudentFormController` and `ClassFormController` propagate typed errors to UI SnackBars (`AppFeedback.showErrorSnackBar`).
+  - Forms remain open and entered input data remains 100% intact on validation error.
+- [x] **Stable UiKeys & Integration Acceptance**:
+  - Added stable keys: `UiKeys.studentFormSave`, `UiKeys.classFormNameInput`, `UiKeys.classFormSave`, `UiKeys.enrollStudentSubmit`, `UiKeys.tuitionPolicySave`.
+  - Real Android integration test `integration_test/phase13b_core_data_flow_test.dart` asserts: Create Student -> Edit Student -> Verify persisted Detail -> Create Class -> Edit Class -> Enroll Student -> Create Tuition Policy -> Dirty Form Guard -> L10n/Theme.
+- [x] **Quality Gate**:
+  - `dart format`: 100% compliant.
+  - `flutter analyze`: Clean (0 errors, 0 warnings).
+  - `flutter test`: 447/447 passed (100% pass).
+  - `flutter build apk --debug`: Passed (`build/app/outputs/flutter-apk/app-debug.apk`).
+  - Android Integration Tests: Both `phase13a_android_smoke_test.dart` and `phase13b_core_data_flow_test.dart` 100% PASS on Android Emulator `emulator-5554` (API 33).
 
 ---
 

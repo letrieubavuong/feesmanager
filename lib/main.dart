@@ -18,6 +18,20 @@ class TuitionApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeState = ref.watch(themeControllerProvider);
+    final localeMode = ref.watch(localeControllerProvider);
+
+    Locale? activeLocale;
+    switch (localeMode) {
+      case AppLocaleMode.vi:
+        activeLocale = const Locale('vi');
+        break;
+      case AppLocaleMode.en:
+        activeLocale = const Locale('en');
+        break;
+      case AppLocaleMode.system:
+        activeLocale = null;
+        break;
+    }
 
     return MaterialApp(
       title: 'Tuition2027',
@@ -31,7 +45,7 @@ class TuitionApp extends ConsumerWidget {
         brightness: Brightness.dark,
       ),
       themeMode: themeState.themeMode,
-      locale: ref.watch(localeControllerProvider.notifier).locale,
+      locale: activeLocale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [
         AppLocalizations.delegate,
