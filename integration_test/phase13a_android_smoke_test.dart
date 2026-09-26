@@ -13,16 +13,16 @@ void main() {
 
   group('Phase 13A Real Android App Foundation Smoke Integration Test', () {
     testWidgets(
-      'Verify bottom nav, nested global menu, theme/l10n assertions & dirty form safety on Android',
+      'Verify bottom nav, nested global menu, theme/l10n assertions, dirty form safety & auto-reload persistence on Android',
       (tester) async {
-        // Clear all SharedPreferences before test start
+        // 1. Clear all SharedPreferences before test start
         final prefs = await SharedPreferences.getInstance();
         await prefs.clear();
 
         app.main();
         await tester.pumpAndSettle(const Duration(seconds: 2));
 
-        // 1. Verify 4 bottom destinations on phone on app launch
+        // Verify 4 bottom destinations on phone on app launch
         expect(find.byKey(UiKeys.bottomHome), findsOneWidget);
         expect(find.byKey(UiKeys.bottomClasses), findsOneWidget);
         expect(find.byKey(UiKeys.bottomStudents), findsOneWidget);
@@ -78,10 +78,11 @@ void main() {
         await tester.tap(find.byKey(UiKeys.settingsPaletteEmerald));
         await tester.pumpAndSettle();
 
-        final emeraldTheme = Theme.of(
+        final emeraldDarkTheme = Theme.of(
           tester.element(find.byType(SettingsPage)),
         );
-        expect(emeraldTheme.colorScheme.primary, isNot(equals(initialPrimary)));
+        final expectedEmeraldDarkPrimary = emeraldDarkTheme.colorScheme.primary;
+        expect(expectedEmeraldDarkPrimary, isNot(equals(initialPrimary)));
 
         // 7. Test Language Switching explicitly: VI -> EN
         await tester.tap(find.byKey(UiKeys.settingsLanguageVi));
@@ -177,6 +178,30 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(StudentFormPage), findsNothing);
+
+        // 11. Real ProviderScope & Application Widget-Tree Recreation Proof
+        // Re-run app.main() to recreate ProviderScope and application widget tree
+        // without setting any provider state manually.
+        app.main();
+        await tester.pumpAndSettle(const Duration(seconds: 2));
+
+        // Assert automatically reloaded state from SharedPreferences on disk:
+        // - English locale ('Home', 'Classes', 'Students', 'Tuition')
+        // - ThemeMode.dark (Brightness.dark)
+        // - Emerald palette (expectedEmeraldDarkPrimary)
+        expect(find.text('Home'), findsAtLeast(1));
+        expect(find.text('Classes'), findsAtLeast(1));
+        expect(find.text('Students'), findsAtLeast(1));
+        expect(find.text('Tuition'), findsAtLeast(1));
+
+        final reloadedTheme = Theme.of(
+          tester.element(find.byType(NavigationBar)),
+        );
+        expect(reloadedTheme.brightness, equals(Brightness.dark));
+        expect(
+          reloadedTheme.colorScheme.primary,
+          equals(expectedEmeraldDarkPrimary),
+        );
       },
     );
   });

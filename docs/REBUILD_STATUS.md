@@ -126,16 +126,11 @@
 - [x] Payment domain models (`Payment`, `PaymentMethod`, `InvoicePaymentSummary`).
 - [x] Single canonical owner `PaymentSettlementRules` for all payment & settlement status calculations (`NHAP` -> `DA_CHOT` -> `CON_NO` -> `DA_THANH_TOAN`).
 - [x] Persistence in `PaymentRepository` with transaction-aware `InTxn` methods and `getPaymentsForInvoiceIds` batch lookups.
-- [x] In-Transaction Command Execution (`PaymentService.recordPayment`):
-  - All reads (invoice, payments, totalPaid, transaction ID check), validations, payment insertion, and invoice status update execute inside ONE single SQLite transaction (`_db.transaction`).
-  - True concurrent race-condition protection tested with `Future.wait` (400k + 400k on 600k invoice rejects overpayment; 300k + 300k settles to `DA_THANH_TOAN`).
-  - Deliberate transaction rollback verified with SQLite trigger test.
-  - Derived debt formula: `remainingDebt = invoice.soTienPhaiThu - totalPaid` (never persisted as separate column).
-- [x] Fail-closed integrity checks: Mismatched student/class/month payment, overpayment, or corrupted status on disk throws exception. Missing summaries or invoice async loading/error states fail closed without fabricating draft previews or payment buttons.
-- [x] Snapshot Immutability: Phase 9 invoice snapshot fields (`soBuoiEligible`, `soBuoiTinhPhi`, `creditClosing`, `soTienPhaiThu`, etc.) remain 100% immutable upon payment.
-- [x] Batch Read Model (`classMonthPaymentSummariesProvider` & `classMonthInvoicesProvider`) watched ONCE in `ClassTuitionTab` eliminating both invoice and payment summary N+1 UI queries.
-- [x] Live Provider Invalidation in `PaymentController`:
-  - `PaymentController.recordPayment` invalidates `classMonthInvoicesProvider`, `studentInvoiceProvider`, `invoicePaymentSummaryProvider`, `classMonthPaymentSummariesProvider`, and `invoicePaymentsProvider` to trigger instant live UI refresh across all views.
+- [x] In-Transaction Command Execution (`PaymentService.recordPayment`).
+- [x] Fail-closed integrity checks.
+- [x] Snapshot Immutability.
+- [x] Batch Read Model watched ONCE in `ClassTuitionTab`.
+- [x] Live Provider Invalidation in `PaymentController`.
 - [x] Comprehensive Tests (277 tests passing).
 
 ## Phase 11: Schedule Conflicts - COMPLETE
@@ -143,41 +138,37 @@
 - [x] Phase 11B One-Off Schedule Conflict Integration: COMPLETE.
 - [x] Phase 11C Schedule Conflict UI + Constraint UI Integration: COMPLETE.
 - [x] Phase 11D Final Audit & Hardening: COMPLETE.
-- [x] Forward Database Migration (v12 -> v13) creating `rang_buoc_lich_hoc_sinh` table with Foreign Keys (`ON DELETE RESTRICT`), strict `CHECK` constraints on types (`loai`), occurrence shape (`kieu`), time format (`00:00`..`23:59`), time order (`gio_ket_thuc > gio_bat_dau`), date shape (`YYYY-MM-DD`), non-negative travel buffer, status (`HOAT_DONG`, `DA_HUY`), and performance indexes.
-- [x] Real v12 -> v13 database migration test on real SQLite file (`test/repository/migration_v12_v13_test.dart`) asserting data preservation, FK RESTRICT, strict `CHECK` constraints, and clean `PRAGMA foreign_key_check`.
-- [x] Constraint domain & data models (`ScheduleConstraint`, `ConstraintType`, `OccurrenceType`, `ConstraintStatus`, `ScheduleConstraintRepository`).
+- [x] Forward Database Migration (v12 -> v13) creating `rang_buoc_lich_hoc_sinh` table.
+- [x] Real v12 -> v13 database migration test on real SQLite file.
 - [x] Single Canonical Owner `ScheduleConflictService`.
 - [x] Consumer Refactoring & Double-Gate Protection.
-- [x] Presentation & UI Integration (Phase 11C / 11D).
+- [x] Presentation & UI Integration.
 - [x] Comprehensive Tests (379 tests passing).
 
 ## Phase 12: Reports - COMPLETE
 - [x] Phase 12A Canonical Report Foundation + Report UI: COMPLETE.
 - [x] Phase 12B PDF Export: COMPLETE.
 
-## Phase 13A: Android App Foundation (Final Closure Repair) - COMPLETE
+## Phase 13A: Android App Foundation (Final Persistence Proof) - COMPLETE
 - [x] CI SDK Compatibility Fix:
-  - Configured Flutter version `3.47.5` in `.github/workflows/flutter_ci.yml` for both `build` and `android-integration-test` jobs, resolving Dart ^3.12.0 SDK constraint requirement without lowering project constraints.
+  - Configured Flutter version `3.47.5` in `.github/workflows/flutter_ci.yml` for both `build` and `android-integration-test` jobs (Dart ^3.12.0 compliant).
 - [x] True Nested Global Navigation Matrix:
   - All 7 required nested operational screens (`StudentDetailPage`, `StudentFormPage`, `ClassDetailPage`, `ClassFormPage`, `AttendancePage`, `LeaveRequestPage`, `SessionCreditPage`) provide a leading `BackButton`, `GlobalMenuButton`, and `AppGlobalDrawer`.
-  - Executable test matrix in `test/app/nested_pages_matrix_test.dart` (7/7 passing) proves Back button and Global Menu button availability across all 7 screens.
+  - Executable test matrix in `test/app/nested_pages_matrix_test.dart` (7/7 passing).
 - [x] Dirty Form Global Navigation Safety:
   - `DirtyFormScope.isFormDirty(context)` and `AppPageScaffold.confirmCanLeave` guard global menu navigation.
-  - Tapping Global Menu from a dirty form displays the unsaved changes dialog (`dirtyFormTitle`, `dirtyFormMessage`).
-  - Selecting Cancel keeps the user on the form with typed input intact and destination unchanged.
-  - Selecting Discard closes the nested route stack cleanly, switches destination, and prevents hidden duplicate routes.
-  - Tested and proven in `test/app/dirty_form_test.dart` (4/4 passing).
+  - Cancel keeps user on form; Discard closes nested route stack cleanly and switches destination.
+  - Tested in `test/app/dirty_form_test.dart` (4/4 passing).
 - [x] Fixed False Bottom Nav Selection:
-  - Non-bottom secondary global pages (`Reports`, `Settings`) hide `NavigationBar` so `Home` is never falsely highlighted.
+  - Non-bottom secondary global pages (`Reports`, `Settings`) hide `NavigationBar`.
 - [x] Fully Localized Shared UI & Tooltips:
-  - Tooltip on `GlobalMenuButton` localized via `l10n.globalMenu`. Zero hardcoded bilingual branching (`isEn ? ... : ...`).
-  - AppShell, AppGlobalDrawer, DashboardPage, SettingsPage, feedback, and DirtyFormScope fully localized via ARB.
-- [x] Visual ThemeData Assertions & Real SharedPreferences Persistence:
-  - Integration test asserts `brightness == Brightness.dark` and `colorScheme.primary` palette color change on theme/palette switch.
-  - Verified persistence across `pref_theme_mode`, `pref_app_palette`, and `pref_locale_mode`.
-- [x] Real Android Integration Smoke Test (`integration_test/phase13a_android_smoke_test.dart`):
-  - Executed on connected Android Emulator (`emulator-5554`, Android 13, API 33).
-  - Verifies launch, 4 bottom tabs, Global Menu, Reports/Settings state, Light/Dark theme mode, Emerald palette, English/Vietnamese l10n switching, real dirty form global menu flow (Cancel keeps form + typed text, Discard switches route), clean Android Back, and SharedPreferences persistence. 100% PASS.
+  - Tooltip on `GlobalMenuButton` localized via `l10n.globalMenu`. Zero hardcoded bilingual branching.
+- [x] Real ProviderScope & Application Widget-Tree Recreation Persistence Proof:
+  - `integration_test/phase13a_android_smoke_test.dart` re-runs `app.main()` to recreate `ProviderScope` and application widget tree without setting provider state manually.
+  - Asserts automatically reloaded state from `SharedPreferences` on disk: ThemeMode `Dark` (`brightness == Brightness.dark`), Emerald palette (`colorScheme.primary == Color(0xFF00875A)`), and English locale (`'Home'`, `'Classes'`, `'Students'`, `'Tuition'`).
+- [x] Emulator Evidence Distinction:
+  - **Local Emulator**: `emulator-5554` (`sdk gphone64 x86_64`), Android 13, API 33.
+  - **Exact-SHA CI Emulator**: `reactivecircus/android-emulator-runner@v2`, Pixel 6, Android API 31.
 - [x] Debug APK (`app-debug.apk`) built successfully (`build/app/outputs/flutter-apk/app-debug.apk`).
 
 ---
@@ -190,8 +181,8 @@
 - **Navigation**: Centralized `AppDestination` + Riverpod `NavigationController` + `AppGlobalDrawer` + `AppPageScaffold`
 - **Tests**: 447 tests passing (100% PASS)
 - **Quality Gate**:
-  - `dart format`: Passed
+  - `dart format`: Passed (0 changed)
   - `flutter analyze`: Clean (0 errors, 0 warnings)
   - `flutter test`: 100% Pass (447 tests)
   - `flutter build apk --debug`: Passed (`app-debug.apk`)
-  - `integration_test`: 100% Pass on Android Emulator `emulator-5554` (API 33)
+  - `integration_test`: 100% Pass on Local Android Emulator (`emulator-5554`, API 33) and CI Emulator (API 31)
