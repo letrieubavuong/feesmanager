@@ -1,12 +1,11 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tuition2027/features/classes/presentation/class_list_page.dart';
-import 'package:tuition2027/features/classes/presentation/class_controller.dart';
 import 'package:tuition2027/features/classes/domain/class.dart';
 import 'package:tuition2027/features/classes/domain/class_filter.dart';
+import 'package:tuition2027/features/classes/presentation/class_controller.dart';
+import 'package:tuition2027/features/classes/presentation/class_list_page.dart';
 import 'package:tuition2027/features/memberships/presentation/membership_providers.dart';
+import '../test_helper.dart';
 
 void main() {
   testWidgets('ClassListPage shows active classes by default', (tester) async {
@@ -19,14 +18,14 @@ void main() {
     );
 
     await tester.pumpWidget(
-      ProviderScope(
+      createTestApp(
+        home: const ClassListPage(),
         overrides: [
           classListControllerProvider.overrideWith(
             () => MockClassListController([activeClass]),
           ),
           classSizeProvider.overrideWith((ref, id) => 5),
         ],
-        child: const MaterialApp(home: ClassListPage()),
       ),
     );
 
@@ -46,24 +45,21 @@ void main() {
     final controller = MockClassListController([]);
 
     await tester.pumpWidget(
-      ProviderScope(
+      createTestApp(
+        home: const ClassListPage(),
         overrides: [
           classListControllerProvider.overrideWith(() => controller),
           classSizeProvider.overrideWith((ref, id) => 5),
         ],
-        child: const MaterialApp(home: ClassListPage()),
       ),
     );
 
     await tester.pumpAndSettle();
 
-    // Change filter via UI
-    await tester.tap(find.byIcon(Icons.filter_list));
-    await tester.pumpAndSettle();
-
     // Inject archived data for mock
     controller.data = [archivedClass];
 
+    // Tap FilterChip 'Đã lưu trữ'
     await tester.tap(find.text('Đã lưu trữ'));
     await tester.pumpAndSettle();
 
@@ -80,7 +76,6 @@ class MockClassListController extends ClassListController {
 
   @override
   void setFilter(ClassFilter filter) {
-    // In real controller this triggers rebuild, in mock we just simulate if needed
     ref.invalidateSelf();
   }
 }

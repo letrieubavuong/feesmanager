@@ -6,18 +6,34 @@ part 'student_controller.g.dart';
 
 @riverpod
 class StudentListController extends _$StudentListController {
+  bool? _filterArchived =
+      false; // false = Active only, true = Archived only, null = All
+  String _currentQuery = '';
+
   @override
   FutureOr<List<Student>> build() async {
     final service = await ref.watch(studentServiceProvider.future);
-    return service.getStudents();
+    final allStudents = await service.searchStudents(
+      _currentQuery,
+      includeArchived: true,
+    );
+
+    if (_filterArchived == false) {
+      return allStudents.where((s) => !s.daLuuTru).toList();
+    } else if (_filterArchived == true) {
+      return allStudents.where((s) => s.daLuuTru).toList();
+    }
+    return allStudents;
+  }
+
+  void setFilter(bool? showArchived) {
+    _filterArchived = showArchived;
+    ref.invalidateSelf();
   }
 
   Future<void> search(String query) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final service = await ref.read(studentServiceProvider.future);
-      return service.searchStudents(query);
-    });
+    _currentQuery = query;
+    ref.invalidateSelf();
   }
 
   Future<void> refresh() async {
@@ -30,19 +46,26 @@ class StudentListController extends _$StudentListController {
     await service.archiveStudent(id);
     await refresh();
   }
+
+  Future<void> restore(int id) async {
+    final service = await ref.read(studentServiceProvider.future);
+    await service.restoreStudent(id);
+    await refresh();
+  }
 }
 
 @riverpod
 class StudentFormController extends _$StudentFormController {
   @override
-  FutureOr<void> build() {}
+  void build() {}
 
   Future<bool> save(Student student) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final service = await ref.read(studentServiceProvider.future);
+    final service = await ref.read(studentServiceProvider.future);
+    try {
       await service.saveStudent(student);
-    });
-    return !state.hasError;
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 }

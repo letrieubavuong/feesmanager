@@ -266,6 +266,12 @@ abstract class AppLocalizations {
   /// **'Thêm học sinh'**
   String get actionAddStudent;
 
+  /// No description provided for @actionAddClass.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm lớp học'**
+  String get actionAddClass;
+
   /// No description provided for @actionManageClasses.
   ///
   /// In vi, this message translates to:
@@ -499,6 +505,276 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Vui lòng nhập họ tên'**
   String get studentValidationName;
+
+  /// No description provided for @classFormTitleAdd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm lớp học'**
+  String get classFormTitleAdd;
+
+  /// No description provided for @classFormTitleEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa lớp học'**
+  String get classFormTitleEdit;
+
+  /// No description provided for @className.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên lớp học *'**
+  String get className;
+
+  /// No description provided for @classSubject.
+  ///
+  /// In vi, this message translates to:
+  /// **'Môn học'**
+  String get classSubject;
+
+  /// No description provided for @classMaxStudents.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sĩ số tối đa'**
+  String get classMaxStudents;
+
+  /// No description provided for @classNotes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú'**
+  String get classNotes;
+
+  /// No description provided for @classValidationName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vui lòng nhập tên lớp'**
+  String get classValidationName;
+
+  /// No description provided for @filterActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang hoạt động'**
+  String get filterActive;
+
+  /// No description provided for @filterArchived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu trữ'**
+  String get filterArchived;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả'**
+  String get filterAll;
+
+  /// No description provided for @membershipTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Học sinh trong lớp'**
+  String get membershipTitle;
+
+  /// No description provided for @membershipActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang tham gia'**
+  String get membershipActive;
+
+  /// No description provided for @membershipHistory.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch sử tham gia'**
+  String get membershipHistory;
+
+  /// No description provided for @actionEnrollStudent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm học sinh vào lớp'**
+  String get actionEnrollStudent;
+
+  /// No description provided for @actionEndMembership.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết thúc tham gia'**
+  String get actionEndMembership;
+
+  /// No description provided for @membershipStartDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày bắt đầu (YYYY-MM-DD)'**
+  String get membershipStartDate;
+
+  /// No description provided for @membershipEndDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày kết thúc (YYYY-MM-DD)'**
+  String get membershipEndDate;
+
+  /// No description provided for @membershipEndTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết thúc tham gia lớp?'**
+  String get membershipEndTitle;
+
+  /// No description provided for @membershipEndPrompt.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận kết thúc tham gia lớp học của học sinh này từ ngày chọn?'**
+  String get membershipEndPrompt;
+
+  /// No description provided for @selectStudent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn học sinh *'**
+  String get selectStudent;
+
+  /// No description provided for @selectClass.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn lớp học *'**
+  String get selectClass;
+
+  /// No description provided for @studentSearchPlaceholder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm tên học sinh...'**
+  String get studentSearchPlaceholder;
+
+  /// No description provided for @classSearchPlaceholder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm tên lớp...'**
+  String get classSearchPlaceholder;
+
+  /// No description provided for @noStudentsFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy học sinh nào.'**
+  String get noStudentsFound;
+
+  /// No description provided for @noClassesFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy lớp học nào.'**
+  String get noClassesFound;
+
+  /// No description provided for @policyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chính sách học phí'**
+  String get policyTitle;
+
+  /// No description provided for @policyEffective.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chính sách hiện tại'**
+  String get policyEffective;
+
+  /// No description provided for @policyHistory.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch sử chính sách'**
+  String get policyHistory;
+
+  /// No description provided for @actionCreatePolicy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo chính sách mới'**
+  String get actionCreatePolicy;
+
+  /// No description provided for @policyStandardSessions.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số buổi chuẩn N/tháng *'**
+  String get policyStandardSessions;
+
+  /// No description provided for @policyFeePerSession.
+  ///
+  /// In vi, this message translates to:
+  /// **'Học phí/buổi (VNĐ) *'**
+  String get policyFeePerSession;
+
+  /// No description provided for @policyStartMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng bắt đầu (YYYY-MM) *'**
+  String get policyStartMonth;
+
+  /// No description provided for @policyEndMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng kết thúc (YYYY-MM)'**
+  String get policyEndMonth;
+
+  /// No description provided for @policyStatusActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang áp dụng'**
+  String get policyStatusActive;
+
+  /// No description provided for @policyStatusExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hết hạn'**
+  String get policyStatusExpired;
+
+  /// No description provided for @policyStatusFuture.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp áp dụng'**
+  String get policyStatusFuture;
+
+  /// No description provided for @policyValidationSessions.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số buổi hợp lệ (> 0)'**
+  String get policyValidationSessions;
+
+  /// No description provided for @policyValidationFee.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập học phí hợp lệ (>= 0)'**
+  String get policyValidationFee;
+
+  /// No description provided for @policyValidationMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tháng đúng định dạng YYYY-MM'**
+  String get policyValidationMonth;
+
+  /// No description provided for @actionArchive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu trữ'**
+  String get actionArchive;
+
+  /// No description provided for @actionRestore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khôi phục'**
+  String get actionRestore;
+
+  /// No description provided for @actionEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉnh sửa'**
+  String get actionEdit;
+
+  /// No description provided for @actionDetail.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chi tiết'**
+  String get actionDetail;
+
+  /// No description provided for @actionConfirmArchive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu trữ mục này?'**
+  String get actionConfirmArchive;
+
+  /// No description provided for @actionConfirmRestore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khôi phục mục này?'**
+  String get actionConfirmRestore;
 
   /// No description provided for @commonLoading.
   ///

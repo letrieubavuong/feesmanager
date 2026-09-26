@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../students/domain/student_service.dart';
+import '../../../app/common_widgets/searchable_selectors.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../students/domain/student.dart';
+import '../../students/domain/student_service.dart';
 import '../domain/membership_service.dart';
 
 class AddStudentToClassDialog extends ConsumerStatefulWidget {
@@ -27,36 +29,62 @@ class _AddStudentToClassDialogState
   final _ghiChuController = TextEditingController();
 
   @override
+  void dispose() {
+    _mienGiamController.dispose();
+    _ghiChuController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final studentsAsync = ref.watch(studentListProvider);
 
     return AlertDialog(
-      title: const Text('Thêm học sinh vào lớp'),
+      title: Text(l10n.actionEnrollStudent),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             studentsAsync.when(
-              data: (students) => DropdownButtonFormField<Student>(
-                initialValue: _selectedStudent,
-                decoration: const InputDecoration(
-                  labelText: 'Chọn học sinh',
-                  border: OutlineInputBorder(),
+              data: (students) => InkWell(
+                onTap: () async {
+                  final picked = await showStudentSelectorDialog(
+                    context,
+                    students: students.where((s) => !s.daLuuTru).toList(),
+                  );
+                  if (picked != null) {
+                    setState(() => _selectedStudent = picked);
+                  }
+                },
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: l10n.selectStudent,
+                    border: const OutlineInputBorder(),
+                    suffixIcon: const Icon(Icons.search),
+                  ),
+                  child: Text(
+                    _selectedStudent?.hoTen ?? l10n.studentSearchPlaceholder,
+                    style: TextStyle(
+                      color: _selectedStudent == null
+                          ? Theme.of(context).hintColor
+                          : null,
+                      fontWeight: _selectedStudent != null
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                  ),
                 ),
-                items: students
-                    .map(
-                      (s) => DropdownMenuItem(value: s, child: Text(s.hoTen)),
-                    )
-                    .toList(),
-                onChanged: (v) => setState(() => _selectedStudent = v),
               ),
               loading: () => const CircularProgressIndicator(),
-              error: (e, _) => Text('Lỗi tải HS: $e'),
+              error: (e, _) => Text('${l10n.commonError}: $e'),
             ),
             const SizedBox(height: 16),
             ListTile(
-              title: const Text('Ngày bắt đầu'),
-              subtitle: Text(DateFormat('dd/MM/yyyy').format(_joinDate)),
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.membershipStartDate),
+              subtitle: Text(DateFormat('yyyy-MM-dd').format(_joinDate)),
               trailing: const Icon(Icons.calendar_today),
               onTap: () async {
                 final picked = await showDatePicker(
@@ -80,9 +108,9 @@ class _AddStudentToClassDialogState
             const SizedBox(height: 16),
             TextField(
               controller: _ghiChuController,
-              decoration: const InputDecoration(
-                labelText: 'Ghi chú',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.studentNotes,
+                border: const OutlineInputBorder(),
               ),
               maxLines: 2,
             ),
@@ -92,11 +120,11 @@ class _AddStudentToClassDialogState
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Hủy'),
+          child: Text(l10n.commonCancel),
         ),
         ElevatedButton(
           onPressed: _selectedStudent == null ? null : _submit,
-          child: const Text('Thêm'),
+          child: Text(l10n.commonSave),
         ),
       ],
     );
@@ -124,7 +152,6 @@ class _AddStudentToClassDialogState
   }
 }
 
-// Simple provider for student list in dropdown
 final studentListProvider = FutureProvider<List<Student>>((ref) async {
   final service = await ref.watch(studentServiceProvider.future);
   return service.getStudents();

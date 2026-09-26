@@ -165,12 +165,12 @@ final classListControllerProvider =
 
 typedef _$ClassListController = AutoDisposeAsyncNotifier<List<ClassEntity>>;
 String _$classFormControllerHash() =>
-    r'da018beedf8cf7384e3ad77a8e68c0c57dfde0a7';
+    r'94f485b96b14c8381981de2362d55058bbc46261';
 
 /// See also [ClassFormController].
 @ProviderFor(ClassFormController)
 final classFormControllerProvider =
-    AutoDisposeAsyncNotifierProvider<ClassFormController, void>.internal(
+    AutoDisposeNotifierProvider<ClassFormController, void>.internal(
       ClassFormController.new,
       name: r'classFormControllerProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -180,6 +180,6 @@ final classFormControllerProvider =
       allTransitiveDependencies: null,
     );
 
-typedef _$ClassFormController = AutoDisposeAsyncNotifier<void>;
+typedef _$ClassFormController = AutoDisposeNotifier<void>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

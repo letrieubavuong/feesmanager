@@ -129,8 +129,11 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     Text(
                       'Chính sách học phí',
@@ -144,6 +147,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                     ),
                     Wrap(
                       spacing: 8,
+                      runSpacing: 8,
                       children: [
                         OutlinedButton.icon(
                           onPressed: () =>
@@ -200,8 +204,11 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
   }
 
   Widget _buildClassFinalizeHeader(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 8,
+      runSpacing: 8,
       children: [
         const Text(
           'Danh sách học phí học sinh',

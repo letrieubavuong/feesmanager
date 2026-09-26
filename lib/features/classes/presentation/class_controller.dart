@@ -51,15 +51,16 @@ class ClassListController extends _$ClassListController {
 @riverpod
 class ClassFormController extends _$ClassFormController {
   @override
-  FutureOr<void> build() {}
+  void build() {}
 
   Future<bool> save(ClassEntity classEntity) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final service = await ref.read(classServiceProvider.future);
+    final service = await ref.read(classServiceProvider.future);
+    try {
       await service.saveClass(classEntity);
-    });
-    return !state.hasError;
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 }
 

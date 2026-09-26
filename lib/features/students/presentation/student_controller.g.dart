@@ -7,7 +7,7 @@ part of 'student_controller.dart';
 // **************************************************************************
 
 String _$studentListControllerHash() =>
-    r'09474cf7a5b3f26da6d72adb27e3784636be934e';
+    r'629e6b304196a6a7b7fb4636f24b9759943c9bc9';
 
 /// See also [StudentListController].
 @ProviderFor(StudentListController)
@@ -27,12 +27,12 @@ final studentListControllerProvider =
 
 typedef _$StudentListController = AutoDisposeAsyncNotifier<List<Student>>;
 String _$studentFormControllerHash() =>
-    r'e068a33effffd97becab306b756162da9082bc48';
+    r'b71fc181298d9590ad10e3fc2105bd7fb50be481';
 
 /// See also [StudentFormController].
 @ProviderFor(StudentFormController)
 final studentFormControllerProvider =
-    AutoDisposeAsyncNotifierProvider<StudentFormController, void>.internal(
+    AutoDisposeNotifierProvider<StudentFormController, void>.internal(
       StudentFormController.new,
       name: r'studentFormControllerProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -42,6 +42,6 @@ final studentFormControllerProvider =
       allTransitiveDependencies: null,
     );
 
-typedef _$StudentFormController = AutoDisposeAsyncNotifier<void>;
+typedef _$StudentFormController = AutoDisposeNotifier<void>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

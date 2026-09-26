@@ -93,6 +93,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionAddStudent => 'Add Student';
 
   @override
+  String get actionAddClass => 'Add Class';
+
+  @override
   String get actionManageClasses => 'Manage Classes';
 
   @override
@@ -210,6 +213,142 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get studentValidationName => 'Please enter full name';
+
+  @override
+  String get classFormTitleAdd => 'Add Class';
+
+  @override
+  String get classFormTitleEdit => 'Edit Class';
+
+  @override
+  String get className => 'Class Name *';
+
+  @override
+  String get classSubject => 'Subject';
+
+  @override
+  String get classMaxStudents => 'Max Class Size';
+
+  @override
+  String get classNotes => 'Notes';
+
+  @override
+  String get classValidationName => 'Please enter class name';
+
+  @override
+  String get filterActive => 'Active';
+
+  @override
+  String get filterArchived => 'Archived';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String get membershipTitle => 'Students in Class';
+
+  @override
+  String get membershipActive => 'Currently Enrolled';
+
+  @override
+  String get membershipHistory => 'Enrollment History';
+
+  @override
+  String get actionEnrollStudent => 'Add Student to Class';
+
+  @override
+  String get actionEndMembership => 'End Enrollment';
+
+  @override
+  String get membershipStartDate => 'Start Date (YYYY-MM-DD)';
+
+  @override
+  String get membershipEndDate => 'End Date (YYYY-MM-DD)';
+
+  @override
+  String get membershipEndTitle => 'End Class Enrollment?';
+
+  @override
+  String get membershipEndPrompt =>
+      'Are you sure you want to end enrollment for this student from the selected date?';
+
+  @override
+  String get selectStudent => 'Select Student *';
+
+  @override
+  String get selectClass => 'Select Class *';
+
+  @override
+  String get studentSearchPlaceholder => 'Search student name...';
+
+  @override
+  String get classSearchPlaceholder => 'Search class name...';
+
+  @override
+  String get noStudentsFound => 'No students found.';
+
+  @override
+  String get noClassesFound => 'No classes found.';
+
+  @override
+  String get policyTitle => 'Tuition Policy';
+
+  @override
+  String get policyEffective => 'Current Effective Policy';
+
+  @override
+  String get policyHistory => 'Policy History';
+
+  @override
+  String get actionCreatePolicy => 'Create New Policy';
+
+  @override
+  String get policyStandardSessions => 'Standard Sessions N/month *';
+
+  @override
+  String get policyFeePerSession => 'Fee per Session (VND) *';
+
+  @override
+  String get policyStartMonth => 'Start Month (YYYY-MM) *';
+
+  @override
+  String get policyEndMonth => 'End Month (YYYY-MM)';
+
+  @override
+  String get policyStatusActive => 'Active';
+
+  @override
+  String get policyStatusExpired => 'Expired';
+
+  @override
+  String get policyStatusFuture => 'Upcoming';
+
+  @override
+  String get policyValidationSessions => 'Enter valid session count (> 0)';
+
+  @override
+  String get policyValidationFee => 'Enter valid fee (>= 0)';
+
+  @override
+  String get policyValidationMonth => 'Enter month in YYYY-MM format';
+
+  @override
+  String get actionArchive => 'Archive';
+
+  @override
+  String get actionRestore => 'Restore';
+
+  @override
+  String get actionEdit => 'Edit';
+
+  @override
+  String get actionDetail => 'Details';
+
+  @override
+  String get actionConfirmArchive => 'Archive this item?';
+
+  @override
+  String get actionConfirmRestore => 'Restore this item?';
 
   @override
   String get commonLoading => 'Loading data...';

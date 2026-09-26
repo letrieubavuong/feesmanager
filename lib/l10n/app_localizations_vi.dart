@@ -93,6 +93,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get actionAddStudent => 'Thêm học sinh';
 
   @override
+  String get actionAddClass => 'Thêm lớp học';
+
+  @override
   String get actionManageClasses => 'Quản lý lớp học';
 
   @override
@@ -210,6 +213,142 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get studentValidationName => 'Vui lòng nhập họ tên';
+
+  @override
+  String get classFormTitleAdd => 'Thêm lớp học';
+
+  @override
+  String get classFormTitleEdit => 'Sửa lớp học';
+
+  @override
+  String get className => 'Tên lớp học *';
+
+  @override
+  String get classSubject => 'Môn học';
+
+  @override
+  String get classMaxStudents => 'Sĩ số tối đa';
+
+  @override
+  String get classNotes => 'Ghi chú';
+
+  @override
+  String get classValidationName => 'Vui lòng nhập tên lớp';
+
+  @override
+  String get filterActive => 'Đang hoạt động';
+
+  @override
+  String get filterArchived => 'Đã lưu trữ';
+
+  @override
+  String get filterAll => 'Tất cả';
+
+  @override
+  String get membershipTitle => 'Học sinh trong lớp';
+
+  @override
+  String get membershipActive => 'Đang tham gia';
+
+  @override
+  String get membershipHistory => 'Lịch sử tham gia';
+
+  @override
+  String get actionEnrollStudent => 'Thêm học sinh vào lớp';
+
+  @override
+  String get actionEndMembership => 'Kết thúc tham gia';
+
+  @override
+  String get membershipStartDate => 'Ngày bắt đầu (YYYY-MM-DD)';
+
+  @override
+  String get membershipEndDate => 'Ngày kết thúc (YYYY-MM-DD)';
+
+  @override
+  String get membershipEndTitle => 'Kết thúc tham gia lớp?';
+
+  @override
+  String get membershipEndPrompt =>
+      'Xác nhận kết thúc tham gia lớp học của học sinh này từ ngày chọn?';
+
+  @override
+  String get selectStudent => 'Chọn học sinh *';
+
+  @override
+  String get selectClass => 'Chọn lớp học *';
+
+  @override
+  String get studentSearchPlaceholder => 'Tìm tên học sinh...';
+
+  @override
+  String get classSearchPlaceholder => 'Tìm tên lớp...';
+
+  @override
+  String get noStudentsFound => 'Không tìm thấy học sinh nào.';
+
+  @override
+  String get noClassesFound => 'Không tìm thấy lớp học nào.';
+
+  @override
+  String get policyTitle => 'Chính sách học phí';
+
+  @override
+  String get policyEffective => 'Chính sách hiện tại';
+
+  @override
+  String get policyHistory => 'Lịch sử chính sách';
+
+  @override
+  String get actionCreatePolicy => 'Tạo chính sách mới';
+
+  @override
+  String get policyStandardSessions => 'Số buổi chuẩn N/tháng *';
+
+  @override
+  String get policyFeePerSession => 'Học phí/buổi (VNĐ) *';
+
+  @override
+  String get policyStartMonth => 'Tháng bắt đầu (YYYY-MM) *';
+
+  @override
+  String get policyEndMonth => 'Tháng kết thúc (YYYY-MM)';
+
+  @override
+  String get policyStatusActive => 'Đang áp dụng';
+
+  @override
+  String get policyStatusExpired => 'Đã hết hạn';
+
+  @override
+  String get policyStatusFuture => 'Sắp áp dụng';
+
+  @override
+  String get policyValidationSessions => 'Nhập số buổi hợp lệ (> 0)';
+
+  @override
+  String get policyValidationFee => 'Nhập học phí hợp lệ (>= 0)';
+
+  @override
+  String get policyValidationMonth => 'Nhập tháng đúng định dạng YYYY-MM';
+
+  @override
+  String get actionArchive => 'Lưu trữ';
+
+  @override
+  String get actionRestore => 'Khôi phục';
+
+  @override
+  String get actionEdit => 'Chỉnh sửa';
+
+  @override
+  String get actionDetail => 'Chi tiết';
+
+  @override
+  String get actionConfirmArchive => 'Lưu trữ mục này?';
+
+  @override
+  String get actionConfirmRestore => 'Khôi phục mục này?';
 
   @override
   String get commonLoading => 'Đang tải dữ liệu...';

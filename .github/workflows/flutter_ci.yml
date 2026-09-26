@@ -70,11 +70,12 @@ jobs:
       - name: Generate Localizations
         run: flutter gen-l10n
 
-      - name: Enable KVM for Android Emulator
+      - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
 
       - name: Run Android Integration Smoke Test on Emulator
         uses: reactivecircus/android-emulator-runner@v2
@@ -83,7 +84,8 @@ jobs:
           target: default
           arch: x86_64
           profile: pixel_6
-          script: flutter test integration_test/phase13a_android_smoke_test.dart
+          disable-animations: true
+          script: flutter test integration_test/phase13a_android_smoke_test.dart integration_test/phase13b_core_data_flow_test.dart
 
   windows-build:
     runs-on: windows-latest
