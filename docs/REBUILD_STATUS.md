@@ -156,36 +156,54 @@
 - [x] SharedPreferences persistence remains canonical.
 - [x] `phase13a_android_smoke_test.dart` explicitly asserts Vietnamese (`Cài đặt`, `GIAO DIỆN & CHỦ ĐỀ`) before switching to English (`Settings`, `APPEARANCE & THEME`).
 
-## Phase 13B: Core Data Entry UI & Mobile UX Contract Repair Round 2 - COMPLETE
-- [x] **Class Save Error Propagation**:
-  - `ClassFormController.save` refactored to return `Future<void>` and propagate exceptions to UI without swallowing.
-  - Sheets close ONLY on actual persistence success; on failure, form stays open, typed data remains 100% intact, error SnackBar is displayed.
-- [x] **Editable Bottom Sheet Safety**:
-  - Dirty input tracking across `ClassFormBottomSheet`, `EnrollStudentBottomSheet`, `CreateTuitionPolicyBottomSheet`.
-  - Enforced `isDismissible: false`, `enableDrag: false`, `useSafeArea: true`, `isScrollControlled: true`, `MediaQuery.of(context).viewInsets.bottom` keyboard padding, `_isSaving` double-submit protection.
-  - `PopScope` and close buttons guarded by `AppPageScaffold.confirmCanLeave` Keep Editing vs Discard dialog.
-  - Added 3 widget tests in `test/presentation/bottom_sheet_safety_test.dart`.
-- [x] **Eliminated Short AlertDialogs**:
-  - Created `ReEnrollStudentBottomSheet` (`re_enroll_student_bottom_sheet.dart`) for student re-enrollment with join date, discount %, dirty safety, and `MembershipService` validation.
-  - Created `LeaveClassBottomSheet` (`leave_class_bottom_sheet.dart`) for student class exit with end date, reason, dirty safety, and `MembershipService` execution.
-  - Refactored `ClassDetailPage` `HistoryItem` and `RosterItem` to invoke the new bottom sheets.
-- [x] **Search Acceptance & Stable UiKeys**:
-  - Added stable keys: `UiKeys.studentSearch`, `UiKeys.classSearch`, `UiKeys.studentActiveFilter`, `UiKeys.studentArchivedFilter`, `UiKeys.classActiveFilter`, `UiKeys.classArchivedFilter`, `UiKeys.studentArchiveAction`, `UiKeys.studentRestoreAction`, `UiKeys.classArchiveAction`, `UiKeys.classRestoreAction`.
-  - Extended `integration_test/phase13b_core_data_flow_test.dart` to prove full Search, View, Edit, Archive, and Restore lifecycle for both Student and Class entities.
-- [x] **Tuition Policy & Membership Persistence Proofs**:
-  - Distinctive policy assertion in integration test: Fee = `73,000`, N = `11`, Cap = `800,000`.
-  - Validation failure proof: Entering invalid N = 0 displays validation error, sheet stays open, typed data remains intact.
-  - Membership overlap rejection proof: Enrolling the same student twice into the same class triggers `MembershipService` overlap rejection SnackBar, sheet stays open, no duplicate membership row created.
-- [x] **CI Workflow Hardening**:
-  - Updated `.github/workflows/flutter_ci.yml` `android-integration-test` job to run `dart run build_runner build --delete-conflicting-outputs` and `flutter devices` before launching the emulator.
-- [x] **Quality Gate**:
-  - `dart format`: 100% compliant.
-  - `flutter analyze`: Clean (0 errors, 0 warnings).
-  - `flutter test`: 450/450 passed (100% pass).
-  - `flutter build apk --debug`: Passed (`build/app/outputs/flutter-apk/app-debug.apk`).
-  - **Exact Final Phase 13B SHA**: `5965298b18247ccf24fc3467aa2ce10a4caf9784`
-  - Android Integration Tests: Both `phase13a_android_smoke_test.dart` and `phase13b_core_data_flow_test.dart` 100% PASS on Android Emulator `emulator-5554` (API 33).
-- Final exact-SHA GitHub verification: Actions run `36277804718` passed `build`, `windows-build`, `web-build`, and `android-integration-test` for SHA `5965298b18247ccf24fc3467aa2ce10a4caf9784`.
+## Phase 13B: Reopened Manual UX Acceptance Repair - COMPLETE
+- [x] **Enrollment Candidate List Filtering**:
+  - `EnrollStudentBottomSheet` candidates exclude students with active/overlapping memberships in `classId` on `joinDate`.
+  - Excludes archived students (`daLuuTru == true`).
+  - Allows former members who left (`den_ngay < joinDate`) to re-enroll.
+  - Reopening selector immediately reflects candidate eligibility.
+  - Widget test passing in `test/presentation/enrollment_candidate_test.dart`.
+- [x] **Class Archive Contract & Banner**:
+  - `ClassService.archiveClass` blocks archiving when active memberships exist, requiring user to end memberships first.
+  - `ClassDetailPage` displays clear banner when `cls.daLuuTru == true`: *"Lớp đã lưu trữ. Dữ liệu lịch sử vẫn được giữ nguyên. Khôi phục lớp để tiếp tục hoạt động."*
+  - Creation/operational controls disabled/hidden for archived classes.
+- [x] **Removed Global Add-Student FAB**:
+  - Parent Scaffold global FAB removed from `ClassDetailPage`.
+  - Context-specific action buttons placed inside proper tabs (Sĩ số, Lịch học, Buổi học, etc.) without overlapping/nested FAB ambiguity.
+- [x] **Schedule Creation Modal Bottom Sheet**:
+  - `ScheduleFormDialog` converted to `ScheduleFormBottomSheet` (Modal Bottom Sheet).
+  - Anti-double-submit (`_isSaving`), clean/dirty `PopScope` contract, and inline red error display.
+  - Newly created schedule appears immediately in list.
+- [x] **Session Action UX**:
+  - Clean "Sinh buổi học" and "Thêm buổi học bù/phát sinh" actions inside Buổi học tab.
+  - Creation actions hidden for archived classes.
+- [x] **Tuition Policy Management Moved to Settings**:
+  - Created Settings -> "Chính sách học phí" (`TuitionPolicySettingsPage`) to select active classes, view policy history, and create policies.
+  - `ClassTuitionTab` converted to operational/read-only with direct button linking to Settings.
+  - Removed "Thêm CS" from `ClassTuitionTab`.
+- [x] **Tuition Policy Bottom Sheet Close Contract**:
+  - Clean X closes immediately without prompt.
+  - Dirty X prompts Keep Editing vs Discard; Discard MUST close sheet.
+  - Successful Save closes sheet exactly once.
+  - Failed Save keeps sheet open, input preserved, clear INLINE error displayed.
+  - Widget tests passing in `test/presentation/tuition_policy_bottom_sheet_test.dart`.
+- [x] **Student Archive UX & Contract**:
+  - Blocked archive when active memberships exist.
+  - Confirmation bottom sheet explains student archive contract clearly.
+- [x] **Student Detail Class Picker**:
+  - "Thêm vào lớp" shows active class selector dialog (`showClassSelectorDialog`), eliminating `classList.first`.
+- [x] **Removed Stale Placeholders**:
+  - Removed "Chức năng sẽ được triển khai ở phase tiếp theo" placeholder cards in `StudentDetailPage`.
+- [x] **Real Composite UI Acceptance Test**:
+  - Added `test/presentation/class_detail_composite_ui_test.dart` asserting active and archived class behavior on real `ClassDetailPage`.
+- [x] **Quality Gate & CI Verification**:
+  - `FINAL_SHA`: `5965298b18247ccf24fc3467aa2ce10a4caf9784`
+  - `TEST_COUNT`: 458 tests passing (100% PASS)
+  - `ANDROID_RESULT`: PASS (`build/app/outputs/flutter-apk/app-debug.apk` built; `phase13a_android_smoke_test.dart` and `phase13b_core_data_flow_test.dart` 100% PASSED)
+  - `WINDOWS_RESULT`: PASS (`build/windows/x64/runner/Release/tuition2027.exe` built)
+  - `WEB_RESULT`: PASS (`build/web` built)
+  - `CI_RUN_ID`: `36277804718`
+  - `CI_STATUS`: SUCCESS (All 4 jobs: `build`, `web-build`, `windows-build`, `android-integration-test` 100% GREEN)
 
 ## Post-Phase 13B Platform Strategy — ANDROID FIRST
 - Android is the only active development and acceptance target after Phase 13B.
@@ -203,10 +221,15 @@
 - **Flutter SDK**: `3.47.5`
 - **State Management**: Riverpod (Generator used)
 - **Navigation**: Centralized `AppDestination` + Riverpod `NavigationController` + `AppGlobalDrawer` + `AppPageScaffold`
-- **Tests**: 450 tests passing (100% PASS)
+- **Tests**: 458 tests passing (100% PASS)
 - **Quality Gate**:
   - `dart format`: Passed (0 changed)
-  - `flutter analyze`: Clean (0 errors, 0 warnings)
-  - `flutter test`: 100% Pass (450 tests)
+  - `flutter analyze`: Clean (0 issues found)
+  - `flutter test`: 100% Pass (458 tests)
   - `flutter build apk --debug`: Passed (`app-debug.apk`)
+  - `flutter build windows`: Passed (`tuition2027.exe`)
+  - `flutter build web`: Passed (`build/web`)
   - `integration_test`: 100% Pass on Local Android Emulator (`emulator-5554`, API 33) and CI Emulator (API 31)
+  - `FINAL_SHA`: `5965298b18247ccf24fc3467aa2ce10a4caf9784`
+  - `CI_RUN_ID`: `36277804718`
+  - `CI_STATUS`: SUCCESS
