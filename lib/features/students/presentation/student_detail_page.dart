@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/searchable_selectors.dart';
+import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
@@ -99,7 +100,9 @@ class StudentDetailPage extends ConsumerWidget {
                 _buildInfoTile(
                   Icons.cake,
                   'Ngày sinh',
-                  student.ngaySinh ?? 'Chưa cập nhật',
+                  student.ngaySinh != null
+                      ? DateFormatter.formatDisplayDate(student.ngaySinh)
+                      : 'Chưa cập nhật',
                 ),
                 _buildInfoTile(
                   Icons.location_on,
@@ -503,12 +506,10 @@ class StudentDetailPage extends ConsumerWidget {
   Widget _buildHeader(BuildContext context, Student student) {
     return Row(
       children: [
-        CircleAvatar(
-          radius: 40,
-          child: Text(
-            student.hoTen[0].toUpperCase(),
-            style: const TextStyle(fontSize: 32),
-          ),
+        StudentAvatar(
+          gioiTinh: student.gioiTinh,
+          studentName: student.hoTen,
+          radius: 36,
         ),
         const SizedBox(width: 16),
         Expanded(

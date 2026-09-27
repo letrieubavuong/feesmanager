@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/common_widgets/app_empty_state.dart';
 import '../../../app/common_widgets/app_error_state.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
+import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../l10n/app_localizations.dart';
@@ -133,16 +134,9 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
               itemBuilder: (context, index) {
                 final student = students[index];
                 return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: student.daLuuTru
-                        ? Theme.of(context).colorScheme.outlineVariant
-                        : Theme.of(context).colorScheme.primaryContainer,
-                    child: Icon(
-                      student.daLuuTru ? Icons.archive : Icons.person,
-                      color: student.daLuuTru
-                          ? Theme.of(context).colorScheme.outline
-                          : Theme.of(context).colorScheme.primary,
-                    ),
+                  leading: StudentAvatar(
+                    gioiTinh: student.gioiTinh,
+                    studentName: student.hoTen,
                   ),
                   title: Text(
                     student.hoTen,

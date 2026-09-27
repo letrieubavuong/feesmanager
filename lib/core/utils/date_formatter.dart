@@ -1,6 +1,9 @@
 import 'package:intl/intl.dart';
 
 class DateFormatter {
+  static final DateFormat _displayFormat = DateFormat('dd/MM/yyyy');
+  static final DateFormat _canonicalFormat = DateFormat('yyyy-MM-dd');
+
   static String formatVietnameseWeekday(int weekday) {
     switch (weekday) {
       case 1:
@@ -22,13 +25,37 @@ class DateFormatter {
     }
   }
 
+  static String formatDisplayDate(dynamic input) {
+    if (input == null) return 'N/A';
+    if (input is DateTime) {
+      return _displayFormat.format(input);
+    }
+    if (input is String) {
+      if (input.trim().isEmpty) return 'N/A';
+      try {
+        final parsed = DateTime.parse(input.trim());
+        return _displayFormat.format(parsed);
+      } catch (_) {
+        return input;
+      }
+    }
+    return input.toString();
+  }
+
   static String formatShortDate(String? dateStr) {
-    if (dateStr == null) return 'N/A';
+    return formatDisplayDate(dateStr);
+  }
+
+  static String formatCanonicalDate(DateTime date) {
+    return _canonicalFormat.format(date);
+  }
+
+  static DateTime? parseCanonicalDate(String? dateStr) {
+    if (dateStr == null || dateStr.trim().isEmpty) return null;
     try {
-      final date = DateTime.parse(dateStr);
-      return DateFormat('dd/MM/yyyy').format(date);
+      return DateTime.parse(dateStr.trim());
     } catch (_) {
-      return dateStr;
+      return null;
     }
   }
 }

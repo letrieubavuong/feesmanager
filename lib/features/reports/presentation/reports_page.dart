@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/navigation/app_global_drawer.dart';
-import '../../classes/presentation/class_controller.dart';
-import '../../students/presentation/student_controller.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../domain/report_scope.dart';
 import '../domain/report_summary.dart';
 import '../export/report_pdf_exporter.dart';
 import 'report_controller.dart';
+import 'report_filter_bottom_sheet.dart';
 
 class ReportsPage extends ConsumerStatefulWidget {
   const ReportsPage({super.key});
@@ -17,7 +17,11 @@ class ReportsPage extends ConsumerStatefulWidget {
 }
 
 class _ReportsPageState extends ConsumerState<ReportsPage> {
-  final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+  final currencyFormatter = NumberFormat.currency(
+    locale: 'vi_VN',
+    symbol: 'đ',
+    decimalDigits: 0,
+  );
   bool _isExporting = false;
 
   Future<void> _exportPdf(BuildContext context, ReportSummary summary) async {
@@ -52,15 +56,13 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
   Widget build(BuildContext context) {
     final scope = ref.watch(reportScopeNotifierProvider);
     final summaryAsync = ref.watch(reportSummaryProvider);
-    final classesAsync = ref.watch(classListControllerProvider);
-    final studentsAsync = ref.watch(studentListControllerProvider);
 
     return Scaffold(
       drawer: const AppGlobalDrawer(),
       appBar: AppBar(
-        title: const Text('Báo cáo & Thống kê'),
+        leading: const GlobalMenuButton(),
+        title: const Text('Báo cáo'),
         actions: [
-          const GlobalMenuButton(),
           summaryAsync.when(
             data: (summary) => IconButton(
               icon: _isExporting
@@ -98,178 +100,8 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- 1. FILTER CONTROLS BAR ---
-            Card(
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Phạm vi báo cáo',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 12,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        // Mode Segmented Button
-                        SegmentedButton<ReportMode>(
-                          segments: const [
-                            ButtonSegment(
-                              value: ReportMode.month,
-                              label: Text('Theo tháng'),
-                              icon: Icon(Icons.calendar_month),
-                            ),
-                            ButtonSegment(
-                              value: ReportMode.customRange,
-                              label: Text('Khoảng ngày'),
-                              icon: Icon(Icons.date_range),
-                            ),
-                          ],
-                          selected: {scope.mode},
-                          onSelectionChanged: (selection) {
-                            final newMode = selection.first;
-                            if (newMode == ReportMode.month) {
-                              final currentMonth = DateFormat(
-                                'yyyy-MM',
-                              ).format(DateTime.now());
-                              ref
-                                  .read(reportScopeNotifierProvider.notifier)
-                                  .setMonth(currentMonth);
-                            } else {
-                              final now = DateTime.now();
-                              final fromStr = DateFormat(
-                                'yyyy-MM-01',
-                              ).format(now);
-                              final toStr = DateFormat(
-                                'yyyy-MM-dd',
-                              ).format(now);
-                              ref
-                                  .read(reportScopeNotifierProvider.notifier)
-                                  .setCustomRange(fromStr, toStr);
-                            }
-                          },
-                        ),
-
-                        // Month Dropdown if ReportMode.month
-                        if (scope.mode == ReportMode.month)
-                          _buildMonthDropdown(context, scope),
-
-                        // Custom Date Pickers if ReportMode.customRange
-                        if (scope.mode == ReportMode.customRange) ...[
-                          _buildDatePickerButton(
-                            context: context,
-                            label: 'Từ ngày',
-                            dateStr: scope.fromDate,
-                            oppositeDateStr: scope.toDate,
-                            isFromDate: true,
-                          ),
-                          _buildDatePickerButton(
-                            context: context,
-                            label: 'Đến ngày',
-                            dateStr: scope.toDate,
-                            oppositeDateStr: scope.fromDate,
-                            isFromDate: false,
-                          ),
-                        ],
-
-                        // Class Filter
-                        classesAsync.when(
-                          data: (classes) => SizedBox(
-                            width: 200,
-                            child: DropdownButtonFormField<int?>(
-                              initialValue: scope.classId,
-                              isExpanded: true,
-                              decoration: const InputDecoration(
-                                labelText: 'Lớp học',
-                                isDense: true,
-                              ),
-                              items: [
-                                const DropdownMenuItem<int?>(
-                                  value: null,
-                                  child: Text(
-                                    'Tất cả các lớp',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                ...classes.map(
-                                  (c) => DropdownMenuItem<int?>(
-                                    value: c.id,
-                                    child: Text(
-                                      c.tenLop,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              onChanged: (val) {
-                                ref
-                                    .read(reportScopeNotifierProvider.notifier)
-                                    .setClassFilter(val);
-                              },
-                            ),
-                          ),
-                          loading: () => const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          error: (_, __) => const SizedBox(),
-                        ),
-
-                        // Student Filter
-                        studentsAsync.when(
-                          data: (students) => SizedBox(
-                            width: 220,
-                            child: DropdownButtonFormField<int?>(
-                              initialValue: scope.studentId,
-                              isExpanded: true,
-                              decoration: const InputDecoration(
-                                labelText: 'Học sinh',
-                                isDense: true,
-                              ),
-                              items: [
-                                const DropdownMenuItem<int?>(
-                                  value: null,
-                                  child: Text(
-                                    'Tất cả học sinh',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                ...students.map(
-                                  (s) => DropdownMenuItem<int?>(
-                                    value: s.id,
-                                    child: Text(
-                                      s.hoTen,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              onChanged: (val) {
-                                ref
-                                    .read(reportScopeNotifierProvider.notifier)
-                                    .setStudentFilter(val);
-                              },
-                            ),
-                          ),
-                          loading: () => const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          error: (_, __) => const SizedBox(),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // --- 1. COMPACT FILTER BAR ---
+            _buildCompactFilterBar(context, scope),
 
             const SizedBox(height: 16),
 
@@ -324,80 +156,75 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
     );
   }
 
-  Widget _buildMonthDropdown(BuildContext context, ReportScope scope) {
-    final now = DateTime.now();
-    final months = List.generate(12, (i) {
-      final date = DateTime(now.year, now.month - i, 1);
-      return DateFormat('yyyy-MM').format(date);
-    });
+  Widget _buildCompactFilterBar(BuildContext context, ReportScope scope) {
+    final theme = Theme.of(context);
 
-    final currentMonth = scope.fromDate.substring(0, 7);
+    String scopeText;
+    if (scope.mode == ReportMode.month) {
+      final parts = scope.fromDate.split('-');
+      scopeText =
+          'Tháng ${parts.length >= 2 ? "${parts[1]}/${parts[0]}" : scope.fromDate}';
+    } else {
+      final fromDisplay = DateFormatter.formatDisplayDate(scope.fromDate);
+      final toDisplay = DateFormatter.formatDisplayDate(scope.toDate);
+      scopeText = '$fromDisplay - $toDisplay';
+    }
 
-    return SizedBox(
-      width: 160,
-      child: DropdownButtonFormField<String>(
-        initialValue: months.contains(currentMonth)
-            ? currentMonth
-            : months.first,
-        isExpanded: true,
-        decoration: const InputDecoration(
-          labelText: 'Chọn tháng',
-          isDense: true,
-        ),
-        items: months
-            .map(
-              (m) => DropdownMenuItem<String>(
-                value: m,
-                child: Text('Tháng $m', overflow: TextOverflow.ellipsis),
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        child: Row(
+          children: [
+            Icon(
+              Icons.calendar_month,
+              size: 20,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    scopeText,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (scope.classId != null || scope.studentId != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2.0),
+                      child: Text(
+                        [
+                          if (scope.classId != null) 'Đã lọc lớp',
+                          if (scope.studentId != null) 'Đã lọc học sinh',
+                        ].join(' • '),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            )
-            .toList(),
-        onChanged: (val) {
-          if (val != null) {
-            ref.read(reportScopeNotifierProvider.notifier).setMonth(val);
-          }
-        },
+            ),
+            ElevatedButton.icon(
+              key: const Key('open_report_filter_btn'),
+              icon: const Icon(Icons.tune, size: 18),
+              label: const Text('Bộ lọc'),
+              style: ElevatedButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+              onPressed: () => ReportFilterBottomSheet.show(context),
+            ),
+          ],
+        ),
       ),
-    );
-  }
-
-  Widget _buildDatePickerButton({
-    required BuildContext context,
-    required String label,
-    required String dateStr,
-    required String oppositeDateStr,
-    required bool isFromDate,
-  }) {
-    return OutlinedButton.icon(
-      icon: const Icon(Icons.event, size: 18),
-      label: Text('$label: $dateStr'),
-      onPressed: () async {
-        final initialDate = DateTime.tryParse(dateStr) ?? DateTime.now();
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: initialDate,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2030),
-        );
-        if (picked != null) {
-          final selectedStr = DateFormat('yyyy-MM-dd').format(picked);
-          if (isFromDate) {
-            final toStr = selectedStr.compareTo(oppositeDateStr) > 0
-                ? selectedStr
-                : oppositeDateStr;
-            ref
-                .read(reportScopeNotifierProvider.notifier)
-                .setCustomRange(selectedStr, toStr);
-          } else {
-            final fromStr = selectedStr.compareTo(oppositeDateStr) < 0
-                ? selectedStr
-                : oppositeDateStr;
-            ref
-                .read(reportScopeNotifierProvider.notifier)
-                .setCustomRange(fromStr, selectedStr);
-          }
-        }
-      },
     );
   }
 
@@ -422,63 +249,62 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
       );
     }
 
-    final width = MediaQuery.of(context).size.width;
-    final kpiWidth = width >= 1000
-        ? (width - 80) / 4
-        : width >= 600
-        ? (width - 64) / 2
-        : width - 48;
+    final screenWidth = MediaQuery.of(context).size.width;
+    // On phone screen sizes, build 2-column grid. On larger screens, build 4-column.
+    final cardWidth = screenWidth >= 900
+        ? (screenWidth - 80) / 4
+        : (screenWidth - 44) / 2;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- KPI CARDS RESPONSIVE WRAP ---
+        // --- KPI CARDS 2-COLUMN GRID ON PHONE ---
         Wrap(
           spacing: 12,
           runSpacing: 12,
           children: [
             SizedBox(
-              width: kpiWidth,
+              width: cardWidth,
               child: _buildKpiCard(
                 context,
                 title: 'Tỷ lệ đi học',
                 value:
                     '${summary.attendance.attendanceRatePercentage.toStringAsFixed(1)}%',
                 subtitle:
-                    'Có mặt: ${summary.attendance.totalPresent} / ${summary.attendance.totalEligibleParticipations} lượt (Trễ: ${summary.attendance.totalLate})',
+                    '${summary.attendance.totalPresent}/${summary.attendance.totalEligibleParticipations} lượt',
                 icon: Icons.check_circle_outline,
                 color: Colors.green,
               ),
             ),
             SizedBox(
-              width: kpiWidth,
+              width: cardWidth,
               child: _buildKpiCard(
                 context,
-                title: 'Học phí chốt',
+                title: 'Học phí đã chốt',
                 value: currencyFormatter.format(
                   summary.financial.totalInvoiced,
                 ),
-                subtitle: 'Số hóa đơn đã chốt',
+                subtitle: 'Hóa đơn trong kỳ',
                 icon: Icons.receipt_long,
                 color: Colors.blue,
               ),
             ),
             SizedBox(
-              width: kpiWidth,
+              width: cardWidth,
               child: _buildKpiCard(
                 context,
-                title: 'Doanh thu thực nhận',
+                title: 'Thực nhận',
                 value: currencyFormatter.format(summary.financial.totalPaid),
-                subtitle: 'Tiền mặt đã thu',
+                subtitle: 'Đã thu tiền',
                 icon: Icons.paid,
                 color: Colors.teal,
               ),
             ),
             SizedBox(
-              width: kpiWidth,
+              width: cardWidth,
               child: _buildKpiCard(
                 context,
-                title: 'Dư nợ hiện tại của hóa đơn trong kỳ',
+                title: 'Còn nợ',
                 value: currencyFormatter.format(
                   summary.financial.totalOutstandingDebt,
                 ),
@@ -492,13 +318,166 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
           ],
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
 
-        // --- CLASS BREAKDOWN TABLE ---
+        // --- SECTION A: ĐIỂM DANH ---
+        _buildSectionTitle(context, 'A. ĐIỂM DANH', Icons.how_to_reg_outlined),
+        const SizedBox(height: 8),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Tỷ lệ đi học tổng thể',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ),
+                    Text(
+                      '${summary.attendance.attendanceRatePercentage.toStringAsFixed(1)}%',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: summary.attendance.attendanceRatePercentage / 100,
+                    minHeight: 8,
+                    backgroundColor: Colors.grey.shade300,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Colors.green,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildSubMetric(
+                        'Có mặt',
+                        '${summary.attendance.totalPresent}',
+                        Colors.green,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildSubMetric(
+                        'Đi trễ',
+                        '${summary.attendance.totalLate}',
+                        Colors.orange,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildSubMetric(
+                        'Có phép',
+                        '${summary.attendance.totalExcusedAbsence}',
+                        Colors.blue,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildSubMetric(
+                        'Vắng x.phép',
+                        '${summary.attendance.totalUnexcusedAbsence}',
+                        Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // --- SECTION B: HỌC PHÍ ---
+        _buildSectionTitle(context, 'B. HỌC PHÍ', Icons.payments_outlined),
+        const SizedBox(height: 8),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildSubMetric(
+                        'Chốt hóa đơn',
+                        currencyFormatter.format(
+                          summary.financial.totalInvoiced,
+                        ),
+                        Colors.blue,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildSubMetric(
+                        'Đã thu',
+                        currencyFormatter.format(summary.financial.totalPaid),
+                        Colors.teal,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildSubMetric(
+                        'Dư nợ',
+                        currencyFormatter.format(
+                          summary.financial.totalOutstandingDebt,
+                        ),
+                        summary.financial.totalOutstandingDebt > 0
+                            ? Colors.orange.shade800
+                            : Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // --- SECTION C: BUỔI HỌC ---
+        _buildSectionTitle(context, 'C. BUỔI HỌC', Icons.event_note_outlined),
+        const SizedBox(height: 8),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildSubMetric(
+                    'Tổng số buổi',
+                    '${summary.attendance.totalSessions}',
+                    Colors.indigo,
+                  ),
+                ),
+                Expanded(
+                  child: _buildSubMetric(
+                    'Tổng lượt học',
+                    '${summary.attendance.totalEligibleParticipations}',
+                    Colors.deepPurple,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // --- SECTION D: CLASS BREAKDOWN TABLE ---
         if (summary.classSummaries.isNotEmpty) ...[
-          Text(
-            'Tổng quan theo Lớp học',
-            style: Theme.of(context).textTheme.titleMedium,
+          _buildSectionTitle(
+            context,
+            'D. CHI TIẾT THEO LỚP HỌC',
+            Icons.class_outlined,
           ),
           const SizedBox(height: 8),
           Card(
@@ -507,8 +486,8 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
               child: DataTable(
                 columns: const [
                   DataColumn(label: Text('Lớp học')),
-                  DataColumn(label: Text('Học sinh')),
-                  DataColumn(label: Text('Tỷ lệ đi học')),
+                  DataColumn(label: Text('Sĩ số')),
+                  DataColumn(label: Text('Đi học')),
                   DataColumn(label: Text('Học phí chốt')),
                   DataColumn(label: Text('Thực nhận')),
                   DataColumn(label: Text('Còn nợ')),
@@ -562,14 +541,15 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
         ],
 
         // --- STUDENT BREAKDOWN TABLE ---
         if (summary.studentSummaries.isNotEmpty) ...[
-          Text(
-            'Chi tiết theo Học sinh',
-            style: Theme.of(context).textTheme.titleMedium,
+          _buildSectionTitle(
+            context,
+            'CHI TIẾT THEO HỌC SINH',
+            Icons.person_outline,
           ),
           const SizedBox(height: 8),
           Card(
@@ -579,7 +559,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                 columns: const [
                   DataColumn(label: Text('Học sinh')),
                   DataColumn(label: Text('Lớp học')),
-                  DataColumn(label: Text('Đi học / Tổng')),
+                  DataColumn(label: Text('Đi học')),
                   DataColumn(label: Text('Học phí chốt')),
                   DataColumn(label: Text('Thực nhận')),
                   DataColumn(label: Text('Còn nợ')),
@@ -599,7 +579,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                           DataCell(Text(s.enrolledClassNames.join(', '))),
                           DataCell(
                             Text(
-                              '${s.attendance.totalPresent} / ${s.attendance.totalEligibleParticipations}',
+                              '${s.attendance.totalPresent}/${s.attendance.totalEligibleParticipations}',
                             ),
                           ),
                           DataCell(
@@ -638,6 +618,24 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
     );
   }
 
+  Widget _buildSectionTitle(BuildContext context, String title, IconData icon) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: theme.colorScheme.primary),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.primary,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.8,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildKpiCard(
     BuildContext context, {
     required String title,
@@ -648,47 +646,75 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
   }) {
     return Card(
       elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(icon, color: color, size: 24),
-                const SizedBox(width: 8),
+                Icon(icon, color: color, size: 20),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     title,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Colors.grey.shade700,
+                      fontWeight: FontWeight.w600,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
                 value,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: color,
                 ),
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               subtitle,
               style: Theme.of(
                 context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+              ).textTheme.labelSmall?.copyWith(color: Colors.grey.shade600),
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSubMetric(String label, String value, Color color) {
+    return Column(
+      children: [
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 11, color: Colors.grey),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 }

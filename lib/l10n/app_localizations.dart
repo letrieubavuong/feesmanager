@@ -557,7 +557,7 @@ abstract class AppLocalizations {
   /// No description provided for @filterArchived.
   ///
   /// In vi, this message translates to:
-  /// **'Đã lưu trữ'**
+  /// **'Ngừng hoạt động'**
   String get filterArchived;
 
   /// No description provided for @filterAll.

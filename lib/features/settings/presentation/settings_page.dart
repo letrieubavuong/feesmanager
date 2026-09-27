@@ -6,6 +6,7 @@ import '../../../app/localization/locale_controller.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../l10n/app_localizations.dart';
+import 'bank_account_settings_page.dart';
 import 'tuition_policy_settings_page.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -13,7 +14,6 @@ class SettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
 
     final themeState = ref.watch(themeControllerProvider);
@@ -41,128 +41,73 @@ class SettingsPage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    l10n.settingsThemeMode,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  DropdownButtonFormField<ThemeMode>(
+                    initialValue: themeState.themeMode,
+                    decoration: InputDecoration(
+                      labelText: l10n.settingsThemeMode,
+                      border: const OutlineInputBorder(),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  SegmentedButton<ThemeMode>(
-                    segments: [
-                      ButtonSegment(
+                    items: [
+                      DropdownMenuItem(
                         value: ThemeMode.system,
-                        label: Text(
-                          l10n.themeSystem,
-                          key: UiKeys.settingsThemeModeSystem,
-                        ),
-                        icon: const Icon(Icons.brightness_auto),
+                        key: UiKeys.settingsThemeModeSystem,
+                        child: Text(l10n.themeSystem),
                       ),
-                      ButtonSegment(
+                      DropdownMenuItem(
                         value: ThemeMode.light,
-                        label: Text(
-                          l10n.themeLight,
-                          key: UiKeys.settingsThemeModeLight,
-                        ),
-                        icon: const Icon(Icons.light_mode),
+                        key: UiKeys.settingsThemeModeLight,
+                        child: Text(l10n.themeLight),
                       ),
-                      ButtonSegment(
+                      DropdownMenuItem(
                         value: ThemeMode.dark,
-                        label: Text(
-                          l10n.themeDark,
-                          key: UiKeys.settingsThemeModeDark,
-                        ),
-                        icon: const Icon(Icons.dark_mode),
+                        key: UiKeys.settingsThemeModeDark,
+                        child: Text(l10n.themeDark),
                       ),
                     ],
-                    selected: {themeState.themeMode},
-                    onSelectionChanged: (selection) {
-                      ref
-                          .read(themeControllerProvider.notifier)
-                          .setThemeMode(selection.first);
+                    onChanged: (val) {
+                      if (val != null) {
+                        ref
+                            .read(themeControllerProvider.notifier)
+                            .setThemeMode(val);
+                      }
                     },
                   ),
 
-                  const SizedBox(height: 20),
-                  const Divider(height: 1),
                   const SizedBox(height: 16),
 
-                  Text(
-                    l10n.settingsPalette,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  DropdownButtonFormField<AppPalette>(
+                    initialValue: themeState.palette,
+                    decoration: InputDecoration(
+                      labelText: l10n.settingsPalette,
+                      border: const OutlineInputBorder(),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: AppPaletteInfo.all.map((info) {
-                      final isSelected = themeState.palette == info.palette;
-                      final paletteName = info.name(l10n);
-
-                      return InkWell(
+                    items: AppPaletteInfo.all.map((info) {
+                      return DropdownMenuItem<AppPalette>(
+                        value: info.palette,
                         key: info.palette == AppPalette.physicsBlue
                             ? UiKeys.settingsPalettePhysicsBlue
                             : info.palette == AppPalette.emerald
                             ? UiKeys.settingsPaletteEmerald
                             : null,
-                        borderRadius: BorderRadius.circular(8),
-                        onTap: () {
-                          ref
-                              .read(themeControllerProvider.notifier)
-                              .setPalette(info.palette);
-                        },
-                        child: Container(
-                          width: 140,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: isSelected
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.outlineVariant,
-                              width: isSelected ? 2 : 1,
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 8,
+                              backgroundColor: info.primaryColor,
                             ),
-                            color: isSelected
-                                ? theme.colorScheme.primaryContainer.withValues(
-                                    alpha: 0.3,
-                                  )
-                                : null,
-                          ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 12,
-                                backgroundColor: info.primaryColor,
-                                child: isSelected
-                                    ? const Icon(
-                                        Icons.check,
-                                        size: 14,
-                                        color: Colors.white,
-                                      )
-                                    : null,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  paletteName,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
+                            const SizedBox(width: 8),
+                            Text(info.name(l10n)),
+                          ],
                         ),
                       );
                     }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        ref
+                            .read(themeControllerProvider.notifier)
+                            .setPalette(val);
+                      }
+                    },
                   ),
                 ],
               ),
@@ -181,48 +126,36 @@ class SettingsPage extends ConsumerWidget {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.settingsLanguage,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+              child: DropdownButtonFormField<AppLocaleMode>(
+                initialValue: localeMode,
+                decoration: InputDecoration(
+                  labelText: l10n.settingsLanguage,
+                  border: const OutlineInputBorder(),
+                ),
+                items: [
+                  DropdownMenuItem(
+                    value: AppLocaleMode.system,
+                    key: UiKeys.settingsLanguageSystem,
+                    child: Text(l10n.langSystem),
                   ),
-                  const SizedBox(height: 12),
-                  SegmentedButton<AppLocaleMode>(
-                    segments: [
-                      ButtonSegment(
-                        value: AppLocaleMode.system,
-                        label: Text(
-                          l10n.langSystem,
-                          key: UiKeys.settingsLanguageSystem,
-                        ),
-                      ),
-                      ButtonSegment(
-                        value: AppLocaleMode.vi,
-                        label: Text(
-                          l10n.langVietnamese,
-                          key: UiKeys.settingsLanguageVi,
-                        ),
-                      ),
-                      ButtonSegment(
-                        value: AppLocaleMode.en,
-                        label: Text(
-                          l10n.langEnglish,
-                          key: UiKeys.settingsLanguageEn,
-                        ),
-                      ),
-                    ],
-                    selected: {localeMode},
-                    onSelectionChanged: (selection) {
-                      ref
-                          .read(localeControllerProvider.notifier)
-                          .setLocaleMode(selection.first);
-                    },
+                  DropdownMenuItem(
+                    value: AppLocaleMode.vi,
+                    key: UiKeys.settingsLanguageVi,
+                    child: Text(l10n.langVietnamese),
+                  ),
+                  DropdownMenuItem(
+                    value: AppLocaleMode.en,
+                    key: UiKeys.settingsLanguageEn,
+                    child: Text(l10n.langEnglish),
                   ),
                 ],
+                onChanged: (val) {
+                  if (val != null) {
+                    ref
+                        .read(localeControllerProvider.notifier)
+                        .setLocaleMode(val);
+                  }
+                },
               ),
             ),
           ),
@@ -248,6 +181,34 @@ class SettingsPage extends ConsumerWidget {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => const TuitionPolicySettingsPage(),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // --- PAYMENT & QR SECTION ---
+          _buildSectionHeader(
+            context,
+            title: 'THANH TOÁN & QR',
+            icon: Icons.qr_code_2_outlined,
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              key: const Key('bank_account_settings_tile'),
+              leading: const Icon(Icons.account_balance_outlined),
+              title: const Text('Tài khoản nhận học phí'),
+              subtitle: const Text(
+                'Cấu hình thông tin ngân hàng và mã VietQR nhận học phí',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const BankAccountSettingsPage(),
                   ),
                 );
               },

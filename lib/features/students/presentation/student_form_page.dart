@@ -4,6 +4,7 @@ import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/dirty_form_scope.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../../l10n/app_localizations.dart';
 import '../domain/student.dart';
 import 'student_controller.dart';
@@ -184,6 +185,43 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 16),
+                InkWell(
+                  onTap: () async {
+                    final initialDate =
+                        DateFormatter.parseCanonicalDate(
+                          _ngaySinhController.text,
+                        ) ??
+                        DateTime(2010);
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: initialDate,
+                      firstDate: DateTime(1990),
+                      lastDate: DateTime.now(),
+                    );
+                    if (picked != null) {
+                      _onChanged();
+                      setState(() {
+                        _ngaySinhController.text =
+                            DateFormatter.formatCanonicalDate(picked);
+                      });
+                    }
+                  },
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Ngày sinh',
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.cake_outlined),
+                    ),
+                    child: Text(
+                      _ngaySinhController.text.isNotEmpty
+                          ? DateFormatter.formatDisplayDate(
+                              _ngaySinhController.text,
+                            )
+                          : 'Chọn ngày sinh',
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(

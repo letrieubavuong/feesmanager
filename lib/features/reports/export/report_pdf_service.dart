@@ -3,6 +3,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import '../../../core/utils/date_formatter.dart';
 import '../domain/report_scope.dart';
 import '../domain/report_summary.dart';
 
@@ -43,9 +44,16 @@ class ReportPdfService {
     final theme = pw.ThemeData.withFont(base: ttfRegular, bold: ttfBold);
 
     final scope = summary.scope;
-    final scopeStr = scope.mode == ReportMode.month
-        ? 'Tháng ${scope.fromDate.substring(0, 7)}'
-        : '${scope.fromDate} đến ${scope.toDate}';
+    String scopeStr;
+    if (scope.mode == ReportMode.month) {
+      final parts = scope.fromDate.split('-');
+      scopeStr =
+          'Tháng ${parts.length >= 2 ? "${parts[1]}/${parts[0]}" : scope.fromDate}';
+    } else {
+      final fromDisplay = DateFormatter.formatDisplayDate(scope.fromDate);
+      final toDisplay = DateFormatter.formatDisplayDate(scope.toDate);
+      scopeStr = '$fromDisplay đến $toDisplay';
+    }
 
     pdf.addPage(
       pw.MultiPage(

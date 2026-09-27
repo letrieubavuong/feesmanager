@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/common_widgets/app_feedback.dart';
+import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
 import '../../memberships/presentation/leave_class_bottom_sheet.dart';
 import '../../memberships/presentation/re_enroll_student_bottom_sheet.dart';
@@ -409,20 +411,25 @@ class HistoryItem extends ConsumerWidget {
     final isActive = membership.isActiveOn(DateTime.now());
 
     return ListTile(
-      leading: const CircleAvatar(child: Icon(Icons.history)),
+      leading: studentAsync.when(
+        data: (s) =>
+            StudentAvatar(gioiTinh: s?.gioiTinh, studentName: s?.hoTen),
+        loading: () => const CircleAvatar(child: Icon(Icons.history)),
+        error: (_, __) => const CircleAvatar(child: Icon(Icons.history)),
+      ),
       title: studentAsync.when(
         data: (s) => Text(
-          s?.hoTen ?? 'Unknown',
+          s?.hoTen ?? 'Chưa rõ tên',
           style: TextStyle(fontWeight: isActive ? FontWeight.bold : null),
         ),
-        loading: () => const Text('Loading...'),
-        error: (_, __) => const Text('Error'),
+        loading: () => const Text('Đang tải...'),
+        error: (_, __) => const Text('Lỗi'),
       ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Từ: ${membership.tuNgay}${membership.denNgay != null ? ' - Đến: ${membership.denNgay}' : ''}',
+            'Ngày tham gia: ${DateFormatter.formatDisplayDate(membership.tuNgay)}${membership.denNgay != null ? ' - ${DateFormatter.formatDisplayDate(membership.denNgay)}' : ''}',
           ),
           if (membership.lyDoKetThuc != null)
             Text(
@@ -464,14 +471,19 @@ class RosterItem extends ConsumerWidget {
     final studentAsync = ref.watch(studentDetailProvider(membership.idHocSinh));
 
     return ListTile(
-      leading: const CircleAvatar(child: Icon(Icons.person)),
+      leading: studentAsync.when(
+        data: (s) =>
+            StudentAvatar(gioiTinh: s?.gioiTinh, studentName: s?.hoTen),
+        loading: () => const CircleAvatar(child: Icon(Icons.person)),
+        error: (_, __) => const CircleAvatar(child: Icon(Icons.person)),
+      ),
       title: studentAsync.when(
-        data: (s) => Text(s?.hoTen ?? 'Unknown'),
-        loading: () => const Text('Loading...'),
-        error: (_, __) => const Text('Error'),
+        data: (s) => Text(s?.hoTen ?? 'Chưa rõ tên'),
+        loading: () => const Text('Đang tải...'),
+        error: (_, __) => const Text('Lỗi'),
       ),
       subtitle: Text(
-        'Từ: ${membership.tuNgay}${membership.denNgay != null ? ' - Đến: ${membership.denNgay}' : ''}',
+        'Ngày tham gia: ${DateFormatter.formatDisplayDate(membership.tuNgay)}${membership.denNgay != null ? ' - ${DateFormatter.formatDisplayDate(membership.denNgay)}' : ''}',
       ),
       trailing: IconButton(
         icon: const Icon(Icons.logout),

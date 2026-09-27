@@ -239,7 +239,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get filterActive => 'Đang hoạt động';
 
   @override
-  String get filterArchived => 'Đã lưu trữ';
+  String get filterArchived => 'Ngừng hoạt động';
 
   @override
   String get filterAll => 'Tất cả';

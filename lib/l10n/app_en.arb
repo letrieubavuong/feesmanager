@@ -76,7 +76,7 @@
   "classNotes": "Notes",
   "classValidationName": "Please enter class name",
   "filterActive": "Active",
-  "filterArchived": "Archived",
+  "filterArchived": "Inactive",
   "filterAll": "All",
   "membershipTitle": "Students in Class",
   "membershipActive": "Currently Enrolled",

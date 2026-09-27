@@ -239,7 +239,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get filterActive => 'Active';
 
   @override
-  String get filterArchived => 'Archived';
+  String get filterArchived => 'Inactive';
 
   @override
   String get filterAll => 'All';
