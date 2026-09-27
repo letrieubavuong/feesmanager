@@ -36,7 +36,7 @@ class ClassService {
     return _repository.search(query.trim(), filter: filter);
   }
 
-  Future<void> saveClass(ClassEntity classEntity) async {
+  Future<int> saveClass(ClassEntity classEntity) async {
     if (classEntity.tenLop.trim().isEmpty) {
       throw Exception('Tên lớp không được để trống');
     }
@@ -47,9 +47,10 @@ class ClassService {
     );
 
     if (normalizedClass.id == null) {
-      await _repository.create(normalizedClass);
+      return await _repository.create(normalizedClass);
     } else {
       await _repository.update(normalizedClass);
+      return normalizedClass.id!;
     }
   }
 

@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/common_widgets/app_feedback.dart';
+import '../../../app/common_widgets/navy_components.dart';
+import '../../../app/common_widgets/student_avatar.dart';
+import '../../../app/design_system/app_theme.dart';
+import '../../classes/presentation/class_controller.dart';
 import '../../memberships/presentation/membership_providers.dart';
-import '../../settings/presentation/tuition_policy_settings_page.dart';
 import '../../payments/domain/invoice_payment_summary.dart';
-import '../../payments/domain/payment.dart';
-import '../../payments/domain/payment_method.dart';
 import '../../payments/presentation/payment_controller.dart';
+import '../../payments/presentation/record_payment_bottom_sheet.dart';
+import '../../payments/presentation/vietqr_payment_page.dart';
 import '../../students/domain/student.dart';
-import '../../students/presentation/student_detail_page.dart';
 import '../domain/tuition_invoice.dart';
-import '../domain/tuition_policy.dart';
-import '../domain/tuition_preview.dart';
 import 'tuition_controller.dart';
 
 class ClassTuitionTab extends ConsumerStatefulWidget {
@@ -43,12 +43,6 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
 
   @override
   Widget build(BuildContext context) {
-    final policiesAsync = ref.watch(
-      classTuitionPoliciesProvider(widget.classId),
-    );
-    final effectivePolicyAsync = ref.watch(
-      effectiveTuitionPolicyProvider((widget.classId, _selectedMonth)),
-    );
     final rosterAsync = ref.watch(
       classMonthStudentsProvider((widget.classId, _selectedMonth)),
     );
@@ -65,11 +59,16 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildMonthSelector(context),
-          const SizedBox(height: 16),
-          _buildPolicyHeader(context, effectivePolicyAsync, policiesAsync),
-          const SizedBox(height: 16),
-          _buildClassFinalizeHeader(context),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          _buildKpiSummary(
+            context,
+            rosterAsync,
+            invoicesAsync,
+            paymentSummariesAsync,
+          ),
+          const SizedBox(height: 12),
+          _buildActionHeader(context),
+          const SizedBox(height: 12),
           _buildStudentTuitionList(
             context,
             rosterAsync,
@@ -86,150 +85,124 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
       'MM/yyyy',
     ).format(DateTime.parse('$_selectedMonth-01'));
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.chevron_left),
-              onPressed: () => _changeMonth(-1),
-            ),
-            Text(
-              'Tháng $formattedMonth',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            IconButton(
-              icon: const Icon(Icons.chevron_right),
-              onPressed: () => _changeMonth(1),
-            ),
-          ],
-        ),
+    return AppSectionCard(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left, color: AppColors.cyanAccent),
+            onPressed: () => _changeMonth(-1),
+          ),
+          Row(
+            children: [
+              const Icon(
+                Icons.calendar_month_outlined,
+                color: AppColors.cyanAccent,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Tháng $formattedMonth',
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right, color: AppColors.cyanAccent),
+            onPressed: () => _changeMonth(1),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildPolicyHeader(
+  Widget _buildKpiSummary(
     BuildContext context,
-    AsyncValue<TuitionPolicy?> effectivePolicyAsync,
-    AsyncValue<List<TuitionPolicy>> policiesAsync,
+    AsyncValue<List<Student>> rosterAsync,
+    AsyncValue<List<TuitionInvoice>> invoicesAsync,
+    AsyncValue<Map<int, InvoicePaymentSummary>> summariesAsync,
   ) {
-    final policies = policiesAsync.value ?? [];
+    final invoices = invoicesAsync.value ?? [];
+    final summaries = summariesAsync.value ?? {};
 
-    return effectivePolicyAsync.when(
-      data: (activePolicy) {
-        return Card(
-          elevation: 2,
-          color: activePolicy == null
-              ? Colors.amber.shade50
-              : Colors.teal.shade50,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    Text(
-                      'Chính sách học phí',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: activePolicy == null
-                            ? Colors.amber.shade900
-                            : Colors.teal.shade900,
-                      ),
-                    ),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: () =>
-                              _showPolicyHistoryDialog(context, policies),
-                          icon: const Icon(Icons.history, size: 16),
-                          label: const Text('Lịch sử CS'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (ctx) => TuitionPolicySettingsPage(
-                                  initialClassId: widget.classId,
-                                ),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.settings, size: 16),
-                          label: const Text('Quản lý trong Cài đặt'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                if (activePolicy == null)
-                  const Text(
-                    'Lớp chưa có chính sách học phí có hiệu lực cho tháng này. Vui lòng tạo chính sách học phí.',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  )
-                else ...[
-                  Text(
-                    'Học phí: ${NumberFormat('#,###').format(activePolicy.hocPhiMoiBuoi)}đ / buổi',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Số buổi chuẩn tháng: ${activePolicy.soBuoiChuanThang} buổi',
-                  ),
-                  if (activePolicy.hocPhiThangToiDa != null)
-                    Text(
-                      'Trần học phí tháng: ${NumberFormat('#,###').format(activePolicy.hocPhiThangToiDa)}đ',
-                    ),
-                  Text(
-                    'Hiệu lực: Từ ${activePolicy.hieuLucTu}${activePolicy.hieuLucDen != null ? ' đến ${activePolicy.hieuLucDen}' : ' (Hiện tại)'}',
-                  ),
-                ],
-              ],
-            ),
+    int totalDue = 0;
+    int totalPaid = 0;
+    int totalDebt = 0;
+    int finalizedCount = 0;
+
+    for (final inv in invoices) {
+      if (inv.trangThai.isFinalizedSnapshot) {
+        finalizedCount++;
+        totalDue += inv.soTienPhaiThu;
+        final summary = summaries[inv.idHocSinh];
+        if (summary != null) {
+          totalPaid += summary.totalPaid;
+          totalDebt += summary.remainingDebt;
+        }
+      }
+    }
+
+    final currencyFormat = NumberFormat('#,###');
+
+    return Row(
+      children: [
+        Expanded(
+          child: AppMetricCard(
+            title: 'Phải thu',
+            value: '${currencyFormat.format(totalDue)}đ',
+            valueColor: AppColors.textPrimary,
+            icon: Icons.receipt_long_outlined,
           ),
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Text('Lỗi tải chính sách học phí: $e'),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: AppMetricCard(
+            title: 'Đã thu',
+            value: '${currencyFormat.format(totalPaid)}đ',
+            valueColor: AppColors.success,
+            icon: Icons.payments_outlined,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: AppMetricCard(
+            title: 'Còn nợ',
+            value: '${currencyFormat.format(totalDebt)}đ',
+            valueColor: AppColors.error,
+            subtitle: 'Chốt: $finalizedCount hóa đơn',
+            icon: Icons.account_balance_wallet_outlined,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildClassFinalizeHeader(BuildContext context) {
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 8,
-      runSpacing: 8,
+  Widget _buildActionHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         const Text(
-          'Danh sách học phí học sinh',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          'Danh sách học phí',
+          style: TextStyle(
+            color: AppColors.cyanAccent,
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         ElevatedButton.icon(
-          onPressed: () => _showFinalizeClassDialog(context),
-          icon: const Icon(Icons.verified),
-          label: const Text('Chốt học phí cả lớp'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.teal,
+            backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           ),
+          onPressed: () => _handleFinalizeAllInvoices(context),
+          icon: const Icon(Icons.check_circle_outline, size: 16),
+          label: const Text('Chốt học phí tháng'),
         ),
       ],
     );
@@ -239,659 +212,259 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     BuildContext context,
     AsyncValue<List<Student>> rosterAsync,
     AsyncValue<List<TuitionInvoice>> invoicesAsync,
-    AsyncValue<Map<int, InvoicePaymentSummary>> paymentSummariesAsync,
+    AsyncValue<Map<int, InvoicePaymentSummary>> summariesAsync,
   ) {
     return rosterAsync.when(
       data: (students) {
         if (students.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text('Lớp không có học sinh nào trong tháng này.'),
+          return const AppSectionCard(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  'Không có học sinh nào trong tháng này.',
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
             ),
           );
         }
 
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: students.length,
-          itemBuilder: (context, index) {
-            final student = students[index];
+        return Column(
+          children: students.map((s) {
             return _StudentTuitionCard(
-              studentId: student.id!,
+              student: s,
               classId: widget.classId,
               month: _selectedMonth,
               invoicesAsync: invoicesAsync,
-              paymentSummariesAsync: paymentSummariesAsync,
+              summariesAsync: summariesAsync,
             );
-          },
+          }).toList(),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Text('Lỗi tải danh sách học sinh: $e'),
-    );
-  }
-
-  void _showPolicyHistoryDialog(
-    BuildContext context,
-    List<TuitionPolicy> policies,
-  ) {
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Lịch sử chính sách học phí'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: policies.isEmpty
-              ? const Text('Chưa có chính sách nào.')
-              : ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: policies.length,
-                  itemBuilder: (ctx, i) {
-                    final p = policies[i];
-                    return ListTile(
-                      title: Text(
-                        '${NumberFormat('#,###').format(p.hocPhiMoiBuoi)}đ/buổi (N=${p.soBuoiChuanThang})',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(
-                        'Từ ${p.hieuLucTu}${p.hieuLucDen != null ? ' đến ${p.hieuLucDen}' : ' (Hiện tại)'}',
-                      ),
-                      trailing: p.hocPhiThangToiDa != null
-                          ? Text(
-                              'Cap: ${NumberFormat('#,###').format(p.hocPhiThangToiDa)}đ',
-                            )
-                          : null,
-                    );
-                  },
-                ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Đóng'),
-          ),
-        ],
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
+      error: (e, _) => Text(
+        'Lỗi danh sách học sinh: $e',
+        style: const TextStyle(color: AppColors.error),
       ),
     );
   }
 
-  void _showFinalizeClassDialog(BuildContext context) async {
+  void _handleFinalizeAllInvoices(BuildContext context) async {
     final confirm = await AppFeedback.showConfirmBottomSheet(
       context,
-      title: 'Chốt học phí cả lớp',
+      title: 'Chốt học phí tháng $_selectedMonth',
       message:
-          'Bạn có chắc chắn muốn chốt học phí cả lớp cho tháng $_selectedMonth?',
+          'Chốt học phí sẽ tạo snapshot hóa đơn chính thức cho tất cả học sinh trong tháng.\n\n'
+          '• Giá trị học phí đã chốt sẽ KHÔNG bị thay đổi kể cả khi sửa chính sách sau này.\n'
+          '• Bạn vẫn có thể ghi nhận thanh toán sau khi chốt.',
       confirmLabel: 'Xác nhận chốt',
+      isDestructive: false,
     );
 
     if (confirm != true || !context.mounted) return;
 
     try {
-      await ref
+      final invoices = await ref
           .read(invoiceControllerProvider.notifier)
           .finalizeClassInvoices(
             classId: widget.classId,
             month: _selectedMonth,
           );
+
       if (context.mounted) {
         AppFeedback.showSuccessSnackBar(
           context,
-          'Đã chốt học phí cả lớp thành công!',
+          'Đã chốt học phí thành công cho ${invoices.length} học sinh',
         );
       }
     } catch (e) {
       if (context.mounted) {
-        AppFeedback.showErrorSnackBar(context, 'Lỗi chốt học phí cả lớp: $e');
+        AppFeedback.showErrorSnackBar(
+          context,
+          e.toString().replaceAll('Exception: ', ''),
+        );
       }
     }
   }
 }
 
 class _StudentTuitionCard extends ConsumerWidget {
-  final int studentId;
+  final Student student;
   final int classId;
   final String month;
   final AsyncValue<List<TuitionInvoice>> invoicesAsync;
-  final AsyncValue<Map<int, InvoicePaymentSummary>> paymentSummariesAsync;
+  final AsyncValue<Map<int, InvoicePaymentSummary>> summariesAsync;
 
   const _StudentTuitionCard({
-    required this.studentId,
+    required this.student,
     required this.classId,
     required this.month,
     required this.invoicesAsync,
-    required this.paymentSummariesAsync,
+    required this.summariesAsync,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final studentAsync = ref.watch(studentDetailProvider(studentId));
     final previewAsync = ref.watch(
-      tuitionPreviewControllerProvider(studentId, classId, month),
+      tuitionPreviewControllerProvider(student.id!, classId, month),
+    );
+    final currencyFormat = NumberFormat('#,###');
+
+    final invoices = invoicesAsync.value ?? [];
+    final invoice = invoices.cast<TuitionInvoice?>().firstWhere(
+      (i) => i != null && i.idHocSinh == student.id,
+      orElse: () => null,
     );
 
-    return studentAsync.when(
-      data: (student) {
-        if (student == null) return const SizedBox.shrink();
+    final isFinalized = invoice?.trangThai.isFinalizedSnapshot == true;
+    final summaries = summariesAsync.value ?? {};
+    final summary = summaries[student.id];
 
-        return invoicesAsync.when(
-          loading: () => Card(
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    student.hoTen,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Đang tải dữ liệu hóa đơn...',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          error: (e, _) => Card(
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    student.hoTen,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Lỗi dữ liệu hóa đơn: $e',
-                    style: const TextStyle(color: Colors.red, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          data: (invoices) {
-            final invoice = invoices.cast<TuitionInvoice?>().firstWhere(
-              (i) => i != null && i.idHocSinh == studentId,
-              orElse: () => null,
-            );
+    final int amountDue = isFinalized
+        ? (invoice?.soTienPhaiThu ?? 0)
+        : (previewAsync.value?.soTienPhaiThu ?? 0);
+    final int amountPaid = summary?.totalPaid ?? 0;
+    final int remainingDebt = isFinalized
+        ? (summary?.remainingDebt ?? amountDue)
+        : amountDue;
 
-            final isFinalized = invoice?.trangThai.isFinalizedSnapshot == true;
+    Color statusColor = AppColors.warning;
+    String statusLabel = 'Chưa chốt';
 
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 6),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: isFinalized
-                    ? _buildFinalizedInvoiceSnapshot(
-                        context,
-                        ref,
-                        student.hoTen,
-                        invoice!,
-                        paymentSummariesAsync,
-                      )
-                    : previewAsync.when(
-                        data: (preview) => _buildDraftPreviewCard(
-                          context,
-                          ref,
-                          student.hoTen,
-                          preview,
-                        ),
-                        loading: () =>
-                            const Center(child: CircularProgressIndicator()),
-                        error: (e, _) => Text('Chưa thể xem trước học phí: $e'),
-                      ),
-              ),
-            );
-          },
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (e, _) => Text('Lỗi học sinh: $e'),
-    );
-  }
+    if (isFinalized) {
+      if (remainingDebt <= 0) {
+        statusColor = AppColors.success;
+        statusLabel = 'Đã thanh toán';
+      } else if (amountPaid > 0) {
+        statusColor = AppColors.warning;
+        statusLabel = 'Còn nợ (${currencyFormat.format(remainingDebt)}đ)';
+      } else {
+        statusColor = AppColors.error;
+        statusLabel = 'Đã chốt (${currencyFormat.format(amountDue)}đ)';
+      }
+    }
 
-  Widget _buildFinalizedInvoiceSnapshot(
-    BuildContext context,
-    WidgetRef ref,
-    String studentName,
-    TuitionInvoice invoice,
-    AsyncValue<Map<int, InvoicePaymentSummary>> summariesAsync,
-  ) {
-    return summariesAsync.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 8.0),
-        child: Text(
-          'Đang tải dữ liệu thanh toán...',
-          style: TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-      ),
-      error: (e, _) => Text(
-        'Lỗi dữ liệu thanh toán: $e',
-        style: const TextStyle(color: Colors.red, fontSize: 12),
-      ),
-      data: (summaries) {
-        final summary = summaries[studentId];
-        if (summary == null) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return AppSectionCard(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        children: [
+          Row(
             children: [
-              Text(
-                studentName,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              StudentAvatar(
+                gioiTinh: student.gioiTinh,
+                studentName: student.hoTen,
+                radius: 20,
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'Lỗi dữ liệu thanh toán: Không tìm thấy tổng hợp thanh toán cho hóa đơn này.',
-                style: TextStyle(color: Colors.red, fontSize: 12),
-              ),
-            ],
-          );
-        }
-
-        final totalPaid = summary.totalPaid;
-        final remainingDebt = summary.remainingDebt;
-        final settlementStatus = summary.settlementStatus;
-
-        final statusLabel = switch (settlementStatus) {
-          TuitionInvoiceStatus.DA_CHOT => 'ĐÃ CHỐT',
-          TuitionInvoiceStatus.DA_THANH_TOAN => 'ĐÃ THANH TOÁN',
-          TuitionInvoiceStatus.CON_NO => 'CÒN NỢ',
-          TuitionInvoiceStatus.NHAP => 'NHÁP',
-        };
-
-        final statusColor = switch (settlementStatus) {
-          TuitionInvoiceStatus.DA_CHOT => Colors.teal,
-          TuitionInvoiceStatus.DA_THANH_TOAN => Colors.green.shade700,
-          TuitionInvoiceStatus.CON_NO => Colors.red.shade700,
-          TuitionInvoiceStatus.NHAP => Colors.grey,
-        };
-
-        final formattedDate = invoice.chotLuc != null
-            ? DateFormat('HH:mm dd/MM/yyyy').format(invoice.chotLuc!)
-            : 'Đã chốt';
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  studentName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Chip(
-                  label: Text(
-                    statusLabel,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  backgroundColor: statusColor,
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    'Phải thu: ${NumberFormat('#,###').format(invoice.soTienPhaiThu)}đ | Đã trả: ${NumberFormat('#,###').format(totalPaid)}đ',
-                  ),
-                ),
-                Text(
-                  'Còn lại: ${NumberFormat('#,###').format(remainingDebt)}đ',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: remainingDebt > 0
-                        ? Colors.red.shade800
-                        : Colors.teal,
-                  ),
-                ),
-              ],
-            ),
-            if (invoice.giamPhanTram > 0)
-              Text(
-                'Miễn giảm: ${invoice.giamPhanTram}% (-${NumberFormat('#,###').format(invoice.giamSoTien)}đ)',
-                style: TextStyle(color: Colors.orange.shade800, fontSize: 12),
-              ),
-            const SizedBox(height: 4),
-            Text(
-              'Credit sổ cái snapshot: Đầu ${invoice.creditOpening} | Đã cộng +${invoice.creditEarned} | Đã dùng -${invoice.creditUsed} | Cuối ${invoice.creditClosing}',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Thời điểm chốt: $formattedDate',
-              style: TextStyle(
-                fontSize: 11,
-                fontStyle: FontStyle.italic,
-                color: Colors.grey.shade600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              alignment: WrapAlignment.end,
-              children: [
-                if (summary.payments.isNotEmpty)
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        _showPaymentHistoryDialog(context, summary.payments),
-                    icon: const Icon(Icons.history, size: 16),
-                    label: const Text('Lịch sử TT'),
-                  ),
-                if (remainingDebt > 0 && invoice.soTienPhaiThu > 0)
-                  ElevatedButton.icon(
-                    onPressed: () =>
-                        _showRecordPaymentDialog(context, ref, remainingDebt),
-                    icon: const Icon(Icons.payment, size: 16),
-                    label: const Text('Thanh toán'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildDraftPreviewCard(
-    BuildContext context,
-    WidgetRef ref,
-    String studentName,
-    TuitionPreview preview,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              studentName,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            Chip(
-              label: const Text(
-                'NHÁP',
-                style: TextStyle(
-                  color: Colors.black87,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              backgroundColor: Colors.grey.shade300,
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                'Số buổi eligible: ${preview.soBuoiEligible} (Tính phí: ${preview.soBuoiTinhPhi})',
-              ),
-            ),
-            Text(
-              'Phải thu: ${NumberFormat('#,###').format(preview.soTienPhaiThu)}đ',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.teal,
-              ),
-            ),
-          ],
-        ),
-        if (preview.giamPhanTram > 0)
-          Text(
-            'Miễn giảm: ${preview.giamPhanTram}% (-${NumberFormat('#,###').format(preview.giamSoTien)}đ)',
-            style: TextStyle(color: Colors.orange.shade800, fontSize: 12),
-          ),
-        const SizedBox(height: 4),
-        Text(
-          'Credit sổ cái: Đầu ${preview.creditOpening} | Đã cộng +${preview.creditEarned} | Đã dùng -${preview.creditUsed} | Cuối ${preview.creditClosing}',
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
-        ),
-        const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerRight,
-          child: OutlinedButton.icon(
-            onPressed: () async {
-              try {
-                await ref
-                    .read(invoiceControllerProvider.notifier)
-                    .finalizeStudentInvoice(
-                      studentId: studentId,
-                      classId: classId,
-                      month: month,
-                    );
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Đã chốt học phí cho $studentName!'),
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
-                }
-              }
-            },
-            icon: const Icon(Icons.check_circle_outline, size: 16),
-            label: const Text('Chốt học phí'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showRecordPaymentDialog(
-    BuildContext context,
-    WidgetRef ref,
-    int remainingDebt,
-  ) {
-    final amountController = TextEditingController(text: '$remainingDebt');
-    final dateController = TextEditingController(
-      text: DateFormat('yyyy-MM-DD').format(DateTime.now()),
-    );
-    PaymentMethod selectedMethod = PaymentMethod.CHUYEN_KHOAN;
-    final txController = TextEditingController();
-    final noteController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          title: const Text('Ghi nhận thanh toán'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: amountController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Số tiền thanh toán (đ)',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: dateController,
-                        decoration: const InputDecoration(
-                          labelText: 'Ngày thanh toán (YYYY-MM-DD)',
-                        ),
+                    Text(
+                      student.hoTen,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.calendar_today),
-                      onPressed: () async {
-                        final initialDt =
-                            DateTime.tryParse(dateController.text.trim()) ??
-                            DateTime.now();
-                        final picked = await showDatePicker(
-                          context: dialogCtx,
-                          initialDate: initialDt,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2030),
-                        );
-                        if (picked != null) {
-                          dateController.text = DateFormat(
-                            'yyyy-MM-dd',
-                          ).format(picked);
-                        }
-                      },
+                    const SizedBox(height: 2),
+                    Text(
+                      'Phải thu: ${currencyFormat.format(amountDue)}đ | Đã trả: ${currencyFormat.format(amountPaid)}đ',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<PaymentMethod>(
-                  initialValue: selectedMethod,
-                  decoration: const InputDecoration(
-                    labelText: 'Phương thức thanh toán',
-                  ),
-                  items: PaymentMethod.values
-                      .map(
-                        (m) => DropdownMenuItem(
-                          value: m,
-                          child: Text(m.displayName),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (val) {
-                    if (val != null) setState(() => selectedMethod = val);
-                  },
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: txController,
-                  decoration: const InputDecoration(
-                    labelText: 'Mã giao dịch (Không bắt buộc)',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: noteController,
-                  decoration: const InputDecoration(labelText: 'Ghi chú'),
-                ),
-              ],
-            ),
+              ),
+              AppStatusChip(
+                label: statusLabel,
+                color: statusColor,
+                compact: true,
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogCtx),
-              child: const Text('Hủy'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                try {
-                  final amountText = amountController.text.trim();
-                  final amount = int.tryParse(amountText);
-                  if (amount == null || amount <= 0) {
-                    throw Exception('Số tiền thanh toán không hợp lệ');
-                  }
-
-                  await ref
-                      .read(paymentControllerProvider.notifier)
-                      .recordPayment(
-                        studentId: studentId,
-                        classId: classId,
-                        month: month,
-                        amount: amount,
-                        paymentDate: dateController.text.trim(),
-                        method: selectedMethod,
-                        transactionId: txController.text.trim(),
-                        note: noteController.text.trim(),
-                      );
-
-                  if (dialogCtx.mounted) {
-                    Navigator.pop(dialogCtx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Đã ghi nhận thanh toán thành công!'),
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (dialogCtx.mounted) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
-                  }
-                }
-              },
-              child: const Text('Thực hiện thanh toán'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showPaymentHistoryDialog(BuildContext context, List<Payment> payments) {
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Lịch sử thanh toán'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: payments.isEmpty
-              ? const Text('Chưa có thanh toán nào.')
-              : ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: payments.length,
-                  itemBuilder: (ctx, i) {
-                    final p = payments[i];
-                    return ListTile(
-                      title: Text(
-                        '${NumberFormat('#,###').format(p.amount)}đ (${p.method.displayName})',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(
-                        'Ngày: ${p.paymentDate}${p.transactionId != null ? " | Mã GD: ${p.transactionId}" : ""}${p.note != null ? " | Ghi chú: ${p.note}" : ""}',
+          const SizedBox(height: 8),
+          const Divider(color: AppColors.border, height: 1),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (remainingDebt > 0) ...[
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    side: const BorderSide(color: AppColors.border),
+                  ),
+                  onPressed: () {
+                    final clsAsync = ref
+                        .read(classDetailProvider(classId))
+                        .value;
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => VietQrPaymentPage(
+                          studentName: student.hoTen,
+                          className: clsAsync?.tenLop ?? '',
+                          month: month,
+                          remainingAmount: remainingDebt,
+                        ),
                       ),
                     );
                   },
+                  icon: const Icon(
+                    Icons.qr_code_2,
+                    size: 16,
+                    color: AppColors.cyanAccent,
+                  ),
+                  label: const Text(
+                    'QR',
+                    style: TextStyle(color: AppColors.cyanAccent, fontSize: 12),
+                  ),
                 ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Đóng'),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                  ),
+                  onPressed: () => showRecordPaymentBottomSheet(
+                    context,
+                    studentId: student.id!,
+                    classId: classId,
+                    month: month,
+                    suggestedAmount: remainingDebt,
+                  ),
+                  icon: const Icon(Icons.payments_outlined, size: 16),
+                  label: const Text(
+                    'Thanh toán',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              ] else
+                const Text(
+                  'Đã hoàn tất thanh toán',
+                  style: TextStyle(
+                    color: AppColors.success,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+            ],
           ),
         ],
       ),

@@ -6,12 +6,27 @@ class ScheduleRepository {
 
   ScheduleRepository(this._db);
 
+  Database get db => _db;
+
   Future<int> create(ClassSchedule schedule) async {
     return await _db.insert('lich_hoc', schedule.toMap());
   }
 
+  Future<int> createInTxn(Transaction txn, ClassSchedule schedule) async {
+    return await txn.insert('lich_hoc', schedule.toMap());
+  }
+
   Future<int> update(ClassSchedule schedule) async {
     return await _db.update(
+      'lich_hoc',
+      schedule.toMap(),
+      where: 'id = ?',
+      whereArgs: [schedule.id],
+    );
+  }
+
+  Future<int> updateInTxn(Transaction txn, ClassSchedule schedule) async {
+    return await txn.update(
       'lich_hoc',
       schedule.toMap(),
       where: 'id = ?',

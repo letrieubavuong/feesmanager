@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/common_widgets/app_empty_state.dart';
 import '../../../app/common_widgets/app_error_state.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
+import '../../../app/common_widgets/navy_components.dart';
+import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../memberships/presentation/membership_providers.dart';
+import '../../tuition/presentation/tuition_controller.dart';
 import '../domain/class.dart';
 import '../domain/class_filter.dart';
 import 'class_controller.dart';
@@ -36,12 +40,13 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
     final classListAsync = ref.watch(classListControllerProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       drawer: const AppGlobalDrawer(),
       appBar: AppBar(
         leading: const GlobalMenuButton(),
         title: Text(l10n.navClasses),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(100),
+          preferredSize: const Size.fromHeight(104),
           child: Column(
             children: [
               Padding(
@@ -49,28 +54,59 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
                   horizontal: 16,
                   vertical: 4,
                 ),
-                child: SearchBar(
+                child: TextField(
                   key: UiKeys.classSearch,
                   controller: _searchController,
-                  hintText: l10n.classSearchPlaceholder,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Tìm theo tên lớp hoặc môn học...',
+                    hintStyle: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 13,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(
+                              Icons.clear,
+                              color: AppColors.textMuted,
+                              size: 18,
+                            ),
+                            onPressed: () {
+                              _searchController.clear();
+                              ref
+                                  .read(classListControllerProvider.notifier)
+                                  .search('');
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                  ),
                   onChanged: (value) {
                     ref
                         .read(classListControllerProvider.notifier)
                         .search(value);
                   },
-                  leading: const Icon(Icons.search),
-                  trailing: [
-                    if (_searchController.text.isNotEmpty)
-                      IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          ref
-                              .read(classListControllerProvider.notifier)
-                              .search('');
-                        },
-                      ),
-                  ],
                 ),
               ),
               SingleChildScrollView(
@@ -81,10 +117,19 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
                 ),
                 child: Row(
                   children: [
-                    FilterChip(
+                    ChoiceChip(
                       key: UiKeys.classActiveFilter,
-                      label: Text(l10n.filterActive),
+                      label: const Text('Lớp đang hoạt động'),
                       selected: _filter == ClassFilter.active,
+                      selectedColor: AppColors.primary,
+                      backgroundColor: AppColors.surface,
+                      labelStyle: TextStyle(
+                        color: _filter == ClassFilter.active
+                            ? Colors.white
+                            : AppColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                       onSelected: (_) {
                         setState(() => _filter = ClassFilter.active);
                         ref
@@ -93,10 +138,19 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
                       },
                     ),
                     const SizedBox(width: 8),
-                    FilterChip(
+                    ChoiceChip(
                       key: UiKeys.classArchivedFilter,
-                      label: Text(l10n.filterArchived),
+                      label: const Text('Lớp ngừng hoạt động'),
                       selected: _filter == ClassFilter.archived,
+                      selectedColor: AppColors.primary,
+                      backgroundColor: AppColors.surface,
+                      labelStyle: TextStyle(
+                        color: _filter == ClassFilter.archived
+                            ? Colors.white
+                            : AppColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                       onSelected: (_) {
                         setState(() => _filter = ClassFilter.archived);
                         ref
@@ -105,9 +159,18 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
                       },
                     ),
                     const SizedBox(width: 8),
-                    FilterChip(
-                      label: Text(l10n.filterAll),
+                    ChoiceChip(
+                      label: const Text('Tất cả'),
                       selected: _filter == ClassFilter.all,
+                      selectedColor: AppColors.primary,
+                      backgroundColor: AppColors.surface,
+                      labelStyle: TextStyle(
+                        color: _filter == ClassFilter.all
+                            ? Colors.white
+                            : AppColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                       onSelected: (_) {
                         setState(() => _filter = ClassFilter.all);
                         ref
@@ -130,12 +193,12 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
           return RefreshIndicator(
             onRefresh: () =>
                 ref.read(classListControllerProvider.notifier).refresh(),
-            child: ListView.separated(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               itemCount: classes.length,
-              separatorBuilder: (context, index) => const Divider(height: 1),
               itemBuilder: (context, index) {
                 final cls = classes[index];
-                return ClassListTile(cls: cls);
+                return ClassCardTile(cls: cls);
               },
             ),
           );
@@ -149,72 +212,33 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.primary,
         onPressed: () async {
           await showClassFormBottomSheet(context);
           ref.read(classListControllerProvider.notifier).refresh();
         },
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 }
 
-class ClassListTile extends ConsumerWidget {
+class ClassCardTile extends ConsumerWidget {
   final ClassEntity cls;
-  const ClassListTile({super.key, required this.cls});
+  const ClassCardTile({super.key, required this.cls});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
     final sizeAsync = ref.watch(classSizeProvider(cls.id!));
+    final currentMonth = DateFormatter.currentMonthString();
+    final policyAsync = ref.watch(
+      effectiveTuitionPolicyProvider((cls.id!, currentMonth)),
+    );
+    final isStopped = cls.daLuuTru;
 
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: cls.daLuuTru
-            ? Theme.of(context).colorScheme.outlineVariant
-            : Theme.of(context).colorScheme.primaryContainer,
-        child: Icon(
-          cls.daLuuTru ? Icons.archive : Icons.class_outlined,
-          color: cls.daLuuTru
-              ? Theme.of(context).colorScheme.outline
-              : Theme.of(context).colorScheme.primary,
-        ),
-      ),
-      title: Text(
-        cls.tenLop,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          decoration: cls.daLuuTru ? TextDecoration.lineThrough : null,
-          color: cls.daLuuTru ? Theme.of(context).colorScheme.outline : null,
-        ),
-      ),
-      subtitle: Text(
-        '${cls.khoi != null ? l10n.studentGradeItem(cls.khoi!) : ''} ${cls.monHoc != null && cls.monHoc!.isNotEmpty ? '• ${cls.monHoc}' : ''}',
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          sizeAsync.when(
-            data: (size) => Text(
-              '$size / ${cls.siSoToiDa ?? '∞'}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: (cls.siSoToiDa != null && size >= cls.siSoToiDa!)
-                    ? Colors.red
-                    : null,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            loading: () => const SizedBox(
-              width: 12,
-              height: 12,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            error: (_, __) => const Text('?'),
-          ),
-          const SizedBox(width: 4),
-          const Icon(Icons.chevron_right, size: 20),
-        ],
-      ),
+    return AppSectionCard(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
       onTap: () async {
         await Navigator.of(context).push(
           MaterialPageRoute(
@@ -225,6 +249,129 @@ class ClassListTile extends ConsumerWidget {
           ref.read(classListControllerProvider.notifier).refresh();
         }
       },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: isStopped
+                      ? const Color(0x26FF5964)
+                      : const Color(0x260A84FF),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  isStopped ? Icons.folder_off_outlined : Icons.school_outlined,
+                  color: isStopped ? AppColors.error : AppColors.cyanAccent,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      cls.tenLop,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        decoration: isStopped
+                            ? TextDecoration.lineThrough
+                            : null,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${cls.khoi != null ? 'Khối ${cls.khoi}' : 'Chưa xếp khối'}'
+                      '${cls.monHoc != null && cls.monHoc!.isNotEmpty ? ' • Môn ${cls.monHoc}' : ''}',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              AppStatusChip(
+                label: isStopped ? 'Ngừng HĐ' : 'Đang HĐ',
+                color: isStopped ? AppColors.error : AppColors.success,
+                compact: true,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Divider(color: AppColors.border, height: 1),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.groups_outlined,
+                    size: 16,
+                    color: AppColors.textMuted,
+                  ),
+                  const SizedBox(width: 4),
+                  sizeAsync.when(
+                    data: (size) => Text(
+                      'Sĩ số: $size / ${cls.siSoToiDa ?? '∞'}',
+                      style: TextStyle(
+                        color: (cls.siSoToiDa != null && size >= cls.siSoToiDa!)
+                            ? AppColors.error
+                            : AppColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    loading: () => const Text(
+                      '...',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
+                    error: (_, __) => const Text(
+                      '?',
+                      style: TextStyle(color: AppColors.error, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+              policyAsync.when(
+                data: (policy) {
+                  if (policy == null) {
+                    return const Text(
+                      'Chưa có học phí',
+                      style: TextStyle(
+                        color: AppColors.warning,
+                        fontSize: 11,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    );
+                  }
+                  return Text(
+                    '${policy.hocPhiMoiBuoi}đ / buổi',
+                    style: const TextStyle(
+                      color: AppColors.cyanAccent,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

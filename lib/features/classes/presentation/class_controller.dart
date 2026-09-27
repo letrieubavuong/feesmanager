@@ -53,9 +53,9 @@ class ClassFormController extends _$ClassFormController {
   @override
   void build() {}
 
-  Future<void> save(ClassEntity classEntity) async {
+  Future<int> save(ClassEntity classEntity) async {
     final service = await ref.read(classServiceProvider.future);
-    await service.saveClass(classEntity);
+    return await service.saveClass(classEntity);
   }
 }
 

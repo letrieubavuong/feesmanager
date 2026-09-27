@@ -96,6 +96,88 @@ class ScheduleDomainService {
     );
   }
 
+  Future<void> reviseSchedule({
+    required int scheduleId,
+    required int thuTrongTuan,
+    required String gioBatDau,
+    required String gioKetThuc,
+    required DateTime effectiveDate,
+  }) async {
+    final existing = await _scheduleRepo.getById(scheduleId);
+    if (existing == null) throw Exception('Không tìm thấy lịch học');
+
+    final dateFormat = DateFormat('yyyy-MM-dd');
+    final effectiveStr = dateFormat.format(effectiveDate);
+    final dayBeforeStr = dateFormat.format(
+      effectiveDate.subtract(const Duration(days: 1)),
+    );
+
+    final assignments = await _assignmentRepo.getBySchedule(scheduleId);
+    if (effectiveStr == existing.hieuLucTu && assignments.isEmpty) {
+      final updated = existing.copyWith(
+        thuTrongTuan: thuTrongTuan,
+        gioBatDau: gioBatDau,
+        gioKetThuc: gioKetThuc,
+        updatedAt: DateTime.now(),
+      );
+      _validateSchedule(updated);
+      await _scheduleRepo.update(updated);
+      return;
+    }
+
+    if (dayBeforeStr.compareTo(existing.hieuLucTu) < 0) {
+      throw Exception(
+        'Ngày áp dụng lịch mới ($effectiveStr) phải sau ngày bắt đầu lịch cũ (${existing.hieuLucTu})',
+      );
+    }
+
+    final closedOld = existing.copyWith(
+      hieuLucDen: dayBeforeStr,
+      updatedAt: DateTime.now(),
+    );
+
+    final newSchedule = ClassSchedule(
+      idLop: existing.idLop,
+      thuTrongTuan: thuTrongTuan,
+      gioBatDau: gioBatDau,
+      gioKetThuc: gioKetThuc,
+      hieuLucTu: effectiveStr,
+      hieuLucDen: existing.hieuLucDen,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    _validateSchedule(newSchedule);
+
+    await _scheduleRepo.db.transaction((txn) async {
+      await _scheduleRepo.updateInTxn(txn, closedOld);
+      final newScheduleId = await _scheduleRepo.createInTxn(txn, newSchedule);
+
+      for (final a in assignments) {
+        if (a.denNgay == null || a.denNgay!.compareTo(effectiveStr) >= 0) {
+          if (a.tuNgay.compareTo(dayBeforeStr) <= 0) {
+            await _assignmentRepo.updateInTxn(
+              txn,
+              a.copyWith(denNgay: dayBeforeStr, updatedAt: DateTime.now()),
+            );
+            await _assignmentRepo.createInTxn(
+              txn,
+              StudentShiftAssignment(
+                idHocSinh: a.idHocSinh,
+                idLop: a.idLop,
+                idLichHoc: newScheduleId,
+                tuNgay: effectiveStr,
+                denNgay: a.denNgay,
+                ghiChu: a.ghiChu,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              ),
+            );
+          }
+        }
+      }
+    });
+  }
+
   Future<List<ClassSchedule>> getSchedulesForClass(int classId) async {
     return _scheduleRepo.getByClass(classId);
   }
@@ -262,6 +344,45 @@ class ScheduleDomainService {
 
     await _assignmentRepo.update(
       existing.copyWith(denNgay: endStr, updatedAt: DateTime.now()),
+    );
+  }
+
+  Future<void> updateAssignmentStartDate({
+    required int assignmentId,
+    required DateTime newStartDate,
+  }) async {
+    final existing = await _assignmentRepo.getById(assignmentId);
+    if (existing == null) throw Exception('Không tìm thấy phân ca');
+
+    final dateFormat = DateFormat('yyyy-MM-dd');
+    final newStartStr = dateFormat.format(newStartDate);
+
+    if (newStartStr == existing.tuNgay) return;
+
+    final schedule = await _scheduleRepo.getById(existing.idLichHoc);
+    if (schedule == null) throw Exception('Không tìm thấy lịch học');
+
+    await _validateAssignmentInterval(
+      existing.idHocSinh,
+      existing.idLop,
+      schedule,
+      newStartStr,
+      existing.denNgay,
+    );
+
+    final conflictResult = await _conflictService.evaluateCandidateAssignment(
+      studentId: existing.idHocSinh,
+      targetScheduleId: existing.idLichHoc,
+      startDate: newStartStr,
+      endDate: existing.denNgay,
+      excludeAssignmentId: assignmentId,
+    );
+    if (!conflictResult.canAssign) {
+      throw Exception(conflictResult.hardConflicts.first.message);
+    }
+
+    await _assignmentRepo.update(
+      existing.copyWith(tuNgay: newStartStr, updatedAt: DateTime.now()),
     );
   }
 

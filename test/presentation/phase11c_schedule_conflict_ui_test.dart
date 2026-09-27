@@ -1906,8 +1906,6 @@ void main() {
       },
     );
 
-
-
     testWidgets(
       'showAddConstraintDialog rejects negative travel buffer without inserting DB row',
       (tester) async {
@@ -2322,7 +2320,10 @@ void main() {
             ],
             child: const MaterialApp(
               home: Scaffold(
-                body: AssignStudentDialog(scheduleId: 1, classId: 10),
+                body: AddAssignmentBottomSheet(
+                  classId: 10,
+                  initialScheduleId: 1,
+                ),
               ),
             ),
           ),
@@ -2364,7 +2365,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: AssignStudentDialog(scheduleId: 1, classId: 10),
+              body: AddAssignmentBottomSheet(classId: 10, initialScheduleId: 1),
             ),
           ),
         ),
@@ -2414,7 +2415,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: AssignStudentDialog(scheduleId: 1, classId: 10),
+              body: AddAssignmentBottomSheet(classId: 10, initialScheduleId: 1),
             ),
           ),
         ),
@@ -2473,7 +2474,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: AssignStudentDialog(scheduleId: 1, classId: 10),
+              body: AddAssignmentBottomSheet(classId: 10, initialScheduleId: 1),
             ),
           ),
         ),
@@ -2531,7 +2532,7 @@ void main() {
           ],
           child: const MaterialApp(
             home: Scaffold(
-              body: AssignStudentDialog(scheduleId: 1, classId: 10),
+              body: AddAssignmentBottomSheet(classId: 10, initialScheduleId: 1),
             ),
           ),
         ),

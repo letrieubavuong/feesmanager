@@ -2,22 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
-import '../../../app/localization/app_formatter.dart';
+import '../../../app/design_system/app_semantic_colors.dart';
 import '../../../app/navigation/app_destination.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/navigation_controller.dart';
 import '../../../app/navigation/ui_keys.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../attendance/presentation/attendance_page.dart';
 import '../../classes/domain/class.dart';
 import '../../classes/presentation/class_controller.dart';
 import '../../classes/presentation/class_detail_page.dart';
+import '../../reports/presentation/report_controller.dart';
 import '../../reports/presentation/reports_page.dart';
 import '../../sessions/domain/class_session.dart';
 import '../../sessions/domain/session_service.dart';
 import '../../students/domain/student.dart';
 import '../../students/presentation/student_controller.dart';
 import '../../students/presentation/student_detail_page.dart';
-import '../../students/presentation/student_form_page.dart';
 
 final todaySessionsProvider = FutureProvider<List<ClassSession>>((ref) async {
   final sessionService = await ref.watch(sessionServiceProvider.future);
@@ -48,12 +50,16 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final semantics =
+        theme.extension<AppSemanticColors>() ?? AppSemanticColors.dark;
     final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
 
     final classesAsync = ref.watch(classListControllerProvider);
     final studentsAsync = ref.watch(studentListControllerProvider);
     final todaySessionsAsync = ref.watch(todaySessionsProvider);
+    final reportSummaryAsync = ref.watch(reportSummaryProvider);
 
     final activeClassesCount = classesAsync.when(
       data: (list) => list.where((c) => !c.daLuuTru).length,
@@ -72,46 +78,56 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       appBar: AppBar(
         leading: const GlobalMenuButton(),
         title: Text(l10n.dashboardTitle),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              ref.invalidate(todaySessionsProvider);
+              ref.invalidate(classListControllerProvider);
+              ref.invalidate(studentListControllerProvider);
+              ref.invalidate(reportSummaryProvider);
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- A. HEADER GREETING ---
+            // --- A. GREETING HEADER ---
             Card(
-              color: theme.colorScheme.primaryContainer,
+              color: colorScheme.surfaceContainerHigh,
               child: Padding(
-                padding: const EdgeInsets.all(20.0),
+                padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
                     CircleAvatar(
-                      radius: 28,
-                      backgroundColor: theme.colorScheme.primary,
+                      radius: 26,
+                      backgroundColor: colorScheme.primaryContainer,
                       child: Icon(
                         Icons.waving_hand,
-                        color: theme.colorScheme.onPrimary,
-                        size: 28,
+                        color: colorScheme.onPrimaryContainer,
+                        size: 24,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            l10n.dashboardGreeting,
-                            style: theme.textTheme.titleLarge?.copyWith(
+                            'Xin chào thầy!',
+                            style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onPrimaryContainer,
+                              color: colorScheme.onSurface,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           Text(
-                            AppFormatter.formatDate(now, context: context),
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onPrimaryContainer
-                                  .withValues(alpha: 0.8),
+                            DateFormatter.formatDisplayDate(now),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -122,7 +138,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // --- B. GLOBAL SEARCH BAR ---
             TextField(
@@ -155,95 +171,69 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ),
             ],
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // --- C. CENTER OVERVIEW / KPIS ---
+            // --- C. QUICK ACTIONS ---
             Text(
-              l10n.dashboardOverview,
-              style: theme.textTheme.titleMedium?.copyWith(
+              'Thao tác nhanh',
+              style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: _buildKpiCard(
-                    context,
-                    title: l10n.dashboardActiveClasses,
-                    value: '$activeClassesCount',
-                    icon: Icons.class_outlined,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildKpiCard(
-                    context,
-                    title: l10n.dashboardActiveStudents,
-                    value: '$activeStudentsCount',
-                    icon: Icons.people_outline,
-                    color: theme.colorScheme.secondary,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // --- D. QUICK ACTIONS ---
-            Text(
-              l10n.dashboardQuickActions,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _buildQuickActionButton(
-                  key: UiKeys.dashboardQuickAddStudent,
-                  context: context,
-                  icon: Icons.person_add_alt_1_outlined,
-                  label: l10n.actionAddStudent,
-                  onTap: () async {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const StudentFormPage(),
-                      ),
-                    );
-                    ref.invalidate(studentListControllerProvider);
-                  },
-                ),
-                _buildQuickActionButton(
-                  key: UiKeys.dashboardQuickManageClasses,
-                  context: context,
-                  icon: Icons.class_outlined,
-                  label: l10n.actionManageClasses,
+                _buildCompactQuickAction(
+                  context,
+                  icon: Icons.check_circle_outline,
+                  label: 'Điểm danh',
+                  color: semantics.attendancePresent,
                   onTap: () {
                     ref
                         .read(navigationControllerProvider.notifier)
                         .goTo(AppDestinationId.classes);
                   },
                 ),
-                _buildQuickActionButton(
-                  key: UiKeys.dashboardQuickViewTuition,
-                  context: context,
+                _buildCompactQuickAction(
+                  context,
+                  icon: Icons.people_outline,
+                  label: 'Học sinh',
+                  color: colorScheme.primary,
+                  onTap: () {
+                    ref
+                        .read(navigationControllerProvider.notifier)
+                        .goTo(AppDestinationId.students);
+                  },
+                ),
+                _buildCompactQuickAction(
+                  context,
+                  icon: Icons.class_outlined,
+                  label: 'Lớp học',
+                  color: colorScheme.secondary,
+                  onTap: () {
+                    ref
+                        .read(navigationControllerProvider.notifier)
+                        .goTo(AppDestinationId.classes);
+                  },
+                ),
+                _buildCompactQuickAction(
+                  context,
                   icon: Icons.payments_outlined,
-                  label: l10n.actionViewTuition,
+                  label: 'Học phí',
+                  color: semantics.tuitionDraft,
                   onTap: () {
                     ref
                         .read(navigationControllerProvider.notifier)
                         .goTo(AppDestinationId.tuition);
                   },
                 ),
-                _buildQuickActionButton(
-                  key: UiKeys.dashboardQuickViewReports,
-                  context: context,
+                _buildCompactQuickAction(
+                  context,
                   icon: Icons.bar_chart_outlined,
-                  label: l10n.actionViewReports,
+                  label: 'Báo cáo',
+                  color: semantics.warning,
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const ReportsPage()),
@@ -253,27 +243,40 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ],
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // --- E. TODAY'S SCHEDULE ---
-            Text(
-              l10n.dashboardToday,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            // --- D. LỊCH HÔM NAY ---
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Lịch hôm nay',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  'Lớp học: $activeClassesCount | Học sinh: $activeStudentsCount',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             todaySessionsAsync.when(
               data: (sessions) {
                 if (sessions.isEmpty) {
                   return Card(
+                    color: colorScheme.surfaceContainer,
                     child: Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: const EdgeInsets.all(20.0),
                       child: Center(
                         child: Text(
-                          l10n.dashboardNoSessionsToday,
+                          'Hôm nay không có buổi học nào',
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.outline,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -281,52 +284,183 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   );
                 }
 
-                return ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: sessions.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final session = sessions[index];
+                return Column(
+                  children: sessions.map((session) {
+                    final isDone = session.trangThai == SessionStatus.DA_HOC;
+                    final isCanceled =
+                        session.trangThai == SessionStatus.HUY ||
+                        session.trangThai == SessionStatus.NGHI_LE;
+
+                    Color statusColor = semantics.warning;
+                    String statusLabel = 'Chưa điểm danh';
+                    if (isDone) {
+                      statusColor = semantics.success;
+                      statusLabel = 'Đã chốt';
+                    } else if (isCanceled) {
+                      statusColor = colorScheme.outline;
+                      statusLabel = session.trangThai.name;
+                    }
+
                     return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: theme.colorScheme.primaryContainer,
+                          backgroundColor: statusColor.withValues(alpha: 0.15),
                           child: Icon(
                             Icons.schedule,
-                            color: theme.colorScheme.primary,
+                            color: statusColor,
+                            size: 20,
                           ),
                         ),
-                        title: Text(
-                          '${l10n.navClasses} #${session.idLop}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        title: Consumer(
+                          builder: (context, ref, _) {
+                            final clsAsync = ref.watch(
+                              classDetailProvider(session.idLop),
+                            );
+                            return clsAsync.when(
+                              data: (c) => Text(
+                                c?.tenLop ?? 'Lớp #${session.idLop}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              loading: () => Text('Lớp #${session.idLop}'),
+                              error: (_, __) => Text('Lớp #${session.idLop}'),
+                            );
+                          },
                         ),
                         subtitle: Text(
-                          '${session.ngay} | ${session.gioBatDau} - ${session.gioKetThuc}',
+                          '${session.gioBatDau} - ${session.gioKetThuc} • ${session.loai.name}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                        trailing: Chip(
-                          label: Text(session.trangThai.name),
-                          visualDensity: VisualDensity.compact,
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            statusLabel,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
                         ),
                         onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  ClassDetailPage(classId: session.idLop),
-                            ),
-                          );
+                          if (session.id != null && !isCanceled) {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    AttendancePage(sessionId: session.id!),
+                              ),
+                            );
+                          } else {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ClassDetailPage(classId: session.idLop),
+                              ),
+                            );
+                          }
                         },
                       ),
                     );
-                  },
+                  }).toList(),
                 );
               },
               loading: () => const AppLoadingState(),
               error: (err, _) => Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Text('${l10n.commonError}: $err'),
+                  child: Text('Lỗi tải lịch hôm nay: $err'),
                 ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // --- E. HỌC PHÍ THÁNG KPI SUMMARY ---
+            Text(
+              'Học phí tháng này',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 10),
+            reportSummaryAsync.when(
+              data: (summary) {
+                final fmt = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+                return Row(
+                  children: [
+                    Expanded(
+                      child: _buildMetricTile(
+                        context,
+                        title: 'Phải thu',
+                        value: fmt.format(summary.financial.totalInvoiced),
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildMetricTile(
+                        context,
+                        title: 'Đã thu',
+                        value: fmt.format(summary.financial.totalPaid),
+                        color: semantics.success,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildMetricTile(
+                        context,
+                        title: 'Còn nợ',
+                        value: fmt.format(
+                          summary.financial.totalOutstandingDebt,
+                        ),
+                        color: semantics.error,
+                      ),
+                    ),
+                  ],
+                );
+              },
+              loading: () => const AppLoadingState(),
+              error: (_, __) => Row(
+                children: [
+                  Expanded(
+                    child: _buildMetricTile(
+                      context,
+                      title: 'Phải thu',
+                      value: '0 đ',
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildMetricTile(
+                      context,
+                      title: 'Đã thu',
+                      value: '0 đ',
+                      color: semantics.success,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildMetricTile(
+                      context,
+                      title: 'Còn nợ',
+                      value: '0 đ',
+                      color: semantics.error,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -335,70 +469,80 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     );
   }
 
-  Widget _buildKpiCard(
+  Widget _buildCompactQuickAction(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 64,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetricTile(
     BuildContext context, {
     required String title,
     required String value,
-    required IconData icon,
     required Color color,
   }) {
     final theme = Theme.of(context);
     return Card(
+      color: theme.colorScheme.surfaceContainer,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(icon, color: color, size: 24),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
             Text(
-              value,
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
+              title,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActionButton({
-    required Key key,
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
-    final width = (MediaQuery.of(context).size.width - 44) / 2;
-
-    return SizedBox(
-      width: width > 160 ? width : 160,
-      child: OutlinedButton.icon(
-        key: key,
-        onPressed: onTap,
-        icon: Icon(icon, size: 20),
-        label: Text(label, overflow: TextOverflow.ellipsis),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          alignment: Alignment.centerLeft,
-          side: BorderSide(color: theme.colorScheme.outlineVariant),
         ),
       ),
     );

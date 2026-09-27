@@ -11,7 +11,6 @@ class AppTheme {
     required AppPalette palette,
     required Brightness brightness,
   }) {
-    final info = AppPaletteInfo.fromPalette(palette);
     final isDark = brightness == Brightness.dark;
 
     ColorScheme colorScheme;
@@ -46,10 +45,43 @@ class AppTheme {
         );
       }
     } else {
-      colorScheme = ColorScheme.fromSeed(
-        seedColor: info.primaryColor,
-        brightness: brightness,
-      );
+      if (isDark) {
+        colorScheme = const ColorScheme.dark(
+          primary: Color(0xFF0A84FF),
+          onPrimary: Color(0xFFFFFFFF),
+          primaryContainer: Color(0xFF153F60),
+          onPrimaryContainer: Color(0xFF22B8F3),
+          secondary: Color(0xFF22B8F3),
+          onSecondary: Color(0xFF061A2E),
+          surface: Color(0xFF061A2E),
+          onSurface: Color(0xFFF4F8FC),
+          surfaceContainer: Color(0xFF0B2740),
+          surfaceContainerHigh: Color(0xFF123651),
+          surfaceContainerHighest: Color(0xFF153F60),
+          outline: Color(0xFF24506D),
+          onSurfaceVariant: Color(0xFFA9C0D3),
+          error: Color(0xFFFF5964),
+          onError: Color(0xFFFFFFFF),
+        );
+      } else {
+        colorScheme = const ColorScheme.light(
+          primary: Color(0xFF0A84FF),
+          onPrimary: Color(0xFFFFFFFF),
+          primaryContainer: Color(0xFFE2F1FF),
+          onPrimaryContainer: Color(0xFF003870),
+          secondary: Color(0xFF0082B8),
+          onSecondary: Color(0xFFFFFFFF),
+          surface: Color(0xFFF4F8FC),
+          onSurface: Color(0xFF061A2E),
+          surfaceContainer: Color(0xFFEAF2FA),
+          surfaceContainerHigh: Color(0xFFDBE8F5),
+          surfaceContainerHighest: Color(0xFFCDDEF0),
+          outline: Color(0xFF90ACC4),
+          onSurfaceVariant: Color(0xFF385873),
+          error: Color(0xFFFF5964),
+          onError: Color(0xFFFFFFFF),
+        );
+      }
     }
 
     final semanticColors = isDark
@@ -172,4 +204,24 @@ class AppTheme {
 
   static ThemeData get darkTheme =>
       createTheme(palette: AppPalette.physicsBlue, brightness: Brightness.dark);
+}
+
+class AppColors {
+  AppColors._();
+
+  static const background = Color(0xFF061A2E);
+  static const surface = Color(0xFF0B2740);
+  static const surfaceHigh = Color(0xFF123651);
+  static const surfaceSelected = Color(0xFF153F60);
+  static const border = Color(0xFF24506D);
+  static const primary = Color(0xFF0A84FF);
+  static const cyanAccent = Color(0xFF22B8F3);
+  static const success = Color(0xFF20C67A);
+  static const warning = Color(0xFFF2B63D);
+  static const error = Color(0xFFFF5964);
+  static const textPrimary = Color(0xFFF4F8FC);
+  static const textSecondary = Color(0xFFA9C0D3);
+  static const textMuted = Color(0xFF728DA4);
+  static const editingBottomSheet = Color(0xFFF7FAFF);
+  static const editingSheetText = Color(0xFF0B2340);
 }

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../app/common_widgets/app_feedback.dart';
+import '../../../app/common_widgets/navy_components.dart';
 import '../../../app/common_widgets/searchable_selectors.dart';
 import '../../../app/common_widgets/student_avatar.dart';
+import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
@@ -35,6 +37,7 @@ class StudentDetailPage extends ConsumerWidget {
     final studentAsync = ref.watch(studentDetailProvider(studentId));
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       drawer: const AppGlobalDrawer(),
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -45,13 +48,13 @@ class StudentDetailPage extends ConsumerWidget {
           studentAsync.when(
             data: (student) {
               if (student == null) return const SizedBox.shrink();
-              final isArchived = student.daLuuTru;
+              final isStopped = student.daLuuTru;
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.edit),
-                    tooltip: 'Chỉnh sửa',
+                    icon: const Icon(Icons.edit_outlined),
+                    tooltip: 'Sửa thông tin',
                     onPressed: () async {
                       await Navigator.of(context).push(
                         MaterialPageRoute(
@@ -66,13 +69,18 @@ class StudentDetailPage extends ConsumerWidget {
                     },
                   ),
                   IconButton(
-                    key: isArchived
+                    key: isStopped
                         ? UiKeys.studentRestoreAction
                         : UiKeys.studentArchiveAction,
                     icon: Icon(
-                      isArchived ? Icons.unarchive : Icons.archive_outlined,
+                      isStopped
+                          ? Icons.restore_rounded
+                          : Icons.person_off_outlined,
+                      color: isStopped ? AppColors.success : AppColors.error,
                     ),
-                    tooltip: isArchived ? 'Khôi phục' : 'Lưu trữ',
+                    tooltip: isStopped
+                        ? 'Cho hoạt động lại'
+                        : 'Đánh dấu ngừng học',
                     onPressed: () =>
                         _toggleArchiveStatus(context, ref, student),
                   ),
@@ -87,76 +95,97 @@ class StudentDetailPage extends ConsumerWidget {
       body: studentAsync.when(
         data: (student) {
           if (student == null) {
-            return const Center(child: Text('Không tìm thấy học sinh'));
+            return const Center(
+              child: Text(
+                'Không tìm thấy học sinh',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            );
           }
+          final isStopped = student.daLuuTru;
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(context, student),
-                const SizedBox(height: 24),
-                _buildSectionTitle(context, 'Thông tin cá nhân'),
-                _buildInfoTile(
-                  Icons.cake,
-                  'Ngày sinh',
-                  student.ngaySinh != null
-                      ? DateFormatter.formatDisplayDate(student.ngaySinh)
-                      : 'Chưa cập nhật',
-                ),
-                _buildInfoTile(
-                  Icons.location_on,
-                  'Địa chỉ',
-                  student.diaChi ?? 'Chưa cập nhật',
-                ),
-                _buildInfoTile(
-                  Icons.facebook,
-                  'Facebook',
-                  student.facebook ?? 'Chưa cập nhật',
+                const SizedBox(height: 16),
+                const AppSectionHeader(title: 'Thông tin cá nhân & Liên hệ'),
+                AppSectionCard(
+                  child: Column(
+                    children: [
+                      CompactInfoRow(
+                        icon: Icons.cake_outlined,
+                        label: 'Ngày sinh',
+                        value: student.ngaySinh != null
+                            ? DateFormatter.formatDisplayDate(student.ngaySinh)
+                            : 'Chưa cập nhật',
+                      ),
+                      CompactInfoRow(
+                        icon: Icons.location_on_outlined,
+                        label: 'Địa chỉ',
+                        value: student.diaChi ?? 'Chưa cập nhật',
+                      ),
+                      CompactInfoRow(
+                        icon: Icons.public_outlined,
+                        label: 'Facebook',
+                        value: student.facebook ?? 'Chưa cập nhật',
+                      ),
+                      const Divider(color: AppColors.border, height: 16),
+                      CompactInfoRow(
+                        icon: Icons.person_outline,
+                        label: 'Phụ huynh',
+                        value: student.tenPhuHuynh ?? 'Chưa cập nhật',
+                      ),
+                      CompactInfoRow(
+                        icon: Icons.phone_outlined,
+                        label: 'SĐT Phụ huynh',
+                        value: student.sdtPhuHuynh ?? 'Chưa cập nhật',
+                        valueColor: student.sdtPhuHuynh != null
+                            ? AppColors.cyanAccent
+                            : null,
+                      ),
+                      CompactInfoRow(
+                        icon: Icons.phone_android_outlined,
+                        label: 'SĐT Học sinh',
+                        value: student.sdtHocSinh ?? 'Chưa cập nhật',
+                      ),
+                      CompactInfoRow(
+                        icon: Icons.email_outlined,
+                        label: 'Email',
+                        value: student.email ?? 'Chưa cập nhật',
+                      ),
+                      if (student.ghiChu != null &&
+                          student.ghiChu!.isNotEmpty) ...[
+                        const Divider(color: AppColors.border, height: 16),
+                        CompactInfoRow(
+                          icon: Icons.notes_outlined,
+                          label: 'Ghi chú',
+                          value: student.ghiChu!,
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
-                _buildSectionTitle(context, 'Liên hệ'),
-                _buildInfoTile(
-                  Icons.person,
-                  'Phụ huynh',
-                  student.tenPhuHuynh ?? 'Chưa cập nhật',
-                ),
-                _buildInfoTile(
-                  Icons.phone,
-                  'SĐT Phụ huynh',
-                  student.sdtPhuHuynh ?? 'Chưa cập nhật',
-                ),
-                _buildInfoTile(
-                  Icons.phone_android,
-                  'SĐT Học sinh',
-                  student.sdtHocSinh ?? 'Chưa cập nhật',
-                ),
-                _buildInfoTile(
-                  Icons.email,
-                  'Email',
-                  student.email ?? 'Chưa cập nhật',
-                ),
-                const SizedBox(height: 16),
-                _buildSectionTitle(context, 'Khác'),
-                _buildInfoTile(
-                  Icons.note,
-                  'Ghi chú',
-                  student.ghiChu ?? 'Không có ghi chú',
-                ),
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 16),
-                _buildMembershipSection(context, ref, student.id!),
-                const SizedBox(height: 16),
-                _buildScheduleSection(context, ref, student.id!),
+                _buildMembershipSection(context, ref, student.id!, isStopped),
                 const SizedBox(height: 16),
                 _buildConstraintSection(context, ref, student.id!),
+                const SizedBox(height: 16),
+                _buildScheduleSection(context, ref, student.id!),
               ],
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Lỗi: $e')),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+        error: (e, _) => Center(
+          child: Text(
+            'Lỗi: $e',
+            style: const TextStyle(color: AppColors.error),
+          ),
+        ),
       ),
     );
   }
@@ -165,6 +194,7 @@ class StudentDetailPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     int studentId,
+    bool isStudentStopped,
   ) {
     final membershipsAsync = ref.watch(
       studentMembershipHistoryProvider(studentId),
@@ -173,52 +203,55 @@ class StudentDetailPage extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildSectionTitle(context, 'Lớp học'),
-            ElevatedButton.icon(
-              onPressed: () async {
-                final classList = await ref.read(
-                  classListControllerProvider.future,
-                );
-                if (!context.mounted) return;
-                final activeClasses = classList
-                    .where((c) => !c.daLuuTru)
-                    .toList();
-                if (activeClasses.isEmpty) {
-                  AppFeedback.showErrorSnackBar(
-                    context,
-                    'Không có lớp học nào đang hoạt động.',
+        AppSectionHeader(
+          title: 'Lớp đang học',
+          actionLabel: 'Thêm vào lớp',
+          onAction: isStudentStopped
+              ? null
+              : () async {
+                  final classList = await ref.read(
+                    classListControllerProvider.future,
                   );
-                  return;
-                }
-                final chosenClass = await showClassSelectorDialog(
-                  context,
-                  classes: activeClasses,
-                );
-                if (chosenClass != null && context.mounted) {
-                  await showEnrollStudentBottomSheet(
+                  if (!context.mounted) return;
+                  final activeClasses = classList
+                      .where((c) => !c.daLuuTru)
+                      .toList();
+                  if (activeClasses.isEmpty) {
+                    AppFeedback.showErrorSnackBar(
+                      context,
+                      'Không có lớp học nào đang hoạt động.',
+                    );
+                    return;
+                  }
+                  final chosenClass = await showClassSelectorDialog(
                     context,
-                    classId: chosenClass.id!,
-                    initialStudentId: studentId,
+                    classes: activeClasses,
                   );
-                  ref.invalidate(studentMembershipHistoryProvider(studentId));
-                }
-              },
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('Thêm vào lớp'),
-            ),
-          ],
+                  if (chosenClass != null && context.mounted) {
+                    await showEnrollStudentBottomSheet(
+                      context,
+                      classId: chosenClass.id!,
+                      initialStudentId: studentId,
+                    );
+                    ref.invalidate(studentMembershipHistoryProvider(studentId));
+                  }
+                },
         ),
         membershipsAsync.when(
           data: (memberships) {
             if (memberships.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
-                child: Text(
-                  'Học sinh chưa tham gia lớp nào.',
-                  style: TextStyle(fontStyle: FontStyle.italic),
+              return const AppSectionCard(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      'Học sinh chưa tham gia lớp nào.',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
                 ),
               );
             }
@@ -228,8 +261,13 @@ class StudentDetailPage extends ConsumerWidget {
                   .toList(),
             );
           },
-          loading: () => const CircularProgressIndicator(),
-          error: (e, _) => Text('Lỗi tải lớp: $e'),
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
+          error: (e, _) => Text(
+            'Lỗi tải danh sách lớp: $e',
+            style: const TextStyle(color: AppColors.error),
+          ),
         ),
       ],
     );
@@ -245,15 +283,22 @@ class StudentDetailPage extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle(context, 'Lịch học (Phân ca)'),
+        const AppSectionHeader(title: 'Phân ca lịch học'),
         assignmentsAsync.when(
           data: (assignments) {
             if (assignments.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
-                child: Text(
-                  'Chưa có lịch học được phân.',
-                  style: TextStyle(fontStyle: FontStyle.italic),
+              return const AppSectionCard(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      'Chưa có ca học nào được phân.',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
                 ),
               );
             }
@@ -263,8 +308,13 @@ class StudentDetailPage extends ConsumerWidget {
                   .toList(),
             );
           },
-          loading: () => const CircularProgressIndicator(),
-          error: (e, _) => Text('Lỗi tải lịch: $e'),
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
+          error: (e, _) => Text(
+            'Lỗi tải ca học: $e',
+            style: const TextStyle(color: AppColors.error),
+          ),
         ),
       ],
     );
@@ -280,26 +330,26 @@ class StudentDetailPage extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            _buildSectionTitle(context, 'Ràng buộc lịch'),
-            ElevatedButton.icon(
-              onPressed: () => showAddConstraintDialog(context, ref, studentId),
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('Thêm ràng buộc'),
-            ),
-          ],
+        AppSectionHeader(
+          title: 'Giờ bận',
+          actionLabel: 'Thêm giờ bận',
+          onAction: () => showAddConstraintDialog(context, ref, studentId),
         ),
         constraintsAsync.when(
           data: (constraints) {
             if (constraints.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
-                child: Text(
-                  'Chưa có ràng buộc lịch.',
-                  style: TextStyle(fontStyle: FontStyle.italic),
+              return const AppSectionCard(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      'Chưa thiết lập giờ bận nào.',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
                 ),
               );
             }
@@ -309,8 +359,13 @@ class StudentDetailPage extends ConsumerWidget {
                   .toList(),
             );
           },
-          loading: () => const CircularProgressIndicator(),
-          error: (e, _) => Text('Lỗi tải ràng buộc: $e'),
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
+          error: (e, _) => Text(
+            'Lỗi tải giờ bận: $e',
+            style: const TextStyle(color: AppColors.error),
+          ),
         ),
       ],
     );
@@ -325,64 +380,90 @@ class StudentDetailPage extends ConsumerWidget {
     final isCancelled = c.status == ConstraintStatus.DA_HUY;
 
     var subtitleText = c.occurrenceType == OccurrenceType.DINH_KY
-        ? 'Thứ ${c.weekday} (${c.startTime} - ${c.endTime}) | Từ ${c.effectiveFrom}${c.effectiveTo != null ? " đến ${c.effectiveTo}" : ""}'
-        : 'Ngày ${c.specificDate} (${c.startTime} - ${c.endTime})';
+        ? 'Thứ ${c.weekday} (${c.startTime} - ${c.endTime}) | Từ ${DateFormatter.formatDisplayDate(c.effectiveFrom)}${c.effectiveTo != null ? " đến ${DateFormatter.formatDisplayDate(c.effectiveTo!)}" : ""}'
+        : 'Ngày ${DateFormatter.formatDisplayDate(c.specificDate)} (${c.startTime} - ${c.endTime})';
 
     if (c.travelBufferMinutes > 0) {
-      subtitleText += ' | Đệm di chuyển: ${c.travelBufferMinutes} phút';
+      subtitleText += ' | Đệm: ${c.travelBufferMinutes} phút';
     }
     if (c.note != null && c.note!.isNotEmpty) {
       subtitleText += ' | Ghi chú: ${c.note}';
     }
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      color: isCancelled ? Colors.grey.shade100 : null,
-      child: ListTile(
-        leading: Icon(
-          c.type == ConstraintType.HARD_BLOCK
-              ? Icons.block
-              : c.type == ConstraintType.OTHER_CENTER
-              ? Icons.domain
-              : Icons.star_border,
-          color: isCancelled
-              ? Colors.grey
-              : (c.type == ConstraintType.HARD_BLOCK
-                    ? Colors.red
-                    : Colors.orange),
-        ),
-        title: Text(
-          '${c.type.displayName}${c.sourceName != null ? " - ${c.sourceName}" : ""}',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            decoration: isCancelled ? TextDecoration.lineThrough : null,
+    return AppSectionCard(
+      margin: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(
+            c.type == ConstraintType.HARD_BLOCK
+                ? Icons.block
+                : c.type == ConstraintType.OTHER_CENTER
+                ? Icons.domain
+                : Icons.star_border,
+            color: isCancelled
+                ? AppColors.textMuted
+                : (c.type == ConstraintType.HARD_BLOCK
+                      ? AppColors.error
+                      : AppColors.warning),
+            size: 22,
           ),
-        ),
-        subtitle: Text(subtitleText),
-        trailing: !isCancelled
-            ? TextButton(
-                onPressed: () async {
-                  final confirm = await AppFeedback.showConfirmBottomSheet(
-                    context,
-                    title: 'Xác nhận hủy ràng buộc',
-                    message: 'Bạn có chắc chắn muốn hủy ràng buộc lịch này?',
-                    confirmLabel: 'Hủy ràng buộc',
-                    cancelLabel: 'Không',
-                    isDestructive: true,
-                  );
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${c.type.displayName}${c.sourceName != null ? " - ${c.sourceName}" : ""}',
+                  style: TextStyle(
+                    color: isCancelled
+                        ? AppColors.textMuted
+                        : AppColors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    decoration: isCancelled ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitleText,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!isCancelled)
+            TextButton(
+              onPressed: () async {
+                final confirm = await AppFeedback.showConfirmBottomSheet(
+                  context,
+                  title: 'Xóa giờ bận',
+                  message: 'Bạn có chắc chắn muốn xóa giờ bận này?',
+                  confirmLabel: 'Xóa giờ bận',
+                  cancelLabel: 'Không',
+                  isDestructive: true,
+                );
 
-                  if (confirm == true && c.id != null) {
-                    await ref
-                        .read(scheduleConstraintControllerProvider.notifier)
-                        .cancelConstraint(c.id!, studentId);
-                  }
-                },
-                child: const Text('Hủy', style: TextStyle(color: Colors.red)),
-              )
-            : const Text(
-                'Đã hủy',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+                if (confirm == true && c.id != null) {
+                  await ref
+                      .read(scheduleConstraintControllerProvider.notifier)
+                      .cancelConstraint(c.id!, studentId);
+                }
+              },
+              child: const Text(
+                'Xóa',
+                style: TextStyle(color: AppColors.error, fontSize: 13),
               ),
+            )
+          else
+            const AppStatusChip(
+              label: 'Đã xóa',
+              color: AppColors.textMuted,
+              compact: true,
+            ),
+        ],
       ),
     );
   }
@@ -392,35 +473,72 @@ class StudentDetailPage extends ConsumerWidget {
     WidgetRef ref,
     StudentShiftAssignment a,
   ) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ListTile(
-        leading: const Icon(Icons.calendar_today),
-        title: Consumer(
-          builder: (context, ref, _) {
-            final scheduleAsync = ref.watch(
-              scheduleDetailProvider(a.idLichHoc),
-            );
-            return scheduleAsync.when(
-              data: (s) => Text(
-                '${DateFormatter.formatVietnameseWeekday(s?.thuTrongTuan ?? 0)}: ${s?.gioBatDau} - ${s?.gioKetThuc}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              loading: () => const Text('...'),
-              error: (_, __) => const Text('Lỗi tải lịch'),
-            );
-          },
-        ),
-        subtitle: Consumer(
-          builder: (context, ref, _) {
-            final classAsync = ref.watch(classDetailProvider(a.idLop));
-            return classAsync.when(
-              data: (c) => Text('Lớp: ${c?.tenLop ?? 'Unknown'}'),
-              loading: () => const Text('...'),
-              error: (_, __) => const Text('Lỗi tải lớp'),
-            );
-          },
-        ),
+    return AppSectionCard(
+      margin: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.calendar_month_outlined,
+            color: AppColors.cyanAccent,
+            size: 22,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Consumer(
+                  builder: (context, ref, _) {
+                    final scheduleAsync = ref.watch(
+                      scheduleDetailProvider(a.idLichHoc),
+                    );
+                    return scheduleAsync.when(
+                      data: (s) => Text(
+                        '${DateFormatter.formatVietnameseWeekday(s?.thuTrongTuan ?? 0)}: ${s?.gioBatDau} - ${s?.gioKetThuc}',
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      loading: () => const Text(
+                        '...',
+                        style: TextStyle(color: AppColors.textMuted),
+                      ),
+                      error: (_, __) => const Text(
+                        'Lỗi tải lịch',
+                        style: TextStyle(color: AppColors.error),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 2),
+                Consumer(
+                  builder: (context, ref, _) {
+                    final classAsync = ref.watch(classDetailProvider(a.idLop));
+                    return classAsync.when(
+                      data: (c) => Text(
+                        'Lớp: ${c?.tenLop ?? 'Không xác định'}',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                      loading: () => const Text(
+                        '...',
+                        style: TextStyle(color: AppColors.textMuted),
+                      ),
+                      error: (_, __) => const Text(
+                        'Lỗi tải lớp',
+                        style: TextStyle(color: AppColors.error),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -433,128 +551,141 @@ class StudentDetailPage extends ConsumerWidget {
     final classAsync = ref.watch(classDetailProvider(m.idLop));
     final isActive = m.isActiveOn(DateTime.now());
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ListTile(
-        title: classAsync.when(
-          data: (c) => Text(
-            c?.tenLop ?? 'Unknown Class',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              decoration: c?.daLuuTru == true
-                  ? TextDecoration.lineThrough
-                  : null,
-            ),
-          ),
-          loading: () => const Text('Loading...'),
-          error: (_, __) => const Text('Error'),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Từ: ${m.tuNgay}${m.denNgay != null ? ' - Đến: ${m.denNgay}' : ''}',
-            ),
-            if (m.lyDoKetThuc != null)
-              Text(
-                'Lý do nghỉ: ${m.lyDoKetThuc}',
-                style: const TextStyle(
-                  fontStyle: FontStyle.italic,
-                  fontSize: 12,
+    return AppSectionCard(
+      margin: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: classAsync.when(
+                        data: (c) => Text(
+                          c?.tenLop ?? 'Lớp không xác định',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            decoration: c?.daLuuTru == true
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
+                        ),
+                        loading: () => const Text(
+                          '...',
+                          style: TextStyle(color: AppColors.textMuted),
+                        ),
+                        error: (_, __) => const Text(
+                          'Lỗi',
+                          style: TextStyle(color: AppColors.error),
+                        ),
+                      ),
+                    ),
+                    AppStatusChip(
+                      label: isActive ? 'Đang học' : 'Đã nghỉ',
+                      color: isActive ? AppColors.success : AppColors.textMuted,
+                      compact: true,
+                    ),
+                  ],
                 ),
-              ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => SessionCreditPage(
-                      studentId: m.idHocSinh,
-                      classId: m.idLop,
+                const SizedBox(height: 4),
+                Text(
+                  'Tham gia: ${DateFormatter.formatDisplayDate(m.tuNgay)}${m.denNgay != null ? ' - Nghỉ: ${DateFormatter.formatDisplayDate(m.denNgay!)}' : ''}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                if (m.lyDoKetThuc != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Lý do: ${m.lyDoKetThuc}',
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontStyle: FontStyle.italic,
+                      fontSize: 11,
                     ),
                   ),
-                );
-              },
-              child: const Text('Buổi dư', style: TextStyle(fontSize: 12)),
+                ],
+              ],
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: isActive
-                    ? Colors.green.withValues(alpha: 0.1)
-                    : Colors.grey.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                isActive ? 'Đang học' : 'Đã nghỉ',
-                style: TextStyle(
-                  color: isActive ? Colors.green : Colors.grey,
-                  fontSize: 12,
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              side: const BorderSide(color: AppColors.border),
+            ),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => SessionCreditPage(
+                    studentId: m.idHocSinh,
+                    classId: m.idLop,
+                  ),
                 ),
-              ),
+              );
+            },
+            child: const Text(
+              'Buổi dư',
+              style: TextStyle(color: AppColors.cyanAccent, fontSize: 12),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildHeader(BuildContext context, Student student) {
-    return Row(
-      children: [
-        StudentAvatar(
-          gioiTinh: student.gioiTinh,
-          studentName: student.hoTen,
-          radius: 36,
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                student.hoTen,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                '${student.khoi != null ? 'Khối ${student.khoi}' : 'Chưa cập nhật khối'} • ${student.truongDangHoc ?? 'Chưa cập nhật trường'}',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSectionTitle(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoTile(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+    final isStopped = student.daLuuTru;
+    return AppSectionCard(
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.grey),
-          const SizedBox(width: 12),
-          Text('$label: ', style: const TextStyle(color: Colors.grey)),
-          Expanded(child: Text(value)),
+          StudentAvatar(
+            gioiTinh: student.gioiTinh,
+            studentName: student.hoTen,
+            radius: 32,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        student.hoTen,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    AppStatusChip(
+                      label: isStopped ? 'Ngừng học' : 'Đang hoạt động',
+                      color: isStopped ? AppColors.error : AppColors.success,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${student.khoi != null ? 'Khối ${student.khoi}' : 'Chưa xếp khối'} • ${student.truongDangHoc ?? 'Chưa cập nhật trường'}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -565,25 +696,25 @@ class StudentDetailPage extends ConsumerWidget {
     WidgetRef ref,
     Student student,
   ) async {
-    final isArchived = student.daLuuTru;
+    final isStopped = student.daLuuTru;
     final confirm = await AppFeedback.showConfirmBottomSheet(
       context,
-      title: isArchived ? 'Khôi phục học sinh' : 'Lưu trữ học sinh',
-      message: isArchived
-          ? 'Bạn có chắc muốn khôi phục học sinh "${student.hoTen}"?'
-          : 'Lưu trữ học sinh "${student.hoTen}" nghĩa là học sinh dừng hoạt động tại trung tâm.\n\n'
-                '• Lịch sử học, điểm danh, học phí và thanh toán được GIỮ NGUYÊN.\n'
-                '• Học sinh sẽ ẩn khỏi danh sách và bộ chọn active.\n'
-                '• Không thể lưu trữ nếu học sinh còn lớp đang học.\n'
-                '• Bạn có thể khôi phục học sinh bất kỳ lúc nào.',
-      confirmLabel: isArchived ? 'Khôi phục' : 'Lưu trữ',
-      isDestructive: !isArchived,
+      title: isStopped ? 'Cho học sinh hoạt động lại' : 'Đánh dấu ngừng học',
+      message: isStopped
+          ? 'Bạn có chắc chắn muốn cho học sinh "${student.hoTen}" hoạt động lại tại trung tâm?'
+          : 'Đánh dấu học sinh "${student.hoTen}" ngừng học nghĩa là dừng mọi hoạt động tại trung tâm.\n\n'
+                '• Toàn bộ lịch sử học, điểm danh, học phí và thanh toán được GIỮ NGUYÊN.\n'
+                '• Học sinh sẽ chuyển sang mục Ngừng học.\n'
+                '• Không thể đánh dấu ngừng học nếu học sinh vẫn còn lớp đang tham gia.\n'
+                '• Bạn có thể cho học sinh hoạt động lại bất kỳ lúc nào.',
+      confirmLabel: isStopped ? 'Cho hoạt động lại' : 'Đánh dấu ngừng học',
+      isDestructive: !isStopped,
     );
 
     if (!confirm || !context.mounted) return;
 
     try {
-      if (isArchived) {
+      if (isStopped) {
         await ref
             .read(studentListControllerProvider.notifier)
             .restore(student.id!);
@@ -597,9 +728,9 @@ class StudentDetailPage extends ConsumerWidget {
       if (context.mounted) {
         AppFeedback.showSuccessSnackBar(
           context,
-          isArchived
-              ? 'Đã khôi phục học sinh thành công'
-              : 'Đã lưu trữ học sinh thành công',
+          isStopped
+              ? 'Đã cho học sinh hoạt động lại'
+              : 'Đã đánh dấu học sinh ngừng học',
         );
       }
     } catch (e) {
@@ -613,7 +744,6 @@ class StudentDetailPage extends ConsumerWidget {
   }
 }
 
-// Additional Provider for Detail
 @riverpod
 Future<Student?> studentDetail(StudentDetailRef ref, int id) async {
   final service = await ref.watch(studentServiceProvider.future);

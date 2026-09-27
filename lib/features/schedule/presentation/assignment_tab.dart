@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import '../../../app/common_widgets/app_feedback.dart';
+import '../../../app/common_widgets/navy_components.dart';
+import '../../../app/common_widgets/student_avatar.dart';
+import '../../../app/design_system/app_theme.dart';
 import '../../../core/utils/date_formatter.dart';
-import '../../schedule_conflicts/presentation/schedule_conflict_banner.dart';
-import '../../schedule_conflicts/presentation/schedule_conflict_providers.dart';
-import '../../students/domain/student.dart';
+import '../../memberships/presentation/membership_providers.dart';
 import '../../students/presentation/student_detail_page.dart';
 import '../domain/class_schedule.dart';
-import '../domain/schedule_service.dart';
 import '../domain/student_shift_assignment.dart';
 import 'assignment_controller.dart';
 import 'schedule_controller.dart';
@@ -24,409 +24,385 @@ class AssignmentTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final schedulesAsync = ref.watch(classScheduleControllerProvider(classId));
     final assignmentsAsync = ref.watch(
       classAssignmentControllerProvider(classId),
     );
+    final schedulesAsync = ref.watch(classScheduleControllerProvider(classId));
 
     return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionHeader(
-              context,
-              'Các ca học của lớp',
-              'Quản lý học sinh phân ca theo từng ca học định kỳ',
-            ),
-            const SizedBox(height: 16),
-            schedulesAsync.when(
-              data: (schedules) {
-                if (schedules.isEmpty) {
-                  return const Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text(
-                        'Lớp chưa có lịch học định kỳ. Vui lòng tạo lịch học ở tab Lịch học trước.',
-                      ),
+      backgroundColor: AppColors.background,
+      body: Column(
+        children: [
+          if (!isArchived)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Phân ca học sinh',
+                    style: TextStyle(
+                      color: AppColors.cyanAccent,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
                     ),
-                  );
-                }
-
-                return Column(
-                  children: schedules.map((schedule) {
-                    return _buildScheduleAssignmentCard(
-                      context,
-                      ref,
-                      schedule,
-                      assignmentsAsync,
-                    );
-                  }).toList(),
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Text('Lỗi tải lịch học: $e'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(
-    BuildContext context,
-    String title,
-    String subtitle,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          subtitle,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildScheduleAssignmentCard(
-    BuildContext context,
-    WidgetRef ref,
-    ClassSchedule schedule,
-    AsyncValue<List<StudentShiftAssignment>> assignmentsAsync,
-  ) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.access_time, color: Colors.teal),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${DateFormatter.formatVietnameseWeekday(schedule.thuTrongTuan)}: ${schedule.gioBatDau} - ${schedule.gioKetThuc}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                if (!isArchived)
+                  ),
                   ElevatedButton.icon(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AssignStudentDialog(
-                          classId: classId,
-                          scheduleId: schedule.id!,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () => _showAddAssignmentDialog(context, ref),
+                    icon: const Icon(Icons.person_add_outlined, size: 16),
+                    label: const Text('Phân ca mới'),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: assignmentsAsync.when(
+              data: (assignments) {
+                return schedulesAsync.when(
+                  data: (schedules) {
+                    if (schedules.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'Chưa có lịch học định kỳ nào để phân ca.',
+                          style: TextStyle(
+                            color: AppColors.textMuted,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       );
-                    },
-                    icon: const Icon(Icons.person_add, size: 16),
-                    label: const Text('Phân ca HS'),
-                  ),
-              ],
-            ),
-            const Divider(height: 24),
-            assignmentsAsync.when(
-              data: (assignments) {
-                final activeAssignmentsForThisSchedule = assignments
-                    .where(
-                      (a) =>
-                          a.idLichHoc == schedule.id &&
-                          a.isActiveOn(DateTime.now()),
-                    )
-                    .toList();
+                    }
+                    if (assignments.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'Chưa có học sinh nào được phân ca.',
+                          style: TextStyle(
+                            color: AppColors.textMuted,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      );
+                    }
 
-                if (activeAssignmentsForThisSchedule.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      'Chưa có học sinh nào phân ca ở khung giờ này.',
-                      style: TextStyle(
-                        fontStyle: FontStyle.italic,
-                        color: Colors.grey,
+                    final Map<int, List<StudentShiftAssignment>> grouped = {};
+                    for (final a in assignments) {
+                      grouped.putIfAbsent(a.idLichHoc, () => []).add(a);
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-                    ),
-                  );
-                }
+                      itemCount: schedules.length,
+                      itemBuilder: (context, index) {
+                        final schedule = schedules[index];
+                        final shiftAssignments = grouped[schedule.id!] ?? [];
+                        final isActiveSchedule = schedule.isEffectiveOn(
+                          DateTime.now(),
+                        );
 
-                return ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: activeAssignmentsForThisSchedule.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final assignment = activeAssignmentsForThisSchedule[index];
-                    return _buildStudentAssignmentTile(
-                      context,
-                      ref,
-                      assignment,
-                      schedule,
+                        return AppSectionCard(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      schedule.thuTrongTuan == 7
+                                          ? 'Chủ Nhật'
+                                          : 'Thứ ${schedule.thuTrongTuan + 1}',
+                                      style: const TextStyle(
+                                        color: AppColors.cyanAccent,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    '${schedule.gioBatDau} - ${schedule.gioKetThuc}',
+                                    style: const TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    '${shiftAssignments.length} học sinh',
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              const Divider(color: AppColors.border, height: 1),
+                              const SizedBox(height: 8),
+                              if (shiftAssignments.isEmpty)
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 8),
+                                  child: Text(
+                                    'Chưa có học sinh trong ca này',
+                                    style: TextStyle(
+                                      color: AppColors.textMuted,
+                                      fontSize: 12,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                )
+                              else
+                                ...shiftAssignments.map(
+                                  (a) => _AssignmentRowItem(
+                                    assignment: a,
+                                    classId: classId,
+                                    isArchived: isArchived || !isActiveSchedule,
+                                    schedules: schedules,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
                     );
                   },
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  ),
+                  error: (e, _) => Center(
+                    child: Text(
+                      'Lỗi: $e',
+                      style: const TextStyle(color: AppColors.error),
+                    ),
+                  ),
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Text('Lỗi tải danh sách phân ca: $e'),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+              error: (e, _) => Center(
+                child: Text(
+                  'Lỗi: $e',
+                  style: const TextStyle(color: AppColors.error),
+                ),
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildStudentAssignmentTile(
-    BuildContext context,
-    WidgetRef ref,
-    StudentShiftAssignment a,
-    ClassSchedule currentSchedule,
-  ) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-        backgroundColor: Colors.teal.shade50,
-        child: const Icon(Icons.person, color: Colors.teal),
+  void _showAddAssignmentDialog(BuildContext context, WidgetRef ref) async {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => AddAssignmentBottomSheet(classId: classId),
+    );
+  }
+}
+
+class _AssignmentRowItem extends ConsumerWidget {
+  final StudentShiftAssignment assignment;
+  final int classId;
+  final bool isArchived;
+  final List<ClassSchedule> schedules;
+
+  const _AssignmentRowItem({
+    required this.assignment,
+    required this.classId,
+    required this.isArchived,
+    required this.schedules,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final studentAsync = ref.watch(studentDetailProvider(assignment.idHocSinh));
+    final isActive =
+        assignment.denNgay == null ||
+        DateTime.parse(assignment.denNgay!).isAfter(DateTime.now());
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceHigh.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
       ),
-      title: Consumer(
-        builder: (context, ref, _) {
-          final studentAsync = ref.watch(studentDetailProvider(a.idHocSinh));
-          return studentAsync.when(
-            data: (s) => Text(
-              s?.hoTen ?? 'Chưa rõ tên',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+      child: Row(
+        children: [
+          studentAsync.when(
+            data: (s) => StudentAvatar(
+              gioiTinh: s?.gioiTinh,
+              studentName: s?.hoTen,
+              radius: 18,
             ),
-            loading: () => const Text('Đang tải...'),
-            error: (_, __) => const Text('Lỗi'),
-          );
-        },
-      ),
-      subtitle: Text(
-        'Áp dụng từ: ${a.tuNgay}${a.denNgay != null ? ' - ${a.denNgay}' : ''}',
-        style: const TextStyle(fontSize: 12),
-      ),
-      trailing: isArchived
-          ? null
-          : PopupMenuButton<String>(
+            loading: () => const CircleAvatar(
+              radius: 18,
+              backgroundColor: AppColors.surface,
+              child: Icon(Icons.person, size: 16),
+            ),
+            error: (_, __) => const CircleAvatar(
+              radius: 18,
+              backgroundColor: AppColors.surface,
+              child: Icon(Icons.person, size: 16),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                studentAsync.when(
+                  data: (s) => Text(
+                    s?.hoTen ?? 'Chưa rõ tên',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                      fontSize: 13,
+                    ),
+                  ),
+                  loading: () => const Text(
+                    '...',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  ),
+                  error: (_, __) => const Text(
+                    'Lỗi',
+                    style: TextStyle(color: AppColors.error, fontSize: 13),
+                  ),
+                ),
+                Text(
+                  'Từ: ${DateFormatter.formatDisplayDate(assignment.tuNgay)}${assignment.denNgay != null ? ' - ${DateFormatter.formatDisplayDate(assignment.denNgay!)}' : ''}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          AppStatusChip(
+            label: isActive ? 'Đang học' : 'Kết thúc',
+            color: isActive ? AppColors.success : AppColors.textMuted,
+            compact: true,
+          ),
+          if (isActive && !isArchived)
+            PopupMenuButton<String>(
+              icon: const Icon(
+                Icons.more_vert,
+                color: AppColors.textSecondary,
+                size: 18,
+              ),
+              color: AppColors.surfaceHigh,
               onSelected: (value) {
-                if (value == 'change_shift') {
-                  _showChangeShiftDialog(context, ref, a, currentSchedule);
-                } else if (value == 'close_assignment') {
-                  _showCloseAssignmentDialog(context, ref, a);
+                if (value == 'edit_date') {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    useSafeArea: true,
+                    builder: (_) => EditAssignmentBottomSheet(
+                      assignment: assignment,
+                      classId: classId,
+                    ),
+                  );
+                } else if (value == 'change_shift') {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    useSafeArea: true,
+                    builder: (_) => ChangeShiftBottomSheet(
+                      assignment: assignment,
+                      classId: classId,
+                      schedules: schedules,
+                    ),
+                  );
+                } else if (value == 'close') {
+                  _showCloseAssignmentDialog(context, ref, assignment);
                 }
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(
-                  value: 'change_shift',
+                  value: 'edit_date',
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.swap_horiz, size: 18),
+                      Icon(
+                        Icons.edit_calendar_outlined,
+                        size: 18,
+                        color: AppColors.cyanAccent,
+                      ),
                       SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          'Chuyển ca',
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        'Sửa ngày bắt đầu',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
                         ),
                       ),
                     ],
                   ),
                 ),
                 const PopupMenuItem(
-                  value: 'close_assignment',
+                  value: 'change_shift',
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.published_with_changes,
+                        size: 18,
+                        color: AppColors.primary,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Chuyển ca học',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'close',
+                  child: Row(
                     children: [
                       Icon(
                         Icons.stop_circle_outlined,
                         size: 18,
-                        color: Colors.red,
+                        color: AppColors.error,
                       ),
                       SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          'Kết thúc phân ca',
-                          style: TextStyle(color: Colors.red),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                      Text(
+                        'Kết thúc phân ca',
+                        style: TextStyle(color: AppColors.error, fontSize: 13),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-    );
-  }
-
-  void _showChangeShiftDialog(
-    BuildContext context,
-    WidgetRef ref,
-    StudentShiftAssignment a,
-    ClassSchedule currentSchedule,
-  ) {
-    int? selectedScheduleId;
-    DateTime effectiveDate = DateTime.now();
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Chuyển ca học định kỳ'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                title: const Text('Ngày bắt đầu ca mới'),
-                subtitle: Text(DateFormat('dd/MM/yyyy').format(effectiveDate)),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: effectiveDate,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null) {
-                    setDialogState(() => effectiveDate = picked);
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              Consumer(
-                builder: (context, ref, _) {
-                  final schedulesAsync = ref.watch(
-                    classScheduleControllerProvider(classId),
-                  );
-                  return schedulesAsync.when(
-                    data: (schedules) => DropdownButtonFormField<int>(
-                      initialValue: selectedScheduleId,
-                      decoration: const InputDecoration(
-                        labelText: 'Chọn ca mới',
-                      ),
-                      items: schedules
-                          .where(
-                            (s) =>
-                                s.id != currentSchedule.id &&
-                                s.isEffectiveOn(effectiveDate),
-                          )
-                          .map(
-                            (s) => DropdownMenuItem(
-                              value: s.id,
-                              child: Text(
-                                '${DateFormatter.formatVietnameseWeekday(s.thuTrongTuan)}: ${s.gioBatDau}-${s.gioKetThuc}',
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) =>
-                          setDialogState(() => selectedScheduleId = v),
-                    ),
-                    loading: () => const CircularProgressIndicator(),
-                    error: (e, _) => Text('Lỗi tải lịch: $e'),
-                  );
-                },
-              ),
-              if (selectedScheduleId != null) ...[
-                const SizedBox(height: 12),
-                Consumer(
-                  builder: (context, ref, _) {
-                    final previewAsync = ref.watch(
-                      assignmentConflictPreviewProvider((
-                        a.idHocSinh,
-                        selectedScheduleId!,
-                        DateFormat('yyyy-MM-dd').format(effectiveDate),
-                        null,
-                        a.id,
-                      )),
-                    );
-                    return previewAsync.when(
-                      data: (res) => ScheduleConflictBanner(result: res),
-                      loading: () => const LinearProgressIndicator(),
-                      error: (e, _) => Text('Lỗi kiểm tra trùng lịch: $e'),
-                    );
-                  },
-                ),
-              ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Hủy'),
-            ),
-            Consumer(
-              builder: (context, ref, _) {
-                bool isBlocked = false;
-                if (selectedScheduleId != null) {
-                  final previewAsync = ref.watch(
-                    assignmentConflictPreviewProvider((
-                      a.idHocSinh,
-                      selectedScheduleId!,
-                      DateFormat('yyyy-MM-dd').format(effectiveDate),
-                      null,
-                      a.id,
-                    )),
-                  );
-                  isBlocked = previewAsync.when(
-                    data: (res) => !res.canAssign,
-                    loading: () => true,
-                    error: (_, __) => true,
-                  );
-                }
-
-                return ElevatedButton(
-                  onPressed: (selectedScheduleId == null || isBlocked)
-                      ? null
-                      : () async {
-                          try {
-                            await ref
-                                .read(
-                                  classAssignmentControllerProvider(
-                                    classId,
-                                  ).notifier,
-                                )
-                                .changeShift(
-                                  studentId: a.idHocSinh,
-                                  oldAssignmentId: a.id!,
-                                  newScheduleId: selectedScheduleId!,
-                                  effectiveDate: effectiveDate,
-                                );
-                            if (context.mounted) Navigator.pop(context);
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    e.toString().replaceAll('Exception: ', ''),
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                  child: const Text('Xác nhận'),
-                );
-              },
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -434,230 +410,638 @@ class AssignmentTab extends ConsumerWidget {
   void _showCloseAssignmentDialog(
     BuildContext context,
     WidgetRef ref,
-    StudentShiftAssignment a,
-  ) {
-    DateTime endDate = DateTime.now();
-
-    showDialog(
+    StudentShiftAssignment assignment,
+  ) async {
+    final pickedDate = await showDatePicker(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Kết thúc phân ca'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Học sinh sẽ không còn học ca này từ ngày kết thúc.'),
-              const SizedBox(height: 16),
-              ListTile(
-                title: const Text('Ngày kết thúc'),
-                subtitle: Text(DateFormat('dd/MM/yyyy').format(endDate)),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: endDate,
-                    firstDate: DateTime.parse(a.tuNgay),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null) {
-                    setDialogState(() => endDate = picked);
-                  }
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Hủy'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                try {
-                  await ref
-                      .read(classAssignmentControllerProvider(classId).notifier)
-                      .close(assignmentId: a.id!, endDate: endDate);
-                  if (context.mounted) Navigator.pop(context);
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          e.toString().replaceAll('Exception: ', ''),
-                        ),
-                      ),
-                    );
-                  }
-                }
-              },
-              child: const Text('Xác nhận kết thúc'),
-            ),
-          ],
-        ),
-      ),
+      initialDate: DateTime.now(),
+      firstDate: DateTime.parse(assignment.tuNgay),
+      lastDate: DateTime(2100),
+      helpText: 'CHỌN NGÀY KẾT THÚC PHÂN CA',
     );
+
+    if (pickedDate != null && context.mounted) {
+      try {
+        await ref
+            .read(classAssignmentControllerProvider(classId).notifier)
+            .close(assignmentId: assignment.id!, endDate: pickedDate);
+        if (context.mounted) {
+          AppFeedback.showSuccessSnackBar(
+            context,
+            'Đã kết thúc phân ca học sinh',
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          AppFeedback.showErrorSnackBar(
+            context,
+            e.toString().replaceAll('Exception: ', ''),
+          );
+        }
+      }
+    }
   }
 }
 
-class AssignStudentDialog extends ConsumerStatefulWidget {
+class AddAssignmentBottomSheet extends ConsumerStatefulWidget {
   final int classId;
-  final int scheduleId;
-  const AssignStudentDialog({
+  final int? initialScheduleId;
+
+  const AddAssignmentBottomSheet({
     super.key,
     required this.classId,
-    required this.scheduleId,
+    this.initialScheduleId,
   });
 
   @override
-  ConsumerState<AssignStudentDialog> createState() =>
-      _AssignStudentDialogState();
+  ConsumerState<AddAssignmentBottomSheet> createState() =>
+      _AddAssignmentBottomSheetState();
 }
 
-class _AssignStudentDialogState extends ConsumerState<AssignStudentDialog> {
+class _AddAssignmentBottomSheetState
+    extends ConsumerState<AddAssignmentBottomSheet> {
   int? _selectedStudentId;
+  int? _selectedScheduleId;
   DateTime _startDate = DateTime.now();
+  bool _isSaving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedScheduleId = widget.initialScheduleId;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final studentsAsync = ref.watch(
-      assignmentCandidateProvider((widget.classId, _startDate)),
+    final schedulesAsync = ref.watch(
+      classScheduleControllerProvider(widget.classId),
+    );
+    final rosterAsync = ref.watch(
+      classRosterProvider((widget.classId, _startDate)),
     );
 
-    return AlertDialog(
-      title: const Text('Phân ca cho học sinh'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            studentsAsync.when(
-              data: (students) => DropdownButtonFormField<int>(
-                initialValue: _selectedStudentId,
-                decoration: const InputDecoration(labelText: 'Chọn học sinh'),
-                items: students
-                    .map(
-                      (s) =>
-                          DropdownMenuItem(value: s.id, child: Text(s.hoTen)),
-                    )
-                    .toList(),
-                onChanged: (v) => setState(() => _selectedStudentId = v),
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Phân ca học sinh',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
-              loading: () => const CircularProgressIndicator(),
-              error: (e, _) => Text('Lỗi: $e'),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              title: const Text('Ngày bắt đầu áp dụng'),
-              subtitle: Text(DateFormat('dd/MM/yyyy').format(_startDate)),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _startDate,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2100),
-                );
-                if (picked != null) {
-                  setState(() {
-                    _startDate = picked;
-                    _selectedStudentId = null;
-                  });
-                }
-              },
-            ),
-            if (_selectedStudentId != null) ...[
-              const SizedBox(height: 12),
-              Consumer(
-                builder: (context, ref, _) {
-                  final previewAsync = ref.watch(
-                    assignmentConflictPreviewProvider((
-                      _selectedStudentId!,
-                      widget.scheduleId,
-                      DateFormat('yyyy-MM-dd').format(_startDate),
-                      null,
-                      null,
-                    )),
-                  );
-                  return previewAsync.when(
-                    data: (res) => ScheduleConflictBanner(result: res),
-                    loading: () => const LinearProgressIndicator(),
-                    error: (e, _) => Text('Lỗi kiểm tra trùng lịch: $e'),
+              const SizedBox(height: 16),
+              if (_error != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              rosterAsync.when(
+                data: (memberships) {
+                  if (memberships.isEmpty) {
+                    return const Text(
+                      'Không có học sinh nào đang tham gia lớp.',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    );
+                  }
+                  return DropdownButtonFormField<int>(
+                    initialValue: _selectedStudentId,
+                    decoration: const InputDecoration(
+                      labelText: 'Chọn học sinh',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: memberships.map((m) {
+                      final student = ref
+                          .watch(studentDetailProvider(m.idHocSinh))
+                          .value;
+                      return DropdownMenuItem(
+                        value: m.idHocSinh,
+                        child: Text(
+                          student?.hoTen ?? 'Học sinh #${m.idHocSinh}',
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (v) => setState(() => _selectedStudentId = v),
                   );
                 },
+                loading: () =>
+                    const CircularProgressIndicator(color: AppColors.primary),
+                error: (e, _) => Text(
+                  'Lỗi: $e',
+                  style: const TextStyle(color: AppColors.error),
+                ),
+              ),
+              const SizedBox(height: 16),
+              schedulesAsync.when(
+                data: (schedules) {
+                  final activeSchedules = schedules
+                      .where((s) => s.isEffectiveOn(DateTime.now()))
+                      .toList();
+                  return DropdownButtonFormField<int>(
+                    initialValue: _selectedScheduleId,
+                    decoration: const InputDecoration(
+                      labelText: 'Chọn ca học',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: activeSchedules.map((s) {
+                      return DropdownMenuItem(
+                        value: s.id!,
+                        child: Text(
+                          '${DateFormatter.formatVietnameseWeekday(s.thuTrongTuan)}: ${s.gioBatDau} - ${s.gioKetThuc}',
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (v) => setState(() => _selectedScheduleId = v),
+                  );
+                },
+                loading: () =>
+                    const CircularProgressIndicator(color: AppColors.primary),
+                error: (e, _) => Text(
+                  'Lỗi: $e',
+                  style: const TextStyle(color: AppColors.error),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Ngày bắt đầu ca'),
+                subtitle: Text(DateFormatter.formatDisplayDate(_startDate)),
+                trailing: const Icon(
+                  Icons.calendar_today,
+                  color: AppColors.cyanAccent,
+                ),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _startDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) setState(() => _startDate = picked);
+                },
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: _isSaving ? null : () => Navigator.pop(context),
+                    child: const Text('Hủy'),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: _isSaving ? null : _submit,
+                    icon: _isSaving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.check),
+                    label: const Text('Lưu phân ca'),
+                  ),
+                ],
               ),
             ],
-          ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Hủy'),
-        ),
-        Consumer(
-          builder: (context, ref, _) {
-            bool isBlocked = false;
-            if (_selectedStudentId != null) {
-              final previewAsync = ref.watch(
-                assignmentConflictPreviewProvider((
-                  _selectedStudentId!,
-                  widget.scheduleId,
-                  DateFormat('yyyy-MM-dd').format(_startDate),
-                  null,
-                  null,
-                )),
-              );
-              isBlocked = previewAsync.when(
-                data: (res) => !res.canAssign,
-                loading: () => true,
-                error: (_, __) => true,
-              );
-            }
-
-            return ElevatedButton(
-              onPressed: (_selectedStudentId == null || isBlocked)
-                  ? null
-                  : _submit,
-              child: const Text('Xác nhận'),
-            );
-          },
-        ),
-      ],
     );
   }
 
   void _submit() async {
+    if (_selectedStudentId == null || _selectedScheduleId == null) {
+      setState(() => _error = 'Vui lòng chọn học sinh và ca học');
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _error = null;
+    });
+
     try {
       final result = await ref
           .read(classAssignmentControllerProvider(widget.classId).notifier)
           .assign(
             studentId: _selectedStudentId!,
             classId: widget.classId,
-            scheduleId: widget.scheduleId,
+            scheduleId: _selectedScheduleId!,
             startDate: _startDate,
           );
 
       if (result.canAssign) {
-        if (mounted) Navigator.pop(context);
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.conflictReason ?? 'Lỗi không xác định'),
-          ),
-        );
+        if (mounted) {
+          AppFeedback.showSuccessSnackBar(
+            context,
+            'Phân ca học sinh thành công',
+          );
+          Navigator.pop(context);
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isSaving = false;
+            _error =
+                result.conflictReason ?? 'Không thể phân ca do xung đột lịch';
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
-        );
+        setState(() {
+          _isSaving = false;
+          _error = e.toString().replaceAll('Exception: ', '');
+        });
       }
     }
   }
 }
 
-final assignmentCandidateProvider =
-    FutureProvider.family<List<Student>, (int, DateTime)>((ref, arg) async {
-      final service = await ref.watch(classScheduleServiceProvider.future);
-      return service.getAssignmentCandidates(arg.$1, arg.$2);
-    });
+class EditAssignmentBottomSheet extends StatefulWidget {
+  final StudentShiftAssignment assignment;
+  final int classId;
+
+  const EditAssignmentBottomSheet({
+    super.key,
+    required this.assignment,
+    required this.classId,
+  });
+
+  @override
+  State<EditAssignmentBottomSheet> createState() =>
+      _EditAssignmentBottomSheetState();
+}
+
+class _EditAssignmentBottomSheetState extends State<EditAssignmentBottomSheet> {
+  late DateTime _newStartDate;
+  bool _isSaving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _newStartDate =
+        DateFormatter.parseCanonicalDate(widget.assignment.tuNgay) ??
+        DateTime.now();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        final student = ref
+            .watch(studentDetailProvider(widget.assignment.idHocSinh))
+            .value;
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Sửa ngày bắt đầu phân ca',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Học sinh: ${student?.hoTen ?? 'N/A'}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (_error != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(
+                        color: AppColors.error,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Ngày bắt đầu phân ca mới'),
+                  subtitle: Text(
+                    DateFormatter.formatDisplayDate(_newStartDate),
+                  ),
+                  trailing: const Icon(
+                    Icons.calendar_today,
+                    color: AppColors.cyanAccent,
+                  ),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _newStartDate,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) setState(() => _newStartDate = picked);
+                  },
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: _isSaving
+                          ? null
+                          : () => Navigator.pop(context),
+                      child: const Text('Hủy'),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      onPressed: _isSaving
+                          ? null
+                          : () async {
+                              setState(() {
+                                _isSaving = true;
+                                _error = null;
+                              });
+                              try {
+                                await ref
+                                    .read(
+                                      classAssignmentControllerProvider(
+                                        widget.classId,
+                                      ).notifier,
+                                    )
+                                    .updateStartDate(
+                                      assignmentId: widget.assignment.id!,
+                                      newStartDate: _newStartDate,
+                                    );
+                                if (context.mounted) {
+                                  AppFeedback.showSuccessSnackBar(
+                                    context,
+                                    'Cập nhật ngày bắt đầu phân ca thành công',
+                                  );
+                                  Navigator.pop(context);
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  setState(() {
+                                    _isSaving = false;
+                                    _error = e.toString().replaceAll(
+                                      'Exception: ',
+                                      '',
+                                    );
+                                  });
+                                }
+                              }
+                            },
+                      icon: _isSaving
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.check),
+                      label: const Text('Lưu thay đổi'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class ChangeShiftBottomSheet extends StatefulWidget {
+  final StudentShiftAssignment assignment;
+  final int classId;
+  final List<ClassSchedule> schedules;
+
+  const ChangeShiftBottomSheet({
+    super.key,
+    required this.assignment,
+    required this.classId,
+    required this.schedules,
+  });
+
+  @override
+  State<ChangeShiftBottomSheet> createState() => _ChangeShiftBottomSheetState();
+}
+
+class _ChangeShiftBottomSheetState extends State<ChangeShiftBottomSheet> {
+  int? _newScheduleId;
+  DateTime _effectiveDate = DateTime.now();
+  bool _isSaving = false;
+  String? _error;
+
+  @override
+  Widget build(BuildContext context) {
+    final otherSchedules = widget.schedules
+        .where(
+          (s) =>
+              s.id != widget.assignment.idLichHoc &&
+              s.isEffectiveOn(_effectiveDate),
+        )
+        .toList();
+
+    return Consumer(
+      builder: (context, ref, _) {
+        final student = ref
+            .watch(studentDetailProvider(widget.assignment.idHocSinh))
+            .value;
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Chuyển ca học định kỳ',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Học sinh: ${student?.hoTen ?? 'N/A'}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (_error != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(
+                        color: AppColors.error,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                DropdownButtonFormField<int>(
+                  initialValue: _newScheduleId,
+                  decoration: const InputDecoration(
+                    labelText: 'Chọn ca học mới',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: otherSchedules.map((s) {
+                    return DropdownMenuItem(
+                      value: s.id!,
+                      child: Text(
+                        '${DateFormatter.formatVietnameseWeekday(s.thuTrongTuan)}: ${s.gioBatDau} - ${s.gioKetThuc}',
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (v) => setState(() => _newScheduleId = v),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Ngày áp dụng ca mới'),
+                  subtitle: Text(
+                    DateFormatter.formatDisplayDate(_effectiveDate),
+                  ),
+                  trailing: const Icon(
+                    Icons.calendar_today,
+                    color: AppColors.cyanAccent,
+                  ),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _effectiveDate,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) setState(() => _effectiveDate = picked);
+                  },
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: _isSaving
+                          ? null
+                          : () => Navigator.pop(context),
+                      child: const Text('Hủy'),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      onPressed: _isSaving
+                          ? null
+                          : () async {
+                              if (_newScheduleId == null) {
+                                setState(
+                                  () => _error = 'Vui lòng chọn ca học mới',
+                                );
+                                return;
+                              }
+                              setState(() {
+                                _isSaving = true;
+                                _error = null;
+                              });
+                              try {
+                                await ref
+                                    .read(
+                                      classAssignmentControllerProvider(
+                                        widget.classId,
+                                      ).notifier,
+                                    )
+                                    .changeShift(
+                                      studentId: widget.assignment.idHocSinh,
+                                      oldAssignmentId: widget.assignment.id!,
+                                      newScheduleId: _newScheduleId!,
+                                      effectiveDate: _effectiveDate,
+                                    );
+                                if (context.mounted) {
+                                  AppFeedback.showSuccessSnackBar(
+                                    context,
+                                    'Chuyển ca học sinh thành công',
+                                  );
+                                  Navigator.pop(context);
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  setState(() {
+                                    _isSaving = false;
+                                    _error = e.toString().replaceAll(
+                                      'Exception: ',
+                                      '',
+                                    );
+                                  });
+                                }
+                              }
+                            },
+                      icon: _isSaving
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.check),
+                      label: const Text('Xác nhận chuyển ca'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

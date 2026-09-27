@@ -74,4 +74,19 @@ class ClassAssignmentController extends _$ClassAssignmentController {
       return service.getAssignmentsForClass(classId);
     });
   }
+
+  Future<void> updateStartDate({
+    required int assignmentId,
+    required DateTime newStartDate,
+  }) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final service = await ref.read(classScheduleServiceProvider.future);
+      await service.updateAssignmentStartDate(
+        assignmentId: assignmentId,
+        newStartDate: newStartDate,
+      );
+      return service.getAssignmentsForClass(classId);
+    });
+  }
 }

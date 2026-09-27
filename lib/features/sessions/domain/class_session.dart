@@ -91,3 +91,31 @@ class ClassSession {
     );
   }
 }
+
+extension SessionTypeX on SessionType {
+  String get displayName {
+    switch (this) {
+      case SessionType.CHINH:
+        return 'Chính';
+      case SessionType.HOC_BU:
+        return 'Học bù';
+      case SessionType.PHAT_SINH:
+        return 'Phát sinh';
+    }
+  }
+}
+
+extension SessionStatusX on SessionStatus {
+  String get displayName {
+    switch (this) {
+      case SessionStatus.DU_KIEN:
+        return 'Dự kiến';
+      case SessionStatus.DA_HOC:
+        return 'Đã học';
+      case SessionStatus.HUY:
+        return 'Hủy';
+      case SessionStatus.NGHI_LE:
+        return 'Nghỉ lễ';
+    }
+  }
+}

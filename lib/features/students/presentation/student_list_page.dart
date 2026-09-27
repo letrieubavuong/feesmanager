@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/common_widgets/app_empty_state.dart';
 import '../../../app/common_widgets/app_error_state.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
+import '../../../app/common_widgets/navy_components.dart';
 import '../../../app/common_widgets/student_avatar.dart';
+import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../l10n/app_localizations.dart';
@@ -34,12 +36,13 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
     final studentListAsync = ref.watch(studentListControllerProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       drawer: const AppGlobalDrawer(),
       appBar: AppBar(
         leading: const GlobalMenuButton(),
         title: Text(l10n.navStudents),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(100),
+          preferredSize: const Size.fromHeight(104),
           child: Column(
             children: [
               Padding(
@@ -47,28 +50,59 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                   horizontal: 16,
                   vertical: 4,
                 ),
-                child: SearchBar(
+                child: TextField(
                   key: UiKeys.studentSearch,
                   controller: _searchController,
-                  hintText: l10n.studentSearchPlaceholder,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Tìm theo tên hoặc SĐT học sinh...',
+                    hintStyle: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 13,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(
+                              Icons.clear,
+                              color: AppColors.textMuted,
+                              size: 18,
+                            ),
+                            onPressed: () {
+                              _searchController.clear();
+                              ref
+                                  .read(studentListControllerProvider.notifier)
+                                  .search('');
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                  ),
                   onChanged: (value) {
                     ref
                         .read(studentListControllerProvider.notifier)
                         .search(value);
                   },
-                  leading: const Icon(Icons.search),
-                  trailing: [
-                    if (_searchController.text.isNotEmpty)
-                      IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          ref
-                              .read(studentListControllerProvider.notifier)
-                              .search('');
-                        },
-                      ),
-                  ],
                 ),
               ),
               SingleChildScrollView(
@@ -79,10 +113,19 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                 ),
                 child: Row(
                   children: [
-                    FilterChip(
+                    ChoiceChip(
                       key: UiKeys.studentActiveFilter,
-                      label: Text(l10n.filterActive),
+                      label: const Text('Học sinh đang hoạt động'),
                       selected: _filterArchived == false,
+                      selectedColor: AppColors.primary,
+                      backgroundColor: AppColors.surface,
+                      labelStyle: TextStyle(
+                        color: _filterArchived == false
+                            ? Colors.white
+                            : AppColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                       onSelected: (_) {
                         setState(() => _filterArchived = false);
                         ref
@@ -91,10 +134,19 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                       },
                     ),
                     const SizedBox(width: 8),
-                    FilterChip(
+                    ChoiceChip(
                       key: UiKeys.studentArchivedFilter,
-                      label: Text(l10n.filterArchived),
+                      label: const Text('Học sinh ngừng học'),
                       selected: _filterArchived == true,
+                      selectedColor: AppColors.primary,
+                      backgroundColor: AppColors.surface,
+                      labelStyle: TextStyle(
+                        color: _filterArchived == true
+                            ? Colors.white
+                            : AppColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                       onSelected: (_) {
                         setState(() => _filterArchived = true);
                         ref
@@ -103,9 +155,18 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                       },
                     ),
                     const SizedBox(width: 8),
-                    FilterChip(
-                      label: Text(l10n.filterAll),
+                    ChoiceChip(
+                      label: const Text('Tất cả'),
                       selected: _filterArchived == null,
+                      selectedColor: AppColors.primary,
+                      backgroundColor: AppColors.surface,
+                      labelStyle: TextStyle(
+                        color: _filterArchived == null
+                            ? Colors.white
+                            : AppColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                       onSelected: (_) {
                         setState(() => _filterArchived = null);
                         ref
@@ -128,30 +189,15 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
           return RefreshIndicator(
             onRefresh: () =>
                 ref.read(studentListControllerProvider.notifier).refresh(),
-            child: ListView.separated(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               itemCount: students.length,
-              separatorBuilder: (context, index) => const Divider(height: 1),
               itemBuilder: (context, index) {
                 final student = students[index];
-                return ListTile(
-                  leading: StudentAvatar(
-                    gioiTinh: student.gioiTinh,
-                    studentName: student.hoTen,
-                  ),
-                  title: Text(
-                    student.hoTen,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      decoration: student.daLuuTru
-                          ? TextDecoration.lineThrough
-                          : null,
-                    ),
-                  ),
-                  subtitle: Text(
-                    '${student.khoi != null ? l10n.studentGradeItem(student.khoi!) : ''} ${student.truongDangHoc != null ? '- ${student.truongDangHoc}' : ''}\nPH: ${student.tenPhuHuynh ?? 'N/A'} - ${student.sdtPhuHuynh ?? 'N/A'}',
-                  ),
-                  isThreeLine: true,
-                  trailing: const Icon(Icons.chevron_right),
+                final isStopped = student.daLuuTru;
+                return AppSectionCard(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
                   onTap: () async {
                     await Navigator.of(context).push(
                       MaterialPageRoute(
@@ -165,6 +211,73 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                           .refresh();
                     }
                   },
+                  child: Row(
+                    children: [
+                      StudentAvatar(
+                        gioiTinh: student.gioiTinh,
+                        studentName: student.hoTen,
+                        radius: 22,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    student.hoTen,
+                                    style: TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      decoration: isStopped
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                AppStatusChip(
+                                  label: isStopped ? 'Ngừng học' : 'Đang học',
+                                  color: isStopped
+                                      ? AppColors.error
+                                      : AppColors.success,
+                                  compact: true,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${student.khoi != null ? 'Khối ${student.khoi}' : 'Chưa xếp khối'}'
+                              '${student.truongDangHoc != null ? ' • ${student.truongDangHoc}' : ''}',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'PH: ${student.tenPhuHuynh ?? 'Chưa cập nhật'} - ${student.sdtPhuHuynh ?? 'Không có SĐT'}',
+                              style: const TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 11,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textMuted,
+                        size: 20,
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
@@ -179,13 +292,14 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.primary,
         onPressed: () async {
           await Navigator.of(context).push(
             MaterialPageRoute(builder: (context) => const StudentFormPage()),
           );
           ref.read(studentListControllerProvider.notifier).refresh();
         },
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

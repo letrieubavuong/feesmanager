@@ -16,8 +16,9 @@ class _MockClassFormController extends ClassFormController {
   _MockClassFormController({required this.onSave});
 
   @override
-  Future<void> save(ClassEntity classEntity) async {
+  Future<int> save(ClassEntity classEntity) async {
     await onSave(classEntity);
+    return classEntity.id ?? 1;
   }
 }
 

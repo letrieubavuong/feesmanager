@@ -2,27 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/common_widgets/app_feedback.dart';
+import '../../../app/common_widgets/navy_components.dart';
 import '../../../app/common_widgets/student_avatar.dart';
+import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../attendance/presentation/attendance_page.dart';
+import '../../leave/presentation/leave_request_page.dart';
+import '../../memberships/domain/membership.dart';
+import '../../memberships/domain/membership_service.dart';
 import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
 import '../../memberships/presentation/leave_class_bottom_sheet.dart';
+import '../../memberships/presentation/membership_providers.dart';
 import '../../memberships/presentation/re_enroll_student_bottom_sheet.dart';
+import '../../schedule/presentation/assignment_tab.dart';
+import '../../schedule/presentation/schedule_tab.dart';
+import '../../sessions/domain/class_session.dart';
+import '../../sessions/presentation/session_controller.dart';
+import '../../sessions/presentation/session_tab.dart';
+import '../../students/presentation/student_detail_page.dart';
+import '../../tuition/presentation/class_tuition_tab.dart';
+import '../../tuition/presentation/create_tuition_policy_bottom_sheet.dart';
+import '../../tuition/presentation/tuition_controller.dart';
 import '../domain/class.dart';
+import '../domain/class_service.dart';
 import 'class_controller.dart';
 import 'class_form_bottom_sheet.dart';
-import '../domain/class_service.dart';
-import '../../memberships/domain/membership_service.dart';
-import '../../memberships/domain/membership.dart';
-import '../../memberships/presentation/membership_providers.dart';
-import '../../students/presentation/student_detail_page.dart';
-
-import '../../schedule/presentation/schedule_tab.dart';
-import '../../schedule/presentation/assignment_tab.dart';
-import '../../sessions/presentation/session_tab.dart';
-import '../../leave/presentation/leave_request_page.dart';
-import '../../tuition/presentation/class_tuition_tab.dart';
 
 class ClassDetailPage extends ConsumerStatefulWidget {
   final int classId;
@@ -44,8 +50,14 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
     final historyAsync = ref.watch(
       classMembershipHistoryProvider(widget.classId),
     );
+    final currentMonth = DateFormatter.currentMonthString();
+    final policyAsync = ref.watch(
+      effectiveTuitionPolicyProvider((widget.classId, currentMonth)),
+    );
+    final sizeAsync = ref.watch(classSizeProvider(widget.classId));
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       drawer: const AppGlobalDrawer(),
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -60,8 +72,8 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.edit),
-                        tooltip: 'Chỉnh sửa lớp',
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: 'Sửa lớp',
                         onPressed: () async {
                           await showClassFormBottomSheet(context, cls: cls);
                           ref.invalidate(classDetailProvider(widget.classId));
@@ -71,7 +83,15 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                         },
                       ),
                       IconButton(
-                        icon: const Icon(Icons.event_note),
+                        icon: const Icon(Icons.request_quote_outlined),
+                        tooltip: 'Mức học phí',
+                        onPressed: () => showCreateTuitionPolicyBottomSheet(
+                          context,
+                          classId: widget.classId,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.event_note_outlined),
                         tooltip: 'Đơn nghỉ học',
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(
@@ -85,8 +105,16 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                             ? UiKeys.classRestoreAction
                             : UiKeys.classArchiveAction,
                         icon: Icon(
-                          cls.daLuuTru ? Icons.unarchive : Icons.archive,
+                          cls.daLuuTru
+                              ? Icons.restore_rounded
+                              : Icons.folder_off_outlined,
+                          color: cls.daLuuTru
+                              ? AppColors.success
+                              : AppColors.error,
                         ),
+                        tooltip: cls.daLuuTru
+                            ? 'Kích hoạt lại lớp'
+                            : 'Ngừng hoạt động lớp',
                         onPressed: () => _handleArchiveToggle(context, cls),
                       ),
                     ],
@@ -99,32 +127,38 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
       body: classAsync.when(
         data: (cls) {
           if (cls == null) {
-            return const Center(child: Text('Không tìm thấy lớp học'));
+            return const Center(
+              child: Text(
+                'Không tìm thấy lớp học',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            );
           }
+          final isStopped = cls.daLuuTru;
           return Column(
             children: [
-              if (cls.daLuuTru)
+              if (isStopped)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 12,
+                    vertical: 10,
                   ),
-                  color: Theme.of(context).colorScheme.errorContainer,
-                  child: Row(
+                  color: AppColors.error.withValues(alpha: 0.15),
+                  child: const Row(
                     children: [
                       Icon(
-                        Icons.archive_outlined,
-                        color: Theme.of(context).colorScheme.onErrorContainer,
+                        Icons.info_outline,
+                        color: AppColors.error,
+                        size: 20,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Lớp đã lưu trữ. Dữ liệu lịch sử vẫn được giữ nguyên. Khôi phục lớp để tiếp tục hoạt động.',
+                          'Lớp đã ngừng hoạt động. Dữ liệu lịch sử vẫn được giữ nguyên. Kích hoạt lại lớp để tiếp tục hoạt động.',
                           style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onErrorContainer,
+                            color: AppColors.error,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -132,22 +166,34 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                     ],
                   ),
                 ),
-              _buildHeader(context, cls),
+              _buildHeader(context, cls, sizeAsync, policyAsync),
               Expanded(
                 child: DefaultTabController(
-                  length: 6,
+                  length: 7,
                   child: Column(
                     children: [
-                      const TabBar(
-                        isScrollable: true,
-                        tabs: [
-                          Tab(text: 'Sĩ số'),
-                          Tab(text: 'Lịch sử'),
-                          Tab(text: 'Lịch học'),
-                          Tab(text: 'Phân ca'),
-                          Tab(text: 'Buổi học'),
-                          Tab(text: 'Học phí'),
-                        ],
+                      Container(
+                        color: AppColors.surface,
+                        child: const TabBar(
+                          isScrollable: true,
+                          indicatorColor: AppColors.cyanAccent,
+                          labelColor: AppColors.cyanAccent,
+                          unselectedLabelColor: AppColors.textSecondary,
+                          labelStyle: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          unselectedLabelStyle: TextStyle(fontSize: 13),
+                          tabs: [
+                            Tab(text: 'Sĩ số'),
+                            Tab(text: 'Lịch học'),
+                            Tab(text: 'Phân ca'),
+                            Tab(text: 'Buổi học'),
+                            Tab(text: 'Điểm danh'),
+                            Tab(text: 'Học phí'),
+                            Tab(text: 'Lịch sử'),
+                          ],
+                        ),
                       ),
                       Expanded(
                         child: TabBarView(
@@ -159,25 +205,26 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                                   child: _buildRosterTab(
                                     context,
                                     rosterAsync,
-                                    cls.daLuuTru,
+                                    isStopped,
                                   ),
                                 ),
                               ],
                             ),
-                            _buildHistoryTab(context, historyAsync),
                             ScheduleTab(
                               classId: widget.classId,
-                              isArchived: cls.daLuuTru,
+                              isArchived: isStopped,
                             ),
                             AssignmentTab(
                               classId: widget.classId,
-                              isArchived: cls.daLuuTru,
+                              isArchived: isStopped,
                             ),
                             SessionTab(
                               classId: widget.classId,
-                              isArchived: cls.daLuuTru,
+                              isArchived: isStopped,
                             ),
+                            _buildAttendanceTab(context),
                             ClassTuitionTab(classId: widget.classId),
+                            _buildHistoryTab(context, historyAsync),
                           ],
                         ),
                       ),
@@ -188,43 +235,166 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Lỗi: $e')),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+        error: (e, _) => Center(
+          child: Text(
+            'Lỗi: $e',
+            style: const TextStyle(color: AppColors.error),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, ClassEntity cls) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Theme.of(
-        context,
-      ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      child: Row(
+  Widget _buildHeader(
+    BuildContext context,
+    ClassEntity cls,
+    AsyncValue<int> sizeAsync,
+    AsyncValue<dynamic> policyAsync,
+  ) {
+    return AppSectionCard(
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 30,
-            child: Text(
-              cls.tenLop[0].toUpperCase(),
-              style: const TextStyle(fontSize: 24),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  cls.tenLop,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: cls.daLuuTru
+                      ? const Color(0x26FF5964)
+                      : const Color(0x260A84FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    cls.tenLop[0].toUpperCase(),
+                    style: TextStyle(
+                      color: cls.daLuuTru
+                          ? AppColors.error
+                          : AppColors.cyanAccent,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                Text(
-                  '${cls.monHoc ?? 'Môn chưa xác định'} • Khối ${cls.khoi ?? '?'}',
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            cls.tenLop,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        AppStatusChip(
+                          label: cls.daLuuTru ? 'Ngừng HĐ' : 'Đang hoạt động',
+                          color: cls.daLuuTru
+                              ? AppColors.error
+                              : AppColors.success,
+                          compact: true,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${cls.monHoc ?? 'Môn chưa xác định'} • Khối ${cls.khoi ?? '?'}',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Divider(color: AppColors.border, height: 1),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.groups_outlined,
+                    size: 16,
+                    color: AppColors.textMuted,
+                  ),
+                  const SizedBox(width: 6),
+                  sizeAsync.when(
+                    data: (size) => Text(
+                      'Sĩ số hiện tại: $size / ${cls.siSoToiDa ?? '∞'}',
+                      style: TextStyle(
+                        color: (cls.siSoToiDa != null && size >= cls.siSoToiDa!)
+                            ? AppColors.error
+                            : AppColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    loading: () => const Text(
+                      '...',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 13,
+                      ),
+                    ),
+                    error: (_, __) => const Text(
+                      '?',
+                      style: TextStyle(color: AppColors.error, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+              policyAsync.when(
+                data: (policy) {
+                  if (policy == null) {
+                    return TextButton(
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                      onPressed: () => showCreateTuitionPolicyBottomSheet(
+                        context,
+                        classId: widget.classId,
+                      ),
+                      child: const Text(
+                        'Thiết lập học phí',
+                        style: TextStyle(
+                          color: AppColors.warning,
+                          fontSize: 12,
+                        ),
+                      ),
+                    );
+                  }
+                  return Text(
+                    '${policy.hocPhiTrenBuoi}đ/buổi',
+                    style: const TextStyle(
+                      color: AppColors.cyanAccent,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+            ],
           ),
         ],
       ),
@@ -233,12 +403,19 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
 
   Widget _buildDateSelector(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text('Xem danh sách tại ngày: '),
-          TextButton.icon(
+          const Text(
+            'Sĩ số tại ngày:',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          ),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppColors.border),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            ),
             onPressed: () async {
               final picked = await showDatePicker(
                 context: context,
@@ -248,8 +425,18 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
               );
               if (picked != null) setState(() => _referenceDate = picked);
             },
-            icon: const Icon(Icons.calendar_today, size: 16),
-            label: Text(DateFormat('dd/MM/yyyy').format(_referenceDate)),
+            icon: const Icon(
+              Icons.calendar_today,
+              size: 14,
+              color: AppColors.cyanAccent,
+            ),
+            label: Text(
+              DateFormat('dd/MM/yyyy').format(_referenceDate),
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 13,
+              ),
+            ),
           ),
         ],
       ),
@@ -265,20 +452,29 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
       children: [
         if (!isArchived)
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Danh sách học sinh',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  'Danh sách học sinh đang học',
+                  style: TextStyle(
+                    color: AppColors.cyanAccent,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                  ),
                   onPressed: () => _showAddStudentDialog(context),
-                  icon: const Icon(Icons.person_add, size: 16),
+                  icon: const Icon(Icons.person_add_outlined, size: 16),
                   label: const Text('Thêm học sinh'),
                 ),
               ],
@@ -289,10 +485,20 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
             data: (memberships) {
               if (memberships.isEmpty) {
                 return const Center(
-                  child: Text('Không có học sinh nào trong ngày này.'),
+                  child: Text(
+                    'Không có học sinh nào tham gia trong ngày này.',
+                    style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
                 );
               }
               return ListView.builder(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 itemCount: memberships.length,
                 itemBuilder: (context, index) {
                   final m = memberships[index];
@@ -300,11 +506,147 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                 },
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Lỗi: $e')),
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+            error: (e, _) => Center(
+              child: Text(
+                'Lỗi: $e',
+                style: const TextStyle(color: AppColors.error),
+              ),
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildAttendanceTab(BuildContext context) {
+    final sessionsAsync = ref.watch(
+      classSessionControllerProvider(widget.classId),
+    );
+
+    return sessionsAsync.when(
+      data: (sessions) {
+        if (sessions.isEmpty) {
+          return const Center(
+            child: Text(
+              'Chưa có buổi học nào được sinh.',
+              style: TextStyle(
+                color: AppColors.textMuted,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          itemCount: sessions.length,
+          itemBuilder: (context, index) {
+            final session = sessions[index];
+            final date = DateTime.parse(session.ngay);
+            final formattedDate = DateFormatter.formatDisplayDate(session.ngay);
+            final weekday = DateFormatter.formatVietnameseWeekday(date.weekday);
+
+            Color statusColor;
+            String statusText;
+            switch (session.trangThai) {
+              case SessionStatus.DU_KIEN:
+                statusColor = AppColors.warning;
+                statusText = 'Chưa điểm danh';
+                break;
+              case SessionStatus.DA_HOC:
+                statusColor = AppColors.success;
+                statusText = 'Đã điểm danh';
+                break;
+              case SessionStatus.HUY:
+                statusColor = AppColors.error;
+                statusText = 'Đã hủy';
+                break;
+              case SessionStatus.NGHI_LE:
+                statusColor = AppColors.textMuted;
+                statusText = 'Nghỉ lễ';
+                break;
+            }
+
+            return AppSectionCard(
+              margin: const EdgeInsets.only(bottom: 8),
+              onTap: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        AttendancePage(sessionId: session.id!),
+                  ),
+                );
+                ref.invalidate(classSessionControllerProvider(widget.classId));
+              },
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.fact_check_outlined,
+                      color: statusColor,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '$weekday, $formattedDate',
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            AppStatusChip(
+                              label: statusText,
+                              color: statusColor,
+                              compact: true,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${session.gioBatDau} - ${session.gioKetThuc} | ${session.loai.displayName}',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textMuted,
+                    size: 20,
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
+      error: (e, _) => Center(
+        child: Text('Lỗi: $e', style: const TextStyle(color: AppColors.error)),
+      ),
     );
   }
 
@@ -315,9 +657,18 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
     return historyAsync.when(
       data: (memberships) {
         if (memberships.isEmpty) {
-          return const Center(child: Text('Không có lịch sử tham gia nào.'));
+          return const Center(
+            child: Text(
+              'Không có lịch sử tham gia nào.',
+              style: TextStyle(
+                color: AppColors.textMuted,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          );
         }
         return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           itemCount: memberships.length,
           itemBuilder: (context, index) {
             final m = memberships[index];
@@ -325,15 +676,19 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Lỗi: $e')),
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
+      error: (e, _) => Center(
+        child: Text('Lỗi: $e', style: const TextStyle(color: AppColors.error)),
+      ),
     );
   }
 
   void _handleArchiveToggle(BuildContext context, ClassEntity cls) async {
-    final isArchived = cls.daLuuTru;
+    final isStopped = cls.daLuuTru;
     try {
-      if (!isArchived) {
+      if (!isStopped) {
         final activeCount = await ref
             .read(classServiceProvider.future)
             .then((s) => s.getActiveMemberCount(cls.id!));
@@ -341,7 +696,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
           if (context.mounted) {
             AppFeedback.showErrorSnackBar(
               context,
-              'Lớp hiện có $activeCount học sinh đang học. Hãy kết thúc các membership trước khi lưu trữ lớp.',
+              'Lớp hiện có $activeCount học sinh đang học. Hãy kết thúc các membership trước khi ngừng hoạt động lớp.',
             );
           }
           return;
@@ -349,13 +704,13 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
         if (!context.mounted) return;
         final confirm = await AppFeedback.showConfirmBottomSheet(
           context,
-          title: 'Lưu trữ lớp học',
+          title: 'Ngừng hoạt động lớp học',
           message:
-              'Lưu trữ lớp "${cls.tenLop}" nghĩa là lớp dừng hoạt động.\n\n'
-              '• Dữ liệu lịch sử, điểm danh và học phí vẫn được GIỮ NGUYÊN.\n'
-              '• Lớp sẽ chuyển sang danh sách Đã lưu trữ.\n'
-              '• Bạn có thể khôi phục lớp bất kỳ lúc nào.',
-          confirmLabel: 'Lưu trữ',
+              'Ngừng hoạt động lớp "${cls.tenLop}" nghĩa là lớp tạm thời không nhận học sinh mới.\n\n'
+              '• Toàn bộ dữ liệu lịch sử, điểm danh và học phí vẫn được GIỮ NGUYÊN.\n'
+              '• Lớp sẽ chuyển sang danh sách Ngừng hoạt động.\n'
+              '• Bạn có thể kích hoạt lại lớp bất kỳ lúc nào.',
+          confirmLabel: 'Ngừng hoạt động',
           isDestructive: true,
         );
         if (confirm != true || !context.mounted) return;
@@ -363,9 +718,9 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
       } else {
         final confirm = await AppFeedback.showConfirmBottomSheet(
           context,
-          title: 'Khôi phục lớp học',
-          message: 'Bạn có chắc chắn muốn khôi phục lớp "${cls.tenLop}"?',
-          confirmLabel: 'Khôi phục',
+          title: 'Kích hoạt lại lớp học',
+          message: 'Bạn có chắc chắn muốn kích hoạt lại lớp "${cls.tenLop}"?',
+          confirmLabel: 'Kích hoạt lại',
         );
         if (confirm != true || !context.mounted) return;
         await ref.read(classListControllerProvider.notifier).restore(cls.id!);
@@ -375,7 +730,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
         ref.read(classListControllerProvider.notifier).refresh();
         AppFeedback.showSuccessSnackBar(
           context,
-          isArchived ? 'Đã khôi phục lớp học' : 'Đã lưu trữ lớp học',
+          isStopped ? 'Đã kích hoạt lại lớp học' : 'Đã ngừng hoạt động lớp học',
         );
       }
     } catch (e) {
@@ -410,40 +765,96 @@ class HistoryItem extends ConsumerWidget {
     final studentAsync = ref.watch(studentDetailProvider(membership.idHocSinh));
     final isActive = membership.isActiveOn(DateTime.now());
 
-    return ListTile(
-      leading: studentAsync.when(
-        data: (s) =>
-            StudentAvatar(gioiTinh: s?.gioiTinh, studentName: s?.hoTen),
-        loading: () => const CircleAvatar(child: Icon(Icons.history)),
-        error: (_, __) => const CircleAvatar(child: Icon(Icons.history)),
-      ),
-      title: studentAsync.when(
-        data: (s) => Text(
-          s?.hoTen ?? 'Chưa rõ tên',
-          style: TextStyle(fontWeight: isActive ? FontWeight.bold : null),
-        ),
-        loading: () => const Text('Đang tải...'),
-        error: (_, __) => const Text('Lỗi'),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return AppSectionCard(
+      margin: const EdgeInsets.only(bottom: 6),
+      child: Row(
         children: [
-          Text(
-            'Ngày tham gia: ${DateFormatter.formatDisplayDate(membership.tuNgay)}${membership.denNgay != null ? ' - ${DateFormatter.formatDisplayDate(membership.denNgay)}' : ''}',
+          studentAsync.when(
+            data: (s) => StudentAvatar(
+              gioiTinh: s?.gioiTinh,
+              studentName: s?.hoTen,
+              radius: 20,
+            ),
+            loading: () => const CircleAvatar(
+              radius: 20,
+              backgroundColor: AppColors.surfaceHigh,
+              child: Icon(Icons.history, size: 18),
+            ),
+            error: (_, __) => const CircleAvatar(
+              radius: 20,
+              backgroundColor: AppColors.surfaceHigh,
+              child: Icon(Icons.history, size: 18),
+            ),
           ),
-          if (membership.lyDoKetThuc != null)
-            Text(
-              'Lý do nghỉ: ${membership.lyDoKetThuc}',
-              style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 12),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                studentAsync.when(
+                  data: (s) => Text(
+                    s?.hoTen ?? 'Chưa rõ tên',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                  loading: () => const Text(
+                    'Đang tải...',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                  ),
+                  error: (_, __) => const Text(
+                    'Lỗi',
+                    style: TextStyle(color: AppColors.error, fontSize: 14),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Tham gia: ${DateFormatter.formatDisplayDate(membership.tuNgay)}${membership.denNgay != null ? ' - ${DateFormatter.formatDisplayDate(membership.denNgay!)}' : ''}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                if (membership.lyDoKetThuc != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Lý do: ${membership.lyDoKetThuc}',
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontStyle: FontStyle.italic,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (!isActive)
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                side: const BorderSide(color: AppColors.border),
+              ),
+              onPressed: () => _showReEnrollDialog(context, ref),
+              child: const Text(
+                'Học lại',
+                style: TextStyle(color: AppColors.cyanAccent, fontSize: 12),
+              ),
+            )
+          else
+            const AppStatusChip(
+              label: 'Đang học',
+              color: AppColors.success,
+              compact: true,
             ),
         ],
       ),
-      trailing: !isActive
-          ? TextButton(
-              onPressed: () => _showReEnrollDialog(context, ref),
-              child: const Text('Học lại'),
-            )
-          : const Icon(Icons.check_circle, color: Colors.green, size: 16),
     );
   }
 
@@ -470,24 +881,67 @@ class RosterItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final studentAsync = ref.watch(studentDetailProvider(membership.idHocSinh));
 
-    return ListTile(
-      leading: studentAsync.when(
-        data: (s) =>
-            StudentAvatar(gioiTinh: s?.gioiTinh, studentName: s?.hoTen),
-        loading: () => const CircleAvatar(child: Icon(Icons.person)),
-        error: (_, __) => const CircleAvatar(child: Icon(Icons.person)),
-      ),
-      title: studentAsync.when(
-        data: (s) => Text(s?.hoTen ?? 'Chưa rõ tên'),
-        loading: () => const Text('Đang tải...'),
-        error: (_, __) => const Text('Lỗi'),
-      ),
-      subtitle: Text(
-        'Ngày tham gia: ${DateFormatter.formatDisplayDate(membership.tuNgay)}${membership.denNgay != null ? ' - ${DateFormatter.formatDisplayDate(membership.denNgay)}' : ''}',
-      ),
-      trailing: IconButton(
-        icon: const Icon(Icons.logout),
-        onPressed: () => _showLeaveDialog(context, ref),
+    return AppSectionCard(
+      margin: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          studentAsync.when(
+            data: (s) => StudentAvatar(
+              gioiTinh: s?.gioiTinh,
+              studentName: s?.hoTen,
+              radius: 20,
+            ),
+            loading: () => const CircleAvatar(
+              radius: 20,
+              backgroundColor: AppColors.surfaceHigh,
+              child: Icon(Icons.person, size: 18),
+            ),
+            error: (_, __) => const CircleAvatar(
+              radius: 20,
+              backgroundColor: AppColors.surfaceHigh,
+              child: Icon(Icons.person, size: 18),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                studentAsync.when(
+                  data: (s) => Text(
+                    s?.hoTen ?? 'Chưa rõ tên',
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  loading: () => const Text(
+                    'Đang tải...',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                  ),
+                  error: (_, __) => const Text(
+                    'Lỗi',
+                    style: TextStyle(color: AppColors.error, fontSize: 14),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Tham gia từ: ${DateFormatter.formatDisplayDate(membership.tuNgay)}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: AppColors.error, size: 20),
+            tooltip: 'Cho nghỉ lớp',
+            onPressed: () => _showLeaveDialog(context, ref),
+          ),
+        ],
       ),
     );
   }

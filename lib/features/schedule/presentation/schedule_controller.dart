@@ -41,4 +41,26 @@ class ClassScheduleController extends _$ClassScheduleController {
     });
     return !state.hasError;
   }
+
+  Future<bool> revise({
+    required int scheduleId,
+    required int thuTrongTuan,
+    required String gioBatDau,
+    required String gioKetThuc,
+    required DateTime effectiveDate,
+  }) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final service = await ref.read(classScheduleServiceProvider.future);
+      await service.reviseSchedule(
+        scheduleId: scheduleId,
+        thuTrongTuan: thuTrongTuan,
+        gioBatDau: gioBatDau,
+        gioKetThuc: gioKetThuc,
+        effectiveDate: effectiveDate,
+      );
+      return service.getSchedulesForClass(classId);
+    });
+    return !state.hasError;
+  }
 }

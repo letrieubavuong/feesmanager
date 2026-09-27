@@ -58,4 +58,9 @@ class DateFormatter {
       return null;
     }
   }
+
+  static String currentMonthString() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}';
+  }
 }

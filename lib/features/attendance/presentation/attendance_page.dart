@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../app/common_widgets/app_feedback.dart';
+import '../../../app/common_widgets/navy_components.dart';
+import '../../../app/common_widgets/student_avatar.dart';
+import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../roster/domain/roster_member.dart';
 import '../../roster/domain/roster_result.dart';
-import '../../session_adjustments/presentation/session_adjustment_controller.dart';
-import '../../session_adjustments/presentation/session_adjustment_dialogs.dart';
 import '../../sessions/domain/class_session.dart';
 import '../domain/attendance_sheet.dart';
 import '../domain/attendance_state.dart';
@@ -16,40 +18,17 @@ class AttendancePage extends ConsumerWidget {
 
   const AttendancePage({super.key, required this.sessionId});
 
-  bool _hasDirtyDraft(WidgetRef ref) {
-    return ref
-        .read(attendanceControllerProvider(sessionId).notifier)
-        .hasDirtyDraft;
-  }
-
-  void _showDirtyDraftDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Có thay đổi điểm danh chưa lưu'),
-        content: const Text(
-          'Danh sách học sinh sắp thay đổi. Vui lòng Lưu nháp hoặc Hoàn tác các thay đổi điểm danh trước khi tiếp tục.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Đóng'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sheetAsync = ref.watch(attendanceControllerProvider(sessionId));
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       drawer: const AppGlobalDrawer(),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: const BackButton(),
-        title: const Text('Điểm danh'),
+        title: const Text('Điểm danh buổi học'),
         actions: [
           const GlobalMenuButton(),
           ...sheetAsync.when(
@@ -60,10 +39,17 @@ class AttendancePage extends ConsumerWidget {
                     onPressed: () => ref
                         .read(attendanceControllerProvider(sessionId).notifier)
                         .markAllHocBu(),
-                    icon: const Icon(Icons.done_all, color: Colors.white),
+                    icon: const Icon(
+                      Icons.done_all,
+                      color: AppColors.cyanAccent,
+                      size: 18,
+                    ),
                     label: const Text(
                       'Học bù hết',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(
+                        color: AppColors.cyanAccent,
+                        fontSize: 13,
+                      ),
                     ),
                   )
                 else
@@ -71,14 +57,21 @@ class AttendancePage extends ConsumerWidget {
                     onPressed: () => ref
                         .read(attendanceControllerProvider(sessionId).notifier)
                         .markAllPresent(),
-                    icon: const Icon(Icons.done_all, color: Colors.white),
+                    icon: const Icon(
+                      Icons.done_all,
+                      color: AppColors.cyanAccent,
+                      size: 18,
+                    ),
                     label: const Text(
                       'Có mặt hết',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(
+                        color: AppColors.cyanAccent,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 IconButton(
-                  icon: const Icon(Icons.undo),
+                  icon: const Icon(Icons.undo, color: AppColors.textSecondary),
                   onPressed: () => ref
                       .read(attendanceControllerProvider(sessionId).notifier)
                       .undoChanges(),
@@ -93,16 +86,26 @@ class AttendancePage extends ConsumerWidget {
       ),
       body: sheetAsync.when(
         data: (sheet) => _buildContent(context, ref, sheet),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
         error: (err, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: AppColors.error,
+                ),
                 const SizedBox(height: 16),
-                Text(err.toString(), textAlign: TextAlign.center),
+                Text(
+                  err.toString(),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppColors.textPrimary),
+                ),
               ],
             ),
           ),
@@ -130,23 +133,24 @@ class AttendancePage extends ConsumerWidget {
   ) {
     return Column(
       children: [
-        _buildSessionHeader(context, sheet),
+        _buildSessionHeader(context, ref, sheet),
         if (!sheet.isRosterValid)
           Container(
-            color: Colors.red.shade50,
-            padding: const EdgeInsets.all(16),
+            color: AppColors.error.withValues(alpha: 0.15),
+            padding: const EdgeInsets.all(14),
             child: Column(
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.warning, color: Colors.red),
+                    Icon(Icons.warning_amber_rounded, color: AppColors.error),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Danh sách lớp (Roster) hiện tại không hợp lệ. Vui lòng kiểm tra lại cấu hình lịch học hoặc phân ca.',
                         style: TextStyle(
-                          color: Colors.red,
+                          color: AppColors.error,
                           fontWeight: FontWeight.bold,
+                          fontSize: 13,
                         ),
                       ),
                     ),
@@ -161,14 +165,14 @@ class AttendancePage extends ConsumerWidget {
                           const Icon(
                             Icons.error_outline,
                             size: 14,
-                            color: Colors.red,
+                            color: AppColors.error,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               ri.message,
                               style: const TextStyle(
-                                color: Colors.red,
+                                color: AppColors.error,
                                 fontSize: 12,
                               ),
                             ),
@@ -189,19 +193,22 @@ class AttendancePage extends ConsumerWidget {
               )
               .map(
                 (ri) => Container(
-                  color: Colors.orange.shade50,
+                  color: AppColors.warning.withValues(alpha: 0.15),
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
                       const Icon(
                         Icons.warning_amber_rounded,
-                        color: Colors.orange,
+                        color: AppColors.warning,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           ri.message,
-                          style: const TextStyle(fontSize: 13),
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ],
@@ -211,13 +218,18 @@ class AttendancePage extends ConsumerWidget {
         if (sheet.issues.isNotEmpty)
           ...sheet.issues.map(
             (issue) => Container(
-              color: Colors.orange.shade50,
+              color: AppColors.warning.withValues(alpha: 0.15),
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  const Icon(Icons.report_problem, color: Colors.orange),
+                  const Icon(Icons.report_problem, color: AppColors.warning),
                   const SizedBox(width: 12),
-                  Expanded(child: Text(issue.message)),
+                  Expanded(
+                    child: Text(
+                      issue.message,
+                      style: const TextStyle(color: AppColors.textPrimary),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -225,69 +237,34 @@ class AttendancePage extends ConsumerWidget {
         if (sheet.session.trangThai == SessionStatus.HUY ||
             sheet.session.trangThai == SessionStatus.NGHI_LE)
           Container(
-            color: Colors.grey.shade200,
-            padding: const EdgeInsets.all(16),
+            color: AppColors.surface,
+            padding: const EdgeInsets.all(14),
             child: Text(
               'Buổi học đang ở trạng thái ${sheet.session.trangThai.name}. Không thể chỉnh sửa điểm danh.',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontStyle: FontStyle.italic),
-            ),
-          ),
-        if (sheet.session.loai == SessionType.PHAT_SINH &&
-            sheet.session.trangThai == SessionStatus.DU_KIEN)
-          Container(
-            color: Colors.blue.shade50,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    sheet.members.isEmpty
-                        ? 'Buổi học phát sinh chưa có danh sách tham gia.'
-                        : 'Danh sách học sinh tham gia phát sinh',
-                    style: TextStyle(
-                      color: Colors.blue.shade900,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    if (_hasDirtyDraft(ref)) {
-                      _showDirtyDraftDialog(context);
-                      return;
-                    }
-                    SessionAdjustmentDialogs.showPhatSinhDialog(
-                      context: context,
-                      ref: ref,
-                      targetSessionId: sessionId,
-                    );
-                  },
-                  icon: const Icon(Icons.person_add, size: 18),
-                  label: const Text('Thêm học sinh'),
-                ),
-              ],
-            ),
-          ),
-        if (sheet.session.loai == SessionType.HOC_BU &&
-            sheet.requiresOneOffAdjustments)
-          Container(
-            color: Colors.blue.shade50,
-            padding: const EdgeInsets.all(16),
-            child: const Text(
-              'Buổi học bù này chưa có danh sách học sinh tham gia.',
-              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ),
         Expanded(
           child: sheet.members.isEmpty
               ? const Center(
-                  child: Text('Chưa có học sinh nào trong danh sách.'),
+                  child: Text(
+                    'Chưa có học sinh nào trong danh sách điểm danh.',
+                    style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
                 )
-              : ListView.separated(
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   itemCount: sheet.members.length,
-                  separatorBuilder: (context, index) =>
-                      const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final member = sheet.members[index];
                     return _buildStudentRow(context, ref, sheet, member);
@@ -298,56 +275,134 @@ class AttendancePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildSessionHeader(BuildContext context, AttendanceSheet sheet) {
+  Widget _buildSessionHeader(
+    BuildContext context,
+    WidgetRef ref,
+    AttendanceSheet sheet,
+  ) {
     final session = sheet.session;
     final date = DateTime.parse(session.ngay);
     final weekday = DateFormatter.formatVietnameseWeekday(date.weekday);
 
-    return Container(
-      width: double.infinity,
-      color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
-      padding: const EdgeInsets.all(16),
+    int coMat = 0;
+    int tre = 0;
+    int nghiCoPhep = 0;
+    int nghiKhongPhep = 0;
+    int chuaDiemDanh = 0;
+
+    for (final m in sheet.members) {
+      final state = ref.watch(
+        attendanceControllerProvider(sessionId).select(
+          (s) => ref
+              .read(attendanceControllerProvider(sessionId).notifier)
+              .effectiveStateFor(m.rosterMember.student.id!),
+        ),
+      );
+
+      switch (state) {
+        case AttendanceState.CO_MAT:
+          coMat++;
+          break;
+        case AttendanceState.TRE:
+          tre++;
+          break;
+        case AttendanceState.NGHI_CO_PHEP:
+          nghiCoPhep++;
+          break;
+        case AttendanceState.NGHI_KHONG_PHEP:
+          nghiKhongPhep++;
+          break;
+        case AttendanceState.HOC_BU:
+          coMat++;
+          break;
+        case AttendanceState.CHUA_DIEM_DANH:
+          chuaDiemDanh++;
+          break;
+      }
+    }
+
+    return AppSectionCard(
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '$weekday, ${session.ngay}',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${session.gioBatDau} - ${session.gioKetThuc} | ${session.loai.name}',
-            style: TextStyle(color: Colors.grey.shade700),
-          ),
-          const SizedBox(height: 8),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildStatChip('Tổng: ${sheet.members.length}', Colors.blue),
-              const SizedBox(width: 8),
-              _buildStatChip(
-                'Chưa điểm danh: ${sheet.unresolvedCount}',
-                sheet.unresolvedCount > 0 ? Colors.orange : Colors.green,
+              Text(
+                '$weekday, ${DateFormatter.formatDisplayDate(session.ngay)}',
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              AppStatusChip(
+                label: session.loai.displayName,
+                color: AppColors.cyanAccent,
+                compact: true,
               ),
             ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Giờ học: ${session.gioBatDau} - ${session.gioKetThuc}',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Divider(color: AppColors.border, height: 1),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildMetricBadge(
+                  'Tổng: ${sheet.members.length}',
+                  AppColors.primary,
+                ),
+                const SizedBox(width: 6),
+                _buildMetricBadge('Có mặt: $coMat', AppColors.success),
+                const SizedBox(width: 6),
+                _buildMetricBadge('Trễ: $tre', AppColors.warning),
+                const SizedBox(width: 6),
+                _buildMetricBadge('Có phép: $nghiCoPhep', AppColors.cyanAccent),
+                const SizedBox(width: 6),
+                _buildMetricBadge(
+                  'Không phép: $nghiKhongPhep',
+                  AppColors.error,
+                ),
+                if (chuaDiemDanh > 0) ...[
+                  const SizedBox(width: 6),
+                  _buildMetricBadge(
+                    'Chưa điểm danh: $chuaDiemDanh',
+                    AppColors.warning,
+                  ),
+                ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatChip(String label, Color color) {
+  Widget _buildMetricBadge(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(
         label,
         style: TextStyle(
           color: color,
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -370,195 +425,51 @@ class AttendancePage extends ConsumerWidget {
       ),
     );
 
-    final isNormalChinh =
-        member.rosterMember.source ==
-            RosterInclusionSource.SINGLE_SHIFT_MEMBERSHIP ||
-        member.rosterMember.source == RosterInclusionSource.EXPLICIT_ASSIGNMENT;
-
-    final isMissedOriginal =
-        sheet.session.loai == SessionType.CHINH &&
-        sheet.session.trangThai == SessionStatus.DA_HOC &&
-        (member.state == AttendanceState.NGHI_CO_PHEP ||
-            member.state == AttendanceState.NGHI_KHONG_PHEP);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return AppSectionCard(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              StudentAvatar(
+                gioiTinh: student.gioiTinh,
+                studentName: student.hoTen,
+                radius: 20,
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   student.hoTen,
                   style: const TextStyle(
-                    fontSize: 16,
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
               if (member.rosterMember.source == RosterInclusionSource.DOI_CA)
-                const Card(
-                  color: Colors.blue,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    child: Text(
-                      'Đổi ca',
-                      style: TextStyle(color: Colors.white, fontSize: 11),
-                    ),
-                  ),
+                const AppStatusChip(
+                  label: 'Đổi ca',
+                  color: AppColors.primary,
+                  compact: true,
                 ),
               if (member.rosterMember.source == RosterInclusionSource.HOC_BU)
-                const Card(
-                  color: Colors.teal,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    child: Text(
-                      'Học bù',
-                      style: TextStyle(color: Colors.white, fontSize: 11),
-                    ),
-                  ),
+                const AppStatusChip(
+                  label: 'Học bù',
+                  color: AppColors.cyanAccent,
+                  compact: true,
                 ),
               if (member.rosterMember.source == RosterInclusionSource.PHAT_SINH)
-                const Card(
-                  color: Colors.purple,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    child: Text(
-                      'Phát sinh',
-                      style: TextStyle(color: Colors.white, fontSize: 11),
-                    ),
-                  ),
-                ),
-              if (student.daLuuTru)
-                const Card(
-                  color: Colors.grey,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    child: Text(
-                      'Lưu trữ',
-                      style: TextStyle(color: Colors.white, fontSize: 10),
-                    ),
-                  ),
-                ),
-              if (isEditable &&
-                  isNormalChinh &&
-                  sheet.session.loai == SessionType.CHINH &&
-                  member.persistedRecord == null)
-                TextButton(
-                  onPressed: () {
-                    if (_hasDirtyDraft(ref)) {
-                      _showDirtyDraftDialog(context);
-                      return;
-                    }
-                    SessionAdjustmentDialogs.showDoiCaDialog(
-                      context: context,
-                      ref: ref,
-                      studentId: student.id!,
-                      originalSessionId: sessionId,
-                    );
-                  },
-                  child: const Text('Đổi ca', style: TextStyle(fontSize: 12)),
-                ),
-              if (isMissedOriginal)
-                TextButton(
-                  onPressed: () => SessionAdjustmentDialogs.showHocBuDialog(
-                    context: context,
-                    ref: ref,
-                    studentId: student.id!,
-                    originalSessionId: sessionId,
-                  ),
-                  child: const Text(
-                    'Xếp học bù',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                ),
-              if (member.rosterMember.adjustment != null &&
-                  isEditable &&
-                  member.persistedRecord == null)
-                IconButton(
-                  icon: const Icon(
-                    Icons.delete_outline,
-                    size: 20,
-                    color: Colors.red,
-                  ),
-                  tooltip: 'Hủy điều chỉnh',
-                  onPressed: () async {
-                    if (_hasDirtyDraft(ref)) {
-                      _showDirtyDraftDialog(context);
-                      return;
-                    }
-                    try {
-                      final adj = member.rosterMember.adjustment!;
-                      await ref
-                          .read(
-                            sessionAdjustmentControllerProvider(
-                              sessionId,
-                            ).notifier,
-                          )
-                          .removeAdjustment(adj.id!, sessionId);
-                      ref.invalidate(attendanceControllerProvider(sessionId));
-                      if (adj.idBuoiHocGoc != null) {
-                        ref.invalidate(
-                          attendanceControllerProvider(adj.idBuoiHocGoc!),
-                        );
-                      }
-                    } catch (e) {
-                      if (context.mounted) _showError(context, e.toString());
-                    }
-                  },
+                const AppStatusChip(
+                  label: 'Phát sinh',
+                  color: AppColors.warning,
+                  compact: true,
                 ),
             ],
           ),
-          if (member.suggestedState != null &&
-              effectiveState == AttendanceState.CHUA_DIEM_DANH)
-            Container(
-              margin: const EdgeInsets.only(top: 8, bottom: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.purple.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.purple.shade200),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.event_available,
-                    size: 16,
-                    color: Colors.purple,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${member.suggestionReason}: Đề xuất ${member.suggestedState!.label}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.purple,
-                      ),
-                    ),
-                  ),
-                  if (isEditable)
-                    TextButton(
-                      style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                      onPressed: () {
-                        ref
-                            .read(
-                              attendanceControllerProvider(sessionId).notifier,
-                            )
-                            .updateLocalDraft(
-                              student.id!,
-                              member.suggestedState!,
-                            );
-                      },
-                      child: const Text(
-                        'Áp dụng đề xuất',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           if (isEditable)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -573,12 +484,44 @@ class AttendancePage extends ConsumerWidget {
                         return s != AttendanceState.HOC_BU;
                       }
                     })
-                    .map(
-                      (state) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
+                    .map((state) {
+                      final isSelected = effectiveState == state;
+                      Color color;
+                      switch (state) {
+                        case AttendanceState.CO_MAT:
+                          color = AppColors.success;
+                          break;
+                        case AttendanceState.TRE:
+                          color = AppColors.warning;
+                          break;
+                        case AttendanceState.NGHI_CO_PHEP:
+                          color = AppColors.cyanAccent;
+                          break;
+                        case AttendanceState.NGHI_KHONG_PHEP:
+                          color = AppColors.error;
+                          break;
+                        case AttendanceState.HOC_BU:
+                          color = AppColors.primary;
+                          break;
+                        case AttendanceState.CHUA_DIEM_DANH:
+                          color = AppColors.textMuted;
+                          break;
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
                         child: ChoiceChip(
                           label: Text(state.label),
-                          selected: effectiveState == state,
+                          selected: isSelected,
+                          selectedColor: color,
+                          backgroundColor: AppColors.surfaceHigh,
+                          labelStyle: TextStyle(
+                            color: isSelected
+                                ? Colors.white
+                                : AppColors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                           onSelected: (selected) {
                             if (selected) {
                               ref
@@ -591,18 +534,15 @@ class AttendancePage extends ConsumerWidget {
                             }
                           },
                         ),
-                      ),
-                    )
+                      );
+                    })
                     .toList(),
               ),
             )
           else
-            Text(
-              'Trạng thái: ${member.state.label}',
-              style: TextStyle(
-                color: _getStateColor(member.state),
-                fontWeight: FontWeight.bold,
-              ),
+            AppStatusChip(
+              label: member.state.label,
+              color: _getStateColor(member.state),
             ),
         ],
       ),
@@ -612,17 +552,17 @@ class AttendancePage extends ConsumerWidget {
   Color _getStateColor(AttendanceState state) {
     switch (state) {
       case AttendanceState.CHUA_DIEM_DANH:
-        return Colors.orange;
+        return AppColors.textMuted;
       case AttendanceState.CO_MAT:
-        return Colors.green;
+        return AppColors.success;
       case AttendanceState.TRE:
-        return Colors.blue;
+        return AppColors.warning;
       case AttendanceState.NGHI_CO_PHEP:
-        return Colors.purple;
+        return AppColors.cyanAccent;
       case AttendanceState.NGHI_KHONG_PHEP:
-        return Colors.red;
+        return AppColors.error;
       case AttendanceState.HOC_BU:
-        return Colors.teal;
+        return AppColors.primary;
     }
   }
 
@@ -640,30 +580,36 @@ class AttendancePage extends ConsumerWidget {
     );
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
+      padding: const EdgeInsets.all(14),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
       ),
       child: Row(
         children: [
           Expanded(
             child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.border),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
               onPressed: hasDirtyDraft ? () => _handleSave(context, ref) : null,
-              child: const Text('Lưu nháp'),
+              child: const Text(
+                'Lưu nháp',
+                style: TextStyle(color: AppColors.cyanAccent),
+              ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
               onPressed: () => _handleFinalize(context, ref, sheet),
-              child: const Text('Hoàn tất'),
+              child: const Text('Hoàn tất buổi học'),
             ),
           ),
         ],
@@ -675,13 +621,14 @@ class AttendancePage extends ConsumerWidget {
     try {
       await ref.read(attendanceControllerProvider(sessionId).notifier).save();
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã lưu dữ liệu điểm danh')),
-        );
+        AppFeedback.showSuccessSnackBar(context, 'Đã lưu dữ liệu điểm danh');
       }
     } catch (e) {
       if (context.mounted) {
-        _showError(context, e.toString());
+        AppFeedback.showErrorSnackBar(
+          context,
+          e.toString().replaceAll('Exception: ', ''),
+        );
       }
     }
   }
@@ -692,51 +639,28 @@ class AttendancePage extends ConsumerWidget {
     AttendanceSheet sheet,
   ) async {
     try {
-      // Check incomplete
       final unresolved = ref
           .read(attendanceControllerProvider(sessionId).notifier)
           .unresolvedCountFromDraft();
 
       if (unresolved > 0) {
-        final confirm = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Chưa điểm danh hết'),
-            content: Text(
+        final confirm = await AppFeedback.showConfirmBottomSheet(
+          context,
+          title: 'Chưa điểm danh hết',
+          message:
               'Vẫn còn $unresolved học sinh chưa được đánh dấu. Bạn có chắc chắn muốn hoàn tất?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Hủy'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Vẫn hoàn tất'),
-              ),
-            ],
-          ),
+          confirmLabel: 'Vẫn hoàn tất',
+          isDestructive: false,
         );
         if (confirm != true) return;
       } else {
-        final confirm = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Hoàn tất buổi học'),
-            content: const Text(
+        final confirm = await AppFeedback.showConfirmBottomSheet(
+          context,
+          title: 'Hoàn tất buổi học',
+          message:
               'Sau khi hoàn tất, buổi học sẽ chuyển sang trạng thái ĐÃ HỌC. Bạn có chắc chắn?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Hủy'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Xác nhận'),
-              ),
-            ],
-          ),
+          confirmLabel: 'Xác nhận hoàn tất',
+          isDestructive: false,
         );
         if (confirm != true) return;
       }
@@ -746,30 +670,15 @@ class AttendancePage extends ConsumerWidget {
           .finalize(allowIncomplete: true);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Đã hoàn tất buổi học')));
+        AppFeedback.showSuccessSnackBar(context, 'Đã hoàn tất buổi học');
       }
     } catch (e) {
       if (context.mounted) {
-        _showError(context, e.toString());
+        AppFeedback.showErrorSnackBar(
+          context,
+          e.toString().replaceAll('Exception: ', ''),
+        );
       }
     }
-  }
-
-  void _showError(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Lỗi'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
-          ),
-        ],
-      ),
-    );
   }
 }
