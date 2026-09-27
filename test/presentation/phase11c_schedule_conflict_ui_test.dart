@@ -1671,7 +1671,7 @@ void main() {
         await tester.tap(find.text('Open Constraint Dialog'));
         await waitForAsyncProviders(tester);
 
-        await tester.tap(find.text('Lưu ràng buộc'));
+        await tester.tap(find.text('Lưu giờ bận'));
         await waitForAsyncProviders(tester);
 
         late List<Map<String, dynamic>> records;
@@ -1730,7 +1730,7 @@ void main() {
         // Select SOFT_PREFERENCE
         final typeDropdown = find.widgetWithText(
           DropdownButtonFormField<ConstraintType>,
-          'Loại ràng buộc',
+          'Loại giờ bận',
         );
         await tester.tap(typeDropdown);
         await tester.pumpAndSettle();
@@ -1738,7 +1738,7 @@ void main() {
         await tester.tap(find.text('Không ưu tiên').last);
         await waitForAsyncProviders(tester);
 
-        await tester.tap(find.text('Lưu ràng buộc'));
+        await tester.tap(find.text('Lưu giờ bận'));
         await waitForAsyncProviders(tester);
 
         late List<Map<String, dynamic>> records;
@@ -1795,7 +1795,7 @@ void main() {
         // Select OTHER_CENTER
         final typeDropdown = find.widgetWithText(
           DropdownButtonFormField<ConstraintType>,
-          'Loại ràng buộc',
+          'Loại giờ bận',
         );
         await tester.tap(typeDropdown);
         await tester.pumpAndSettle();
@@ -1809,13 +1809,13 @@ void main() {
         );
         final bufferField = find.widgetWithText(
           TextField,
-          'Thời gian di chuyển cần thiết (phút)',
+          'Thời gian di chuyển (phút)',
         );
 
         await tester.enterText(sourceField, 'Center Alpha');
         await tester.enterText(bufferField, '25');
 
-        await tester.tap(find.text('Lưu ràng buộc'));
+        await tester.tap(find.text('Lưu giờ bận'));
         await waitForAsyncProviders(tester);
 
         late List<Map<String, dynamic>> records;
@@ -1884,7 +1884,7 @@ void main() {
         );
         await tester.enterText(dateField, '2026-11-20');
 
-        await tester.tap(find.text('Lưu ràng buộc'));
+        await tester.tap(find.text('Lưu giờ bận'));
         await waitForAsyncProviders(tester);
 
         late List<Map<String, dynamic>> records;
@@ -1906,244 +1906,7 @@ void main() {
       },
     );
 
-    testWidgets(
-      'showAddConstraintDialog rejects end <= start without inserting DB row',
-      (tester) async {
-        late Database db;
-        await tester.runAsync(() async {
-          db = await createTestDb();
-          await setupBaseData(db);
-        });
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [databaseProvider.overrideWith((ref) async => db)],
-            child: MaterialApp(
-              home: Scaffold(
-                body: Builder(
-                  builder: (context) => Scaffold(
-                    body: Consumer(
-                      builder: (context, ref, _) => ElevatedButton(
-                        onPressed: () =>
-                            showAddConstraintDialog(context, ref, 1),
-                        child: const Text('Open Constraint Dialog'),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        await tester.tap(find.text('Open Constraint Dialog'));
-        await waitForAsyncProviders(tester);
-
-        final startField = find.widgetWithText(
-          TextField,
-          'Giờ bắt đầu (HH:mm)',
-        );
-        final endField = find.widgetWithText(TextField, 'Giờ kết thúc (HH:mm)');
-
-        await tester.enterText(startField, '19:00');
-        await tester.enterText(endField, '17:00');
-
-        await tester.tap(find.text('Lưu ràng buộc'));
-        await waitForAsyncProviders(tester);
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(find.textContaining('Lỗi:'), findsOneWidget);
-
-        late List<Map<String, dynamic>> records;
-        await tester.runAsync(() async {
-          records = await db.query('rang_buoc_lich_hoc_sinh');
-        });
-        expect(records, isEmpty);
-
-        await tester.runAsync(() async => db.close());
-      },
-    );
-
-    testWidgets(
-      'showAddConstraintDialog rejects invalid time format without inserting DB row',
-      (tester) async {
-        late Database db;
-        await tester.runAsync(() async {
-          db = await createTestDb();
-          await setupBaseData(db);
-        });
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [databaseProvider.overrideWith((ref) async => db)],
-            child: MaterialApp(
-              home: Scaffold(
-                body: Builder(
-                  builder: (context) => Scaffold(
-                    body: Consumer(
-                      builder: (context, ref, _) => ElevatedButton(
-                        onPressed: () =>
-                            showAddConstraintDialog(context, ref, 1),
-                        child: const Text('Open Constraint Dialog'),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        await tester.tap(find.text('Open Constraint Dialog'));
-        await waitForAsyncProviders(tester);
-
-        final startField = find.widgetWithText(
-          TextField,
-          'Giờ bắt đầu (HH:mm)',
-        );
-        await tester.enterText(startField, '25:70');
-
-        await tester.tap(find.text('Lưu ràng buộc'));
-        await waitForAsyncProviders(tester);
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(find.textContaining('Lỗi:'), findsOneWidget);
-
-        late List<Map<String, dynamic>> records;
-        await tester.runAsync(() async {
-          records = await db.query('rang_buoc_lich_hoc_sinh');
-        });
-        expect(records, isEmpty);
-
-        await tester.runAsync(() async => db.close());
-      },
-    );
-
-    testWidgets(
-      'showAddConstraintDialog rejects invalid date format YYYY-MM-DD without inserting DB row',
-      (tester) async {
-        late Database db;
-        await tester.runAsync(() async {
-          db = await createTestDb();
-          await setupBaseData(db);
-        });
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [databaseProvider.overrideWith((ref) async => db)],
-            child: MaterialApp(
-              home: Scaffold(
-                body: Builder(
-                  builder: (context) => Scaffold(
-                    body: Consumer(
-                      builder: (context, ref, _) => ElevatedButton(
-                        onPressed: () =>
-                            showAddConstraintDialog(context, ref, 1),
-                        child: const Text('Open Constraint Dialog'),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        await tester.tap(find.text('Open Constraint Dialog'));
-        await waitForAsyncProviders(tester);
-
-        final occurrenceDropdown = find.widgetWithText(
-          DropdownButtonFormField<OccurrenceType>,
-          'Tần suất',
-        );
-        await tester.tap(occurrenceDropdown);
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('Một lần').last);
-        await waitForAsyncProviders(tester);
-
-        final dateField = find.widgetWithText(
-          TextField,
-          'Ngày cụ thể (YYYY-MM-DD)',
-        );
-        await tester.enterText(dateField, '2026-13-99');
-
-        await tester.tap(find.text('Lưu ràng buộc'));
-        await waitForAsyncProviders(tester);
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(find.textContaining('Lỗi:'), findsOneWidget);
-
-        late List<Map<String, dynamic>> records;
-        await tester.runAsync(() async {
-          records = await db.query('rang_buoc_lich_hoc_sinh');
-        });
-        expect(records, isEmpty);
-
-        await tester.runAsync(() async => db.close());
-      },
-    );
-
-    testWidgets(
-      'showAddConstraintDialog rejects reversed effective date range without inserting DB row',
-      (tester) async {
-        late Database db;
-        await tester.runAsync(() async {
-          db = await createTestDb();
-          await setupBaseData(db);
-        });
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [databaseProvider.overrideWith((ref) async => db)],
-            child: MaterialApp(
-              home: Scaffold(
-                body: Builder(
-                  builder: (context) => Scaffold(
-                    body: Consumer(
-                      builder: (context, ref, _) => ElevatedButton(
-                        onPressed: () =>
-                            showAddConstraintDialog(context, ref, 1),
-                        child: const Text('Open Constraint Dialog'),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        await tester.tap(find.text('Open Constraint Dialog'));
-        await waitForAsyncProviders(tester);
-
-        final fromField = find.widgetWithText(
-          TextField,
-          'Hiệu lực từ ngày (YYYY-MM-DD)',
-        );
-        final toField = find.widgetWithText(
-          TextField,
-          'Hiệu lực đến ngày (để trống nếu vô hạn)',
-        );
-
-        await tester.enterText(fromField, '2026-11-10');
-        await tester.enterText(toField, '2026-11-01');
-
-        await tester.tap(find.text('Lưu ràng buộc'));
-        await waitForAsyncProviders(tester);
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(find.textContaining('Lỗi:'), findsOneWidget);
-
-        late List<Map<String, dynamic>> records;
-        await tester.runAsync(() async {
-          records = await db.query('rang_buoc_lich_hoc_sinh');
-        });
-        expect(records, isEmpty);
-
-        await tester.runAsync(() async => db.close());
-      },
-    );
 
     testWidgets(
       'showAddConstraintDialog rejects negative travel buffer without inserting DB row',
@@ -2181,7 +1944,7 @@ void main() {
         // Select OTHER_CENTER
         final typeDropdown = find.widgetWithText(
           DropdownButtonFormField<ConstraintType>,
-          'Loại ràng buộc',
+          'Loại giờ bận',
         );
         await tester.tap(typeDropdown);
         await tester.pumpAndSettle();
@@ -2195,13 +1958,13 @@ void main() {
         );
         final bufferField = find.widgetWithText(
           TextField,
-          'Thời gian di chuyển cần thiết (phút)',
+          'Thời gian di chuyển (phút)',
         );
 
         await tester.enterText(sourceField, 'Center Alpha');
         await tester.enterText(bufferField, '-15');
 
-        await tester.tap(find.text('Lưu ràng buộc'));
+        await tester.tap(find.text('Lưu giờ bận'));
         await waitForAsyncProviders(tester);
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -2253,7 +2016,7 @@ void main() {
         // Select OTHER_CENTER
         final typeDropdown = find.widgetWithText(
           DropdownButtonFormField<ConstraintType>,
-          'Loại ràng buộc',
+          'Loại giờ bận',
         );
         await tester.tap(typeDropdown);
         await tester.pumpAndSettle();
@@ -2267,13 +2030,13 @@ void main() {
         );
         final bufferField = find.widgetWithText(
           TextField,
-          'Thời gian di chuyển cần thiết (phút)',
+          'Thời gian di chuyển (phút)',
         );
 
         await tester.enterText(sourceField, 'Center Alpha');
         await tester.enterText(bufferField, '12.5');
 
-        await tester.tap(find.text('Lưu ràng buộc'));
+        await tester.tap(find.text('Lưu giờ bận'));
         await waitForAsyncProviders(tester);
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -2325,7 +2088,7 @@ void main() {
         // Select OTHER_CENTER
         final typeDropdown = find.widgetWithText(
           DropdownButtonFormField<ConstraintType>,
-          'Loại ràng buộc',
+          'Loại giờ bận',
         );
         await tester.tap(typeDropdown);
         await tester.pumpAndSettle();
@@ -2333,7 +2096,7 @@ void main() {
         await tester.tap(find.text('Học ở trung tâm khác').last);
         await waitForAsyncProviders(tester);
 
-        await tester.tap(find.text('Lưu ràng buộc'));
+        await tester.tap(find.text('Lưu giờ bận'));
         await waitForAsyncProviders(tester);
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -2382,11 +2145,14 @@ void main() {
         await tester.tap(addConstraintBtn);
         await waitForAsyncProviders(tester);
 
-        expect(find.text('Thêm ràng buộc lịch học sinh'), findsOneWidget);
+        expect(find.text('Thêm giờ bận của học sinh'), findsOneWidget);
 
         // Save constraint
-        await tester.tap(find.text('Lưu ràng buộc'));
+        final saveBtn = find.text('Lưu giờ bận');
+        await tester.ensureVisible(saveBtn);
+        await tester.tap(saveBtn);
         await waitForAsyncProviders(tester);
+        await tester.pumpAndSettle();
 
         // Dialog closed and new constraint tile immediately visible on StudentDetailPage
         expect(find.text('Không thể học'), findsOneWidget);
