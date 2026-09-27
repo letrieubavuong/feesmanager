@@ -383,7 +383,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                     );
                   }
                   return Text(
-                    '${policy.hocPhiTrenBuoi}đ/buổi',
+                    '${NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0).format(policy.hocPhiMoiBuoi)}/buổi',
                     style: const TextStyle(
                       color: AppColors.cyanAccent,
                       fontSize: 13,
