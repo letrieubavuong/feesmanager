@@ -203,5 +203,28 @@
 
   "settingsTuitionPolicySection": "CHÍNH SÁCH HỌC PHÍ",
   "settingsTuitionPolicyTitle": "Chính sách học phí các lớp",
-  "settingsTuitionPolicySubtitle": "Thiết lập đơn giá và số buổi chuẩn tháng cho từng lớp"
+  "settingsTuitionPolicySubtitle": "Thiết lập đơn giá và số buổi chuẩn tháng cho từng lớp",
+
+  "creditsTitle": "Buổi dư & Credit",
+  "creditsHeaderStudent": "Học sinh",
+  "creditsHeaderClass": "Lớp học",
+  "creditsClosingBalance": "Số dư cuối tháng",
+  "creditsSummaryTitle": "Thống kê buổi học theo chuẩn",
+  "creditsMaxStandard": "Tối đa chuẩn",
+  "creditsEligible": "Đủ điều kiện",
+  "creditsStandard": "Buổi chuẩn",
+  "creditsExtra": "Buổi dư",
+  "creditsPotential": "Đủ ĐK ghi sổ",
+  "creditsRecorded": "Đã ghi sổ",
+  "creditsMonthDelta": "Thay đổi trong kỳ",
+  "creditsReconcile": "Đối soát buổi dư",
+  "creditsManualAdjustment": "Điều chỉnh thủ công",
+  "creditsCandidatesTitle": "Danh sách buổi học đủ điều kiện",
+  "creditsCandidatesEmpty": "Không có buổi học chính thức đã hoàn tất nào trong tháng này.",
+  "creditsLedgerTitle": "Lịch sử sổ dư credit (Ledger)",
+  "creditsLedgerEmpty": "Chưa có lịch sử biến động credit nào.",
+  "creditsStandardTag": "Chuẩn",
+  "creditsExtraTag": "Vượt chuẩn",
+  "creditsEarnedTag": "Đã ghi +1",
+  "creditsCanEarnTag": "Có thể ghi +1"
 }

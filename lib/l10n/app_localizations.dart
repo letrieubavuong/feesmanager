@@ -1291,6 +1291,138 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Thiết lập đơn giá và số buổi chuẩn tháng cho từng lớp'**
   String get settingsTuitionPolicySubtitle;
+
+  /// No description provided for @creditsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi dư & Credit'**
+  String get creditsTitle;
+
+  /// No description provided for @creditsHeaderStudent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Học sinh'**
+  String get creditsHeaderStudent;
+
+  /// No description provided for @creditsHeaderClass.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lớp học'**
+  String get creditsHeaderClass;
+
+  /// No description provided for @creditsClosingBalance.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số dư cuối tháng'**
+  String get creditsClosingBalance;
+
+  /// No description provided for @creditsSummaryTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thống kê buổi học theo chuẩn'**
+  String get creditsSummaryTitle;
+
+  /// No description provided for @creditsMaxStandard.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa chuẩn'**
+  String get creditsMaxStandard;
+
+  /// No description provided for @creditsEligible.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đủ điều kiện'**
+  String get creditsEligible;
+
+  /// No description provided for @creditsStandard.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi chuẩn'**
+  String get creditsStandard;
+
+  /// No description provided for @creditsExtra.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi dư'**
+  String get creditsExtra;
+
+  /// No description provided for @creditsPotential.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đủ ĐK ghi sổ'**
+  String get creditsPotential;
+
+  /// No description provided for @creditsRecorded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã ghi sổ'**
+  String get creditsRecorded;
+
+  /// No description provided for @creditsMonthDelta.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thay đổi trong kỳ'**
+  String get creditsMonthDelta;
+
+  /// No description provided for @creditsReconcile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đối soát buổi dư'**
+  String get creditsReconcile;
+
+  /// No description provided for @creditsManualAdjustment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điều chỉnh thủ công'**
+  String get creditsManualAdjustment;
+
+  /// No description provided for @creditsCandidatesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Danh sách buổi học đủ điều kiện'**
+  String get creditsCandidatesTitle;
+
+  /// No description provided for @creditsCandidatesEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có buổi học chính thức đã hoàn tất nào trong tháng này.'**
+  String get creditsCandidatesEmpty;
+
+  /// No description provided for @creditsLedgerTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch sử sổ dư credit (Ledger)'**
+  String get creditsLedgerTitle;
+
+  /// No description provided for @creditsLedgerEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có lịch sử biến động credit nào.'**
+  String get creditsLedgerEmpty;
+
+  /// No description provided for @creditsStandardTag.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuẩn'**
+  String get creditsStandardTag;
+
+  /// No description provided for @creditsExtraTag.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vượt chuẩn'**
+  String get creditsExtraTag;
+
+  /// No description provided for @creditsEarnedTag.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã ghi +1'**
+  String get creditsEarnedTag;
+
+  /// No description provided for @creditsCanEarnTag.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có thể ghi +1'**
+  String get creditsCanEarnTag;
 }
 
 class _AppLocalizationsDelegate

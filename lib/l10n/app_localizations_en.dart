@@ -621,4 +621,71 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsTuitionPolicySubtitle =>
       'Set unit price and standard monthly session count per class';
+
+  @override
+  String get creditsTitle => 'Extra Sessions & Credit';
+
+  @override
+  String get creditsHeaderStudent => 'Student';
+
+  @override
+  String get creditsHeaderClass => 'Class';
+
+  @override
+  String get creditsClosingBalance => 'End-of-Month Balance';
+
+  @override
+  String get creditsSummaryTitle => 'Standard Session Statistics';
+
+  @override
+  String get creditsMaxStandard => 'Standard Limit';
+
+  @override
+  String get creditsEligible => 'Eligible';
+
+  @override
+  String get creditsStandard => 'Standard';
+
+  @override
+  String get creditsExtra => 'Extra';
+
+  @override
+  String get creditsPotential => 'Credit Eligible';
+
+  @override
+  String get creditsRecorded => 'Recorded Credit';
+
+  @override
+  String get creditsMonthDelta => 'Monthly Delta';
+
+  @override
+  String get creditsReconcile => 'Reconcile Extra Sessions';
+
+  @override
+  String get creditsManualAdjustment => 'Manual Adjustment';
+
+  @override
+  String get creditsCandidatesTitle => 'Eligible Sessions List';
+
+  @override
+  String get creditsCandidatesEmpty =>
+      'No completed official sessions for this student in this month.';
+
+  @override
+  String get creditsLedgerTitle => 'Credit Ledger History';
+
+  @override
+  String get creditsLedgerEmpty => 'No credit ledger entries found.';
+
+  @override
+  String get creditsStandardTag => 'Standard';
+
+  @override
+  String get creditsExtraTag => 'Extra';
+
+  @override
+  String get creditsEarnedTag => 'Recorded +1';
+
+  @override
+  String get creditsCanEarnTag => 'Eligible +1';
 }

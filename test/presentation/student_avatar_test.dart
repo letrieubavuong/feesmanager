@@ -14,7 +14,10 @@ void main() {
       final imageFinder = find.byType(Image);
       expect(imageFinder, findsOneWidget);
       final imageWidget = tester.widget<Image>(imageFinder);
-      expect((imageWidget.image as AssetImage).assetName, equals('assets/HSNam.png'));
+      expect(
+        (imageWidget.image as AssetImage).assetName,
+        equals('assets/HSNam.png'),
+      );
     });
 
     testWidgets('NU renders female avatar asset', (tester) async {
@@ -27,7 +30,10 @@ void main() {
       final imageFinder = find.byType(Image);
       expect(imageFinder, findsOneWidget);
       final imageWidget = tester.widget<Image>(imageFinder);
-      expect((imageWidget.image as AssetImage).assetName, equals('assets/HSNu.png'));
+      expect(
+        (imageWidget.image as AssetImage).assetName,
+        equals('assets/HSNu.png'),
+      );
     });
 
     testWidgets('KHAC/null renders neutral person icon', (tester) async {

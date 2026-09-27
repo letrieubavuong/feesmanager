@@ -620,4 +620,71 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get settingsTuitionPolicySubtitle =>
       'Thiết lập đơn giá và số buổi chuẩn tháng cho từng lớp';
+
+  @override
+  String get creditsTitle => 'Buổi dư & Credit';
+
+  @override
+  String get creditsHeaderStudent => 'Học sinh';
+
+  @override
+  String get creditsHeaderClass => 'Lớp học';
+
+  @override
+  String get creditsClosingBalance => 'Số dư cuối tháng';
+
+  @override
+  String get creditsSummaryTitle => 'Thống kê buổi học theo chuẩn';
+
+  @override
+  String get creditsMaxStandard => 'Tối đa chuẩn';
+
+  @override
+  String get creditsEligible => 'Đủ điều kiện';
+
+  @override
+  String get creditsStandard => 'Buổi chuẩn';
+
+  @override
+  String get creditsExtra => 'Buổi dư';
+
+  @override
+  String get creditsPotential => 'Đủ ĐK ghi sổ';
+
+  @override
+  String get creditsRecorded => 'Đã ghi sổ';
+
+  @override
+  String get creditsMonthDelta => 'Thay đổi trong kỳ';
+
+  @override
+  String get creditsReconcile => 'Đối soát buổi dư';
+
+  @override
+  String get creditsManualAdjustment => 'Điều chỉnh thủ công';
+
+  @override
+  String get creditsCandidatesTitle => 'Danh sách buổi học đủ điều kiện';
+
+  @override
+  String get creditsCandidatesEmpty =>
+      'Không có buổi học chính thức đã hoàn tất nào trong tháng này.';
+
+  @override
+  String get creditsLedgerTitle => 'Lịch sử sổ dư credit (Ledger)';
+
+  @override
+  String get creditsLedgerEmpty => 'Chưa có lịch sử biến động credit nào.';
+
+  @override
+  String get creditsStandardTag => 'Chuẩn';
+
+  @override
+  String get creditsExtraTag => 'Vượt chuẩn';
+
+  @override
+  String get creditsEarnedTag => 'Đã ghi +1';
+
+  @override
+  String get creditsCanEarnTag => 'Có thể ghi +1';
 }

@@ -203,5 +203,28 @@
 
   "settingsTuitionPolicySection": "TUITION POLICY",
   "settingsTuitionPolicyTitle": "Class Tuition Policies",
-  "settingsTuitionPolicySubtitle": "Set unit price and standard monthly session count per class"
+  "settingsTuitionPolicySubtitle": "Set unit price and standard monthly session count per class",
+
+  "creditsTitle": "Extra Sessions & Credit",
+  "creditsHeaderStudent": "Student",
+  "creditsHeaderClass": "Class",
+  "creditsClosingBalance": "End-of-Month Balance",
+  "creditsSummaryTitle": "Standard Session Statistics",
+  "creditsMaxStandard": "Standard Limit",
+  "creditsEligible": "Eligible",
+  "creditsStandard": "Standard",
+  "creditsExtra": "Extra",
+  "creditsPotential": "Credit Eligible",
+  "creditsRecorded": "Recorded Credit",
+  "creditsMonthDelta": "Monthly Delta",
+  "creditsReconcile": "Reconcile Extra Sessions",
+  "creditsManualAdjustment": "Manual Adjustment",
+  "creditsCandidatesTitle": "Eligible Sessions List",
+  "creditsCandidatesEmpty": "No completed official sessions for this student in this month.",
+  "creditsLedgerTitle": "Credit Ledger History",
+  "creditsLedgerEmpty": "No credit ledger entries found.",
+  "creditsStandardTag": "Standard",
+  "creditsExtraTag": "Extra",
+  "creditsEarnedTag": "Recorded +1",
+  "creditsCanEarnTag": "Eligible +1"
 }

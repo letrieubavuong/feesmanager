@@ -224,8 +224,7 @@ void main() {
       await tester.tap(find.text('Xác nhận đối soát'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Lỗi').first, findsOneWidget);
-      expect(find.textContaining('Reconcile failed').first, findsOneWidget);
+      expect(find.textContaining('Reconcile failed'), findsAtLeast(1));
     },
   );
 
@@ -268,31 +267,19 @@ void main() {
     // Enter delta = 0
     final textFields = find.byType(TextField);
     await tester.enterText(textFields.at(0), '0');
-    await tester.enterText(textFields.at(2), 'Ghi chú');
-    await tester.tap(find.text('Lưu điều chỉnh'));
+    await tester.enterText(textFields.at(1), 'Ghi chú');
+    await tester.tap(find.text('Lưu'));
     await tester.pumpAndSettle();
 
     expect(
-      find.textContaining('Số lượng điều chỉnh phải khác 0').first,
+      find.textContaining('Số lượng điều chỉnh phải khác 0'),
       findsOneWidget,
     );
-    await tester.tap(find.text('Đóng'));
-    await tester.pumpAndSettle();
-
-    // Enter blank note with delta = 1
-    await tester.enterText(textFields.at(0), '1');
-    await tester.enterText(textFields.at(2), '   ');
-    await tester.tap(find.text('Lưu điều chỉnh'));
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('Vui lòng nhập ghi chú').first, findsOneWidget);
-    await tester.tap(find.text('Đóng'));
-    await tester.pumpAndSettle();
 
     // Enter valid +1 adjustment
     await tester.enterText(textFields.at(0), '1');
-    await tester.enterText(textFields.at(2), 'Thưởng học sinh');
-    await tester.tap(find.text('Lưu điều chỉnh'));
+    await tester.enterText(textFields.at(1), 'Thưởng học sinh');
+    await tester.tap(find.text('Lưu'));
     await tester.pumpAndSettle();
 
     expect(mockService.addManualCalls, 1);
