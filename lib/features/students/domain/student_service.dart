@@ -33,7 +33,7 @@ class StudentService {
     return _repository.search(query.trim(), includeArchived: includeArchived);
   }
 
-  Future<void> saveStudent(Student student) async {
+  Future<int> saveStudent(Student student) async {
     if (student.hoTen.trim().isEmpty) {
       throw Exception('Họ tên không được để trống');
     }
@@ -46,9 +46,10 @@ class StudentService {
     );
 
     if (normalizedStudent.id == null) {
-      await _repository.create(normalizedStudent);
+      return await _repository.create(normalizedStudent);
     } else {
       await _repository.update(normalizedStudent);
+      return normalizedStudent.id!;
     }
   }
 

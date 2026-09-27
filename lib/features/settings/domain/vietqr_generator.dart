@@ -66,14 +66,16 @@ class VietQrGenerator {
   }
 
   /// Formats transfer content from template string.
-  /// Example template: "HP {maHocSinh} {thang}"
+  /// Example template: "HP {maHocSinh} {thang}" or "HP {tenHocSinh} {thang}"
   static String formatTransferContent({
     required String template,
     String? studentCode,
+    String? studentName,
     String? month,
   }) {
     String result = template;
     result = result.replaceAll('{maHocSinh}', studentCode ?? '');
+    result = result.replaceAll('{tenHocSinh}', studentName ?? '');
     result = result.replaceAll('{thang}', month ?? '');
     return _sanitizeContent(result.trim());
   }

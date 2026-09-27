@@ -104,8 +104,11 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        // Tap Quick Action 'Thêm học sinh' -> opens StudentFormPage
-        await tester.tap(find.byKey(UiKeys.dashboardQuickAddStudent));
+        // Push StudentFormPage onto AppShell navigator
+        final navContext = tester.element(find.byType(AppShell));
+        Navigator.of(
+          navContext,
+        ).push(MaterialPageRoute(builder: (_) => const StudentFormPage()));
         await tester.pumpAndSettle();
 
         expect(find.byType(StudentFormPage), findsOneWidget);
@@ -169,7 +172,11 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byKey(UiKeys.dashboardQuickAddStudent));
+        // Push StudentFormPage onto AppShell navigator
+        final navContext = tester.element(find.byType(AppShell));
+        Navigator.of(
+          navContext,
+        ).push(MaterialPageRoute(builder: (_) => const StudentFormPage()));
         await tester.pumpAndSettle();
 
         await tester.enterText(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr/qr.dart';
+import '../../../l10n/app_localizations.dart';
 import '../domain/bank_account_settings.dart';
 import '../domain/vietqr_generator.dart';
 import 'bank_account_settings_controller.dart';
@@ -53,7 +54,7 @@ class _BankAccountSettingsPageState
     super.dispose();
   }
 
-  void _saveSettings() {
+  void _saveSettings(AppLocalizations l10n) {
     if (!_formKey.currentState!.validate()) return;
 
     final newSettings = BankAccountSettings(
@@ -68,8 +69,8 @@ class _BankAccountSettingsPageState
     ref.read(bankAccountSettingsProvider.notifier).updateSettings(newSettings);
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đã lưu thông tin tài khoản nhận học phí'),
+      SnackBar(
+        content: Text(l10n.bankAccountSaveSuccess),
         backgroundColor: Colors.green,
       ),
     );
@@ -78,6 +79,7 @@ class _BankAccountSettingsPageState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     final currentPreviewSettings = BankAccountSettings(
       bankName: _selectedBank.name,
@@ -99,7 +101,7 @@ class _BankAccountSettingsPageState
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Tài khoản nhận học phí')),
+      appBar: AppBar(title: Text(l10n.settingsBankAccount)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -115,7 +117,7 @@ class _BankAccountSettingsPageState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'THÔNG TIN TÀI KHOẢN NGÂN HÀNG',
+                        l10n.bankAccountTitle,
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.primary,
@@ -126,10 +128,10 @@ class _BankAccountSettingsPageState
                       // 1. Bank Selector Dropdown
                       DropdownButtonFormField<BankInfo>(
                         initialValue: _selectedBank,
-                        decoration: const InputDecoration(
-                          labelText: 'Ngân hàng',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.account_balance),
+                        decoration: InputDecoration(
+                          labelText: l10n.bankName,
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.account_balance),
                         ),
                         items: SupportedBanks.list.map((bank) {
                           return DropdownMenuItem<BankInfo>(
@@ -153,16 +155,16 @@ class _BankAccountSettingsPageState
                         key: const Key('account_number_input'),
                         controller: _accountNumberController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Số tài khoản',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.credit_card),
-                          hintText: 'Ví dụ: 0123456789',
+                        decoration: InputDecoration(
+                          labelText: l10n.bankAccountNumber,
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.credit_card),
+                          hintText: '0123456789',
                         ),
                         onChanged: (_) => setState(() {}),
                         validator: (val) {
                           if (val == null || val.trim().isEmpty) {
-                            return 'Vui lòng nhập số tài khoản';
+                            return l10n.bankAccountValidationNumber;
                           }
                           return null;
                         },
@@ -175,16 +177,16 @@ class _BankAccountSettingsPageState
                         key: const Key('account_holder_input'),
                         controller: _accountHolderController,
                         textCapitalization: TextCapitalization.characters,
-                        decoration: const InputDecoration(
-                          labelText: 'Tên chủ tài khoản',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.person),
-                          hintText: 'Ví dụ: NGUYEN VAN A',
+                        decoration: InputDecoration(
+                          labelText: l10n.bankAccountHolder,
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.person),
+                          hintText: 'NGUYEN VAN A',
                         ),
                         onChanged: (_) => setState(() {}),
                         validator: (val) {
                           if (val == null || val.trim().isEmpty) {
-                            return 'Vui lòng nhập tên chủ tài khoản';
+                            return l10n.bankAccountValidationHolder;
                           }
                           return null;
                         },
@@ -195,18 +197,20 @@ class _BankAccountSettingsPageState
                       // 4. Transfer Template Field
                       TextFormField(
                         controller: _templateController,
-                        decoration: const InputDecoration(
-                          labelText: 'Mẫu nội dung chuyển khoản',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.notes),
-                          hintText: 'Mẫu: HP {maHocSinh} {thang}',
-                          helperText:
-                              'Dùng {maHocSinh} cho mã/ID học sinh, {thang} cho tháng',
+                        decoration: InputDecoration(
+                          labelText: l10n.bankTransferTemplate,
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.notes),
+                          hintText: 'HP {maHocSinh} {thang}',
+                          helperText: l10n.bankTransferTemplateHelper(
+                            '{maHocSinh}',
+                            '{thang}',
+                          ),
                         ),
                         onChanged: (_) => setState(() {}),
                         validator: (val) {
                           if (val == null || val.trim().isEmpty) {
-                            return 'Vui lòng nhập mẫu nội dung chuyển khoản';
+                            return l10n.bankAccountValidationTemplate;
                           }
                           return null;
                         },
@@ -220,14 +224,14 @@ class _BankAccountSettingsPageState
                         child: ElevatedButton.icon(
                           key: const Key('save_bank_account_btn'),
                           icon: const Icon(Icons.save),
-                          label: const Text(
-                            'Lưu thông tin',
-                            style: TextStyle(
+                          label: Text(
+                            l10n.commonSave,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          onPressed: _saveSettings,
+                          onPressed: () => _saveSettings(l10n),
                         ),
                       ),
                     ],
@@ -239,7 +243,7 @@ class _BankAccountSettingsPageState
 
               // --- PREVIEW SECTION ---
               Text(
-                'XEM TRƯỚC VIETQR',
+                l10n.vietQrPreviewTitle,
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.colorScheme.primary,
@@ -262,13 +266,13 @@ class _BankAccountSettingsPageState
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'STK: ${currentPreviewSettings.accountNumber}',
+                              '${l10n.bankAccountNumber}: ${currentPreviewSettings.accountNumber}',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                             Text(
-                              'Chủ TK: ${currentPreviewSettings.accountHolder}',
+                              '${l10n.bankAccountHolder}: ${currentPreviewSettings.accountHolder}',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: Colors.grey.shade700,
                               ),
@@ -300,7 +304,7 @@ class _BankAccountSettingsPageState
 
                             const SizedBox(height: 12),
                             Text(
-                              'Nội dung mẫu (Ví dụ 500.000đ, HS001, 09/2026):',
+                              l10n.vietQrPreviewSample,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: Colors.grey.shade600,
                               ),
@@ -323,13 +327,13 @@ class _BankAccountSettingsPageState
                             ),
                           ],
                         )
-                      : const Padding(
-                          padding: EdgeInsets.all(24.0),
+                      : Padding(
+                          padding: const EdgeInsets.all(24.0),
                           child: Center(
                             child: Text(
-                              'Nhập số tài khoản và tên chủ tài khoản để tạo mã VietQR xem trước.',
+                              l10n.vietQrNotConfigured,
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey),
+                              style: const TextStyle(color: Colors.grey),
                             ),
                           ),
                         ),
@@ -376,9 +380,7 @@ class QrWidgetPainter extends CustomPainter {
           }
         }
       }
-    } catch (_) {
-      // Fallback if data exceeds capacity
-    }
+    } catch (_) {}
   }
 
   @override

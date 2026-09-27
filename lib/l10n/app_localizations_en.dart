@@ -383,4 +383,242 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dirtyFormKeepEditing => 'Keep Editing';
+
+  @override
+  String get settingsPaymentQr => 'PAYMENT & QR';
+
+  @override
+  String get settingsBankAccount => 'Bank Account for Tuition';
+
+  @override
+  String get settingsBankAccountSubtitle =>
+      'Configure bank account details and VietQR for tuition payments';
+
+  @override
+  String get bankAccountTitle => 'BANK ACCOUNT DETAILS';
+
+  @override
+  String get bankName => 'Bank Name';
+
+  @override
+  String get bankAccountNumber => 'Account Number';
+
+  @override
+  String get bankAccountHolder => 'Account Holder Name';
+
+  @override
+  String get bankTransferTemplate => 'Transfer Content Template';
+
+  @override
+  String bankTransferTemplateHelper(Object maHocSinh, Object thang) {
+    return 'Use $maHocSinh for student ID, $thang for month';
+  }
+
+  @override
+  String get bankAccountSaveSuccess =>
+      'Bank account details saved successfully';
+
+  @override
+  String get bankAccountValidationNumber => 'Please enter account number';
+
+  @override
+  String get bankAccountValidationHolder => 'Please enter account holder name';
+
+  @override
+  String get bankAccountValidationTemplate =>
+      'Please enter transfer content template';
+
+  @override
+  String get vietQrPreviewTitle => 'VIETQR PREVIEW';
+
+  @override
+  String get vietQrPreviewSample =>
+      'Sample transfer content (e.g. 500,000đ, HS001, 09/2026):';
+
+  @override
+  String get vietQrNotConfigured =>
+      'Enter account number and account holder name to generate VietQR preview.';
+
+  @override
+  String get reportsTitle => 'Reports';
+
+  @override
+  String get reportsFilterTitle => 'REPORT FILTERS';
+
+  @override
+  String get reportsMode => 'View Mode';
+
+  @override
+  String get reportsModeMonth => 'By Month';
+
+  @override
+  String get reportsModeCustomRange => 'Custom Date Range';
+
+  @override
+  String get reportsSelectMonth => 'Select Report Month';
+
+  @override
+  String get reportsFromDate => 'From';
+
+  @override
+  String get reportsToDate => 'To';
+
+  @override
+  String get reportsFilterClass => 'Class';
+
+  @override
+  String get reportsFilterStudent => 'Student';
+
+  @override
+  String get reportsAllClasses => 'All Classes';
+
+  @override
+  String get reportsAllStudents => 'All Students';
+
+  @override
+  String get reportsApplyFilter => 'Apply';
+
+  @override
+  String get reportsClearFilter => 'Clear Filters';
+
+  @override
+  String get reportsFilteredClass => 'Class Filtered';
+
+  @override
+  String get reportsFilteredStudent => 'Student Filtered';
+
+  @override
+  String get reportsExportPdf => 'Export PDF Report';
+
+  @override
+  String reportsExportPdfError(Object error) {
+    return 'PDF Export Error: $error';
+  }
+
+  @override
+  String get reportsKpiAttendanceRate => 'Attendance Rate';
+
+  @override
+  String get reportsKpiInvoiced => 'Invoiced Tuition';
+
+  @override
+  String get reportsKpiPaid => 'Collected';
+
+  @override
+  String get reportsKpiOutstanding => 'Outstanding Debt';
+
+  @override
+  String get reportsSectionAttendance => 'A. ATTENDANCE';
+
+  @override
+  String get reportsSectionFinancial => 'B. TUITION';
+
+  @override
+  String get reportsSectionSessions => 'C. SESSIONS';
+
+  @override
+  String get reportsSectionClassBreakdown => 'D. CLASS BREAKDOWN';
+
+  @override
+  String get reportsSectionStudentBreakdown => 'STUDENT BREAKDOWN';
+
+  @override
+  String get reportsAttendanceOverallRate => 'Overall Attendance Rate';
+
+  @override
+  String get reportsAttendancePresent => 'Present';
+
+  @override
+  String get reportsAttendanceLate => 'Late';
+
+  @override
+  String get reportsAttendanceExcused => 'Excused';
+
+  @override
+  String get reportsAttendanceUnexcused => 'Unexcused';
+
+  @override
+  String get reportsFinancialInvoiced => 'Invoiced';
+
+  @override
+  String get reportsFinancialPaid => 'Collected';
+
+  @override
+  String get reportsFinancialDebt => 'Debt';
+
+  @override
+  String get reportsTotalSessions => 'Total Sessions';
+
+  @override
+  String get reportsTotalParticipations => 'Total Participations';
+
+  @override
+  String get reportsNoData =>
+      'No report data available for the selected period.';
+
+  @override
+  String get enrollStudentTitle => 'ADD STUDENT TO CLASS';
+
+  @override
+  String get enrollOptionExisting => 'Select Existing Student';
+
+  @override
+  String get enrollOptionNew => 'Add New Student';
+
+  @override
+  String get enrollJoinDate => 'Join Date';
+
+  @override
+  String get enrollDiscount => 'Discount (%)';
+
+  @override
+  String get enrollPartialSuccess =>
+      'Student was created but class enrollment failed.';
+
+  @override
+  String get busyTimeTitle => 'ADD STUDENT BUSY TIME';
+
+  @override
+  String get busyTimeType => 'Busy Time Type';
+
+  @override
+  String get busyTimeFrequency => 'Frequency';
+
+  @override
+  String get busyTimeWeekly => 'Weekly';
+
+  @override
+  String get busyTimeOneTime => 'One-time';
+
+  @override
+  String get busyTimeDayOfWeek => 'Day of Week';
+
+  @override
+  String get busyTimeDate => 'Specific Date';
+
+  @override
+  String get busyTimeStartTime => 'Start Time';
+
+  @override
+  String get busyTimeEndTime => 'End Time';
+
+  @override
+  String get busyTimeEffectiveFrom => 'Effective From Date';
+
+  @override
+  String get busyTimeEffectiveTo => 'Effective To Date';
+
+  @override
+  String get busyTimeDeleteConfirm =>
+      'Are you sure you want to delete this busy time?';
+
+  @override
+  String get settingsTuitionPolicySection => 'TUITION POLICY';
+
+  @override
+  String get settingsTuitionPolicyTitle => 'Class Tuition Policies';
+
+  @override
+  String get settingsTuitionPolicySubtitle =>
+      'Set unit price and standard monthly session count per class';
 }

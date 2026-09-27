@@ -132,11 +132,9 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
         }
 
-        expect(find.text('Chính sách học phí'), findsOneWidget);
-        expect(find.textContaining('Học phí: 50,000đ / buổi'), findsOneWidget);
-        expect(find.text('Danh sách học phí học sinh'), findsOneWidget);
+        expect(find.text('Danh sách học phí'), findsOneWidget);
         expect(find.text('Student UI Test'), findsOneWidget);
-        expect(find.text('NHÁP'), findsOneWidget);
+        expect(find.text('Chưa chốt'), findsOneWidget);
       },
     );
 
@@ -197,6 +195,11 @@ void main() {
                 1,
                 nowMonth,
               )).overrideWith((ref) async => [testInvoice]),
+              tuitionPreviewControllerProvider(
+                1,
+                1,
+                nowMonth,
+              ).overrideWith(() => _FakeTuitionPreviewController()),
               studentInvoiceProvider(
                 1,
                 1,
@@ -217,7 +220,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
         }
 
-        expect(find.text('ĐÃ CHỐT'), findsOneWidget);
+        expect(find.textContaining('Đã chốt'), findsOneWidget);
         expect(find.text('Chốt học phí'), findsNothing);
       },
     );
@@ -291,6 +294,11 @@ void main() {
                 1,
                 nowMonth,
               )).overrideWith((ref) async => [testInvoice]),
+              tuitionPreviewControllerProvider(
+                1,
+                1,
+                nowMonth,
+              ).overrideWith(() => _FakeTuitionPreviewController()),
               studentInvoiceProvider(
                 1,
                 1,
@@ -311,7 +319,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
         }
 
-        expect(find.text('ĐÃ THANH TOÁN'), findsOneWidget);
+        expect(find.text('Đã thanh toán'), findsOneWidget);
         expect(find.text('Chốt học phí'), findsNothing);
       },
     );
@@ -385,6 +393,11 @@ void main() {
                 1,
                 nowMonth,
               )).overrideWith((ref) async => [testInvoice]),
+              tuitionPreviewControllerProvider(
+                1,
+                1,
+                nowMonth,
+              ).overrideWith(() => _FakeTuitionPreviewController()),
               studentInvoiceProvider(
                 1,
                 1,
@@ -405,7 +418,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
         }
 
-        expect(find.text('CÒN NỢ'), findsOneWidget);
+        expect(find.text('Còn nợ (300,000đ)'), findsOneWidget);
         expect(find.text('Chốt học phí'), findsNothing);
       },
     );

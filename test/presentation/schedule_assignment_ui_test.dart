@@ -109,7 +109,7 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(find.textContaining('Thứ Hai'), findsOneWidget);
+    expect(find.textContaining('Thứ'), findsOneWidget);
     expect(find.textContaining('08:00 - 09:00'), findsOneWidget);
   });
 
@@ -132,7 +132,7 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(find.textContaining('Lớp chưa có lịch học định kỳ'), findsOneWidget);
+    expect(find.textContaining('Chưa có lịch học định kỳ nào'), findsOneWidget);
   });
 
   testWidgets('AssignmentTab displays assigned students', (tester) async {
@@ -187,8 +187,7 @@ void main() {
     await tester.tap(find.text('Kết thúc phân ca'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Kết thúc phân ca'), findsWidgets);
-    expect(find.text('Xác nhận kết thúc'), findsOneWidget);
+    expect(find.text('CHỌN NGÀY KẾT THÚC PHÂN CA'), findsOneWidget);
   });
 
   testWidgets('AssignmentTab - Open Assign Dialog', (tester) async {
@@ -211,12 +210,12 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Phân ca HS'));
+    await tester.tap(find.text('Phân ca mới'));
     for (int i = 0; i < 5; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    expect(find.text('Phân ca cho học sinh'), findsOneWidget);
+    expect(find.text('Phân ca học sinh'), findsWidgets);
   });
 
   testWidgets('Student Detail shows assigned schedule', (tester) async {

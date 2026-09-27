@@ -8,6 +8,8 @@ import '../../../app/navigation/app_global_drawer.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../roster/domain/roster_member.dart';
 import '../../roster/domain/roster_result.dart';
+import '../../session_adjustments/presentation/session_adjustment_controller.dart';
+import '../../session_adjustments/presentation/session_adjustment_dialogs.dart';
 import '../../sessions/domain/class_session.dart';
 import '../domain/attendance_sheet.dart';
 import '../domain/attendance_state.dart';
@@ -122,8 +124,40 @@ class AttendancePage extends ConsumerWidget {
 
   bool _isEditable(AttendanceSheet sheet) {
     return sheet.isOperationallyValid &&
-        sheet.session.trangThai == SessionStatus.DU_KIEN &&
-        !sheet.requiresOneOffAdjustments;
+        sheet.session.trangThai == SessionStatus.DU_KIEN;
+  }
+
+  bool _hasDirtyDraft(WidgetRef ref) {
+    return ref
+        .read(attendanceControllerProvider(sessionId).notifier)
+        .hasDirtyDraft;
+  }
+
+  void _showDirtyDraftDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Có thay đổi điểm danh chưa lưu'),
+        content: const Text(
+          'Danh sách học sinh sắp thay đổi. '
+          'Vui lòng Lưu nháp hoặc Hoàn tác trước khi tiếp tục.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _ensureDraftClean(BuildContext context, WidgetRef ref) {
+    if (_hasDirtyDraft(ref)) {
+      _showDirtyDraftDialog(context);
+      return false;
+    }
+    return true;
   }
 
   Widget _buildContent(
@@ -134,6 +168,60 @@ class AttendancePage extends ConsumerWidget {
     return Column(
       children: [
         _buildSessionHeader(context, ref, sheet),
+
+        // 1. PHAT_SINH session banner
+        if (sheet.session.loai == SessionType.PHAT_SINH &&
+            sheet.session.trangThai == SessionStatus.DU_KIEN &&
+            sheet.members.isNotEmpty)
+          Container(
+            color: AppColors.primary.withValues(alpha: 0.12),
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Danh sách học sinh tham gia phát sinh',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    if (!_ensureDraftClean(context, ref)) return;
+                    SessionAdjustmentDialogs.showPhatSinhDialog(
+                      context: context,
+                      ref: ref,
+                      targetSessionId: sessionId,
+                    );
+                  },
+                  icon: const Icon(Icons.person_add, size: 18),
+                  label: const Text('Thêm học sinh'),
+                ),
+              ],
+            ),
+          ),
+
+        // 2. HOC_BU without roster banner
+        if (sheet.session.loai == SessionType.HOC_BU &&
+            sheet.requiresOneOffAdjustments &&
+            sheet.members.isNotEmpty)
+          Container(
+            color: AppColors.warning.withValues(alpha: 0.12),
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: const Text(
+              'Buổi học bù này chưa có danh sách học sinh tham gia.',
+              style: TextStyle(color: AppColors.textPrimary),
+            ),
+          ),
+
         if (!sheet.isRosterValid)
           Container(
             color: AppColors.error.withValues(alpha: 0.15),
@@ -234,8 +322,7 @@ class AttendancePage extends ConsumerWidget {
               ),
             ),
           ),
-        if (sheet.session.trangThai == SessionStatus.HUY ||
-            sheet.session.trangThai == SessionStatus.NGHI_LE)
+        if (sheet.session.trangThai != SessionStatus.DU_KIEN)
           Container(
             color: AppColors.surface,
             padding: const EdgeInsets.all(14),
@@ -250,10 +337,15 @@ class AttendancePage extends ConsumerWidget {
           ),
         Expanded(
           child: sheet.members.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
-                    'Chưa có học sinh nào trong danh sách điểm danh.',
-                    style: TextStyle(
+                    sheet.session.loai == SessionType.HOC_BU
+                        ? 'Buổi học bù: chưa có học sinh được xếp học bù vào buổi này.'
+                        : sheet.session.loai == SessionType.PHAT_SINH
+                        ? 'Buổi học phát sinh: chưa có danh sách tham gia. Vui lòng thêm học sinh.'
+                        : 'Chưa có học sinh nào trong danh sách điểm danh.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
                       color: AppColors.textMuted,
                       fontStyle: FontStyle.italic,
                     ),
@@ -425,6 +517,17 @@ class AttendancePage extends ConsumerWidget {
       ),
     );
 
+    final isNormalChinh =
+        member.rosterMember.source ==
+            RosterInclusionSource.SINGLE_SHIFT_MEMBERSHIP ||
+        member.rosterMember.source == RosterInclusionSource.EXPLICIT_ASSIGNMENT;
+
+    final isMissedOriginal =
+        sheet.session.loai == SessionType.CHINH &&
+        sheet.session.trangThai == SessionStatus.DA_HOC &&
+        (member.state == AttendanceState.NGHI_CO_PHEP ||
+            member.state == AttendanceState.NGHI_KHONG_PHEP);
+
     return AppSectionCard(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -544,6 +647,175 @@ class AttendancePage extends ConsumerWidget {
               label: member.state.label,
               color: _getStateColor(member.state),
             ),
+
+          // Suggestion from approved leave
+          if (member.suggestedState != null &&
+              effectiveState == AttendanceState.CHUA_DIEM_DANH)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.cyanAccent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${member.suggestionReason ?? "Đơn nghỉ đã duyệt"}: '
+                      'Đề xuất ${member.suggestedState!.label}',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  if (isEditable)
+                    TextButton(
+                      onPressed: () {
+                        ref
+                            .read(
+                              attendanceControllerProvider(sessionId).notifier,
+                            )
+                            .updateLocalDraft(
+                              student.id!,
+                              member.suggestedState!,
+                            );
+                      },
+                      child: const Text('Áp dụng'),
+                    ),
+                ],
+              ),
+            ),
+
+          // Action buttons row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (isEditable &&
+                  isNormalChinh &&
+                  sheet.session.loai == SessionType.CHINH &&
+                  member.persistedRecord == null)
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                  ),
+                  onPressed: () {
+                    if (!_ensureDraftClean(context, ref)) return;
+                    SessionAdjustmentDialogs.showDoiCaDialog(
+                      context: context,
+                      ref: ref,
+                      studentId: student.id!,
+                      originalSessionId: sessionId,
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.swap_horiz,
+                    size: 14,
+                    color: AppColors.primary,
+                  ),
+                  label: const Text(
+                    'Đổi ca',
+                    style: TextStyle(color: AppColors.primary, fontSize: 11),
+                  ),
+                ),
+              if (isMissedOriginal)
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                  ),
+                  onPressed: () {
+                    if (!_ensureDraftClean(context, ref)) return;
+                    SessionAdjustmentDialogs.showHocBuDialog(
+                      context: context,
+                      ref: ref,
+                      studentId: student.id!,
+                      originalSessionId: sessionId,
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.event_repeat,
+                    size: 14,
+                    color: AppColors.cyanAccent,
+                  ),
+                  label: const Text(
+                    'Xếp học bù',
+                    style: TextStyle(color: AppColors.cyanAccent, fontSize: 11),
+                  ),
+                ),
+              if (member.rosterMember.adjustment != null &&
+                  isEditable &&
+                  member.persistedRecord == null)
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                  ),
+                  onPressed: () async {
+                    if (!_ensureDraftClean(context, ref)) return;
+                    final adj = member.rosterMember.adjustment!;
+                    final confirm = await AppFeedback.showConfirmBottomSheet(
+                      context,
+                      title: 'Hủy điều chỉnh',
+                      message:
+                          'Bạn có chắc chắn muốn hủy bỏ điều chỉnh cho học sinh ${student.hoTen}?',
+                      confirmLabel: 'Xác nhận hủy',
+                      isDestructive: true,
+                    );
+                    if (confirm == true) {
+                      try {
+                        await ref
+                            .read(
+                              sessionAdjustmentControllerProvider(
+                                sessionId,
+                              ).notifier,
+                            )
+                            .removeAdjustment(adj.id!, sessionId);
+
+                        ref.invalidate(attendanceControllerProvider(sessionId));
+
+                        if (adj.idBuoiHocGoc != null) {
+                          ref.invalidate(
+                            attendanceControllerProvider(adj.idBuoiHocGoc!),
+                          );
+                        }
+
+                        if (context.mounted) {
+                          AppFeedback.showSuccessSnackBar(
+                            context,
+                            'Đã hủy điều chỉnh',
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          AppFeedback.showErrorSnackBar(
+                            context,
+                            e.toString().replaceAll('Exception: ', ''),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    size: 14,
+                    color: AppColors.error,
+                  ),
+                  label: const Text(
+                    'Hủy điều chỉnh',
+                    style: TextStyle(color: AppColors.error, fontSize: 11),
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );

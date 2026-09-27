@@ -30,7 +30,7 @@ class SettingsPage extends ConsumerWidget {
         padding: const EdgeInsets.all(16.0),
         children: [
           // 1. GIAO DIỆN
-          const AppSectionHeader(title: 'GIAO DIỆN HỆ THỐNG'),
+          AppSectionHeader(title: l10n.settingsAppearance),
           AppSectionCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,7 +83,7 @@ class SettingsPage extends ConsumerWidget {
           const SizedBox(height: 16),
 
           // 2. NGÔN NGỮ
-          const AppSectionHeader(title: 'NGÔN NGỮ / LANGUAGE'),
+          AppSectionHeader(title: l10n.settingsLanguage),
           AppSectionCard(
             child: DropdownButtonFormField<AppLocaleMode>(
               initialValue: localeMode,

@@ -90,7 +90,8 @@ class VietQrPaymentPage extends ConsumerWidget {
 
     final transferContent = VietQrGenerator.formatTransferContent(
       template: settings.transferTemplate,
-      studentCode: studentCode ?? studentName,
+      studentCode: studentCode,
+      studentName: studentName,
       month: month,
     );
 

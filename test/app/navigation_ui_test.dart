@@ -56,9 +56,18 @@ void main() {
         expect(find.byKey(UiKeys.bottomTuition), findsOneWidget);
 
         // Assert Attendance, Reports, Settings are ABSENT from bottom nav
-        expect(find.text('Điểm danh'), findsNothing);
-        expect(find.text('Báo cáo'), findsNothing);
-        expect(find.text('Cài đặt'), findsNothing);
+        expect(
+          find.descendant(of: navBarFinder, matching: find.text('Điểm danh')),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: navBarFinder, matching: find.text('Báo cáo')),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: navBarFinder, matching: find.text('Cài đặt')),
+          findsNothing,
+        );
       },
     );
 

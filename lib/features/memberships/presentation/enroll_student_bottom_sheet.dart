@@ -129,7 +129,7 @@ class _EnrollStudentBottomSheetState
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          l10n.actionEnrollStudent,
+                          l10n.enrollStudentTitle,
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
@@ -150,16 +150,16 @@ class _EnrollStudentBottomSheetState
                     ),
                     const SizedBox(height: 12),
                     SegmentedButton<EnrollMode>(
-                      segments: const [
+                      segments: [
                         ButtonSegment(
                           value: EnrollMode.existing,
-                          label: Text('Chọn HS có sẵn'),
-                          icon: Icon(Icons.person_search),
+                          label: Text(l10n.enrollOptionExisting),
+                          icon: const Icon(Icons.person_search),
                         ),
                         ButtonSegment(
                           value: EnrollMode.newStudent,
-                          label: Text('Thêm HS mới'),
-                          icon: Icon(Icons.person_add_alt_1),
+                          label: Text(l10n.enrollOptionNew),
+                          icon: const Icon(Icons.person_add_alt_1),
                         ),
                       ],
                       selected: {_mode},
@@ -230,12 +230,12 @@ class _EnrollStudentBottomSheetState
                     ] else ...[
                       TextFormField(
                         controller: _newHoTenController,
-                        decoration: const InputDecoration(
-                          labelText: 'Họ và tên học sinh mới *',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: l10n.studentFullName,
+                          border: const OutlineInputBorder(),
                         ),
                         validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Vui lòng nhập họ tên'
+                            ? l10n.studentValidationName
                             : null,
                       ),
                       const SizedBox(height: 12),
@@ -244,15 +244,15 @@ class _EnrollStudentBottomSheetState
                           Expanded(
                             child: DropdownButtonFormField<int>(
                               initialValue: _newKhoi,
-                              decoration: const InputDecoration(
-                                labelText: 'Khối lớp',
-                                border: OutlineInputBorder(),
+                              decoration: InputDecoration(
+                                labelText: l10n.studentGrade,
+                                border: const OutlineInputBorder(),
                               ),
                               items: List.generate(12, (i) => i + 1)
                                   .map(
                                     (k) => DropdownMenuItem(
                                       value: k,
-                                      child: Text('Khối $k'),
+                                      child: Text(l10n.studentGradeItem(k)),
                                     ),
                                   )
                                   .toList(),
@@ -266,22 +266,22 @@ class _EnrollStudentBottomSheetState
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               initialValue: _newGioiTinh,
-                              decoration: const InputDecoration(
-                                labelText: 'Giới tính',
-                                border: OutlineInputBorder(),
+                              decoration: InputDecoration(
+                                labelText: l10n.studentGender,
+                                border: const OutlineInputBorder(),
                               ),
-                              items: const [
+                              items: [
                                 DropdownMenuItem(
                                   value: 'NAM',
-                                  child: Text('Nam'),
+                                  child: Text(l10n.studentGenderMale),
                                 ),
                                 DropdownMenuItem(
                                   value: 'NU',
-                                  child: Text('Nữ'),
+                                  child: Text(l10n.studentGenderFemale),
                                 ),
                                 DropdownMenuItem(
                                   value: 'KHAC',
-                                  child: Text('Khác'),
+                                  child: Text(l10n.studentGenderOther),
                                 ),
                               ],
                               onChanged: (v) {
@@ -296,9 +296,9 @@ class _EnrollStudentBottomSheetState
                       TextFormField(
                         controller: _newSdtController,
                         keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(
-                          labelText: 'SĐT phụ huynh',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: l10n.studentParentPhone,
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                     ],
@@ -306,7 +306,7 @@ class _EnrollStudentBottomSheetState
                     const SizedBox(height: 16),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.membershipStartDate),
+                      title: Text(l10n.enrollJoinDate),
                       subtitle: Text(
                         DateFormatter.formatDisplayDate(_joinDate),
                       ),
@@ -327,9 +327,9 @@ class _EnrollStudentBottomSheetState
                     const SizedBox(height: 12),
                     TextField(
                       controller: _mienGiamController,
-                      decoration: const InputDecoration(
-                        labelText: 'Miễn giảm (%)',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.enrollDiscount,
+                        border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
                     ),
@@ -364,7 +364,7 @@ class _EnrollStudentBottomSheetState
                         const SizedBox(width: 12),
                         ElevatedButton.icon(
                           key: UiKeys.enrollStudentSubmit,
-                          onPressed: _isSaving ? null : _submit,
+                          onPressed: _isSaving ? null : () => _submit(l10n),
                           icon: _isSaving
                               ? const SizedBox(
                                   width: 16,
@@ -388,7 +388,7 @@ class _EnrollStudentBottomSheetState
     );
   }
 
-  void _submit() async {
+  void _submit(AppLocalizations l10n) async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -406,7 +406,7 @@ class _EnrollStudentBottomSheetState
         if (_selectedStudent == null) {
           setState(() {
             _isSaving = false;
-            _inlineError = 'Vui lòng chọn học sinh';
+            _inlineError = l10n.selectStudent;
           });
           return;
         }
@@ -428,13 +428,8 @@ class _EnrollStudentBottomSheetState
           updatedAt: DateTime.now(),
         );
 
-        await studentService.saveStudent(newStudent);
-        ref.read(studentListControllerProvider.notifier).refresh();
-
-        // Retrieve created student ID
-        final students = await studentService.getStudents();
-        final created = students.firstWhere((s) => s.hoTen == newStudent.hoTen);
-        studentIdToEnroll = created.id!;
+        studentIdToEnroll = await studentService.saveStudent(newStudent);
+        ref.invalidate(studentListControllerProvider);
       }
 
       // Enroll student
@@ -446,16 +441,20 @@ class _EnrollStudentBottomSheetState
         ghiChu: _ghiChuController.text.trim(),
       );
 
-      ref.invalidate(enrollmentCandidatesProvider);
+      ref.invalidate(
+        enrollmentCandidatesProvider((
+          classId: widget.classId,
+          joinDate: _joinDate,
+        )),
+      );
       ref.invalidate(studentListProvider);
 
       if (mounted) {
-        setState(() => _isSaving = false);
-        _isDirty = false;
-        AppFeedback.showSuccessSnackBar(
-          context,
-          'Đã thêm học sinh vào lớp thành công',
-        );
+        setState(() {
+          _isSaving = false;
+          _isDirty = false;
+        });
+        AppFeedback.showSuccessSnackBar(context, l10n.membershipActive);
         Navigator.of(context).pop(true);
       }
     } catch (e) {

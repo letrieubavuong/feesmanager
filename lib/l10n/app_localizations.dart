@@ -841,6 +841,456 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Tiếp tục chỉnh sửa'**
   String get dirtyFormKeepEditing;
+
+  /// No description provided for @settingsPaymentQr.
+  ///
+  /// In vi, this message translates to:
+  /// **'THANH TOÁN & QR'**
+  String get settingsPaymentQr;
+
+  /// No description provided for @settingsBankAccount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản nhận học phí'**
+  String get settingsBankAccount;
+
+  /// No description provided for @settingsBankAccountSubtitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cấu hình thông tin ngân hàng và mã VietQR nhận học phí'**
+  String get settingsBankAccountSubtitle;
+
+  /// No description provided for @bankAccountTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'THÔNG TIN TÀI KHOẢN NGÂN HÀNG'**
+  String get bankAccountTitle;
+
+  /// No description provided for @bankName.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân hàng'**
+  String get bankName;
+
+  /// No description provided for @bankAccountNumber.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số tài khoản'**
+  String get bankAccountNumber;
+
+  /// No description provided for @bankAccountHolder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên chủ tài khoản'**
+  String get bankAccountHolder;
+
+  /// No description provided for @bankTransferTemplate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mẫu nội dung chuyển khoản'**
+  String get bankTransferTemplate;
+
+  /// No description provided for @bankTransferTemplateHelper.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dùng {maHocSinh} cho mã/ID học sinh, {thang} cho tháng'**
+  String bankTransferTemplateHelper(Object maHocSinh, Object thang);
+
+  /// No description provided for @bankAccountSaveSuccess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu thông tin tài khoản nhận học phí'**
+  String get bankAccountSaveSuccess;
+
+  /// No description provided for @bankAccountValidationNumber.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vui lòng nhập số tài khoản'**
+  String get bankAccountValidationNumber;
+
+  /// No description provided for @bankAccountValidationHolder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vui lòng nhập tên chủ tài khoản'**
+  String get bankAccountValidationHolder;
+
+  /// No description provided for @bankAccountValidationTemplate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vui lòng nhập mẫu nội dung chuyển khoản'**
+  String get bankAccountValidationTemplate;
+
+  /// No description provided for @vietQrPreviewTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'XEM TRƯỚC VIETQR'**
+  String get vietQrPreviewTitle;
+
+  /// No description provided for @vietQrPreviewSample.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nội dung mẫu (Ví dụ 500.000đ, HS001, 09/2026):'**
+  String get vietQrPreviewSample;
+
+  /// No description provided for @vietQrNotConfigured.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số tài khoản và tên chủ tài khoản để tạo mã VietQR xem trước.'**
+  String get vietQrNotConfigured;
+
+  /// No description provided for @reportsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo cáo'**
+  String get reportsTitle;
+
+  /// No description provided for @reportsFilterTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'BỘ LỌC BÁO CÁO'**
+  String get reportsFilterTitle;
+
+  /// No description provided for @reportsMode.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chế độ xem'**
+  String get reportsMode;
+
+  /// No description provided for @reportsModeMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'Theo tháng'**
+  String get reportsModeMonth;
+
+  /// No description provided for @reportsModeCustomRange.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khoảng ngày'**
+  String get reportsModeCustomRange;
+
+  /// No description provided for @reportsSelectMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn tháng báo cáo'**
+  String get reportsSelectMonth;
+
+  /// No description provided for @reportsFromDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ'**
+  String get reportsFromDate;
+
+  /// No description provided for @reportsToDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đến'**
+  String get reportsToDate;
+
+  /// No description provided for @reportsFilterClass.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lớp học'**
+  String get reportsFilterClass;
+
+  /// No description provided for @reportsFilterStudent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Học sinh'**
+  String get reportsFilterStudent;
+
+  /// No description provided for @reportsAllClasses.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả các lớp'**
+  String get reportsAllClasses;
+
+  /// No description provided for @reportsAllStudents.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả học sinh'**
+  String get reportsAllStudents;
+
+  /// No description provided for @reportsApplyFilter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Áp dụng'**
+  String get reportsApplyFilter;
+
+  /// No description provided for @reportsClearFilter.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xóa bộ lọc'**
+  String get reportsClearFilter;
+
+  /// No description provided for @reportsFilteredClass.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lọc lớp'**
+  String get reportsFilteredClass;
+
+  /// No description provided for @reportsFilteredStudent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lọc học sinh'**
+  String get reportsFilteredStudent;
+
+  /// No description provided for @reportsExportPdf.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xuất báo cáo PDF'**
+  String get reportsExportPdf;
+
+  /// No description provided for @reportsExportPdfError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lỗi xuất PDF: {error}'**
+  String reportsExportPdfError(Object error);
+
+  /// No description provided for @reportsKpiAttendanceRate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tỷ lệ đi học'**
+  String get reportsKpiAttendanceRate;
+
+  /// No description provided for @reportsKpiInvoiced.
+  ///
+  /// In vi, this message translates to:
+  /// **'Học phí đã chốt'**
+  String get reportsKpiInvoiced;
+
+  /// No description provided for @reportsKpiPaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thực nhận'**
+  String get reportsKpiPaid;
+
+  /// No description provided for @reportsKpiOutstanding.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn nợ'**
+  String get reportsKpiOutstanding;
+
+  /// No description provided for @reportsSectionAttendance.
+  ///
+  /// In vi, this message translates to:
+  /// **'A. ĐIỂM DANH'**
+  String get reportsSectionAttendance;
+
+  /// No description provided for @reportsSectionFinancial.
+  ///
+  /// In vi, this message translates to:
+  /// **'B. HỌC PHÍ'**
+  String get reportsSectionFinancial;
+
+  /// No description provided for @reportsSectionSessions.
+  ///
+  /// In vi, this message translates to:
+  /// **'C. BUỔI HỌC'**
+  String get reportsSectionSessions;
+
+  /// No description provided for @reportsSectionClassBreakdown.
+  ///
+  /// In vi, this message translates to:
+  /// **'D. CHI TIẾT THEO LỚP HỌC'**
+  String get reportsSectionClassBreakdown;
+
+  /// No description provided for @reportsSectionStudentBreakdown.
+  ///
+  /// In vi, this message translates to:
+  /// **'CHI TIẾT THEO HỌC SINH'**
+  String get reportsSectionStudentBreakdown;
+
+  /// No description provided for @reportsAttendanceOverallRate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tỷ lệ đi học tổng thể'**
+  String get reportsAttendanceOverallRate;
+
+  /// No description provided for @reportsAttendancePresent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có mặt'**
+  String get reportsAttendancePresent;
+
+  /// No description provided for @reportsAttendanceLate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đi trễ'**
+  String get reportsAttendanceLate;
+
+  /// No description provided for @reportsAttendanceExcused.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có phép'**
+  String get reportsAttendanceExcused;
+
+  /// No description provided for @reportsAttendanceUnexcused.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vắng x.phép'**
+  String get reportsAttendanceUnexcused;
+
+  /// No description provided for @reportsFinancialInvoiced.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chốt hóa đơn'**
+  String get reportsFinancialInvoiced;
+
+  /// No description provided for @reportsFinancialPaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thu'**
+  String get reportsFinancialPaid;
+
+  /// No description provided for @reportsFinancialDebt.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dư nợ'**
+  String get reportsFinancialDebt;
+
+  /// No description provided for @reportsTotalSessions.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tổng số buổi'**
+  String get reportsTotalSessions;
+
+  /// No description provided for @reportsTotalParticipations.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tổng lượt học'**
+  String get reportsTotalParticipations;
+
+  /// No description provided for @reportsNoData.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có dữ liệu báo cáo trong khoảng thời gian đã chọn.'**
+  String get reportsNoData;
+
+  /// No description provided for @enrollStudentTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'THÊM HỌC SINH VÀO LỚP'**
+  String get enrollStudentTitle;
+
+  /// No description provided for @enrollOptionExisting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn HS có sẵn'**
+  String get enrollOptionExisting;
+
+  /// No description provided for @enrollOptionNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm HS mới'**
+  String get enrollOptionNew;
+
+  /// No description provided for @enrollJoinDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày tham gia'**
+  String get enrollJoinDate;
+
+  /// No description provided for @enrollDiscount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mức giảm giá (%)'**
+  String get enrollDiscount;
+
+  /// No description provided for @enrollPartialSuccess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Học sinh đã được tạo nhưng ghi danh chưa hoàn tất.'**
+  String get enrollPartialSuccess;
+
+  /// No description provided for @busyTimeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'THÊM GIỜ BẬN CỦA HỌC SINH'**
+  String get busyTimeTitle;
+
+  /// No description provided for @busyTimeType.
+  ///
+  /// In vi, this message translates to:
+  /// **'Loại giờ bận'**
+  String get busyTimeType;
+
+  /// No description provided for @busyTimeFrequency.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tần suất'**
+  String get busyTimeFrequency;
+
+  /// No description provided for @busyTimeWeekly.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hằng tuần'**
+  String get busyTimeWeekly;
+
+  /// No description provided for @busyTimeOneTime.
+  ///
+  /// In vi, this message translates to:
+  /// **'Một lần'**
+  String get busyTimeOneTime;
+
+  /// No description provided for @busyTimeDayOfWeek.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thứ trong tuần'**
+  String get busyTimeDayOfWeek;
+
+  /// No description provided for @busyTimeDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày bận'**
+  String get busyTimeDate;
+
+  /// No description provided for @busyTimeStartTime.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ giờ'**
+  String get busyTimeStartTime;
+
+  /// No description provided for @busyTimeEndTime.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đến giờ'**
+  String get busyTimeEndTime;
+
+  /// No description provided for @busyTimeEffectiveFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hiệu lực từ ngày'**
+  String get busyTimeEffectiveFrom;
+
+  /// No description provided for @busyTimeEffectiveTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hiệu lực đến ngày'**
+  String get busyTimeEffectiveTo;
+
+  /// No description provided for @busyTimeDeleteConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn có chắc muốn xóa giờ bận này?'**
+  String get busyTimeDeleteConfirm;
+
+  /// No description provided for @settingsTuitionPolicySection.
+  ///
+  /// In vi, this message translates to:
+  /// **'CHÍNH SÁCH HỌC PHÍ'**
+  String get settingsTuitionPolicySection;
+
+  /// No description provided for @settingsTuitionPolicyTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chính sách học phí các lớp'**
+  String get settingsTuitionPolicyTitle;
+
+  /// No description provided for @settingsTuitionPolicySubtitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thiết lập đơn giá và số buổi chuẩn tháng cho từng lớp'**
+  String get settingsTuitionPolicySubtitle;
 }
 
 class _AppLocalizationsDelegate

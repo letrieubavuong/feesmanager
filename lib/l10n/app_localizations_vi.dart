@@ -383,4 +383,241 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get dirtyFormKeepEditing => 'Tiếp tục chỉnh sửa';
+
+  @override
+  String get settingsPaymentQr => 'THANH TOÁN & QR';
+
+  @override
+  String get settingsBankAccount => 'Tài khoản nhận học phí';
+
+  @override
+  String get settingsBankAccountSubtitle =>
+      'Cấu hình thông tin ngân hàng và mã VietQR nhận học phí';
+
+  @override
+  String get bankAccountTitle => 'THÔNG TIN TÀI KHOẢN NGÂN HÀNG';
+
+  @override
+  String get bankName => 'Ngân hàng';
+
+  @override
+  String get bankAccountNumber => 'Số tài khoản';
+
+  @override
+  String get bankAccountHolder => 'Tên chủ tài khoản';
+
+  @override
+  String get bankTransferTemplate => 'Mẫu nội dung chuyển khoản';
+
+  @override
+  String bankTransferTemplateHelper(Object maHocSinh, Object thang) {
+    return 'Dùng $maHocSinh cho mã/ID học sinh, $thang cho tháng';
+  }
+
+  @override
+  String get bankAccountSaveSuccess =>
+      'Đã lưu thông tin tài khoản nhận học phí';
+
+  @override
+  String get bankAccountValidationNumber => 'Vui lòng nhập số tài khoản';
+
+  @override
+  String get bankAccountValidationHolder => 'Vui lòng nhập tên chủ tài khoản';
+
+  @override
+  String get bankAccountValidationTemplate =>
+      'Vui lòng nhập mẫu nội dung chuyển khoản';
+
+  @override
+  String get vietQrPreviewTitle => 'XEM TRƯỚC VIETQR';
+
+  @override
+  String get vietQrPreviewSample =>
+      'Nội dung mẫu (Ví dụ 500.000đ, HS001, 09/2026):';
+
+  @override
+  String get vietQrNotConfigured =>
+      'Nhập số tài khoản và tên chủ tài khoản để tạo mã VietQR xem trước.';
+
+  @override
+  String get reportsTitle => 'Báo cáo';
+
+  @override
+  String get reportsFilterTitle => 'BỘ LỌC BÁO CÁO';
+
+  @override
+  String get reportsMode => 'Chế độ xem';
+
+  @override
+  String get reportsModeMonth => 'Theo tháng';
+
+  @override
+  String get reportsModeCustomRange => 'Khoảng ngày';
+
+  @override
+  String get reportsSelectMonth => 'Chọn tháng báo cáo';
+
+  @override
+  String get reportsFromDate => 'Từ';
+
+  @override
+  String get reportsToDate => 'Đến';
+
+  @override
+  String get reportsFilterClass => 'Lớp học';
+
+  @override
+  String get reportsFilterStudent => 'Học sinh';
+
+  @override
+  String get reportsAllClasses => 'Tất cả các lớp';
+
+  @override
+  String get reportsAllStudents => 'Tất cả học sinh';
+
+  @override
+  String get reportsApplyFilter => 'Áp dụng';
+
+  @override
+  String get reportsClearFilter => 'Xóa bộ lọc';
+
+  @override
+  String get reportsFilteredClass => 'Đã lọc lớp';
+
+  @override
+  String get reportsFilteredStudent => 'Đã lọc học sinh';
+
+  @override
+  String get reportsExportPdf => 'Xuất báo cáo PDF';
+
+  @override
+  String reportsExportPdfError(Object error) {
+    return 'Lỗi xuất PDF: $error';
+  }
+
+  @override
+  String get reportsKpiAttendanceRate => 'Tỷ lệ đi học';
+
+  @override
+  String get reportsKpiInvoiced => 'Học phí đã chốt';
+
+  @override
+  String get reportsKpiPaid => 'Thực nhận';
+
+  @override
+  String get reportsKpiOutstanding => 'Còn nợ';
+
+  @override
+  String get reportsSectionAttendance => 'A. ĐIỂM DANH';
+
+  @override
+  String get reportsSectionFinancial => 'B. HỌC PHÍ';
+
+  @override
+  String get reportsSectionSessions => 'C. BUỔI HỌC';
+
+  @override
+  String get reportsSectionClassBreakdown => 'D. CHI TIẾT THEO LỚP HỌC';
+
+  @override
+  String get reportsSectionStudentBreakdown => 'CHI TIẾT THEO HỌC SINH';
+
+  @override
+  String get reportsAttendanceOverallRate => 'Tỷ lệ đi học tổng thể';
+
+  @override
+  String get reportsAttendancePresent => 'Có mặt';
+
+  @override
+  String get reportsAttendanceLate => 'Đi trễ';
+
+  @override
+  String get reportsAttendanceExcused => 'Có phép';
+
+  @override
+  String get reportsAttendanceUnexcused => 'Vắng x.phép';
+
+  @override
+  String get reportsFinancialInvoiced => 'Chốt hóa đơn';
+
+  @override
+  String get reportsFinancialPaid => 'Đã thu';
+
+  @override
+  String get reportsFinancialDebt => 'Dư nợ';
+
+  @override
+  String get reportsTotalSessions => 'Tổng số buổi';
+
+  @override
+  String get reportsTotalParticipations => 'Tổng lượt học';
+
+  @override
+  String get reportsNoData =>
+      'Chưa có dữ liệu báo cáo trong khoảng thời gian đã chọn.';
+
+  @override
+  String get enrollStudentTitle => 'THÊM HỌC SINH VÀO LỚP';
+
+  @override
+  String get enrollOptionExisting => 'Chọn HS có sẵn';
+
+  @override
+  String get enrollOptionNew => 'Thêm HS mới';
+
+  @override
+  String get enrollJoinDate => 'Ngày tham gia';
+
+  @override
+  String get enrollDiscount => 'Mức giảm giá (%)';
+
+  @override
+  String get enrollPartialSuccess =>
+      'Học sinh đã được tạo nhưng ghi danh chưa hoàn tất.';
+
+  @override
+  String get busyTimeTitle => 'THÊM GIỜ BẬN CỦA HỌC SINH';
+
+  @override
+  String get busyTimeType => 'Loại giờ bận';
+
+  @override
+  String get busyTimeFrequency => 'Tần suất';
+
+  @override
+  String get busyTimeWeekly => 'Hằng tuần';
+
+  @override
+  String get busyTimeOneTime => 'Một lần';
+
+  @override
+  String get busyTimeDayOfWeek => 'Thứ trong tuần';
+
+  @override
+  String get busyTimeDate => 'Ngày bận';
+
+  @override
+  String get busyTimeStartTime => 'Từ giờ';
+
+  @override
+  String get busyTimeEndTime => 'Đến giờ';
+
+  @override
+  String get busyTimeEffectiveFrom => 'Hiệu lực từ ngày';
+
+  @override
+  String get busyTimeEffectiveTo => 'Hiệu lực đến ngày';
+
+  @override
+  String get busyTimeDeleteConfirm => 'Bạn có chắc muốn xóa giờ bận này?';
+
+  @override
+  String get settingsTuitionPolicySection => 'CHÍNH SÁCH HỌC PHÍ';
+
+  @override
+  String get settingsTuitionPolicyTitle => 'Chính sách học phí các lớp';
+
+  @override
+  String get settingsTuitionPolicySubtitle =>
+      'Thiết lập đơn giá và số buổi chuẩn tháng cho từng lớp';
 }

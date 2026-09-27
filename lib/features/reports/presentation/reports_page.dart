@@ -5,6 +5,7 @@ import '../../../app/common_widgets/navy_components.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../l10n/app_localizations.dart';
 import '../domain/report_scope.dart';
 import '../domain/report_summary.dart';
 import '../export/report_pdf_exporter.dart';
@@ -27,6 +28,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
   bool _isExporting = false;
 
   Future<void> _exportPdf(BuildContext context, ReportSummary summary) async {
+    final l10n = AppLocalizations.of(context)!;
     if (_isExporting) return;
 
     setState(() {
@@ -40,7 +42,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Lỗi xuất PDF: $e'),
+            content: Text(l10n.reportsExportPdfError(e.toString())),
             backgroundColor: AppColors.error,
           ),
         );
@@ -56,6 +58,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final scope = ref.watch(reportScopeNotifierProvider);
     final summaryAsync = ref.watch(reportSummaryProvider);
 
@@ -64,7 +67,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
       drawer: const AppGlobalDrawer(),
       appBar: AppBar(
         leading: const GlobalMenuButton(),
-        title: const Text('Báo cáo thống kê'),
+        title: Text(l10n.reportsTitle),
         actions: [
           summaryAsync.when(
             data: (summary) => IconButton(
@@ -84,7 +87,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
               onPressed: _isExporting
                   ? null
                   : () => _exportPdf(context, summary),
-              tooltip: _isExporting ? 'Đang xuất PDF...' : 'Xuất báo cáo PDF',
+              tooltip: l10n.reportsExportPdf,
             ),
             loading: () => const IconButton(
               icon: Icon(
@@ -104,7 +107,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
           IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
             onPressed: () => ref.invalidate(reportSummaryProvider),
-            tooltip: 'Làm mới báo cáo',
+            tooltip: l10n.commonRetry,
           ),
         ],
       ),
@@ -113,20 +116,20 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildCompactFilterBar(context, scope),
+            _buildCompactFilterBar(context, scope, l10n),
             const SizedBox(height: 16),
             summaryAsync.when(
-              data: (summary) => _buildReportContent(context, summary),
-              loading: () => const Center(
+              data: (summary) => _buildReportContent(context, summary, l10n),
+              loading: () => Center(
                 child: Padding(
-                  padding: EdgeInsets.all(40.0),
+                  padding: const EdgeInsets.all(40.0),
                   child: Column(
                     children: [
-                      CircularProgressIndicator(color: AppColors.primary),
-                      SizedBox(height: 12),
+                      const CircularProgressIndicator(color: AppColors.primary),
+                      const SizedBox(height: 12),
                       Text(
-                        'Đang tổng hợp báo cáo...',
-                        style: TextStyle(color: AppColors.textSecondary),
+                        l10n.commonLoading,
+                        style: const TextStyle(color: AppColors.textSecondary),
                       ),
                     ],
                   ),
@@ -141,13 +144,13 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Lỗi tải báo cáo: $err',
+                          '${l10n.commonError}: $err',
                           style: const TextStyle(color: AppColors.error),
                         ),
                       ),
                       ElevatedButton(
                         onPressed: () => ref.invalidate(reportSummaryProvider),
-                        child: const Text('Thử lại'),
+                        child: Text(l10n.commonRetry),
                       ),
                     ],
                   ),
@@ -160,12 +163,16 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
     );
   }
 
-  Widget _buildCompactFilterBar(BuildContext context, ReportScope scope) {
+  Widget _buildCompactFilterBar(
+    BuildContext context,
+    ReportScope scope,
+    AppLocalizations l10n,
+  ) {
     String scopeText;
     if (scope.mode == ReportMode.month) {
       final parts = scope.fromDate.split('-');
       scopeText =
-          'Tháng ${parts.length >= 2 ? "${parts[1]}/${parts[0]}" : scope.fromDate}';
+          '${l10n.reportsModeMonth} ${parts.length >= 2 ? "${parts[1]}/${parts[0]}" : scope.fromDate}';
     } else {
       final fromDisplay = DateFormatter.formatDisplayDate(scope.fromDate);
       final toDisplay = DateFormatter.formatDisplayDate(scope.toDate);
@@ -199,8 +206,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                     padding: const EdgeInsets.only(top: 2.0),
                     child: Text(
                       [
-                        if (scope.classId != null) 'Đã lọc lớp',
-                        if (scope.studentId != null) 'Đã lọc học sinh',
+                        if (scope.classId != null) l10n.reportsFilteredClass,
+                        if (scope.studentId != null)
+                          l10n.reportsFilteredStudent,
                       ].join(' • '),
                       style: const TextStyle(
                         color: AppColors.cyanAccent,
@@ -214,7 +222,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
           ElevatedButton.icon(
             key: const Key('open_report_filter_btn'),
             icon: const Icon(Icons.tune, size: 16),
-            label: const Text('Bộ lọc'),
+            label: Text(l10n.reportsFilterTitle),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.surfaceHigh,
               foregroundColor: AppColors.textPrimary,
@@ -227,22 +235,29 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
     );
   }
 
-  Widget _buildReportContent(BuildContext context, ReportSummary summary) {
+  Widget _buildReportContent(
+    BuildContext context,
+    ReportSummary summary,
+    AppLocalizations l10n,
+  ) {
     if (summary.isEmpty) {
-      return const AppSectionCard(
-        padding: EdgeInsets.all(32.0),
+      return AppSectionCard(
+        padding: const EdgeInsets.all(32.0),
         child: Center(
           child: Column(
             children: [
-              Icon(
+              const Icon(
                 Icons.bar_chart_outlined,
                 size: 48,
                 color: AppColors.textMuted,
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Text(
-                'Chưa có dữ liệu báo cáo trong khoảng thời gian đã chọn.',
-                style: TextStyle(fontSize: 14, color: AppColors.textMuted),
+                l10n.reportsNoData,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textMuted,
+                ),
               ),
             ],
           ),
@@ -258,11 +273,11 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
           children: [
             Expanded(
               child: AppMetricCard(
-                title: 'Tỷ lệ đi học',
+                title: l10n.reportsKpiAttendanceRate,
                 value:
                     '${summary.attendance.attendanceRatePercentage.toStringAsFixed(1)}%',
                 subtitle:
-                    '${summary.attendance.totalPresent}/${summary.attendance.totalEligibleParticipations} lượt',
+                    '${summary.attendance.totalPresent}/${summary.attendance.totalEligibleParticipations}',
                 valueColor: AppColors.success,
                 icon: Icons.check_circle_outline,
               ),
@@ -270,11 +285,11 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
             const SizedBox(width: 8),
             Expanded(
               child: AppMetricCard(
-                title: 'Học phí đã chốt',
+                title: l10n.reportsKpiInvoiced,
                 value: currencyFormatter.format(
                   summary.financial.totalInvoiced,
                 ),
-                subtitle: 'Hóa đơn trong kỳ',
+                subtitle: '',
                 valueColor: AppColors.cyanAccent,
                 icon: Icons.receipt_long_outlined,
               ),
@@ -286,9 +301,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
           children: [
             Expanded(
               child: AppMetricCard(
-                title: 'Thực nhận',
+                title: l10n.reportsKpiPaid,
                 value: currencyFormatter.format(summary.financial.totalPaid),
-                subtitle: 'Đã thu tiền',
+                subtitle: '',
                 valueColor: AppColors.success,
                 icon: Icons.payments_outlined,
               ),
@@ -296,11 +311,11 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
             const SizedBox(width: 8),
             Expanded(
               child: AppMetricCard(
-                title: 'Còn nợ',
+                title: l10n.reportsKpiOutstanding,
                 value: currencyFormatter.format(
                   summary.financial.totalOutstandingDebt,
                 ),
-                subtitle: 'Cần thu thêm',
+                subtitle: '',
                 valueColor: summary.financial.totalOutstandingDebt > 0
                     ? AppColors.error
                     : AppColors.textMuted,
@@ -313,18 +328,20 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
         const SizedBox(height: 16),
 
         // SECTION A: ĐIỂM DANH
-        const AppSectionHeader(title: 'A. ĐIỂM DANH THỐNG KÊ'),
+        AppSectionHeader(title: l10n.reportsSectionAttendance),
         AppSectionCard(
           child: Column(
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Tỷ lệ đi học tổng thể',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
+                  Expanded(
+                    child: Text(
+                      l10n.reportsAttendanceOverallRate,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                   Text(
@@ -354,28 +371,28 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                 children: [
                   Expanded(
                     child: _buildSubMetric(
-                      'Có mặt',
+                      l10n.reportsAttendancePresent,
                       '${summary.attendance.totalPresent}',
                       AppColors.success,
                     ),
                   ),
                   Expanded(
                     child: _buildSubMetric(
-                      'Đi trễ',
+                      l10n.reportsAttendanceLate,
                       '${summary.attendance.totalLate}',
                       AppColors.warning,
                     ),
                   ),
                   Expanded(
                     child: _buildSubMetric(
-                      'Có phép',
+                      l10n.reportsAttendanceExcused,
                       '${summary.attendance.totalExcusedAbsence}',
                       AppColors.cyanAccent,
                     ),
                   ),
                   Expanded(
                     child: _buildSubMetric(
-                      'Không phép',
+                      l10n.reportsAttendanceUnexcused,
                       '${summary.attendance.totalUnexcusedAbsence}',
                       AppColors.error,
                     ),
@@ -389,27 +406,27 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
         const SizedBox(height: 16),
 
         // SECTION B: HỌC PHÍ
-        const AppSectionHeader(title: 'B. TỔNG HỢP HỌC PHÍ'),
+        AppSectionHeader(title: l10n.reportsSectionFinancial),
         AppSectionCard(
           child: Row(
             children: [
               Expanded(
                 child: _buildSubMetric(
-                  'Hóa đơn chốt',
+                  l10n.reportsFinancialInvoiced,
                   currencyFormatter.format(summary.financial.totalInvoiced),
                   AppColors.cyanAccent,
                 ),
               ),
               Expanded(
                 child: _buildSubMetric(
-                  'Thực nhận',
+                  l10n.reportsFinancialPaid,
                   currencyFormatter.format(summary.financial.totalPaid),
                   AppColors.success,
                 ),
               ),
               Expanded(
                 child: _buildSubMetric(
-                  'Dư nợ',
+                  l10n.reportsFinancialDebt,
                   currencyFormatter.format(
                     summary.financial.totalOutstandingDebt,
                   ),
@@ -425,20 +442,20 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
         const SizedBox(height: 16),
 
         // SECTION C: BUỔI HỌC
-        const AppSectionHeader(title: 'C. TỔNG HỢP BUỔI HỌC'),
+        AppSectionHeader(title: l10n.reportsSectionSessions),
         AppSectionCard(
           child: Row(
             children: [
               Expanded(
                 child: _buildSubMetric(
-                  'Tổng số buổi',
+                  l10n.reportsTotalSessions,
                   '${summary.attendance.totalSessions}',
                   AppColors.primary,
                 ),
               ),
               Expanded(
                 child: _buildSubMetric(
-                  'Tổng lượt học',
+                  l10n.reportsTotalParticipations,
                   '${summary.attendance.totalEligibleParticipations}',
                   AppColors.cyanAccent,
                 ),

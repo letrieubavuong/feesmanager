@@ -107,8 +107,8 @@ class TestDbHelper {
         CREATE TABLE buoi_hoc (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           id_lop INTEGER NOT NULL,
+          id_lich_hoc INTEGER NULL,
           ngay TEXT NOT NULL,
-          thu_trong_tuan INTEGER NOT NULL,
           gio_bat_dau TEXT NOT NULL,
           gio_ket_thuc TEXT NOT NULL,
           loai TEXT NOT NULL DEFAULT 'CHINH',
@@ -116,7 +116,25 @@ class TestDbHelper {
           ghi_chu TEXT NULL,
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL,
-          FOREIGN KEY (id_lop) REFERENCES lop (id)
+          FOREIGN KEY (id_lop) REFERENCES lop (id),
+          FOREIGN KEY (id_lich_hoc) REFERENCES lich_hoc (id)
+        )
+      ''');
+
+        await db.execute('''
+        CREATE TABLE diem_danh (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          id_buoi_hoc INTEGER NOT NULL,
+          id_hoc_sinh INTEGER NOT NULL,
+          id_lop_goc INTEGER NOT NULL DEFAULT 1,
+          trang_thai TEXT NOT NULL,
+          loai_tham_gia TEXT NOT NULL DEFAULT 'CHINH',
+          id_buoi_vang_goc INTEGER NULL,
+          ghi_chu TEXT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (id_buoi_hoc) REFERENCES buoi_hoc (id),
+          FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id)
         )
       ''');
 
@@ -124,15 +142,15 @@ class TestDbHelper {
         CREATE TABLE dieu_chinh_buoi_hoc (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           id_hoc_sinh INTEGER NOT NULL,
+          id_lop_goc INTEGER NOT NULL DEFAULT 1,
           id_buoi_hoc_goc INTEGER NULL,
-          id_buoi_hoc_dich INTEGER NOT NULL,
+          id_buoi_hoc_tham_gia INTEGER NOT NULL,
           loai TEXT NOT NULL,
           ly_do TEXT NULL,
           created_at TEXT NOT NULL,
-          updated_at TEXT NOT NULL,
           FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
           FOREIGN KEY (id_buoi_hoc_goc) REFERENCES buoi_hoc (id),
-          FOREIGN KEY (id_buoi_hoc_dich) REFERENCES buoi_hoc (id)
+          FOREIGN KEY (id_buoi_hoc_tham_gia) REFERENCES buoi_hoc (id)
         )
       ''');
 

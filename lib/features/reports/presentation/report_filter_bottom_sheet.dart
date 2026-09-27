@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../classes/presentation/class_controller.dart';
 import '../../students/presentation/student_controller.dart';
 import '../domain/report_scope.dart';
@@ -77,6 +78,7 @@ class _ReportFilterBottomSheetState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final viewInsets = MediaQuery.of(context).viewInsets;
     final classesAsync = ref.watch(classListControllerProvider);
     final studentsAsync = ref.watch(studentListControllerProvider);
@@ -111,7 +113,7 @@ class _ReportFilterBottomSheetState
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'BỘ LỌC BÁO CÁO',
+                      l10n.reportsFilterTitle,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.primary,
@@ -130,7 +132,7 @@ class _ReportFilterBottomSheetState
 
             // Mode Selector
             Text(
-              'Chế độ xem',
+              l10n.reportsMode,
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -139,16 +141,16 @@ class _ReportFilterBottomSheetState
             SizedBox(
               width: double.infinity,
               child: SegmentedButton<ReportMode>(
-                segments: const [
+                segments: [
                   ButtonSegment(
                     value: ReportMode.month,
-                    label: Text('Theo tháng'),
-                    icon: Icon(Icons.calendar_month, size: 18),
+                    label: Text(l10n.reportsModeMonth),
+                    icon: const Icon(Icons.calendar_month, size: 18),
                   ),
                   ButtonSegment(
                     value: ReportMode.customRange,
-                    label: Text('Khoảng ngày'),
-                    icon: Icon(Icons.date_range, size: 18),
+                    label: Text(l10n.reportsModeCustomRange),
+                    icon: const Icon(Icons.date_range, size: 18),
                   ),
                 ],
                 selected: {_tempMode},
@@ -173,17 +175,17 @@ class _ReportFilterBottomSheetState
                 initialValue: months.contains(currentMonthStr)
                     ? currentMonthStr
                     : months.first,
-                decoration: const InputDecoration(
-                  labelText: 'Chọn tháng báo cáo',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.calendar_today),
+                decoration: InputDecoration(
+                  labelText: l10n.reportsSelectMonth,
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.calendar_today),
                 ),
                 items: months.map((m) {
                   final parts = m.split('-');
                   final display = '${parts[1]}/${parts[0]}';
                   return DropdownMenuItem<String>(
                     value: m,
-                    child: Text('Tháng $display'),
+                    child: Text('${l10n.reportsModeMonth} $display'),
                   );
                 }).toList(),
                 onChanged: (val) {
@@ -202,7 +204,7 @@ class _ReportFilterBottomSheetState
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.event, size: 18),
                       label: Text(
-                        'Từ: ${DateFormatter.formatDisplayDate(_tempFromDate)}',
+                        '${l10n.reportsFromDate}: ${DateFormatter.formatDisplayDate(_tempFromDate)}',
                       ),
                       onPressed: () async {
                         final initial =
@@ -232,7 +234,7 @@ class _ReportFilterBottomSheetState
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.event, size: 18),
                       label: Text(
-                        'Đến: ${DateFormatter.formatDisplayDate(_tempToDate)}',
+                        '${l10n.reportsToDate}: ${DateFormatter.formatDisplayDate(_tempToDate)}',
                       ),
                       onPressed: () async {
                         final initial =
@@ -268,15 +270,15 @@ class _ReportFilterBottomSheetState
               data: (classes) => DropdownButtonFormField<int?>(
                 initialValue: _tempClassId,
                 isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Lớp học',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.class_outlined),
+                decoration: InputDecoration(
+                  labelText: l10n.reportsFilterClass,
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.class_outlined),
                 ),
                 items: [
-                  const DropdownMenuItem<int?>(
+                  DropdownMenuItem<int?>(
                     value: null,
-                    child: Text('Tất cả các lớp'),
+                    child: Text(l10n.reportsAllClasses),
                   ),
                   ...classes.map(
                     (c) => DropdownMenuItem<int?>(
@@ -302,15 +304,15 @@ class _ReportFilterBottomSheetState
               data: (students) => DropdownButtonFormField<int?>(
                 initialValue: _tempStudentId,
                 isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Học sinh',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person_outline),
+                decoration: InputDecoration(
+                  labelText: l10n.reportsFilterStudent,
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.person_outline),
                 ),
                 items: [
-                  const DropdownMenuItem<int?>(
+                  DropdownMenuItem<int?>(
                     value: null,
-                    child: Text('Tất cả học sinh'),
+                    child: Text(l10n.reportsAllStudents),
                   ),
                   ...students.map(
                     (s) => DropdownMenuItem<int?>(
@@ -340,7 +342,7 @@ class _ReportFilterBottomSheetState
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    child: const Text('Xóa bộ lọc'),
+                    child: Text(l10n.reportsClearFilter),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -351,9 +353,9 @@ class _ReportFilterBottomSheetState
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    child: const Text(
-                      'Áp dụng',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    child: Text(
+                      l10n.reportsApplyFilter,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),

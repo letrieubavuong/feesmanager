@@ -127,6 +127,58 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     AsyncValue<List<TuitionInvoice>> invoicesAsync,
     AsyncValue<Map<int, InvoicePaymentSummary>> summariesAsync,
   ) {
+    if (invoicesAsync.isLoading || summariesAsync.isLoading) {
+      return const Row(
+        children: [
+          Expanded(
+            child: AppMetricCard(
+              title: 'Phải thu',
+              value: '...',
+              valueColor: AppColors.textPrimary,
+              icon: Icons.receipt_long_outlined,
+            ),
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: AppMetricCard(
+              title: 'Đã thu',
+              value: '...',
+              valueColor: AppColors.success,
+              icon: Icons.payments_outlined,
+            ),
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: AppMetricCard(
+              title: 'Còn nợ',
+              value: '...',
+              valueColor: AppColors.error,
+              icon: Icons.account_balance_wallet_outlined,
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (invoicesAsync.hasError || summariesAsync.hasError) {
+      final err = invoicesAsync.error ?? summariesAsync.error;
+      return AppSectionCard(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            const Icon(Icons.error_outline, color: AppColors.error, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Lỗi nạp dữ liệu tài chính: $err',
+                style: const TextStyle(color: AppColors.error, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final invoices = invoicesAsync.value ?? [];
     final summaries = summariesAsync.value ?? {};
 
@@ -143,6 +195,8 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
         if (summary != null) {
           totalPaid += summary.totalPaid;
           totalDebt += summary.remainingDebt;
+        } else {
+          totalDebt += inv.soTienPhaiThu;
         }
       }
     }
@@ -183,6 +237,11 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
   }
 
   Widget _buildActionHeader(BuildContext context) {
+    final invoicesAsync = ref.watch(
+      classMonthInvoicesProvider((widget.classId, _selectedMonth)),
+    );
+    final canFinalize = !invoicesAsync.isLoading && !invoicesAsync.hasError;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -200,7 +259,9 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           ),
-          onPressed: () => _handleFinalizeAllInvoices(context),
+          onPressed: canFinalize
+              ? () => _handleFinalizeAllInvoices(context)
+              : null,
           icon: const Icon(Icons.check_circle_outline, size: 16),
           label: const Text('Chốt học phí tháng'),
         ),
@@ -315,6 +376,95 @@ class _StudentTuitionCard extends ConsumerWidget {
       tuitionPreviewControllerProvider(student.id!, classId, month),
     );
     final currencyFormat = NumberFormat('#,###');
+
+    if (invoicesAsync.isLoading ||
+        summariesAsync.isLoading ||
+        previewAsync.isLoading) {
+      return AppSectionCard(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              StudentAvatar(
+                gioiTinh: student.gioiTinh,
+                studentName: student.hoTen,
+                radius: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  student.hoTen,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (invoicesAsync.hasError ||
+        summariesAsync.hasError ||
+        previewAsync.hasError) {
+      final err =
+          invoicesAsync.error ?? summariesAsync.error ?? previewAsync.error;
+      return AppSectionCard(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              StudentAvatar(
+                gioiTinh: student.gioiTinh,
+                studentName: student.hoTen,
+                radius: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      student.hoTen,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Lỗi: $err',
+                      style: const TextStyle(
+                        color: AppColors.error,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const AppStatusChip(
+                label: 'Lỗi dữ liệu',
+                color: AppColors.error,
+                compact: true,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     final invoices = invoicesAsync.value ?? [];
     final invoice = invoices.cast<TuitionInvoice?>().firstWhere(

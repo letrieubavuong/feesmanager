@@ -85,7 +85,7 @@ void main() {
 
         final pdfIconButtonFinder = find.widgetWithIcon(
           IconButton,
-          Icons.picture_as_pdf,
+          Icons.picture_as_pdf_outlined,
         );
         expect(pdfIconButtonFinder, findsOneWidget);
 
@@ -130,7 +130,7 @@ void main() {
 
         final pdfIconButtonFinder = find.widgetWithIcon(
           IconButton,
-          Icons.picture_as_pdf,
+          Icons.picture_as_pdf_outlined,
         );
         expect(pdfIconButtonFinder, findsOneWidget);
 
@@ -177,7 +177,7 @@ void main() {
 
         final pdfIconButtonFinder = find.widgetWithIcon(
           IconButton,
-          Icons.picture_as_pdf,
+          Icons.picture_as_pdf_outlined,
         );
         expect(pdfIconButtonFinder, findsOneWidget);
 
@@ -237,7 +237,7 @@ void main() {
 
         final pdfIconButtonFinder = find.widgetWithIcon(
           IconButton,
-          Icons.picture_as_pdf,
+          Icons.picture_as_pdf_outlined,
         );
         await tester.tap(pdfIconButtonFinder);
         await tester.pumpAndSettle();
@@ -303,7 +303,7 @@ void main() {
 
         final pdfIconButtonFinder = find.widgetWithIcon(
           IconButton,
-          Icons.picture_as_pdf,
+          Icons.picture_as_pdf_outlined,
         );
         await tester.tap(pdfIconButtonFinder);
         await tester.pumpAndSettle();

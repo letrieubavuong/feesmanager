@@ -177,7 +177,7 @@ void main() {
         // Clear archived banner is visible
         expect(
           find.text(
-            'Lớp đã lưu trữ. Dữ liệu lịch sử vẫn được giữ nguyên. Khôi phục lớp để tiếp tục hoạt động.',
+            'Lớp đã ngừng hoạt động. Dữ liệu lịch sử vẫn được giữ nguyên. Kích hoạt lại lớp để tiếp tục hoạt động.',
           ),
           findsOneWidget,
         );

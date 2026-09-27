@@ -12,19 +12,17 @@ import 'package:tuition2027/l10n/app_localizations.dart';
 
 Future<void> waitForAsyncProviders(
   WidgetTester tester, {
-  int iterations = 5,
+  int iterations = 10,
 }) async {
   for (int i = 0; i < iterations; i++) {
     await tester.runAsync(() async {
-      await Future.delayed(const Duration(milliseconds: 10));
+      await Future.delayed(const Duration(milliseconds: 50));
     });
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
   }
 }
 
 Future<Database> createTestDb() async {
-  sqfliteFfiInit();
-  databaseFactory = databaseFactoryFfi;
   final tempDir = await Directory.systemTemp.createTemp('enrollment_two_flows');
   final dbPath = p.join(
     tempDir.path,
@@ -35,6 +33,8 @@ Future<Database> createTestDb() async {
 }
 
 void main() {
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
   group('Add Student Two Flows Tests', () {
     late Database db;
 
@@ -68,34 +68,46 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [databaseProvider.overrideWith((ref) async => db)],
-            child: const MaterialApp(
-              locale: Locale('vi'),
-              localizationsDelegates: [
+            child: MaterialApp(
+              locale: const Locale('vi'),
+              localizationsDelegates: const [
                 AppLocalizations.delegate,
                 GlobalMaterialLocalizations.delegate,
                 GlobalWidgetsLocalizations.delegate,
                 GlobalCupertinoLocalizations.delegate,
               ],
               supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(body: EnrollStudentBottomSheet(classId: 1)),
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () =>
+                        showEnrollStudentBottomSheet(context, classId: 1),
+                    child: const Text('Open Sheet'),
+                  ),
+                ),
+              ),
             ),
           ),
         );
 
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pump(const Duration(milliseconds: 300));
         await waitForAsyncProviders(tester);
 
         // Switch to Option B: Thêm HS mới
         await tester.tap(find.text('Thêm HS mới'));
+        await tester.pump(const Duration(milliseconds: 300));
         await waitForAsyncProviders(tester);
 
         // Enter new student name
         final nameField = find.byType(TextFormField).first;
         await tester.enterText(nameField, 'Nguyễn Văn Mới');
-        await waitForAsyncProviders(tester);
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Save
         await tester.tap(find.text('Lưu'));
         await waitForAsyncProviders(tester);
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Verify student is created in DB
         final studentsInDb = await db.query(

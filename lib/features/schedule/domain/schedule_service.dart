@@ -1,3 +1,4 @@
+import 'package:sqflite/sqflite.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:intl/intl.dart';
 import '../../../core/database/database_provider.dart';
@@ -148,7 +149,46 @@ class ScheduleDomainService {
     );
     _validateSchedule(newSchedule);
 
-    await _scheduleRepo.db.transaction((txn) async {
+    final db = _scheduleRepo.db;
+    final futureSessions = await db.query(
+      'buoi_hoc',
+      where: 'id_lich_hoc = ? AND ngay >= ?',
+      whereArgs: [scheduleId, effectiveStr],
+    );
+
+    for (final sMap in futureSessions) {
+      final sessionId = sMap['id'] as int;
+      final sessionStatus = sMap['trang_thai'] as String;
+      final sessionDate = sMap['ngay'] as String;
+
+      final attendanceCount =
+          Sqflite.firstIntValue(
+            await db.rawQuery(
+              'SELECT COUNT(*) FROM diem_danh WHERE id_buoi_hoc = ?',
+              [sessionId],
+            ),
+          ) ??
+          0;
+
+      final adjustmentCount =
+          Sqflite.firstIntValue(
+            await db.rawQuery(
+              'SELECT COUNT(*) FROM dieu_chinh_buoi_hoc WHERE id_buoi_hoc_goc = ? OR id_buoi_hoc_tham_gia = ?',
+              [sessionId, sessionId],
+            ),
+          ) ??
+          0;
+
+      if (sessionStatus != 'DU_KIEN' ||
+          attendanceCount > 0 ||
+          adjustmentCount > 0) {
+        throw Exception(
+          'Không thể thay đổi lịch học vì có buổi học ngày $sessionDate đã ghi nhận dữ liệu (điểm danh/điều chỉnh).',
+        );
+      }
+    }
+
+    await db.transaction((txn) async {
       await _scheduleRepo.updateInTxn(txn, closedOld);
       final newScheduleId = await _scheduleRepo.createInTxn(txn, newSchedule);
 
@@ -172,8 +212,18 @@ class ScheduleDomainService {
                 updatedAt: DateTime.now(),
               ),
             );
+          } else {
+            await _assignmentRepo.updateInTxn(
+              txn,
+              a.copyWith(idLichHoc: newScheduleId, updatedAt: DateTime.now()),
+            );
           }
         }
+      }
+
+      for (final sMap in futureSessions) {
+        final sessionId = sMap['id'] as int;
+        await txn.delete('buoi_hoc', where: 'id = ?', whereArgs: [sessionId]);
       }
     });
   }
@@ -369,6 +419,60 @@ class ScheduleDomainService {
       newStartStr,
       existing.denNgay,
     );
+
+    final db = _scheduleRepo.db;
+    final affectedFrom = newStartStr.compareTo(existing.tuNgay) < 0
+        ? newStartStr
+        : existing.tuNgay;
+    final affectedTo = newStartStr.compareTo(existing.tuNgay) < 0
+        ? existing.tuNgay
+        : newStartStr;
+
+    final sessionsInAffectedRange = await db.query(
+      'buoi_hoc',
+      where:
+          'id_lop = ? AND (id_lich_hoc = ? OR id_lich_hoc IS NULL) AND ngay >= ? AND ngay <= ?',
+      whereArgs: [existing.idLop, existing.idLichHoc, affectedFrom, affectedTo],
+    );
+
+    for (final sMap in sessionsInAffectedRange) {
+      final sessionId = sMap['id'] as int;
+      final status = sMap['trang_thai'] as String;
+
+      if (status != 'DU_KIEN') {
+        throw Exception(
+          'Không thể thay đổi ngày bắt đầu vì phân ca này đã ảnh hưởng đến các buổi học/điểm danh trong lịch sử.',
+        );
+      }
+
+      final attendanceCount =
+          Sqflite.firstIntValue(
+            await db.rawQuery(
+              'SELECT COUNT(*) FROM diem_danh WHERE id_buoi_hoc = ? AND id_hoc_sinh = ?',
+              [sessionId, existing.idHocSinh],
+            ),
+          ) ??
+          0;
+      if (attendanceCount > 0) {
+        throw Exception(
+          'Không thể thay đổi ngày bắt đầu vì phân ca này đã ảnh hưởng đến các buổi học/điểm danh trong lịch sử.',
+        );
+      }
+
+      final adjustmentCount =
+          Sqflite.firstIntValue(
+            await db.rawQuery(
+              'SELECT COUNT(*) FROM dieu_chinh_buoi_hoc WHERE id_hoc_sinh = ? AND (id_buoi_hoc_goc = ? OR id_buoi_hoc_tham_gia = ?)',
+              [existing.idHocSinh, sessionId, sessionId],
+            ),
+          ) ??
+          0;
+      if (adjustmentCount > 0) {
+        throw Exception(
+          'Không thể thay đổi ngày bắt đầu vì phân ca này đã ảnh hưởng đến các buổi học/điểm danh trong lịch sử.',
+        );
+      }
+    }
 
     final conflictResult = await _conflictService.evaluateCandidateAssignment(
       studentId: existing.idHocSinh,

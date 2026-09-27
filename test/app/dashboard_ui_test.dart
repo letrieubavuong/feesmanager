@@ -57,7 +57,7 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        expect(find.text('Xin chào, Thầy/Cô!'), findsOneWidget);
+        expect(find.text('Xin chào thầy!'), findsOneWidget);
         expect(find.byKey(UiKeys.dashboardSearchInput), findsOneWidget);
         expect(find.text('Thao tác nhanh'), findsOneWidget);
         expect(find.byKey(UiKeys.dashboardQuickAddStudent), findsOneWidget);
@@ -65,8 +65,8 @@ void main() {
         expect(find.byKey(UiKeys.dashboardQuickViewTuition), findsOneWidget);
         expect(find.byKey(UiKeys.dashboardQuickViewReports), findsOneWidget);
 
-        expect(find.text('Lớp học đang mở'), findsOneWidget);
-        expect(find.text('Học sinh đang học'), findsOneWidget);
+        expect(find.textContaining('Lớp học: 1'), findsOneWidget);
+        expect(find.textContaining('Học sinh: 1'), findsOneWidget);
       },
     );
 

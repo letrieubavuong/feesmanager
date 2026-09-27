@@ -17,6 +17,40 @@ import 'package:tuition2027/features/students/presentation/student_detail_page.d
 import 'package:tuition2027/features/tuition/domain/tuition_invoice.dart';
 import 'package:tuition2027/features/tuition/presentation/class_tuition_tab.dart';
 import 'package:tuition2027/features/tuition/presentation/tuition_controller.dart';
+import 'package:tuition2027/features/tuition/domain/tuition_policy.dart';
+import 'package:tuition2027/features/tuition/domain/tuition_preview.dart';
+
+class _FakeTuitionPreviewController extends TuitionPreviewController {
+  @override
+  Future<TuitionPreview> build(int studentId, int classId, String month) async {
+    final policy = TuitionPolicy(
+      id: 1,
+      idLop: classId,
+      hieuLucTu: '2026-01-01',
+      hocPhiMoiBuoi: 50000,
+      soBuoiChuanThang: 12,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    return TuitionPreview(
+      studentId: studentId,
+      classId: classId,
+      month: month,
+      policy: policy,
+      soBuoiEligible: 12,
+      soBuoiTinhPhi: 12,
+      creditOpening: 0,
+      creditEarned: 0,
+      creditUsed: 0,
+      creditClosing: 0,
+      tongTruocGiam: 600000,
+      giamPhanTram: 0,
+      giamSoTien: 0,
+      soTienPhaiThu: 600000,
+      candidates: [],
+    );
+  }
+}
 
 void main() {
   sqfliteFfiInit();
@@ -106,6 +140,11 @@ void main() {
                 1,
                 nowMonth,
               )).overrideWith((ref) async => [testInvoice]),
+              tuitionPreviewControllerProvider(
+                1,
+                1,
+                nowMonth,
+              ).overrideWith(() => _FakeTuitionPreviewController()),
               studentInvoiceProvider(
                 1,
                 1,
@@ -131,12 +170,11 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
         }
 
-        expect(find.text('CÒN NỢ'), findsOneWidget);
+        expect(find.text('Còn nợ (300,000đ)'), findsOneWidget);
         expect(find.textContaining('Phải thu: 600,000đ'), findsOneWidget);
         expect(find.textContaining('Đã trả: 300,000đ'), findsOneWidget);
-        expect(find.textContaining('Còn lại: 300,000đ'), findsOneWidget);
         expect(find.text('Thanh toán'), findsOneWidget);
-        expect(find.text('Lịch sử TT'), findsOneWidget);
+        expect(find.text('QR'), findsOneWidget);
       },
     );
 
@@ -209,6 +247,11 @@ void main() {
                 1,
                 nowMonth,
               )).overrideWith((ref) async => [testInvoice]),
+              tuitionPreviewControllerProvider(
+                1,
+                1,
+                nowMonth,
+              ).overrideWith(() => _FakeTuitionPreviewController()),
               studentInvoiceProvider(
                 1,
                 1,
@@ -234,9 +277,9 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
         }
 
-        expect(find.text('ĐÃ THANH TOÁN'), findsOneWidget);
+        expect(find.text('Đã thanh toán'), findsOneWidget);
         expect(find.text('Thanh toán'), findsNothing);
-        expect(find.text('Lịch sử TT'), findsOneWidget);
+        expect(find.text('Đã hoàn tất thanh toán'), findsOneWidget);
       },
     );
 
@@ -287,7 +330,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
         }
 
-        expect(find.text('Đang tải dữ liệu hóa đơn...'), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsWidgets);
         expect(find.text('NHÁP'), findsNothing);
         expect(find.text('Chốt học phí'), findsNothing);
         expect(find.text('Thanh toán'), findsNothing);
@@ -340,10 +383,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
         }
 
-        expect(
-          find.textContaining('Lỗi dữ liệu hóa đơn: Invoice DB Error'),
-          findsOneWidget,
-        );
+        expect(find.textContaining('Invoice DB Error'), findsWidgets);
         expect(find.text('NHÁP'), findsNothing);
         expect(find.text('Chốt học phí'), findsNothing);
         expect(find.text('Thanh toán'), findsNothing);
@@ -419,7 +459,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
         }
 
-        expect(find.text('Đang tải dữ liệu thanh toán...'), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsWidgets);
         expect(find.text('Thanh toán'), findsNothing);
       },
     );
@@ -491,10 +531,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
         }
 
-        expect(
-          find.textContaining('Lỗi dữ liệu thanh toán: DB Error'),
-          findsOneWidget,
-        );
+        expect(find.textContaining('DB Error'), findsWidgets);
         expect(find.text('Thanh toán'), findsNothing);
       },
     );

@@ -303,8 +303,7 @@ void main() {
     await tester.pump(); // Start save
     await tester.pumpAndSettle();
 
-    // Verify error dialog
-    expect(find.text('Lỗi'), findsOneWidget);
+    // Verify error message shown in snackbar
     expect(find.textContaining('Save failed'), findsAtLeast(1));
 
     // Verify success snackbar NOT shown
@@ -345,7 +344,7 @@ void main() {
     // No editable controls (ChoiceChips)
     expect(find.byType(ChoiceChip), findsNothing);
     // Static status text visible
-    expect(find.textContaining('Trạng thái: Có mặt'), findsOneWidget);
+    expect(find.text('Có mặt'), findsOneWidget);
   });
 
   testWidgets(
@@ -461,7 +460,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap Finalize button
-      await tester.tap(find.text('Hoàn tất'));
+      await tester.tap(find.text('Hoàn tất buổi học'));
       await tester.pumpAndSettle();
 
       // Dialog appears
@@ -474,7 +473,7 @@ void main() {
       expect(controller.finalizeCalls, 0);
 
       // Tap Finalize button again
-      await tester.tap(find.text('Hoàn tất'));
+      await tester.tap(find.text('Hoàn tất buổi học'));
       await tester.pumpAndSettle();
 
       // Override path
@@ -515,15 +514,14 @@ void main() {
     await tester.pumpAndSettle();
 
     // Tap Finalize
-    await tester.tap(find.text('Hoàn tất'));
+    await tester.tap(find.text('Hoàn tất buổi học'));
     await tester.pumpAndSettle();
 
     // Confirm dialog
-    await tester.tap(find.text('Xác nhận'));
+    await tester.tap(find.text('Xác nhận hoàn tất'));
     await tester.pumpAndSettle();
 
-    // Verify error dialog shown
-    expect(find.text('Lỗi'), findsOneWidget);
+    // Verify error snackbar shown
     expect(find.textContaining('Finalize failed'), findsAtLeast(1));
 
     // Verify success snackbar NOT shown

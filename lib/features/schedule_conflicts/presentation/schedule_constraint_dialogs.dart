@@ -5,6 +5,7 @@ import '../../../app/common_widgets/app_page_scaffold.dart';
 import '../../../app/common_widgets/dirty_form_scope.dart';
 import '../../../core/utils/date_and_time_validators.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../l10n/app_localizations.dart';
 import '../domain/schedule_constraint.dart';
 import 'schedule_conflict_providers.dart';
 
@@ -66,6 +67,8 @@ class _BusyTimeFormBottomSheetState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return PopScope(
       canPop: !_isDirty,
       onPopInvokedWithResult: (didPop, result) async {
@@ -99,7 +102,7 @@ class _BusyTimeFormBottomSheetState
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Thêm giờ bận của học sinh',
+                          l10n.busyTimeTitle,
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
@@ -141,9 +144,9 @@ class _BusyTimeFormBottomSheetState
                     ],
                     DropdownButtonFormField<ConstraintType>(
                       initialValue: _selectedType,
-                      decoration: const InputDecoration(
-                        labelText: 'Loại giờ bận',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.busyTimeType,
+                        border: const OutlineInputBorder(),
                       ),
                       items: ConstraintType.values
                           .map(
@@ -163,18 +166,18 @@ class _BusyTimeFormBottomSheetState
                     const SizedBox(height: 16),
                     DropdownButtonFormField<OccurrenceType>(
                       initialValue: _selectedOccurrence,
-                      decoration: const InputDecoration(
-                        labelText: 'Lặp lại',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.busyTimeFrequency,
+                        border: const OutlineInputBorder(),
                       ),
-                      items: const [
+                      items: [
                         DropdownMenuItem(
                           value: OccurrenceType.DINH_KY,
-                          child: Text('Hằng tuần (Định kỳ)'),
+                          child: Text(l10n.busyTimeWeekly),
                         ),
                         DropdownMenuItem(
                           value: OccurrenceType.MOT_LAN,
-                          child: Text('Một lần'),
+                          child: Text(l10n.busyTimeOneTime),
                         ),
                       ],
                       onChanged: (val) {
@@ -188,19 +191,20 @@ class _BusyTimeFormBottomSheetState
                     if (_selectedOccurrence == OccurrenceType.DINH_KY) ...[
                       DropdownButtonFormField<int>(
                         initialValue: _selectedWeekday,
-                        decoration: const InputDecoration(
-                          labelText: 'Thứ trong tuần',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: l10n.busyTimeDayOfWeek,
+                          border: const OutlineInputBorder(),
                         ),
-                        items: const [
-                          DropdownMenuItem(value: 1, child: Text('Thứ Hai')),
-                          DropdownMenuItem(value: 2, child: Text('Thứ Ba')),
-                          DropdownMenuItem(value: 3, child: Text('Thứ Tư')),
-                          DropdownMenuItem(value: 4, child: Text('Thứ Năm')),
-                          DropdownMenuItem(value: 5, child: Text('Thứ Sáu')),
-                          DropdownMenuItem(value: 6, child: Text('Thứ Bảy')),
-                          DropdownMenuItem(value: 7, child: Text('Chủ Nhật')),
-                        ],
+                        items: List.generate(7, (i) => i + 1)
+                            .map(
+                              (w) => DropdownMenuItem(
+                                value: w,
+                                child: Text(
+                                  DateFormatter.formatVietnameseWeekday(w),
+                                ),
+                              ),
+                            )
+                            .toList(),
                         onChanged: (val) {
                           if (val != null) {
                             _onChanged();
@@ -211,7 +215,7 @@ class _BusyTimeFormBottomSheetState
                       const SizedBox(height: 16),
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Hiệu lực từ ngày'),
+                        title: Text(l10n.busyTimeEffectiveFrom),
                         subtitle: Text(
                           DateFormatter.formatDisplayDate(_effectiveFrom),
                         ),
@@ -231,11 +235,11 @@ class _BusyTimeFormBottomSheetState
                       ),
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Hiệu lực đến ngày'),
+                        title: Text(l10n.busyTimeEffectiveTo),
                         subtitle: Text(
                           _effectiveTo != null
                               ? DateFormatter.formatDisplayDate(_effectiveTo!)
-                              : 'Không giới hạn',
+                              : l10n.filterAll,
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -267,7 +271,7 @@ class _BusyTimeFormBottomSheetState
                     ] else ...[
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Ngày bận'),
+                        title: Text(l10n.busyTimeDate),
                         subtitle: Text(
                           DateFormatter.formatDisplayDate(_specificDate),
                         ),
@@ -292,7 +296,7 @@ class _BusyTimeFormBottomSheetState
                         Expanded(
                           child: ListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: const Text('Từ giờ'),
+                            title: Text(l10n.busyTimeStartTime),
                             subtitle: Text(_startTime.format(context)),
                             trailing: const Icon(Icons.access_time),
                             onTap: () async {
@@ -311,7 +315,7 @@ class _BusyTimeFormBottomSheetState
                         Expanded(
                           child: ListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: const Text('Đến giờ'),
+                            title: Text(l10n.busyTimeEndTime),
                             subtitle: Text(_endTime.format(context)),
                             trailing: const Icon(Icons.access_time),
                             onTap: () async {
@@ -332,9 +336,9 @@ class _BusyTimeFormBottomSheetState
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _sourceController,
-                        decoration: const InputDecoration(
-                          labelText: 'Tên trường / trung tâm khác',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: l10n.studentSchool,
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -342,7 +346,7 @@ class _BusyTimeFormBottomSheetState
                         controller: _bufferController,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
-                          labelText: 'Thời gian di chuyển cần thiết (phút)',
+                          labelText: 'Thời gian di chuyển (phút)',
                           border: OutlineInputBorder(),
                         ),
                       ),
@@ -350,9 +354,9 @@ class _BusyTimeFormBottomSheetState
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _noteController,
-                      decoration: const InputDecoration(
-                        labelText: 'Ghi chú',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.studentNotes,
+                        border: const OutlineInputBorder(),
                       ),
                       maxLines: 2,
                     ),
@@ -373,11 +377,11 @@ class _BusyTimeFormBottomSheetState
                                     Navigator.of(context).pop();
                                   }
                                 },
-                          child: const Text('Hủy'),
+                          child: Text(l10n.commonCancel),
                         ),
                         const SizedBox(width: 12),
                         ElevatedButton.icon(
-                          onPressed: _isSaving ? null : _submit,
+                          onPressed: _isSaving ? null : () => _submit(l10n),
                           icon: _isSaving
                               ? const SizedBox(
                                   width: 16,
@@ -387,7 +391,7 @@ class _BusyTimeFormBottomSheetState
                                   ),
                                 )
                               : const Icon(Icons.check),
-                          label: const Text('Lưu giờ bận'),
+                          label: Text(l10n.commonSave),
                         ),
                       ],
                     ),
@@ -401,7 +405,7 @@ class _BusyTimeFormBottomSheetState
     );
   }
 
-  void _submit() async {
+  void _submit(AppLocalizations l10n) async {
     setState(() {
       _isSaving = true;
       _inlineError = null;
@@ -420,14 +424,8 @@ class _BusyTimeFormBottomSheetState
         'endTime',
       );
 
-      final bufferMins = int.tryParse(_bufferController.text.trim()) ?? 0;
-
-      if (_selectedType == ConstraintType.OTHER_CENTER &&
-          _sourceController.text.trim().isEmpty) {
-        throw const FormatException(
-          'Trường / trung tâm khác không được để trống',
-        );
-      }
+      final rawBufferStr = _bufferController.text.trim();
+      final bufferMins = int.tryParse(rawBufferStr) ?? 0;
 
       String? effFromStr;
       String? effToStr;
@@ -437,11 +435,6 @@ class _BusyTimeFormBottomSheetState
         effFromStr = DateFormatter.formatCanonicalDate(_effectiveFrom);
         if (_effectiveTo != null) {
           effToStr = DateFormatter.formatCanonicalDate(_effectiveTo!);
-          if (_effectiveTo!.isBefore(_effectiveFrom)) {
-            throw const FormatException(
-              'Hiệu lực đến ngày không được trước hiệu lực từ ngày',
-            );
-          }
         }
       } else {
         specDateStr = DateFormatter.formatCanonicalDate(_specificDate);
@@ -475,17 +468,15 @@ class _BusyTimeFormBottomSheetState
       if (mounted) {
         setState(() => _isSaving = false);
         _isDirty = false;
-        AppFeedback.showSuccessSnackBar(context, 'Đã thêm giờ bận thành công');
+        AppFeedback.showSuccessSnackBar(context, l10n.commonSave);
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isSaving = false;
-          _inlineError = e
-              .toString()
-              .replaceAll('FormatException: ', '')
-              .replaceAll('Exception: ', '');
+          _inlineError =
+              '${l10n.commonError}: ${e.toString().replaceAll('FormatException: ', '').replaceAll('Exception: ', '')}';
         });
       }
     }

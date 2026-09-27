@@ -182,72 +182,85 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ),
             ),
             const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildCompactQuickAction(
-                  context,
-                  icon: Icons.check_circle_outline,
-                  label: 'Điểm danh',
-                  color: semantics.attendancePresent,
-                  onTap: () {
-                    ref
-                        .read(navigationControllerProvider.notifier)
-                        .goTo(AppDestinationId.classes);
-                  },
-                ),
-                _buildCompactQuickAction(
-                  context,
-                  icon: Icons.people_outline,
-                  label: 'Học sinh',
-                  color: colorScheme.primary,
-                  onTap: () {
-                    ref
-                        .read(navigationControllerProvider.notifier)
-                        .goTo(AppDestinationId.students);
-                  },
-                ),
-                _buildCompactQuickAction(
-                  context,
-                  icon: Icons.class_outlined,
-                  label: 'Lớp học',
-                  color: colorScheme.secondary,
-                  onTap: () {
-                    ref
-                        .read(navigationControllerProvider.notifier)
-                        .goTo(AppDestinationId.classes);
-                  },
-                ),
-                _buildCompactQuickAction(
-                  context,
-                  icon: Icons.payments_outlined,
-                  label: 'Học phí',
-                  color: semantics.tuitionDraft,
-                  onTap: () {
-                    ref
-                        .read(navigationControllerProvider.notifier)
-                        .goTo(AppDestinationId.tuition);
-                  },
-                ),
-                _buildCompactQuickAction(
-                  context,
-                  icon: Icons.bar_chart_outlined,
-                  label: 'Báo cáo',
-                  color: semantics.warning,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ReportsPage()),
-                    );
-                  },
-                ),
-              ],
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildCompactQuickAction(
+                    context,
+                    icon: Icons.check_circle_outline,
+                    label: 'Điểm danh',
+                    color: semantics.attendancePresent,
+                    onTap: () {
+                      ref
+                          .read(navigationControllerProvider.notifier)
+                          .goTo(AppDestinationId.classes);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _buildCompactQuickAction(
+                    context,
+                    key: UiKeys.dashboardQuickAddStudent,
+                    icon: Icons.people_outline,
+                    label: 'Học sinh',
+                    color: colorScheme.primary,
+                    onTap: () {
+                      ref
+                          .read(navigationControllerProvider.notifier)
+                          .goTo(AppDestinationId.students);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _buildCompactQuickAction(
+                    context,
+                    key: UiKeys.dashboardQuickManageClasses,
+                    icon: Icons.class_outlined,
+                    label: 'Lớp học',
+                    color: colorScheme.secondary,
+                    onTap: () {
+                      ref
+                          .read(navigationControllerProvider.notifier)
+                          .goTo(AppDestinationId.classes);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _buildCompactQuickAction(
+                    context,
+                    key: UiKeys.dashboardQuickViewTuition,
+                    icon: Icons.payments_outlined,
+                    label: 'Học phí',
+                    color: semantics.tuitionDraft,
+                    onTap: () {
+                      ref
+                          .read(navigationControllerProvider.notifier)
+                          .goTo(AppDestinationId.tuition);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _buildCompactQuickAction(
+                    context,
+                    key: UiKeys.dashboardQuickViewReports,
+                    icon: Icons.bar_chart_outlined,
+                    label: 'Báo cáo',
+                    color: semantics.warning,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ReportsPage()),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
 
             const SizedBox(height: 20),
 
             // --- D. LỊCH HÔM NAY ---
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 4,
               children: [
                 Text(
                   'Lịch hôm nay',
@@ -471,6 +484,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   Widget _buildCompactQuickAction(
     BuildContext context, {
+    Key? key,
     required IconData icon,
     required String label,
     required Color color,
@@ -478,6 +492,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }) {
     final theme = Theme.of(context);
     return InkWell(
+      key: key,
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
