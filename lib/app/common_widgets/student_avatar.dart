@@ -17,28 +17,49 @@ class StudentAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final gender = gioiTinh?.trim().toUpperCase();
 
-    IconData iconData;
+    String? assetPath;
+    IconData fallbackIcon;
     Color bg;
     Color fg;
 
     if (gender == 'NAM') {
-      iconData = Icons.face_5_outlined;
+      assetPath = 'assets/HSNam.png';
+      fallbackIcon = Icons.face_5_outlined;
       bg = const Color(0x260A84FF);
       fg = const Color(0xFF22B8F3);
     } else if (gender == 'NU') {
-      iconData = Icons.face_2_outlined;
+      assetPath = 'assets/HSNu.png';
+      fallbackIcon = Icons.face_2_outlined;
       bg = const Color(0x26F472B6);
       fg = const Color(0xFFF472B6);
     } else {
-      iconData = Icons.person_outline_rounded;
+      fallbackIcon = Icons.person_outline_rounded;
       bg = const Color(0x26728DA4);
       fg = AppColors.textSecondary;
+    }
+
+    if (assetPath != null) {
+      return CircleAvatar(
+        radius: radius,
+        backgroundColor: bg,
+        child: ClipOval(
+          child: Image.asset(
+            assetPath,
+            width: radius * 2,
+            height: radius * 2,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(fallbackIcon, size: radius * 1.1, color: fg);
+            },
+          ),
+        ),
+      );
     }
 
     return CircleAvatar(
       radius: radius,
       backgroundColor: bg,
-      child: Icon(iconData, size: radius * 1.1, color: fg),
+      child: Icon(fallbackIcon, size: radius * 1.1, color: fg),
     );
   }
 }
