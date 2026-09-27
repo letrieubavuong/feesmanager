@@ -669,10 +669,7 @@ class StudentDetailPage extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    AppStatusChip(
-                      label: isStopped ? 'Ngừng học' : 'Đang hoạt động',
-                      color: isStopped ? AppColors.error : AppColors.success,
-                    ),
+                    AppActiveStatusBadge(isActive: !isStopped),
                   ],
                 ),
                 const SizedBox(height: 4),

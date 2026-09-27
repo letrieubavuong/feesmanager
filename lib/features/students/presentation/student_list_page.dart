@@ -240,13 +240,7 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                AppStatusChip(
-                                  label: isStopped ? 'Ngừng học' : 'Đang học',
-                                  color: isStopped
-                                      ? AppColors.error
-                                      : AppColors.success,
-                                  compact: true,
-                                ),
+                                AppActiveStatusBadge(isActive: !isStopped),
                               ],
                             ),
                             const SizedBox(height: 4),

@@ -44,6 +44,34 @@ class AppSectionCard extends StatelessWidget {
   }
 }
 
+/// Active / Inactive Status Badge (Green Tick / Red X)
+class AppActiveStatusBadge extends StatelessWidget {
+  final bool isActive;
+  final double size;
+
+  const AppActiveStatusBadge({
+    super.key,
+    required this.isActive,
+    this.size = 14.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive ? AppColors.success : AppColors.error;
+    final icon = isActive ? Icons.check : Icons.close;
+
+    return Container(
+      padding: EdgeInsets.all(size * 0.25),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withValues(alpha: 0.4), width: 1),
+      ),
+      child: Icon(icon, size: size, color: color),
+    );
+  }
+}
+
 /// Status chip for Attendance, Tuition, Class, Schedule statuses
 class AppStatusChip extends StatelessWidget {
   final String label;

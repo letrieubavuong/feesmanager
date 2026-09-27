@@ -298,11 +298,7 @@ class ClassCardTile extends ConsumerWidget {
                   ],
                 ),
               ),
-              AppStatusChip(
-                label: isStopped ? 'Ngừng HĐ' : 'Đang HĐ',
-                color: isStopped ? AppColors.error : AppColors.success,
-                compact: true,
-              ),
+              AppActiveStatusBadge(isActive: !isStopped),
             ],
           ),
           const SizedBox(height: 10),

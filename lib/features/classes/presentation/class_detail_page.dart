@@ -303,13 +303,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        AppStatusChip(
-                          label: cls.daLuuTru ? 'Ngừng HĐ' : 'Đang hoạt động',
-                          color: cls.daLuuTru
-                              ? AppColors.error
-                              : AppColors.success,
-                          compact: true,
-                        ),
+                        AppActiveStatusBadge(isActive: !cls.daLuuTru),
                       ],
                     ),
                     const SizedBox(height: 2),
