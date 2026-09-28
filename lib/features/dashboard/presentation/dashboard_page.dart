@@ -67,7 +67,7 @@ class DashboardPage extends ConsumerWidget {
                   const SizedBox(height: 16),
 
                   // 2. 4 KPI CARDS
-                  _buildKpiGrid(context, ref, l10n, overview),
+                  _buildKpiGrid(l10n, overview),
 
                   const SizedBox(height: 20),
 
@@ -161,31 +161,21 @@ class DashboardPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  l10n.dashboardGreeting,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  l10n.dashboardGreetingSubtitle,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(
-                      Icons.event_outlined,
-                      color: AppColors.cyanAccent,
-                      size: 14,
+                    Expanded(
+                      child: Text(
+                        l10n.dashboardGreeting,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 8),
                     Text(
                       dateFormatted,
                       style: const TextStyle(
@@ -196,6 +186,16 @@ class DashboardPage extends ConsumerWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.dashboardGreetingSubtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
@@ -205,88 +205,33 @@ class DashboardPage extends ConsumerWidget {
   }
 
   Widget _buildKpiGrid(
-    BuildContext context,
-    WidgetRef ref,
     AppLocalizations l10n,
     DashboardOverview overview,
   ) {
     final fmt = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 400;
-
-        final kpi1 = _buildKpiTile(
-          title: l10n.dashboardTodaySessions,
-          value: '${overview.todaySessionCount}',
-          icon: Icons.calendar_month_outlined,
-          color: AppColors.cyanAccent,
-        );
-
-        final kpi2 = InkWell(
-          onTap: () =>
-              _showPendingAttendanceBottomSheet(context, ref, overview),
-          borderRadius: BorderRadius.circular(12),
+    return Row(
+      children: [
+        Expanded(
           child: _buildKpiTile(
-            title: l10n.dashboardPendingAttendance,
-            value: '${overview.pendingAttendanceCount}',
-            icon: Icons.assignment_late_outlined,
-            color: overview.pendingAttendanceCount > 0
-                ? AppColors.warning
+            title: l10n.dashboardUnfinalizedTuition,
+            value: '${overview.unfinalizedTuitionStudentCount}',
+            icon: Icons.fact_check_outlined,
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildKpiTile(
+            title: l10n.dashboardOutstandingDebt,
+            value: fmt.format(overview.outstandingDebt),
+            icon: Icons.account_balance_wallet_outlined,
+            color: overview.outstandingDebt > 0
+                ? AppColors.error
                 : AppColors.success,
           ),
-        );
-
-        final kpi3 = _buildKpiTile(
-          title: l10n.dashboardUnfinalizedTuition,
-          value: '${overview.unfinalizedTuitionStudentCount}',
-          icon: Icons.fact_check_outlined,
-          color: AppColors.primary,
-        );
-
-        final kpi4 = _buildKpiTile(
-          title: l10n.dashboardOutstandingDebt,
-          value: fmt.format(overview.outstandingDebt),
-          icon: Icons.account_balance_wallet_outlined,
-          color: overview.outstandingDebt > 0
-              ? AppColors.error
-              : AppColors.success,
-        );
-
-        if (isNarrow) {
-          return Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(child: kpi1),
-                  const SizedBox(width: 8),
-                  Expanded(child: kpi2),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(child: kpi3),
-                  const SizedBox(width: 8),
-                  Expanded(child: kpi4),
-                ],
-              ),
-            ],
-          );
-        } else {
-          return Row(
-            children: [
-              Expanded(child: kpi1),
-              const SizedBox(width: 8),
-              Expanded(child: kpi2),
-              const SizedBox(width: 8),
-              Expanded(child: kpi3),
-              const SizedBox(width: 8),
-              Expanded(child: kpi4),
-            ],
-          );
-        }
-      },
+        ),
+      ],
     );
   }
 
@@ -383,32 +328,24 @@ class DashboardPage extends ConsumerWidget {
     AppLocalizations l10n,
     DashboardOverview overview,
   ) {
-    final tasksMap = {for (var t in overview.tasks) t.type: t};
-
+    final tasksMap = {for (var task in overview.tasks) task.type: task};
     final taskAttendance = tasksMap[DashboardTaskType.attendanceNow];
     final taskGenerate = tasksMap[DashboardTaskType.generateSessions];
     final taskFinalize = tasksMap[DashboardTaskType.finalizeTuition];
     final taskReport = tasksMap[DashboardTaskType.exportReportPdf];
 
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      childAspectRatio: 1.85,
-      crossAxisSpacing: 8,
-      mainAxisSpacing: 8,
+    return Column(
       children: [
-        _buildActionCard(
-          context,
-          key: UiKeys.dashboardQuickAddStudent, // reuse key cleanly
+        _buildActionRow(
+          key: UiKeys.dashboardQuickAddStudent,
           title: taskAttendance?.title ?? l10n.dashboardAttendanceNow,
           subtitle: taskAttendance?.subtitle ?? '',
           icon: Icons.task_alt,
           color: AppColors.cyanAccent,
           onTap: () => _handleAttendanceNow(context, ref, overview),
         ),
-        _buildActionCard(
-          context,
+        const Divider(height: 1, color: AppColors.border),
+        _buildActionRow(
           key: UiKeys.dashboardQuickManageClasses,
           title: taskGenerate?.title ?? l10n.dashboardGenerateSessions,
           subtitle:
@@ -417,8 +354,8 @@ class DashboardPage extends ConsumerWidget {
           color: AppColors.success,
           onTap: () => _showGenerateSessionsBottomSheet(context, ref),
         ),
-        _buildActionCard(
-          context,
+        const Divider(height: 1, color: AppColors.border),
+        _buildActionRow(
           key: UiKeys.dashboardQuickViewTuition,
           title: taskFinalize?.title ?? l10n.dashboardFinalizeTuition,
           subtitle: taskFinalize?.subtitle ?? '',
@@ -426,8 +363,8 @@ class DashboardPage extends ConsumerWidget {
           color: AppColors.warning,
           onTap: () => _showFinalizeTuitionBottomSheet(context, ref),
         ),
-        _buildActionCard(
-          context,
+        const Divider(height: 1, color: AppColors.border),
+        _buildActionRow(
           key: UiKeys.dashboardQuickViewReports,
           title: taskReport?.title ?? l10n.dashboardExportReport,
           subtitle: taskReport?.subtitle ?? l10n.dashboardExportReportSubtitle,
@@ -439,8 +376,7 @@ class DashboardPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildActionCard(
-    BuildContext context, {
+  Widget _buildActionRow({
     Key? key,
     required String title,
     required String subtitle,
@@ -448,54 +384,62 @@ class DashboardPage extends ConsumerWidget {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return AppSectionCard(
+    return InkWell(
       key: key,
-      padding: const EdgeInsets.all(10),
       onTap: onTap,
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
             ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (subtitle.isNotEmpty) ...[
-                  const SizedBox(height: 2),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 10,
-                    ),
-                    maxLines: 1,
+                    title,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 16),
-        ],
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.chevron_right,
+              color: AppColors.textMuted,
+              size: 18,
+            ),
+          ],
+        ),
       ),
     );
   }
