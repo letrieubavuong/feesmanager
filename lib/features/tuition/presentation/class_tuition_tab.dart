@@ -14,7 +14,7 @@ import '../../payments/presentation/vietqr_payment_page.dart';
 import '../domain/class_month_tuition_overview.dart';
 import 'tuition_controller.dart';
 
-enum TuitionPaymentFilter { preview, unpaid, paid }
+enum TuitionPaymentFilter { outstanding, paid }
 
 class ClassTuitionTab extends ConsumerStatefulWidget {
   final int classId;
@@ -56,19 +56,21 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Tổng quan học phí', style: TextStyle(
-            color: AppColors.textPrimary, fontSize: 20,
-            fontWeight: FontWeight.bold)),
+          const Row(children: [
+            Icon(Icons.account_balance_wallet_outlined,
+                color: AppColors.cyanAccent, size: 18),
+            SizedBox(width: 8),
+            Text('Tổng quan học phí', style: TextStyle(
+                color: AppColors.textPrimary, fontSize: 16,
+                fontWeight: FontWeight.bold)),
+          ]),
           const SizedBox(height: 12),
           _buildMonthSelector(context),
           const SizedBox(height: 12),
           overviewAsync.when(
             data: (overview) {
-              final previewCount = overview.studentRows
-                  .where((r) => !r.isFinalized)
-                  .length;
-              final unpaidCount = overview.studentRows
-                  .where((r) => r.isFinalized && r.remainingDebt > 0)
+              final outstandingCount = overview.studentRows
+                  .where((r) => !r.isFinalized || r.remainingDebt > 0)
                   .length;
               final paidCount = overview.studentRows
                   .where((r) => r.isFinalized && r.remainingDebt <= 0)
@@ -80,9 +82,9 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
               }
 
               final effectiveFilter = _userFilter ??
-                  (previewCount > 0
-                      ? TuitionPaymentFilter.preview
-                      : TuitionPaymentFilter.unpaid);
+                  (outstandingCount > 0
+                      ? TuitionPaymentFilter.outstanding
+                      : TuitionPaymentFilter.paid);
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,16 +94,20 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                   _buildFilterToggle(
                     context,
                     effectiveFilter,
-                    previewCount,
-                    unpaidCount,
+                    outstandingCount,
                     paidCount,
                   ),
                   const SizedBox(height: 12),
                   _buildUnfinalizedBanner(context, overview),
                   const SizedBox(height: 12),
-                  const Text('Danh sách học sinh', style: TextStyle(
-                    color: AppColors.textPrimary, fontSize: 16,
-                    fontWeight: FontWeight.bold)),
+                  const Row(children: [
+                    Icon(Icons.people_outline,
+                        color: AppColors.cyanAccent, size: 18),
+                    SizedBox(width: 8),
+                    Text('Danh sách học sinh', style: TextStyle(
+                        color: AppColors.textPrimary, fontSize: 16,
+                        fontWeight: FontWeight.bold)),
+                  ]),
                   const SizedBox(height: 10),
                   _buildStudentTuitionList(context, overview, effectiveFilter),
                 ],
@@ -130,7 +136,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     ).format(DateTime.parse('$_selectedMonth-01'));
 
     return AppSectionCard(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -189,9 +195,9 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
         const SizedBox(width: 10),
         Expanded(
           child: AppMetricCard(
-            title: 'Còn nợ',
+            title: 'Dự kiến còn thu',
             value: AppFormatter.formatCurrency(
-              overview.remainingDebt,
+              overview.previewTotalDue + overview.remainingDebt,
               context: context,
             ),
             valueColor: AppColors.error,
@@ -205,57 +211,26 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
   Widget _buildFilterToggle(
     BuildContext context,
     TuitionPaymentFilter activeFilter,
-    int previewCount,
-    int unpaidCount,
+    int outstandingCount,
     int paidCount,
   ) {
-    return SizedBox(
-      width: double.infinity,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SegmentedButton<TuitionPaymentFilter>(
-        segments: [
-          ButtonSegment<TuitionPaymentFilter>(
-            value: TuitionPaymentFilter.preview,
-            label: Text('Tạm tính ($previewCount)'),
-            icon: const Icon(Icons.preview_outlined, size: 16),
-          ),
-          ButtonSegment<TuitionPaymentFilter>(
-            value: TuitionPaymentFilter.unpaid,
-            label: Text('Còn nợ ($unpaidCount)'),
-            icon: const Icon(Icons.pending_actions, size: 16),
-          ),
-          ButtonSegment<TuitionPaymentFilter>(
-            value: TuitionPaymentFilter.paid,
-            label: Text('Đã nộp ($paidCount)'),
-            icon: const Icon(Icons.check_circle_outline, size: 16),
-          ),
-        ],
-        selected: {activeFilter},
-        onSelectionChanged: (newSelection) {
-          setState(() {
-            _userFilter = newSelection.first;
-          });
-        },
-        style: ButtonStyle(
-          visualDensity: VisualDensity.compact,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-            if (states.contains(WidgetState.selected)) {
-              return AppColors.primary;
-            }
-            return AppColors.surfaceHigh;
-          }),
-          foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-            if (states.contains(WidgetState.selected)) {
-              return Colors.white;
-            }
-            return AppColors.textSecondary;
-          }),
-        ),
-        ),
+    return Row(children: [
+      const Expanded(
+        child: Text('Tạm tính / còn thu',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
       ),
-    );
+      Text('$outstandingCount',
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+      Switch.adaptive(
+        value: activeFilter == TuitionPaymentFilter.paid,
+        onChanged: (paid) => setState(() =>
+            _userFilter = paid
+                ? TuitionPaymentFilter.paid
+                : TuitionPaymentFilter.outstanding),
+      ),
+      Text('Đã thu đủ ($paidCount)',
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+    ]);
   }
 
   Widget _buildUnfinalizedBanner(
@@ -321,11 +296,9 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     TuitionPaymentFilter activeFilter,
   ) {
     List<ClassMonthTuitionStudentRow> targetRows;
-    if (activeFilter == TuitionPaymentFilter.preview) {
-      targetRows = overview.studentRows.where((r) => !r.isFinalized).toList();
-    } else if (activeFilter == TuitionPaymentFilter.unpaid) {
+    if (activeFilter == TuitionPaymentFilter.outstanding) {
       targetRows = overview.studentRows
-          .where((r) => r.isFinalized && r.remainingDebt > 0)
+          .where((r) => !r.isFinalized || r.remainingDebt > 0)
           .toList();
     } else {
       targetRows = overview.studentRows
@@ -341,10 +314,8 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
 
     if (targetRows.isEmpty) {
       String emptyText;
-      if (activeFilter == TuitionPaymentFilter.preview) {
-        emptyText = 'Không có học sinh trong danh sách tạm tính.';
-      } else if (activeFilter == TuitionPaymentFilter.unpaid) {
-        emptyText = 'Không có học sinh còn nợ học phí.';
+      if (activeFilter == TuitionPaymentFilter.outstanding) {
+        emptyText = 'Không có khoản tạm tính hoặc còn nợ.';
       } else {
         emptyText = 'Chưa có học sinh đã nộp đủ.';
       }
@@ -811,7 +782,9 @@ class _StudentTuitionCard extends ConsumerWidget {
                   Text(
                     amountPaid > 0
                         ? 'Đã thu ${AppFormatter.formatCurrency(amountPaid, context: context)} • Còn ${AppFormatter.formatCurrency(remainingDebt, context: context)}'
-                        : 'Còn nợ ${AppFormatter.formatCurrency(remainingDebt, context: context)}',
+                        : row.isFinalized
+                            ? 'Còn nợ ${AppFormatter.formatCurrency(remainingDebt, context: context)}'
+                            : 'Tạm tính ${AppFormatter.formatCurrency(remainingDebt, context: context)}',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
