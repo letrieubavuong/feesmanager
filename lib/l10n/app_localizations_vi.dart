@@ -9,7 +9,7 @@ class AppLocalizationsVi extends AppLocalizations {
   AppLocalizationsVi([String locale = 'vi']) : super(locale);
 
   @override
-  String get appName => 'Tuition2027';
+  String get appName => 'Quản lý học phí';
 
   @override
   String get navHome => 'Trang chủ';
@@ -28,6 +28,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get navSettings => 'Cài đặt';
+
+  @override
+  String get navGuide => 'Hướng dẫn sử dụng';
 
   @override
   String get globalMenu => 'Menu điều hướng';
@@ -205,7 +208,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsAppInfo => 'THÔNG TIN ỨNG DỤNG';
 
   @override
-  String get appVersion => 'Phiên bản: 1.0.0+1';
+  String get appVersion => '2.6';
 
   @override
   String get dbVersion => 'Cơ sở dữ liệu: v15';
