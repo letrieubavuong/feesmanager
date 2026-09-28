@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tuition2027/app/localization/locale_controller.dart';
-import 'package:tuition2027/app/navigation/ui_keys.dart';
 import 'package:tuition2027/features/settings/presentation/settings_page.dart';
 import '../test_helper.dart';
 
@@ -27,11 +26,12 @@ void main() {
         expect(find.text('Cài đặt'), findsOneWidget);
         expect(find.text('GIAO DIỆN & CHỦ ĐỀ'), findsOneWidget);
         expect(find.text('Chế độ hiển thị'), findsOneWidget);
-        expect(find.text('Tông màu ứng dụng'), findsOneWidget);
-        expect(find.text('NGÔN NGỮ'), findsAtLeast(1));
+        expect(find.text('NGÔN NGỮ'), findsOneWidget);
+        expect(find.text('THÔNG TIN TRUNG TÂM'), findsOneWidget);
+        expect(find.text('TRƯỜNG HỌC QUANH KHU VỰC'), findsOneWidget);
         expect(find.text('THÔNG TIN ỨNG DỤNG'), findsOneWidget);
         expect(find.text('Phiên bản: 1.0.0+1'), findsOneWidget);
-        expect(find.text('Cơ sở dữ liệu: v15'), findsOneWidget);
+        expect(find.text('Cơ sở dữ liệu: v16'), findsOneWidget);
       },
     );
 
@@ -48,7 +48,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(UiKeys.settingsLanguageEn));
+      await tester.tap(find.byType(DropdownButton<AppLocaleMode>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('English').last);
       await tester.pumpAndSettle();
 
       expect(
