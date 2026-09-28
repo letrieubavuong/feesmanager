@@ -52,10 +52,14 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     );
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Text('Tổng quan học phí', style: TextStyle(
+            color: AppColors.textPrimary, fontSize: 20,
+            fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
           _buildMonthSelector(context),
           const SizedBox(height: 12),
           overviewAsync.when(
@@ -95,6 +99,10 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                   const SizedBox(height: 12),
                   _buildUnfinalizedBanner(context, overview),
                   const SizedBox(height: 12),
+                  const Text('Danh sách học sinh', style: TextStyle(
+                    color: AppColors.textPrimary, fontSize: 16,
+                    fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
                   _buildStudentTuitionList(context, overview, effectiveFilter),
                 ],
               );
@@ -203,7 +211,9 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
   ) {
     return SizedBox(
       width: double.infinity,
-      child: SegmentedButton<TuitionPaymentFilter>(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SegmentedButton<TuitionPaymentFilter>(
         segments: [
           ButtonSegment<TuitionPaymentFilter>(
             value: TuitionPaymentFilter.preview,
@@ -242,6 +252,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
             }
             return AppColors.textSecondary;
           }),
+        ),
         ),
       ),
     );
@@ -773,7 +784,8 @@ class _StudentTuitionCard extends ConsumerWidget {
     return AppSectionCard(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(
         children: [
           StudentAvatar(
             gioiTinh: student.gioiTinh,
@@ -795,7 +807,12 @@ class _StudentTuitionCard extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
-                if (isUnpaid) ...[
+             ]),
+        const SizedBox(height: 10),
+        const Divider(height: 1, color: AppColors.border),
+        const SizedBox(height: 6),
+        Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+           if (isUnpaid) ...[
                   if (amountPaid > 0)
                     Text(
                       'Đã thu ${AppFormatter.formatCurrency(amountPaid, context: context)} • Còn ${AppFormatter.formatCurrency(remainingDebt, context: context)}',
@@ -1018,9 +1035,8 @@ class _StudentTuitionCard extends ConsumerWidget {
                 ),
               ],
             ),
-          ],
-        ],
-      ),
+        ]),
+      ]),
     );
   }
 
