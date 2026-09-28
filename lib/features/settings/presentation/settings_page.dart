@@ -179,7 +179,7 @@ class SettingsPage extends ConsumerWidget {
                 CompactInfoRow(
                   icon: Icons.school_outlined,
                   label: 'Ứng dụng',
-                  value: 'Tuition2027 (${l10n.menuSubtitle})',
+                  value: '${l10n.appName} (${l10n.menuSubtitle})',
                 ),
                 const Divider(color: AppColors.border, height: 12),
                 CompactInfoRow(
