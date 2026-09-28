@@ -1191,4 +1191,112 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get classEmptyStoppedTitle => 'Chưa có lớp ngừng hoạt động.';
+
+  @override
+  String get tuitionTitle => 'Quản lý Học phí';
+
+  @override
+  String tuitionFilterUnpaid(Object count) {
+    return 'Chưa nộp ($count)';
+  }
+
+  @override
+  String tuitionFilterPaid(Object count) {
+    return 'Đã nộp ($count)';
+  }
+
+  @override
+  String tuitionUnpaidCount(Object count) {
+    return 'Chưa nộp ($count)';
+  }
+
+  @override
+  String tuitionPaidCount(Object count) {
+    return 'Đã nộp ($count)';
+  }
+
+  @override
+  String get tuitionCollected => 'Đã thu';
+
+  @override
+  String get tuitionRemainingDebt => 'Còn nợ';
+
+  @override
+  String tuitionUnfinalizedStudents(Object unfinalizedCount) {
+    return '$unfinalizedCount học sinh chưa chốt học phí';
+  }
+
+  @override
+  String tuitionUnfinalizedWithBlocked(
+    Object blockedCount,
+    Object unfinalizedCount,
+  ) {
+    return '$unfinalizedCount chưa chốt • $blockedCount chưa đủ dữ liệu';
+  }
+
+  @override
+  String get tuitionFinalizeNow => 'Chốt học phí';
+
+  @override
+  String get tuitionCollect => 'Thu tiền';
+
+  @override
+  String get tuitionDetails => 'Chi tiết học phí';
+
+  @override
+  String get tuitionNoUnpaid => 'Không còn học sinh cần thu học phí.';
+
+  @override
+  String get tuitionNoPaid => 'Chưa có học sinh đã nộp đủ.';
+
+  @override
+  String tuitionPartialPayment(Object paid, Object remaining) {
+    return 'Đã thu $paid • Còn $remaining';
+  }
+
+  @override
+  String get qrPaymentTitle => 'Mã QR Thanh Toán';
+
+  @override
+  String get qrShareImage => 'Chia sẻ ảnh';
+
+  @override
+  String get qrCopyTransferContent => 'Sao chép nội dung CK';
+
+  @override
+  String get qrCardTitle => 'THÔNG TIN HỌC PHÍ';
+
+  @override
+  String qrCardMonth(Object month) {
+    return 'Tháng $month';
+  }
+
+  @override
+  String qrCardStudent(Object name) {
+    return 'Học sinh: $name';
+  }
+
+  @override
+  String qrCardClass(Object className) {
+    return 'Lớp: $className';
+  }
+
+  @override
+  String get qrCardAmount => 'SỐ TIỀN CẦN CHUYỂN';
+
+  @override
+  String get qrCardBank => 'Ngân hàng';
+
+  @override
+  String get qrCardAccountNumber => 'Số TK';
+
+  @override
+  String get qrCardAccountHolder => 'Chủ TK';
+
+  @override
+  String get qrCardTransferContent => 'Nội dung chuyển khoản';
+
+  @override
+  String get qrCardInstruction =>
+      'Vui lòng chuyển đúng số tiền và nội dung trên.';
 }

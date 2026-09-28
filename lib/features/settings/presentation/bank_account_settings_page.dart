@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:qr/qr.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../payments/presentation/widgets/vietqr_code_widget.dart';
 import '../domain/bank_account_settings.dart';
 import '../domain/vietqr_generator.dart';
 import 'bank_account_settings_controller.dart';
@@ -281,50 +281,7 @@ class _BankAccountSettingsPageState
 
                             // QR Display
                             if (qrPayload.isNotEmpty)
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.grey.shade300,
-                                  ),
-                                ),
-                                child: SizedBox(
-                                  width: 180,
-                                  height: 180,
-                                  child: CustomPaint(
-                                    painter: QrWidgetPainter(
-                                      data: qrPayload,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                            const SizedBox(height: 12),
-                            Text(
-                              l10n.vietQrPreviewSample,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Chip(
-                              label: Text(
-                                VietQrGenerator.formatTransferContent(
-                                  template:
-                                      currentPreviewSettings.transferTemplate,
-                                  studentCode: 'HS001',
-                                  month: '09/2026',
-                                ),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              backgroundColor:
-                                  theme.colorScheme.primaryContainer,
-                            ),
+                              VietQrCodeWidget(payload: qrPayload, size: 180),
                           ],
                         )
                       : Padding(
@@ -344,47 +301,5 @@ class _BankAccountSettingsPageState
         ),
       ),
     );
-  }
-}
-
-class QrWidgetPainter extends CustomPainter {
-  final String data;
-  final Color color;
-
-  QrWidgetPainter({required this.data, required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (data.isEmpty) return;
-    try {
-      final qrCode = QrCode.fromData(
-        data: data,
-        errorCorrectLevel: QrErrorCorrectLevel.M,
-      );
-      final qrImage = QrImage(qrCode);
-      final moduleSize = size.width / qrImage.moduleCount;
-      final paint = Paint()..color = color;
-
-      for (int x = 0; x < qrImage.moduleCount; x++) {
-        for (int y = 0; y < qrImage.moduleCount; y++) {
-          if (qrImage.isDark(y, x)) {
-            canvas.drawRect(
-              Rect.fromLTWH(
-                x * moduleSize,
-                y * moduleSize,
-                moduleSize,
-                moduleSize,
-              ),
-              paint,
-            );
-          }
-        }
-      }
-    } catch (_) {}
-  }
-
-  @override
-  bool shouldRepaint(covariant QrWidgetPainter oldDelegate) {
-    return oldDelegate.data != data || oldDelegate.color != color;
   }
 }

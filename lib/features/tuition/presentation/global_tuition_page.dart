@@ -6,6 +6,7 @@ import '../../../app/navigation/app_global_drawer.dart';
 import '../../classes/domain/class.dart';
 import '../../classes/presentation/class_controller.dart';
 import 'class_tuition_tab.dart';
+import 'tuition_controller.dart';
 
 class GlobalTuitionPage extends ConsumerStatefulWidget {
   const GlobalTuitionPage({super.key});
@@ -26,7 +27,17 @@ class _GlobalTuitionPageState extends ConsumerState<GlobalTuitionPage> {
       drawer: const AppGlobalDrawer(),
       appBar: AppBar(
         leading: const GlobalMenuButton(),
-        title: const Text('Quản lý Học phí'),
+        title: const Text('Học phí'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Làm mới',
+            onPressed: () {
+              ref.invalidate(classListControllerProvider);
+              ref.invalidate(classMonthTuitionOverviewProvider);
+            },
+          ),
+        ],
       ),
       body: classesAsync.when(
         data: (classes) {
@@ -54,20 +65,7 @@ class _GlobalTuitionPageState extends ConsumerState<GlobalTuitionPage> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.school_outlined,
-                      color: AppColors.cyanAccent,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'Lớp học: ',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
+                    const Text('🎓 ', style: TextStyle(fontSize: 16)),
                     Expanded(
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<int>(
@@ -82,7 +80,7 @@ class _GlobalTuitionPageState extends ConsumerState<GlobalTuitionPage> {
                           items: classes.map((ClassEntity c) {
                             return DropdownMenuItem<int>(
                               value: c.id,
-                              child: Text(c.tenLop),
+                              child: Text('Lớp ${c.tenLop}'),
                             );
                           }).toList(),
                           onChanged: (val) {

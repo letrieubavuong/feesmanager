@@ -1,14 +1,20 @@
+import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/navy_components.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../settings/domain/vietqr_generator.dart';
 import '../../settings/presentation/bank_account_settings_controller.dart';
 import '../../settings/presentation/bank_account_settings_page.dart';
+import 'widgets/payment_qr_share_card.dart';
 
-class VietQrPaymentPage extends ConsumerWidget {
+class VietQrPaymentPage extends ConsumerStatefulWidget {
   final String studentName;
   final String? studentCode;
   final String className;
@@ -25,7 +31,68 @@ class VietQrPaymentPage extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VietQrPaymentPage> createState() => _VietQrPaymentPageState();
+}
+
+class _VietQrPaymentPageState extends ConsumerState<VietQrPaymentPage> {
+  final GlobalKey _cardKey = GlobalKey();
+  bool _isSharing = false;
+
+  Future<void> _shareCardImage(
+    BuildContext context,
+    String transferContent,
+  ) async {
+    if (_isSharing) return;
+
+    setState(() {
+      _isSharing = true;
+    });
+
+    try {
+      final boundary =
+          _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        throw Exception('Không thể chụp hình thẻ QR');
+      }
+
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        throw Exception('Lỗi chuyển đổi hình ảnh QR');
+      }
+
+      final pngBytes = byteData.buffer.asUint8List();
+      final tempDir = await getTemporaryDirectory();
+      final codeClean = widget.studentCode ?? 'hs';
+      final fileMonth = widget.month.replaceAll('-', '');
+      final fileName = 'hoc_phi_${codeClean}_$fileMonth.png';
+      final file = File('${tempDir.path}/$fileName');
+      await file.writeAsBytes(pngBytes);
+
+      if (!context.mounted) return;
+
+      // ignore: deprecated_member_use
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], text: 'Học phí tháng ${widget.month} - ${widget.studentName}');
+    } catch (e) {
+      if (context.mounted) {
+        AppFeedback.showErrorSnackBar(
+          context,
+          'Lỗi chia sẻ ảnh QR: ${e.toString().replaceAll('Exception: ', '')}',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSharing = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(bankAccountSettingsProvider);
 
     if (!settings.isConfigured) {
@@ -90,113 +157,110 @@ class VietQrPaymentPage extends ConsumerWidget {
 
     final transferContent = VietQrGenerator.formatTransferContent(
       template: settings.transferTemplate,
-      studentCode: studentCode,
-      studentName: studentName,
-      month: month,
+      studentCode: widget.studentCode,
+      studentName: widget.studentName,
+      className: widget.className,
+      month: widget.month,
     );
 
-    final qrImageUrl =
-        'https://api.vietqr.io/image/${settings.bankBin}-${settings.accountNumber}-compact.png?amount=$remainingAmount&addInfo=${Uri.encodeComponent(transferContent)}&accountName=${Uri.encodeComponent(settings.accountHolder)}';
+    final qrPayload = VietQrGenerator.generateEmvCoPayload(
+      settings: settings,
+      amount: widget.remainingAmount,
+      transferContent: transferContent,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Mã QR Thanh Toán')),
+      appBar: AppBar(title: const Text('Mã QR Thanh Toán'), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            AppSectionCard(
-              padding: const EdgeInsets.all(16),
+            // RepaintBoundary wrapping light PaymentQrShareCard
+            Center(
+              child: RepaintBoundary(
+                key: _cardKey,
+                child: PaymentQrShareCard(
+                  studentName: widget.studentName,
+                  className: widget.className,
+                  month: widget.month,
+                  remainingAmount: widget.remainingAmount,
+                  bankName: settings.bankName,
+                  accountNumber: settings.accountNumber,
+                  accountHolder: settings.accountHolder,
+                  transferContent: transferContent,
+                  qrPayload: qrPayload,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Action Buttons
+            SizedBox(
+              width: 360,
               child: Column(
                 children: [
-                  const Text(
-                    'QUÉT MÃ QR ĐỂ THANH TOÁN',
-                    style: TextStyle(
-                      color: AppColors.cyanAccent,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      color: Colors.white,
-                      padding: const EdgeInsets.all(12),
-                      child: Image.network(
-                        qrImageUrl,
-                        width: 240,
-                        height: 240,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: 240,
-                            height: 240,
-                            color: Colors.grey.shade200,
-                            child: const Center(
-                              child: Text(
-                                'Không thể tải mã QR.\nVui lòng kiểm tra kết nối mạng.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.black87,
-                                  fontSize: 12,
-                                ),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: _isSharing
+                          ? null
+                          : () => _shareCardImage(context, transferContent),
+                      icon: _isSharing
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
                               ),
-                            ),
-                          );
-                        },
+                            )
+                          : const Icon(Icons.share_outlined, size: 20),
+                      label: Text(
+                        _isSharing ? 'Đang tạo ảnh...' : 'Chia sẻ ảnh',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    '${remainingAmount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} đ',
-                    style: const TextStyle(
-                      color: AppColors.success,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.cyanAccent,
+                        side: const BorderSide(color: AppColors.cyanAccent),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: transferContent));
+                        AppFeedback.showSuccessSnackBar(
+                          context,
+                          'Đã sao chép nội dung chuyển khoản',
+                        );
+                      },
+                      icon: const Icon(Icons.copy_outlined, size: 18),
+                      label: const Text(
+                        'Sao chép nội dung CK',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Học sinh: $studentName • Lớp: $className',
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            AppSectionCard(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _buildCopyRow(
-                    context,
-                    label: 'Ngân hàng',
-                    value: settings.bankName,
-                  ),
-                  const Divider(color: AppColors.border, height: 16),
-                  _buildCopyRow(
-                    context,
-                    label: 'Số tài khoản',
-                    value: settings.accountNumber,
-                    canCopy: true,
-                  ),
-                  const Divider(color: AppColors.border, height: 16),
-                  _buildCopyRow(
-                    context,
-                    label: 'Chủ tài khoản',
-                    value: settings.accountHolder,
-                  ),
-                  const Divider(color: AppColors.border, height: 16),
-                  _buildCopyRow(
-                    context,
-                    label: 'Nội dung chuyển khoản',
-                    value: transferContent,
-                    canCopy: true,
                   ),
                 ],
               ),
@@ -204,49 +268,6 @@ class VietQrPaymentPage extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildCopyRow(
-    BuildContext context, {
-    required String label,
-    required String value,
-    bool canCopy = false,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        if (canCopy)
-          IconButton(
-            icon: const Icon(
-              Icons.copy_outlined,
-              color: AppColors.cyanAccent,
-              size: 18,
-            ),
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: value));
-              AppFeedback.showSuccessSnackBar(context, 'Đã sao chép $label');
-            },
-          ),
-      ],
     );
   }
 }

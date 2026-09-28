@@ -2347,6 +2347,177 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chưa có lớp ngừng hoạt động.'**
   String get classEmptyStoppedTitle;
+
+  /// No description provided for @tuitionTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quản lý Học phí'**
+  String get tuitionTitle;
+
+  /// No description provided for @tuitionFilterUnpaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa nộp ({count})'**
+  String tuitionFilterUnpaid(Object count);
+
+  /// No description provided for @tuitionFilterPaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nộp ({count})'**
+  String tuitionFilterPaid(Object count);
+
+  /// No description provided for @tuitionUnpaidCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa nộp ({count})'**
+  String tuitionUnpaidCount(Object count);
+
+  /// No description provided for @tuitionPaidCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nộp ({count})'**
+  String tuitionPaidCount(Object count);
+
+  /// No description provided for @tuitionCollected.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thu'**
+  String get tuitionCollected;
+
+  /// No description provided for @tuitionRemainingDebt.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn nợ'**
+  String get tuitionRemainingDebt;
+
+  /// No description provided for @tuitionUnfinalizedStudents.
+  ///
+  /// In vi, this message translates to:
+  /// **'{unfinalizedCount} học sinh chưa chốt học phí'**
+  String tuitionUnfinalizedStudents(Object unfinalizedCount);
+
+  /// No description provided for @tuitionUnfinalizedWithBlocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'{unfinalizedCount} chưa chốt • {blockedCount} chưa đủ dữ liệu'**
+  String tuitionUnfinalizedWithBlocked(
+    Object blockedCount,
+    Object unfinalizedCount,
+  );
+
+  /// No description provided for @tuitionFinalizeNow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chốt học phí'**
+  String get tuitionFinalizeNow;
+
+  /// No description provided for @tuitionCollect.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thu tiền'**
+  String get tuitionCollect;
+
+  /// No description provided for @tuitionDetails.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chi tiết học phí'**
+  String get tuitionDetails;
+
+  /// No description provided for @tuitionNoUnpaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không còn học sinh cần thu học phí.'**
+  String get tuitionNoUnpaid;
+
+  /// No description provided for @tuitionNoPaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có học sinh đã nộp đủ.'**
+  String get tuitionNoPaid;
+
+  /// No description provided for @tuitionPartialPayment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thu {paid} • Còn {remaining}'**
+  String tuitionPartialPayment(Object paid, Object remaining);
+
+  /// No description provided for @qrPaymentTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã QR Thanh Toán'**
+  String get qrPaymentTitle;
+
+  /// No description provided for @qrShareImage.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ ảnh'**
+  String get qrShareImage;
+
+  /// No description provided for @qrCopyTransferContent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sao chép nội dung CK'**
+  String get qrCopyTransferContent;
+
+  /// No description provided for @qrCardTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'THÔNG TIN HỌC PHÍ'**
+  String get qrCardTitle;
+
+  /// No description provided for @qrCardMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng {month}'**
+  String qrCardMonth(Object month);
+
+  /// No description provided for @qrCardStudent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Học sinh: {name}'**
+  String qrCardStudent(Object name);
+
+  /// No description provided for @qrCardClass.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lớp: {className}'**
+  String qrCardClass(Object className);
+
+  /// No description provided for @qrCardAmount.
+  ///
+  /// In vi, this message translates to:
+  /// **'SỐ TIỀN CẦN CHUYỂN'**
+  String get qrCardAmount;
+
+  /// No description provided for @qrCardBank.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngân hàng'**
+  String get qrCardBank;
+
+  /// No description provided for @qrCardAccountNumber.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số TK'**
+  String get qrCardAccountNumber;
+
+  /// No description provided for @qrCardAccountHolder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chủ TK'**
+  String get qrCardAccountHolder;
+
+  /// No description provided for @qrCardTransferContent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nội dung chuyển khoản'**
+  String get qrCardTransferContent;
+
+  /// No description provided for @qrCardInstruction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vui lòng chuyển đúng số tiền và nội dung trên.'**
+  String get qrCardInstruction;
 }
 
 class _AppLocalizationsDelegate

@@ -1193,4 +1193,112 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get classEmptyStoppedTitle => 'No stopped classes.';
+
+  @override
+  String get tuitionTitle => 'Tuition Management';
+
+  @override
+  String tuitionFilterUnpaid(Object count) {
+    return 'Unpaid ($count)';
+  }
+
+  @override
+  String tuitionFilterPaid(Object count) {
+    return 'Paid ($count)';
+  }
+
+  @override
+  String tuitionUnpaidCount(Object count) {
+    return 'Unpaid ($count)';
+  }
+
+  @override
+  String tuitionPaidCount(Object count) {
+    return 'Paid ($count)';
+  }
+
+  @override
+  String get tuitionCollected => 'Collected';
+
+  @override
+  String get tuitionRemainingDebt => 'Remaining Debt';
+
+  @override
+  String tuitionUnfinalizedStudents(Object unfinalizedCount) {
+    return '$unfinalizedCount students unfinalized';
+  }
+
+  @override
+  String tuitionUnfinalizedWithBlocked(
+    Object blockedCount,
+    Object unfinalizedCount,
+  ) {
+    return '$unfinalizedCount unfinalized • $blockedCount insufficient data';
+  }
+
+  @override
+  String get tuitionFinalizeNow => 'Finalize Tuition';
+
+  @override
+  String get tuitionCollect => 'Collect';
+
+  @override
+  String get tuitionDetails => 'Tuition Details';
+
+  @override
+  String get tuitionNoUnpaid => 'No unpaid students requiring collection.';
+
+  @override
+  String get tuitionNoPaid => 'No fully paid students yet.';
+
+  @override
+  String tuitionPartialPayment(Object paid, Object remaining) {
+    return 'Paid $paid • Remaining $remaining';
+  }
+
+  @override
+  String get qrPaymentTitle => 'Payment QR Code';
+
+  @override
+  String get qrShareImage => 'Share Image';
+
+  @override
+  String get qrCopyTransferContent => 'Copy Transfer Content';
+
+  @override
+  String get qrCardTitle => 'TUITION PAYMENT DETAILS';
+
+  @override
+  String qrCardMonth(Object month) {
+    return 'Month $month';
+  }
+
+  @override
+  String qrCardStudent(Object name) {
+    return 'Student: $name';
+  }
+
+  @override
+  String qrCardClass(Object className) {
+    return 'Class: $className';
+  }
+
+  @override
+  String get qrCardAmount => 'AMOUNT TO TRANSFER';
+
+  @override
+  String get qrCardBank => 'Bank';
+
+  @override
+  String get qrCardAccountNumber => 'Account No.';
+
+  @override
+  String get qrCardAccountHolder => 'Account Holder';
+
+  @override
+  String get qrCardTransferContent => 'Transfer Content';
+
+  @override
+  String get qrCardInstruction =>
+      'Please transfer the exact amount and content above.';
 }

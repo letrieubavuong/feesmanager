@@ -14,6 +14,8 @@ import '../../payments/presentation/vietqr_payment_page.dart';
 import '../domain/class_month_tuition_overview.dart';
 import 'tuition_controller.dart';
 
+enum TuitionPaymentFilter { unpaid, paid }
+
 class ClassTuitionTab extends ConsumerStatefulWidget {
   final int classId;
 
@@ -25,6 +27,7 @@ class ClassTuitionTab extends ConsumerStatefulWidget {
 
 class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
   late String _selectedMonth;
+  TuitionPaymentFilter _filter = TuitionPaymentFilter.unpaid;
 
   @override
   void initState() {
@@ -54,8 +57,10 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
           _buildMonthSelector(context),
           const SizedBox(height: 12),
           _buildKpiSummary(context, overviewAsync),
-          const SizedBox(height: 16),
-          _buildActionHeader(context, overviewAsync),
+          const SizedBox(height: 12),
+          _buildFilterToggle(context, overviewAsync),
+          const SizedBox(height: 12),
+          _buildUnfinalizedBanner(context, overviewAsync),
           const SizedBox(height: 12),
           _buildStudentTuitionList(context, overviewAsync),
         ],
@@ -69,13 +74,15 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     ).format(DateTime.parse('$_selectedMonth-01'));
 
     return AppSectionCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             icon: const Icon(Icons.chevron_left, color: AppColors.cyanAccent),
             onPressed: () => _changeMonth(-1),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
           ),
           Row(
             children: [
@@ -84,12 +91,12 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                 color: AppColors.cyanAccent,
                 size: 18,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Text(
                 'Tháng $formattedMonth',
                 style: const TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -98,6 +105,8 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
           IconButton(
             icon: const Icon(Icons.chevron_right, color: AppColors.cyanAccent),
             onPressed: () => _changeMonth(1),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
           ),
         ],
       ),
@@ -110,120 +119,159 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
   ) {
     return overviewAsync.when(
       loading: () => const AppSectionCard(
-        child: Padding(padding: EdgeInsets.all(16), child: AppLoadingState()),
+        child: Padding(padding: EdgeInsets.all(12), child: AppLoadingState()),
       ),
       error: (err, _) => AppSectionCard(
         padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            const Icon(Icons.error_outline, color: AppColors.error, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Lỗi nạp dữ liệu tài chính: $err',
-                style: const TextStyle(color: AppColors.error, fontSize: 13),
-              ),
-            ),
-          ],
+        child: Text(
+          'Lỗi nạp dữ liệu tài chính: $err',
+          style: const TextStyle(color: AppColors.error, fontSize: 13),
         ),
       ),
       data: (overview) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final cardWidth = (constraints.maxWidth - 12) / 2;
-            return Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                SizedBox(
-                  width: cardWidth,
-                  child: AppMetricCard(
-                    title: 'Tạm tính',
-                    value: AppFormatter.formatCurrency(
-                      overview.previewTotalDue,
-                      context: context,
-                    ),
-                    subtitle: '${overview.previewStudentCount} học sinh',
-                    valueColor: AppColors.cyanAccent,
-                    icon: Icons.calculate_outlined,
-                  ),
+        return Row(
+          children: [
+            Expanded(
+              child: AppMetricCard(
+                title: 'Đã thu',
+                value: AppFormatter.formatCurrency(
+                  overview.totalPaid,
+                  context: context,
                 ),
-                SizedBox(
-                  width: cardWidth,
-                  child: AppMetricCard(
-                    title: 'Đã chốt',
-                    value: AppFormatter.formatCurrency(
-                      overview.finalizedTotalDue,
-                      context: context,
-                    ),
-                    subtitle: '${overview.finalizedStudentCount} học sinh',
-                    valueColor: AppColors.textPrimary,
-                    icon: Icons.receipt_long_outlined,
-                  ),
+                valueColor: AppColors.success,
+                icon: Icons.payments_outlined,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: AppMetricCard(
+                title: 'Còn nợ',
+                value: AppFormatter.formatCurrency(
+                  overview.remainingDebt,
+                  context: context,
                 ),
-                SizedBox(
-                  width: cardWidth,
-                  child: AppMetricCard(
-                    title: 'Đã thu',
-                    value: AppFormatter.formatCurrency(
-                      overview.totalPaid,
-                      context: context,
-                    ),
-                    valueColor: AppColors.success,
-                    icon: Icons.payments_outlined,
-                  ),
-                ),
-                SizedBox(
-                  width: cardWidth,
-                  child: AppMetricCard(
-                    title: 'Còn nợ',
-                    value: AppFormatter.formatCurrency(
-                      overview.remainingDebt,
-                      context: context,
-                    ),
-                    valueColor: AppColors.error,
-                    icon: Icons.account_balance_wallet_outlined,
-                  ),
-                ),
-              ],
-            );
-          },
+                valueColor: AppColors.error,
+                icon: Icons.account_balance_wallet_outlined,
+              ),
+            ),
+          ],
         );
       },
     );
   }
 
-  Widget _buildActionHeader(
+  Widget _buildFilterToggle(
     BuildContext context,
     AsyncValue<ClassMonthTuitionOverview> overviewAsync,
   ) {
-    final canFinalize =
-        overviewAsync.hasValue && overviewAsync.value!.previewStudentCount > 0;
+    int unpaidCount = 0;
+    int paidCount = 0;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'Danh sách học phí',
-          style: TextStyle(
-            color: AppColors.cyanAccent,
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
+    if (overviewAsync.hasValue) {
+      final rows = overviewAsync.value!.studentRows;
+      final finalizedRows = rows.where((r) => r.isFinalized).toList();
+      unpaidCount = finalizedRows.where((r) => r.remainingDebt > 0).length;
+      paidCount = finalizedRows.where((r) => r.remainingDebt <= 0).length;
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: SegmentedButton<TuitionPaymentFilter>(
+        segments: [
+          ButtonSegment<TuitionPaymentFilter>(
+            value: TuitionPaymentFilter.unpaid,
+            label: Text('Chưa nộp ($unpaidCount)'),
+            icon: const Icon(Icons.pending_actions, size: 16),
           ),
-        ),
-        ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          ButtonSegment<TuitionPaymentFilter>(
+            value: TuitionPaymentFilter.paid,
+            label: Text('Đã nộp ($paidCount)'),
+            icon: const Icon(Icons.check_circle_outline, size: 16),
           ),
-          onPressed: canFinalize
-              ? () => _handlePreflightAndFinalize(context, overviewAsync.value!)
-              : null,
-          icon: const Icon(Icons.check_circle_outline, size: 16),
-          label: const Text('Chốt học phí tháng'),
+        ],
+        selected: {_filter},
+        onSelectionChanged: (newSelection) {
+          setState(() {
+            _filter = newSelection.first;
+          });
+        },
+        style: ButtonStyle(
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+            if (states.contains(WidgetState.selected)) {
+              return AppColors.primary;
+            }
+            return AppColors.surfaceHigh;
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+            if (states.contains(WidgetState.selected)) {
+              return Colors.white;
+            }
+            return AppColors.textSecondary;
+          }),
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildUnfinalizedBanner(
+    BuildContext context,
+    AsyncValue<ClassMonthTuitionOverview> overviewAsync,
+  ) {
+    if (!overviewAsync.hasValue) return const SizedBox.shrink();
+
+    final overview = overviewAsync.value!;
+    final unfinalizedRows = overview.studentRows
+        .where((r) => !r.isFinalized)
+        .toList();
+    if (unfinalizedRows.isEmpty) return const SizedBox.shrink();
+
+    final blockedCount = overview.pendingStudentCount;
+    final unfinalizedCount = unfinalizedRows.length;
+
+    final String label = blockedCount > 0
+        ? '$unfinalizedCount chưa chốt • $blockedCount chưa đủ dữ liệu'
+        : '$unfinalizedCount học sinh chưa chốt học phí';
+
+    return AppSectionCard(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: AppColors.warning,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.warning,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed: () => _handlePreflightAndFinalize(context, overview),
+            child: const Text(
+              'Chốt học phí',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -233,14 +281,37 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
   ) {
     return overviewAsync.when(
       data: (overview) {
-        if (overview.studentRows.isEmpty) {
-          return const AppSectionCard(
+        final finalizedRows = overview.studentRows
+            .where((r) => r.isFinalized)
+            .toList();
+
+        List<ClassMonthTuitionStudentRow> targetRows;
+        if (_filter == TuitionPaymentFilter.unpaid) {
+          targetRows = finalizedRows.where((r) => r.remainingDebt > 0).toList();
+        } else {
+          targetRows = finalizedRows
+              .where((r) => r.remainingDebt <= 0)
+              .toList();
+        }
+
+        // Sort alphabetically by student name
+        targetRows.sort(
+          (a, b) => a.student.hoTen.toLowerCase().compareTo(
+            b.student.hoTen.toLowerCase(),
+          ),
+        );
+
+        if (targetRows.isEmpty) {
+          final emptyText = _filter == TuitionPaymentFilter.unpaid
+              ? 'Không còn học sinh cần thu học phí.'
+              : 'Chưa có học sinh đã nộp đủ.';
+          return AppSectionCard(
             child: Center(
               child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
+                padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Text(
-                  'Không có học sinh nào tham gia lớp trong tháng này.',
-                  style: TextStyle(
+                  emptyText,
+                  style: const TextStyle(
                     color: AppColors.textMuted,
                     fontStyle: FontStyle.italic,
                   ),
@@ -251,7 +322,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
         }
 
         return Column(
-          children: overview.studentRows.map((row) {
+          children: targetRows.map((row) {
             return _StudentTuitionCard(
               row: row,
               classId: widget.classId,
@@ -493,102 +564,14 @@ class _StudentTuitionCard extends ConsumerWidget {
     required this.month,
   });
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final student = row.student;
-
-    return AppSectionCard(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              StudentAvatar(
-                gioiTinh: student.gioiTinh,
-                studentName: student.hoTen,
-                radius: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      student.hoTen,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'SĐT: ${student.sdtPhuHuynh ?? "Chưa có"}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              AppStatusChip(
-                label: row.stateLabel,
-                color: row.stateColor,
-                compact: true,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          const Divider(color: AppColors.border, height: 1),
-          const SizedBox(height: 10),
-          if (row.isBlocked) ...[
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppColors.warning.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.info_outline,
-                    color: AppColors.warning,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      row.pendingReason ?? 'Chưa đủ dữ liệu tính học phí',
-                      style: const TextStyle(
-                        color: AppColors.warning,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ] else ...[
-            _buildTuitionBreakdown(context),
-          ],
-          const SizedBox(height: 10),
-          _buildActionRow(context, ref),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTuitionBreakdown(BuildContext context) {
+  void _showStudentTuitionDetailBottomSheet(
+    BuildContext context,
+    ClassMonthTuitionStudentRow row,
+  ) {
     int eligible = 0;
     int charged = 0;
     int feePerSession = 0;
-    int totalFee = 0;
+    int totalFee = row.amountDue;
     int totalPaid = row.amountPaid;
     int remainingDebt = row.remainingDebt;
 
@@ -599,174 +582,276 @@ class _StudentTuitionCard extends ConsumerWidget {
       feePerSession = inv.soBuoiTinhPhi > 0
           ? inv.tongTruocGiam ~/ inv.soBuoiTinhPhi
           : 0;
-      totalFee = inv.soTienPhaiThu;
     } else if (row.preview != null) {
       final p = row.preview!;
       eligible = p.soBuoiEligible;
       charged = p.soBuoiTinhPhi;
       feePerSession = p.policy.hocPhiMoiBuoi;
-      totalFee = p.soTienPhaiThu;
     }
 
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceHigh,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: AppColors.surface,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '• $eligible buổi đủ điều kiện ($charged buổi tính phí × ${AppFormatter.formatCurrency(feePerSession, context: context)}/buổi)',
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
+              Row(
+                children: [
+                  StudentAvatar(
+                    gioiTinh: row.student.gioiTinh,
+                    studentName: row.student.hoTen,
+                    radius: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          row.student.hoTen,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Chi tiết học phí tháng $month',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  AppStatusChip(
+                    label: row.stateLabel,
+                    color: row.stateColor,
+                    compact: true,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceHigh,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  children: [
+                    _buildDetailRow(
+                      context,
+                      'Buổi đủ điều kiện:',
+                      '$eligible buổi',
+                    ),
+                    const SizedBox(height: 8),
+                    _buildDetailRow(context, 'Buổi tính phí:', '$charged buổi'),
+                    const SizedBox(height: 8),
+                    _buildDetailRow(
+                      context,
+                      'Đơn giá / buổi:',
+                      AppFormatter.formatCurrency(
+                        feePerSession,
+                        context: context,
+                      ),
+                    ),
+                    const Divider(color: AppColors.border, height: 16),
+                    _buildDetailRow(
+                      context,
+                      row.isFinalized ? 'Đã chốt học phí:' : 'Tạm tính:',
+                      AppFormatter.formatCurrency(totalFee, context: context),
+                      isBold: true,
+                      valueColor: AppColors.cyanAccent,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildDetailRow(
+                      context,
+                      'Đã thu:',
+                      AppFormatter.formatCurrency(totalPaid, context: context),
+                      valueColor: AppColors.success,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildDetailRow(
+                      context,
+                      'Còn nợ:',
+                      AppFormatter.formatCurrency(
+                        remainingDebt,
+                        context: context,
+                      ),
+                      isBold: true,
+                      valueColor: remainingDebt > 0
+                          ? AppColors.error
+                          : AppColors.success,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Đóng'),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                row.isFinalized ? 'Đã chốt:' : 'Tạm tính:',
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                AppFormatter.formatCurrency(totalFee, context: context),
-                style: const TextStyle(
-                  color: AppColors.cyanAccent,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          if (row.isFinalized) ...[
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Đã thu:',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-                Text(
-                  AppFormatter.formatCurrency(totalPaid, context: context),
-                  style: const TextStyle(
-                    color: AppColors.success,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 2),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Còn nợ:',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-                Text(
-                  AppFormatter.formatCurrency(remainingDebt, context: context),
-                  style: TextStyle(
-                    color: remainingDebt > 0
-                        ? AppColors.error
-                        : AppColors.success,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildActionRow(BuildContext context, WidgetRef ref) {
-    final isFinalized = row.isFinalized;
-    final remainingDebt = row.remainingDebt;
-    final totalPaid = row.amountPaid;
-    final studentId = row.student.id!;
-
+  Widget _buildDetailRow(
+    BuildContext context,
+    String label,
+    String value, {
+    bool isBold = false,
+    Color? valueColor,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        if (isFinalized || totalPaid > 0)
-          TextButton.icon(
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            ),
-            onPressed: () => showPaymentHistoryBottomSheet(
-              context,
-              studentId: studentId,
-              classId: classId,
-              month: month,
-              studentName: row.student.hoTen,
-            ),
-            icon: const Icon(
-              Icons.history,
-              size: 16,
-              color: AppColors.cyanAccent,
-            ),
-            label: const Text(
-              'Lịch sử thu',
-              style: TextStyle(color: AppColors.cyanAccent, fontSize: 12),
-            ),
-          )
-        else
-          const SizedBox.shrink(),
+        Text(
+          label,
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: valueColor ?? AppColors.textPrimary,
+            fontSize: 14,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
 
-        Row(
-          children: [
-            if (isFinalized) ...[
-              if (totalPaid == 0) ...[
-                TextButton.icon(
-                  style: TextButton.styleFrom(
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final student = row.student;
+    final remainingDebt = row.remainingDebt;
+    final amountPaid = row.amountPaid;
+    final isUnpaid = remainingDebt > 0;
+
+    return AppSectionCard(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        children: [
+          StudentAvatar(
+            gioiTinh: student.gioiTinh,
+            studentName: student.hoTen,
+            radius: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  student.hoTen,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                if (isUnpaid) ...[
+                  if (amountPaid > 0)
+                    Text(
+                      'Đã thu ${AppFormatter.formatCurrency(amountPaid, context: context)} • Còn ${AppFormatter.formatCurrency(remainingDebt, context: context)}',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  else
+                    Text(
+                      'Còn nợ ${AppFormatter.formatCurrency(remainingDebt, context: context)}',
+                      style: const TextStyle(
+                        color: AppColors.error,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ] else ...[
+                  Text(
+                    'Đã nộp ${AppFormatter.formatCurrency(row.amountDue, context: context)}',
+                    style: const TextStyle(
+                      color: AppColors.success,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          if (isUnpaid) ...[
+            // Actions for UNPAID student: [Thu tiền] [QR] [⋮]
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
+                      horizontal: 10,
                       vertical: 4,
                     ),
+                    minimumSize: const Size(0, 32),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  onPressed: () => _handleRecalculateInvoice(context, ref),
-                  icon: const Icon(
-                    Icons.refresh,
-                    size: 16,
-                    color: AppColors.warning,
-                  ),
-                  label: const Text(
-                    'Tính lại học phí',
-                    style: TextStyle(color: AppColors.warning, fontSize: 12),
+                  onPressed: () async {
+                    await showRecordPaymentBottomSheet(
+                      context,
+                      studentId: student.id!,
+                      classId: classId,
+                      month: month,
+                      suggestedAmount: remainingDebt,
+                    );
+                    ref.invalidate(
+                      classMonthTuitionOverviewProvider((classId, month)),
+                    );
+                  },
+                  child: const Text(
+                    'Thu tiền',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ),
-                const SizedBox(width: 6),
-              ],
-              if (remainingDebt > 0) ...[
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    side: const BorderSide(color: AppColors.border),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(
+                    Icons.qr_code_2,
+                    color: AppColors.cyanAccent,
+                    size: 22,
+                  ),
+                  tooltip: 'Tạo mã QR',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
                   ),
                   onPressed: () {
                     final clsAsync = ref
@@ -775,7 +860,8 @@ class _StudentTuitionCard extends ConsumerWidget {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => VietQrPaymentPage(
-                          studentName: row.student.hoTen,
+                          studentName: student.hoTen,
+                          studentCode: student.id!.toString(),
                           className: clsAsync?.tenLop ?? '',
                           month: month,
                           remainingAmount: remainingDebt,
@@ -783,75 +869,145 @@ class _StudentTuitionCard extends ConsumerWidget {
                       ),
                     );
                   },
+                ),
+                PopupMenuButton<String>(
                   icon: const Icon(
-                    Icons.qr_code_2,
-                    size: 16,
-                    color: AppColors.cyanAccent,
+                    Icons.more_vert,
+                    color: AppColors.textSecondary,
+                    size: 20,
                   ),
-                  label: const Text(
-                    'QR',
-                    style: TextStyle(color: AppColors.cyanAccent, fontSize: 12),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
                   ),
-                ),
-                const SizedBox(width: 6),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+                  color: AppColors.surfaceHigh,
+                  onSelected: (val) {
+                    if (val == 'history') {
+                      showPaymentHistoryBottomSheet(
+                        context,
+                        studentId: student.id!,
+                        classId: classId,
+                        month: month,
+                        studentName: student.hoTen,
+                      );
+                    } else if (val == 'detail') {
+                      _showStudentTuitionDetailBottomSheet(context, row);
+                    } else if (val == 'recalc') {
+                      _handleRecalculateInvoice(context, ref);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    if (row.isFinalized || amountPaid > 0)
+                      const PopupMenuItem(
+                        value: 'history',
+                        child: Text(
+                          'Lịch sử thu',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    const PopupMenuItem(
+                      value: 'detail',
+                      child: Text(
+                        'Chi tiết học phí',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
-                  ),
-                  onPressed: () => showRecordPaymentBottomSheet(
-                    context,
-                    studentId: studentId,
-                    classId: classId,
-                    month: month,
-                    suggestedAmount: remainingDebt,
-                  ),
-                  icon: const Icon(Icons.payments_outlined, size: 16),
-                  label: const Text(
-                    'Thanh toán',
-                    style: TextStyle(fontSize: 12),
-                  ),
+                    if (row.isFinalized && amountPaid == 0)
+                      const PopupMenuItem(
+                        value: 'recalc',
+                        child: Text(
+                          'Tính lại học phí',
+                          style: TextStyle(
+                            color: AppColors.warning,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ] else
-                const Text(
-                  'Đã hoàn tất thanh toán',
-                  style: TextStyle(
-                    color: AppColors.success,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+              ],
+            ),
+          ] else ...[
+            // Actions for PAID student: Checkmark + Menu
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: AppColors.success,
+                  size: 20,
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(
+                    Icons.more_vert,
+                    color: AppColors.textSecondary,
+                    size: 20,
                   ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  color: AppColors.surfaceHigh,
+                  onSelected: (val) {
+                    if (val == 'history') {
+                      showPaymentHistoryBottomSheet(
+                        context,
+                        studentId: student.id!,
+                        classId: classId,
+                        month: month,
+                        studentName: student.hoTen,
+                      );
+                    } else if (val == 'detail') {
+                      _showStudentTuitionDetailBottomSheet(context, row);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'history',
+                      child: Text(
+                        'Lịch sử thu',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'detail',
+                      child: Text(
+                        'Chi tiết học phí',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-            ] else ...[
-              const Text(
-                'Chốt học phí trước khi thu tiền.',
-                style: TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ],
+              ],
+            ),
           ],
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   void _handleRecalculateInvoice(BuildContext context, WidgetRef ref) async {
-    final reasonController = TextEditingController(
-      text: 'Cập nhật điểm danh sau khi chốt',
-    );
-
+    final reasonController = TextEditingController();
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.surfaceHigh,
         title: const Text(
-          'Tính lại học phí đã chốt',
+          'Tính lại học phí',
           style: TextStyle(color: AppColors.textPrimary),
         ),
         content: Column(
@@ -859,18 +1015,18 @@ class _StudentTuitionCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Tính lại hóa đơn tháng $month của học sinh ${row.student.hoTen} dựa trên dữ liệu điểm danh mới nhất.',
+              'Tính lại cho học sinh ${row.student.hoTen}. Thao tác này sẽ cập nhật invoice theo dữ liệu điểm danh mới nhất.',
               style: const TextStyle(
                 color: AppColors.textSecondary,
-                fontSize: 14,
+                fontSize: 13,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             TextField(
               controller: reasonController,
-              style: const TextStyle(color: AppColors.textPrimary),
               decoration: const InputDecoration(
                 labelText: 'Lý do tính lại *',
+                hintText: 'VD: Cập nhật điểm danh bù',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -878,7 +1034,7 @@ class _StudentTuitionCard extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Hủy'),
           ),
           ElevatedButton(
@@ -886,14 +1042,23 @@ class _StudentTuitionCard extends ConsumerWidget {
               backgroundColor: AppColors.warning,
               foregroundColor: Colors.black,
             ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Tính lại'),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Xác nhận tính lại'),
           ),
         ],
       ),
     );
 
     if (confirm != true || !context.mounted) return;
+
+    final reason = reasonController.text.trim();
+    if (reason.isEmpty) {
+      AppFeedback.showErrorSnackBar(
+        context,
+        'Vui lòng nhập lý do tính lại học phí',
+      );
+      return;
+    }
 
     try {
       await ref
@@ -902,13 +1067,12 @@ class _StudentTuitionCard extends ConsumerWidget {
             studentId: row.student.id!,
             classId: classId,
             month: month,
-            reason: reasonController.text.trim(),
+            reason: reason,
           );
-
       if (context.mounted) {
         AppFeedback.showSuccessSnackBar(
           context,
-          'Đã tính lại học phí thành công cho ${row.student.hoTen}',
+          'Đã tính lại học phí thành công',
         );
       }
     } catch (e) {
