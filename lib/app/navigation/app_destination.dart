@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import 'ui_keys.dart';
 
-enum AppDestinationId { home, classes, students, tuition, reports, settings }
+enum AppDestinationId { home, classes, students, tuition, reports, settings, guide }
 
 class AppDestination {
   final AppDestinationId id;
@@ -39,6 +39,8 @@ class AppDestination {
         return l10n.navReports;
       case AppDestinationId.settings:
         return l10n.navSettings;
+      case AppDestinationId.guide:
+        return l10n.navGuide;
     }
   }
 
@@ -96,6 +98,14 @@ class AppDestination {
     bottomNavIndex: null, // Absent from bottom nav!
   );
 
+  static const guide = AppDestination(
+    id: AppDestinationId.guide,
+    icon: Icons.help_outline_rounded,
+    selectedIcon: Icons.help_rounded,
+    key: Key('nav_guide'),
+    drawerKey: UiKeys.drawerGuide,
+  );
+
   static const List<AppDestination> all = [
     home,
     classes,
@@ -103,6 +113,7 @@ class AppDestination {
     tuition,
     reports,
     settings,
+    guide,
   ];
 
   static List<AppDestination> get bottomNavDestinations =>
