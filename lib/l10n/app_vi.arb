@@ -66,7 +66,7 @@
   "langEnglish": "English",
   "settingsAppInfo": "THÔNG TIN ỨNG DỤNG",
   "appVersion": "Phiên bản: 1.0.0+1",
-  "dbVersion": "Cơ sở dữ liệu: v15",
+  "dbVersion": "Cơ sở dữ liệu: v16",
 
   "studentFormTitleAdd": "Thêm học sinh",
   "studentFormTitleEdit": "Sửa thông tin học sinh",
