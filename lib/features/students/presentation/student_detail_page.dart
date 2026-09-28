@@ -1192,6 +1192,7 @@ class StudentDetailPage extends ConsumerWidget {
     );
 
     if (rows.isEmpty) {
+      if (!context.mounted) return;
       AppFeedback.showWarningSnackBar(context, l10n.studentNoDebtToRecord);
       return;
     }
@@ -1201,12 +1202,13 @@ class StudentDetailPage extends ConsumerWidget {
       final classId = r['id_lop'] as int;
       final due = (r['so_tien_phai_thu'] as num).toInt();
       final paidRows = await db.rawQuery(
-        "SELECT SUM(so_tien) as total FROM thanh_toan WHERE id_hoc_sinh = ? AND id_lop = ? AND strftime('%Y-%m', ngay_thu) = ?",
+        "SELECT SUM(so_tien) as total FROM thanh_toan WHERE id_hoc_sinh = ? AND id_lop = ? AND strftime('%Y-%m', ngay_thanh_toan) = ?",
         [overview.student.id!, classId, overview.financial.month],
       );
       final paid = (paidRows.first['total'] as num?)?.toInt() ?? 0;
       final debt = (due - paid) > 0 ? (due - paid) : 0;
 
+      if (!context.mounted) return;
       await showModalBottomSheet(
         context: context,
         isScrollControlled: true,
@@ -1220,6 +1222,7 @@ class StudentDetailPage extends ConsumerWidget {
       );
       ref.invalidate(studentDetailOverviewProvider(overview.student.id!));
     } else {
+      if (!context.mounted) return;
       await showModalBottomSheet(
         context: context,
         isScrollControlled: true,

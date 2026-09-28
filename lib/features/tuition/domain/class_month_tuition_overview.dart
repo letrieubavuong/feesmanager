@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 import 'package:flutter/material.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../payments/domain/invoice_payment_summary.dart';
