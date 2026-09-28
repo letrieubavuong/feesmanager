@@ -41,21 +41,15 @@ class SessionCorrectionAuditsFamily
   const SessionCorrectionAuditsFamily();
 
   /// See also [sessionCorrectionAudits].
-  SessionCorrectionAuditsProvider call(
-    int sessionId,
-  ) {
-    return SessionCorrectionAuditsProvider(
-      sessionId,
-    );
+  SessionCorrectionAuditsProvider call(int sessionId) {
+    return SessionCorrectionAuditsProvider(sessionId);
   }
 
   @override
   SessionCorrectionAuditsProvider getProviderOverride(
     covariant SessionCorrectionAuditsProvider provider,
   ) {
-    return call(
-      provider.sessionId,
-    );
+    return call(provider.sessionId);
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -77,24 +71,22 @@ class SessionCorrectionAuditsFamily
 class SessionCorrectionAuditsProvider
     extends AutoDisposeFutureProvider<List<AttendanceCorrectionAuditRecord>> {
   /// See also [sessionCorrectionAudits].
-  SessionCorrectionAuditsProvider(
-    int sessionId,
-  ) : this._internal(
-          (ref) => sessionCorrectionAudits(
-            ref as SessionCorrectionAuditsRef,
-            sessionId,
-          ),
-          from: sessionCorrectionAuditsProvider,
-          name: r'sessionCorrectionAuditsProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$sessionCorrectionAuditsHash,
-          dependencies: SessionCorrectionAuditsFamily._dependencies,
-          allTransitiveDependencies:
-              SessionCorrectionAuditsFamily._allTransitiveDependencies,
-          sessionId: sessionId,
-        );
+  SessionCorrectionAuditsProvider(int sessionId)
+    : this._internal(
+        (ref) => sessionCorrectionAudits(
+          ref as SessionCorrectionAuditsRef,
+          sessionId,
+        ),
+        from: sessionCorrectionAuditsProvider,
+        name: r'sessionCorrectionAuditsProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$sessionCorrectionAuditsHash,
+        dependencies: SessionCorrectionAuditsFamily._dependencies,
+        allTransitiveDependencies:
+            SessionCorrectionAuditsFamily._allTransitiveDependencies,
+        sessionId: sessionId,
+      );
 
   SessionCorrectionAuditsProvider._internal(
     super._createNotifier, {
@@ -111,8 +103,9 @@ class SessionCorrectionAuditsProvider
   @override
   Override overrideWith(
     FutureOr<List<AttendanceCorrectionAuditRecord>> Function(
-            SessionCorrectionAuditsRef provider)
-        create,
+      SessionCorrectionAuditsRef provider,
+    )
+    create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -130,7 +123,7 @@ class SessionCorrectionAuditsProvider
 
   @override
   AutoDisposeFutureProviderElement<List<AttendanceCorrectionAuditRecord>>
-      createElement() {
+  createElement() {
     return _SessionCorrectionAuditsProviderElement(this);
   }
 
@@ -156,8 +149,9 @@ mixin SessionCorrectionAuditsRef
 }
 
 class _SessionCorrectionAuditsProviderElement
-    extends AutoDisposeFutureProviderElement<
-        List<AttendanceCorrectionAuditRecord>> with SessionCorrectionAuditsRef {
+    extends
+        AutoDisposeFutureProviderElement<List<AttendanceCorrectionAuditRecord>>
+    with SessionCorrectionAuditsRef {
   _SessionCorrectionAuditsProviderElement(super.provider);
 
   @override

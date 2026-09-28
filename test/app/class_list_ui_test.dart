@@ -104,44 +104,45 @@ void main() {
   }
 
   group('Phase 14B.5 Class Dashboard UI Tests', () {
-    testWidgets('Renders AppBar, 2-state toggle, 4 KPIs, cards & warnings without search bar', (
-      tester,
-    ) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'Renders AppBar, 2-state toggle, 4 KPIs, cards & warnings without search bar',
+      (tester) async {
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
 
-      // Search bar must be COMPLETELY REMOVED
-      expect(find.byType(TextField), findsNothing);
+        // Search bar must be COMPLETELY REMOVED
+        expect(find.byType(TextField), findsNothing);
 
-      // AppBar
-      expect(find.text('Lớp học'), findsOneWidget);
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+        // AppBar
+        expect(find.text('Lớp học'), findsOneWidget);
+        expect(find.byIcon(Icons.add_rounded), findsOneWidget);
 
-      // 2-State Filter Toggle (No "Tất cả")
-      expect(find.text('Đang hoạt động'), findsWidgets);
-      expect(find.text('Ngừng hoạt động'), findsWidgets);
-      expect(find.text('Tất cả'), findsNothing);
+        // 2-State Filter Toggle (No "Tất cả")
+        expect(find.text('Đang hoạt động'), findsWidgets);
+        expect(find.text('Ngừng hoạt động'), findsWidgets);
+        expect(find.text('Tất cả'), findsNothing);
 
-      // 4 KPIs
-      expect(find.text('12'), findsOneWidget); // Active classes
-      expect(find.text('5'), findsOneWidget); // Today sessions
-      expect(find.text('3'), findsAtLeast(1)); // Needs attendance
-      expect(find.text('2'), findsAtLeast(1)); // Missing tuition
+        // 4 KPIs
+        expect(find.text('12'), findsOneWidget); // Active classes
+        expect(find.text('5'), findsOneWidget); // Today sessions
+        expect(find.text('3'), findsAtLeast(1)); // Needs attendance
+        expect(find.text('2'), findsAtLeast(1)); // Missing tuition
 
-      // Class cards
-      expect(find.text('Lớp 11A1'), findsOneWidget);
-      expect(find.text('Thứ 3,5 • 17:30–19:00'), findsOneWidget);
-      expect(find.text('28 học sinh'), findsOneWidget);
+        // Class cards
+        expect(find.text('Lớp 11A1'), findsOneWidget);
+        expect(find.text('Thứ 3,5 • 17:30–19:00'), findsOneWidget);
+        expect(find.text('28 học sinh'), findsOneWidget);
 
-      expect(find.text('Lớp 12A2'), findsOneWidget);
-      expect(find.text('Thứ 2,6 • 19:30–21:00'), findsOneWidget);
-      expect(find.text('30 học sinh'), findsOneWidget);
+        expect(find.text('Lớp 12A2'), findsOneWidget);
+        expect(find.text('Thứ 2,6 • 19:30–21:00'), findsOneWidget);
+        expect(find.text('30 học sinh'), findsOneWidget);
 
-      // Warnings section
-      expect(find.text('Cần xử lý'), findsOneWidget);
-      expect(find.text('3 buổi quá giờ cần điểm danh'), findsOneWidget);
-      expect(find.text('2 lớp chưa thiết lập học phí'), findsOneWidget);
-    });
+        // Warnings section
+        expect(find.text('Cần xử lý'), findsOneWidget);
+        expect(find.text('3 buổi quá giờ cần điểm danh'), findsOneWidget);
+        expect(find.text('2 lớp chưa thiết lập học phí'), findsOneWidget);
+      },
+    );
   });
 }
 

@@ -10,6 +10,8 @@ import 'package:tuition2027/app/navigation/ui_keys.dart';
 import 'package:tuition2027/features/classes/domain/class.dart';
 import 'package:tuition2027/features/classes/presentation/class_controller.dart';
 import 'package:tuition2027/features/students/domain/student.dart';
+import 'package:tuition2027/features/students/domain/student_detail_overview.dart';
+import 'package:tuition2027/features/students/domain/student_detail_overview_service.dart';
 import 'package:tuition2027/features/students/presentation/student_controller.dart';
 import 'package:tuition2027/features/students/presentation/student_detail_page.dart';
 import '../test_helper.dart';
@@ -141,9 +143,25 @@ void main() {
                 studentListControllerProvider.overrideWith(
                   () => MockStudentListController([testStudent]),
                 ),
-                studentDetailProvider(
-                  1,
-                ).overrideWith((ref) async => testStudent),
+                studentDetailOverviewProvider(1).overrideWith(
+                  (ref) async => StudentDetailOverview(
+                    student: testStudent,
+                    activeClasses: const [],
+                    firstActiveMembershipDate: null,
+                    financial: const StudentMonthFinancialSummary(
+                      month: '2026-09',
+                      finalizedDue: 0,
+                      totalPaid: 0,
+                      remainingDebt: 0,
+                      finalizedInvoiceCount: 0,
+                      unfinalizedClassCount: 0,
+                      previewUnfinalizedAmount: 0,
+                      state: StudentFinancialDisplayState.noFinalizedInvoices,
+                    ),
+                    recentAttendance: const [],
+                    activeBusyTimes: const [],
+                  ),
+                ),
               ],
             ),
           ),

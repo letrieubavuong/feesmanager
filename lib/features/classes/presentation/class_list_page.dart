@@ -60,13 +60,13 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
                 value: 'refresh',
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.refresh_rounded,
                       size: 18,
                       color: AppColors.textPrimary,
                     ),
-                    const SizedBox(width: 8),
-                    const Text('Làm mới'),
+                    SizedBox(width: 8),
+                    Text('Làm mới'),
                   ],
                 ),
               ),
@@ -204,9 +204,7 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
             const BorderSide(color: AppColors.border),
           ),
           shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
@@ -357,10 +355,7 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
     );
   }
 
-  Widget _buildListHeader(
-    AppLocalizations l10n,
-    ClassListOverview overview,
-  ) {
+  Widget _buildListHeader(AppLocalizations l10n, ClassListOverview overview) {
     final countText = _filter == ClassFilter.archived
         ? l10n.classCountStopped(overview.rows.length)
         : l10n.classCountActive(overview.rows.length);
@@ -378,10 +373,7 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
         ),
         Text(
           countText,
-          style: const TextStyle(
-            color: AppColors.textMuted,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
         ),
       ],
     );
@@ -475,8 +467,7 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
@@ -655,9 +646,8 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => AttendancePage(
-                              sessionId: w.relatedIds!.first,
-                            ),
+                            builder: (_) =>
+                                AttendancePage(sessionId: w.relatedIds!.first),
                           ),
                         );
                       }

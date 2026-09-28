@@ -85,7 +85,9 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
 
   @override
   Widget build(BuildContext context) {
-    final sheetAsync = ref.watch(attendanceControllerProvider(widget.sessionId));
+    final sheetAsync = ref.watch(
+      attendanceControllerProvider(widget.sessionId),
+    );
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
@@ -110,7 +112,9 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                   TextButton.icon(
                     onPressed: () => ref
                         .read(
-                          attendanceControllerProvider(widget.sessionId).notifier,
+                          attendanceControllerProvider(
+                            widget.sessionId,
+                          ).notifier,
                         )
                         .markAllHocBu(),
                     icon: const Icon(
@@ -130,7 +134,9 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                   TextButton.icon(
                     onPressed: () => ref
                         .read(
-                          attendanceControllerProvider(widget.sessionId).notifier,
+                          attendanceControllerProvider(
+                            widget.sessionId,
+                          ).notifier,
                         )
                         .markAllPresent(),
                     icon: const Icon(
@@ -277,11 +283,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
             ),
             child: const Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: AppColors.warning,
-                  size: 20,
-                ),
+                Icon(Icons.info_outline, color: AppColors.warning, size: 20),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -436,7 +438,9 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
         child: Row(
           children: [
             Icon(
-              _isCorrectionMode ? Icons.edit_attributes : Icons.check_circle_outline,
+              _isCorrectionMode
+                  ? Icons.edit_attributes
+                  : Icons.check_circle_outline,
               color: _isCorrectionMode ? AppColors.warning : AppColors.success,
               size: 16,
             ),
@@ -447,7 +451,9 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                     ? 'Chế độ sửa điểm danh đã hoàn tất (Cần nhập lý do)'
                     : 'Đã hoàn tất buổi học (ĐÃ HỌC)',
                 style: TextStyle(
-                  color: _isCorrectionMode ? AppColors.warning : AppColors.success,
+                  color: _isCorrectionMode
+                      ? AppColors.warning
+                      : AppColors.success,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -553,10 +559,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
               _buildMetricBadge('Có mặt: $coMat', AppColors.success),
               _buildMetricBadge('Trễ: $tre', AppColors.warning),
               _buildMetricBadge('Có phép: $nghiCoPhep', AppColors.cyanAccent),
-              _buildMetricBadge(
-                'Không phép: $nghiKhongPhep',
-                AppColors.error,
-              ),
+              _buildMetricBadge('Không phép: $nghiKhongPhep', AppColors.error),
               if (chuaDiemDanh > 0)
                 _buildMetricBadge(
                   'Chưa điểm danh: $chuaDiemDanh',
@@ -588,10 +591,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
     );
   }
 
-  Widget _buildStudentRow(
-    AttendanceSheet sheet,
-    AttendanceSheetMember member,
-  ) {
+  Widget _buildStudentRow(AttendanceSheet sheet, AttendanceSheetMember member) {
     final student = member.rosterMember.student;
     final isEditable = _canEditAttendanceState(sheet);
     final canEditRoster = _canEditRosterStructure(sheet);
@@ -1041,7 +1041,9 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
                 side: BorderSide(
-                  color: hasDirtyDraft ? AppColors.cyanAccent : AppColors.border,
+                  color: hasDirtyDraft
+                      ? AppColors.cyanAccent
+                      : AppColors.border,
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
@@ -1266,7 +1268,9 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                                             ),
                                           ),
                                           Text(
-                                            DateFormat('dd/MM/yyyy HH:mm').format(audit.changedAt),
+                                            DateFormat(
+                                              'dd/MM/yyyy HH:mm',
+                                            ).format(audit.changedAt),
                                             style: const TextStyle(
                                               color: AppColors.textMuted,
                                               fontSize: 11,
@@ -1278,10 +1282,9 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                                       Row(
                                         children: [
                                           AppStatusChip(
-                                            label:
-                                                AttendanceState.fromStatus(
-                                                  _parseStatus(audit.trangThaiCu),
-                                                ).label,
+                                            label: AttendanceState.fromStatus(
+                                              _parseStatus(audit.trangThaiCu),
+                                            ).label,
                                             color: AppColors.textMuted,
                                             compact: true,
                                           ),
@@ -1296,10 +1299,9 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                                             ),
                                           ),
                                           AppStatusChip(
-                                            label:
-                                                AttendanceState.fromStatus(
-                                                  _parseStatus(audit.trangThaiMoi),
-                                                ).label,
+                                            label: AttendanceState.fromStatus(
+                                              _parseStatus(audit.trangThaiMoi),
+                                            ).label,
                                             color: AppColors.success,
                                             compact: true,
                                           ),
@@ -1422,7 +1424,10 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                   'Hóa đơn tháng này đã có thanh toán.\n'
                   'Điểm danh đã được cập nhật nhưng số tiền đã chốt không tự thay đổi.\n\n'
                   'Dữ liệu điểm danh thay đổi có thể ảnh hưởng buổi dư. Vui lòng đối soát credit.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
                 actions: [
                   TextButton(
@@ -1443,7 +1448,10 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                     SizedBox(width: 8),
                     Text(
                       'Thông báo học phí',
-                      style: TextStyle(color: AppColors.textPrimary, fontSize: 15),
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                      ),
                     ),
                   ],
                 ),
@@ -1451,7 +1459,10 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                   'Điểm danh đã được sửa.\n'
                   'Học phí tháng này đã được chốt. Vui lòng kiểm tra lại học phí.\n\n'
                   'Dữ liệu điểm danh thay đổi có thể ảnh hưởng buổi dư. Vui lòng đối soát credit.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
                 actions: [
                   TextButton(

@@ -93,4 +93,23 @@ class TuitionPolicyRepository {
       whereArgs: [classId],
     );
   }
+
+  Future<Set<int>> getClassIdsWithEffectivePolicyOnDate(
+    List<int> classIds,
+    String date,
+  ) async {
+    if (classIds.isEmpty) return {};
+    final placeholders = List.filled(classIds.length, '?').join(',');
+    final maps = await _db.rawQuery(
+      '''
+      SELECT DISTINCT id_lop
+      FROM chinh_sach_hoc_phi
+      WHERE id_lop IN ($placeholders)
+        AND hieu_luc_tu <= ?
+        AND (hieu_luc_den IS NULL OR hieu_luc_den >= ?)
+      ''',
+      [...classIds, date, date],
+    );
+    return maps.map((m) => m['id_lop'] as int).toSet();
+  }
 }

@@ -7,23 +7,23 @@ part of 'student_detail_overview_service.dart';
 // **************************************************************************
 
 String _$studentDetailOverviewServiceHash() =>
-    r'03f083744d085133a665926debd69f1284261e05';
+    r'5f3ee964972d436b1faf6da44c22080d4db2757a';
 
 /// See also [studentDetailOverviewService].
 @ProviderFor(studentDetailOverviewService)
 final studentDetailOverviewServiceProvider =
     AutoDisposeFutureProvider<StudentDetailOverviewService>.internal(
-  studentDetailOverviewService,
-  name: r'studentDetailOverviewServiceProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$studentDetailOverviewServiceHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+      studentDetailOverviewService,
+      name: r'studentDetailOverviewServiceProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$studentDetailOverviewServiceHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
-typedef StudentDetailOverviewServiceRef
-    = AutoDisposeFutureProviderRef<StudentDetailOverviewService>;
+typedef StudentDetailOverviewServiceRef =
+    AutoDisposeFutureProviderRef<StudentDetailOverviewService>;
 String _$studentDetailOverviewHash() =>
     r'6a4e53f47f4b46450f487d054b1e87788c8a447c';
 
@@ -59,21 +59,15 @@ class StudentDetailOverviewFamily
   const StudentDetailOverviewFamily();
 
   /// See also [studentDetailOverview].
-  StudentDetailOverviewProvider call(
-    int studentId,
-  ) {
-    return StudentDetailOverviewProvider(
-      studentId,
-    );
+  StudentDetailOverviewProvider call(int studentId) {
+    return StudentDetailOverviewProvider(studentId);
   }
 
   @override
   StudentDetailOverviewProvider getProviderOverride(
     covariant StudentDetailOverviewProvider provider,
   ) {
-    return call(
-      provider.studentId,
-    );
+    return call(provider.studentId);
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -95,24 +89,20 @@ class StudentDetailOverviewFamily
 class StudentDetailOverviewProvider
     extends AutoDisposeFutureProvider<StudentDetailOverview> {
   /// See also [studentDetailOverview].
-  StudentDetailOverviewProvider(
-    int studentId,
-  ) : this._internal(
-          (ref) => studentDetailOverview(
-            ref as StudentDetailOverviewRef,
-            studentId,
-          ),
-          from: studentDetailOverviewProvider,
-          name: r'studentDetailOverviewProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$studentDetailOverviewHash,
-          dependencies: StudentDetailOverviewFamily._dependencies,
-          allTransitiveDependencies:
-              StudentDetailOverviewFamily._allTransitiveDependencies,
-          studentId: studentId,
-        );
+  StudentDetailOverviewProvider(int studentId)
+    : this._internal(
+        (ref) =>
+            studentDetailOverview(ref as StudentDetailOverviewRef, studentId),
+        from: studentDetailOverviewProvider,
+        name: r'studentDetailOverviewProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$studentDetailOverviewHash,
+        dependencies: StudentDetailOverviewFamily._dependencies,
+        allTransitiveDependencies:
+            StudentDetailOverviewFamily._allTransitiveDependencies,
+        studentId: studentId,
+      );
 
   StudentDetailOverviewProvider._internal(
     super._createNotifier, {
@@ -129,7 +119,7 @@ class StudentDetailOverviewProvider
   @override
   Override overrideWith(
     FutureOr<StudentDetailOverview> Function(StudentDetailOverviewRef provider)
-        create,
+    create,
   ) {
     return ProviderOverride(
       origin: this,

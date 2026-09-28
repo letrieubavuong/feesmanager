@@ -84,7 +84,10 @@ void main() {
       expect(overview.rows.length, equals(2));
       expect(overview.rows[0].classEntity.tenLop, equals('Lớp 11A1'));
       expect(overview.rows[0].activeStudentCount, equals(28));
-      expect(overview.rows[0].status, equals(ClassOperationalStatus.needsAttendance));
+      expect(
+        overview.rows[0].status,
+        equals(ClassOperationalStatus.needsAttendance),
+      );
       expect(overview.warnings.length, equals(2));
     });
   });

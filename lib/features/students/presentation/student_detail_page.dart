@@ -52,6 +52,7 @@ class StudentDetailPage extends ConsumerWidget {
         leading: const BackButton(),
         title: Text(l10n.studentDetailTitle),
         actions: [
+          const GlobalMenuButton(),
           overviewAsync.when(
             data: (overview) {
               final student = overview.student;
@@ -198,11 +199,7 @@ class StudentDetailPage extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          StudentAvatar(
-            gioiTinh: s.gioiTinh,
-            studentName: s.hoTen,
-            radius: 30,
-          ),
+          StudentAvatar(gioiTinh: s.gioiTinh, studentName: s.hoTen, radius: 30),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -225,7 +222,9 @@ class StudentDetailPage extends ConsumerWidget {
                     const SizedBox(width: 8),
                     AppStatusChip(
                       label: isStopped ? 'Ngừng học' : 'Đang học',
-                      color: isStopped ? AppColors.textMuted : AppColors.success,
+                      color: isStopped
+                          ? AppColors.textMuted
+                          : AppColors.success,
                       compact: true,
                     ),
                   ],
@@ -251,8 +250,7 @@ class StudentDetailPage extends ConsumerWidget {
                       ),
                       const SizedBox(width: 12),
                     ],
-                    if (s.sdtPhuHuynh != null &&
-                        s.sdtPhuHuynh!.isNotEmpty) ...[
+                    if (s.sdtPhuHuynh != null && s.sdtPhuHuynh!.isNotEmpty) ...[
                       const Icon(
                         Icons.phone_outlined,
                         size: 14,
@@ -525,10 +523,7 @@ class StudentDetailPage extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(
-          l10n.studentActiveClasses,
-          Icons.school_outlined,
-        ),
+        _buildSectionHeader(l10n.studentActiveClasses, Icons.school_outlined),
         const SizedBox(height: 10),
         if (overview.activeClasses.isEmpty)
           AppSectionCard(
@@ -553,9 +548,8 @@ class StudentDetailPage extends ConsumerWidget {
                   if (item.classEntity.id != null) {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => ClassDetailPage(
-                          classId: item.classEntity.id!,
-                        ),
+                        builder: (_) =>
+                            ClassDetailPage(classId: item.classEntity.id!),
                       ),
                     );
                   }
@@ -655,8 +649,9 @@ class StudentDetailPage extends ConsumerWidget {
         break;
     }
 
-    final monthFormatted =
-        fin.month.length == 7 ? '${fin.month.substring(5)}/${fin.month.substring(0, 4)}' : fin.month;
+    final monthFormatted = fin.month.length == 7
+        ? '${fin.month.substring(5)}/${fin.month.substring(0, 4)}'
+        : fin.month;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -758,15 +753,16 @@ class StudentDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildFinancialMetricCol(String label, String value, Color valueColor) {
+  Widget _buildFinancialMetricCol(
+    String label,
+    String value,
+    Color valueColor,
+  ) {
     return Column(
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 11,
-          ),
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
         ),
         const SizedBox(height: 4),
         FittedBox(
@@ -865,10 +861,12 @@ class StudentDetailPage extends ConsumerWidget {
                       const Divider(color: AppColors.border, height: 1),
                   itemBuilder: (context, index) {
                     final item = items[index];
-                    final dateStr =
-                        DateFormatter.formatDisplayDate(item.session.ngay);
-                    final shortDate =
-                        dateStr.length >= 5 ? dateStr.substring(0, 5) : dateStr;
+                    final dateStr = DateFormatter.formatDisplayDate(
+                      item.session.ngay,
+                    );
+                    final shortDate = dateStr.length >= 5
+                        ? dateStr.substring(0, 5)
+                        : dateStr;
 
                     return InkWell(
                       onTap: () {
@@ -966,7 +964,9 @@ class StudentDetailPage extends ConsumerWidget {
                         c.weekday != null) {
                       titleStr = _formatWeekday(c.weekday);
                     } else if (c.specificDate != null) {
-                      titleStr = DateFormatter.formatDisplayDate(c.specificDate!);
+                      titleStr = DateFormatter.formatDisplayDate(
+                        c.specificDate!,
+                      );
                     }
 
                     return Padding(
@@ -1019,19 +1019,13 @@ class StudentDetailPage extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(
-          l10n.studentNotes,
-          Icons.notes_outlined,
-        ),
+        _buildSectionHeader(l10n.studentNotes, Icons.notes_outlined),
         const SizedBox(height: 8),
         AppSectionCard(
           padding: const EdgeInsets.all(12),
           child: Text(
             student.ghiChu!,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 13,
-            ),
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
           ),
         ),
       ],
@@ -1067,10 +1061,7 @@ class StudentDetailPage extends ConsumerWidget {
             ],
           ),
         ),
-        if (trailing != null) ...[
-          const SizedBox(width: 8),
-          trailing,
-        ],
+        if (trailing != null) ...[const SizedBox(width: 8), trailing],
       ],
     );
   }
@@ -1106,7 +1097,10 @@ class StudentDetailPage extends ConsumerWidget {
     final activeClasses = classes.where((c) => !c.daLuuTru).toList();
 
     if (activeClasses.isEmpty) {
-      AppFeedback.showWarningSnackBar(context, 'Không có lớp học đang hoạt động.');
+      AppFeedback.showWarningSnackBar(
+        context,
+        'Không có lớp học đang hoạt động.',
+      );
       return;
     }
 
@@ -1161,9 +1155,7 @@ class StudentDetailPage extends ConsumerWidget {
                           initialStudentId: studentId,
                         ),
                       );
-                      ref.invalidate(
-                        studentDetailOverviewProvider(studentId),
-                      );
+                      ref.invalidate(studentDetailOverviewProvider(studentId));
                     },
                   );
                 },
@@ -1307,9 +1299,7 @@ class StudentDetailPage extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          isStopped
-              ? 'Cho hoạt động lại'
-              : l10n.studentStatusStopped,
+          isStopped ? 'Cho hoạt động lại' : l10n.studentStatusStopped,
         ),
         content: Text(
           isStopped

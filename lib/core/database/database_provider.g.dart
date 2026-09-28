@@ -13,8 +13,9 @@ String _$appDatabaseHash() => r'3d3a397d2ea952fc020fce0506793a5564e93530';
 final appDatabaseProvider = Provider<AppDatabase>.internal(
   appDatabase,
   name: r'appDatabaseProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$appDatabaseHash,
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$appDatabaseHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
@@ -27,8 +28,9 @@ String _$databaseHash() => r'fcf4d9cebe73d13233369acc11725ac6d28e23d8';
 final databaseProvider = FutureProvider<Database>.internal(
   database,
   name: r'databaseProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$databaseHash,
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$databaseHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );

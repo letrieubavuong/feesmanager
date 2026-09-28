@@ -524,7 +524,8 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
 
   Widget _buildAttendanceTab(BuildContext context) {
     final yearMonth = DateFormat('yyyy-MM').format(_timelineMonth);
-    final monthDisplay = 'THÁNG ${DateFormat('MM/yyyy').format(_timelineMonth)}';
+    final monthDisplay =
+        'THÁNG ${DateFormat('MM/yyyy').format(_timelineMonth)}';
 
     final timelineAsync = ref.watch(
       classAttendanceTimelineProvider(
@@ -543,7 +544,10 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                icon: const Icon(Icons.chevron_left, color: AppColors.cyanAccent),
+                icon: const Icon(
+                  Icons.chevron_left,
+                  color: AppColors.cyanAccent,
+                ),
                 onPressed: () {
                   setState(() {
                     _timelineMonth = DateTime(
@@ -563,7 +567,10 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.chevron_right, color: AppColors.cyanAccent),
+                icon: const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.cyanAccent,
+                ),
                 onPressed: () {
                   setState(() {
                     _timelineMonth = DateTime(
@@ -759,12 +766,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                   ),
                 ),
                 if (!isLast)
-                  Expanded(
-                    child: Container(
-                      width: 2,
-                      color: AppColors.border,
-                    ),
-                  ),
+                  Expanded(child: Container(width: 2, color: AppColors.border)),
               ],
             ),
           ),

@@ -66,7 +66,8 @@
   "langEnglish": "English",
   "settingsAppInfo": "APPLICATION INFO",
   "appVersion": "Version: 1.0.0+1",
-  "dbVersion": "Database: v13",
+  "dbVersion": "Database: v15",
+
   "studentFormTitleAdd": "Add Student",
   "studentFormTitleEdit": "Edit Student",
   "studentFullName": "Full Name *",

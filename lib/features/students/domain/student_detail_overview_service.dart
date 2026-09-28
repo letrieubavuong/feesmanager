@@ -4,11 +4,16 @@ import 'package:sqflite/sqflite.dart';
 import '../../../core/database/database_provider.dart';
 import '../../attendance/domain/attendance_record.dart';
 import '../../classes/domain/class.dart';
+import '../../classes/domain/class_service.dart';
 import '../../memberships/domain/membership.dart';
 import '../../payments/domain/payment.dart';
+import '../../payments/domain/payment_service.dart';
 import '../../schedule_conflicts/data/schedule_constraint_repository.dart';
 import '../../sessions/domain/class_session.dart';
 import '../../students/domain/student_service.dart';
+import '../../tuition/data/tuition_repository.dart';
+import '../../tuition/domain/tuition_service.dart';
+
 import 'student_detail_overview.dart';
 
 part 'student_detail_overview_service.g.dart';
@@ -16,10 +21,16 @@ part 'student_detail_overview_service.g.dart';
 class StudentDetailOverviewService {
   final Database _db;
   final StudentService _studentService;
+  final ClassService _classService;
+  final TuitionRepository _tuitionRepo;
+  final PaymentService _paymentService;
 
   StudentDetailOverviewService(
     this._db,
     this._studentService,
+    this._classService,
+    this._tuitionRepo,
+    this._paymentService,
   );
 
   Future<StudentDetailOverview> getOverview(
@@ -47,41 +58,94 @@ class StudentDetailOverviewService {
       firstActiveMembershipDate = DateTime.tryParse(minStr);
     }
 
-    // 3. Active Classes TODAY & Shifts
+    // 3. Active Memberships & Classes TODAY
     final activeMemRows = await _db.rawQuery(
       '''
-      SELECT t.*, l.id as lop_id, l.ten_lop, l.da_luu_tru 
-      FROM tham_gia_lop t 
-      JOIN lop l ON t.id_lop = l.id 
-      WHERE t.id_hoc_sinh = ? 
-        AND l.da_luu_tru = 0 
-        AND t.tu_ngay <= ? 
-        AND (t.den_ngay IS NULL OR t.den_ngay >= ?)
-      ORDER BY l.ten_lop ASC
+      SELECT * FROM tham_gia_lop
+      WHERE id_hoc_sinh = ? 
+        AND tu_ngay <= ? 
+        AND (den_ngay IS NULL OR den_ngay >= ?)
+      ORDER BY tu_ngay DESC
       ''',
       [studentId, todayStr, todayStr],
     );
 
-    final List<StudentActiveClassSummary> activeClasses = [];
+    final activeMemberships = activeMemRows
+        .map((m) => ClassMembership.fromMap(m))
+        .toList();
+    final activeClassIds = activeMemberships
+        .map((m) => m.idLop)
+        .toSet()
+        .toList();
 
-    for (final row in activeMemRows) {
-      final classId = row['id_lop'] as int;
-      final classEntity = ClassEntity.fromMap(row);
-      final membership = ClassMembership.fromMap(row);
+    final activeClassEntities = await _classService.getClassesByIds(
+      activeClassIds,
+    );
+    final activeClassMap = {
+      for (final c in activeClassEntities)
+        if (!c.daLuuTru) c.id!: c,
+    };
 
-      // Query active shift assignments for this student & class today
+    final validMemberships = activeMemberships
+        .where((m) => activeClassMap.containsKey(m.idLop))
+        .toList();
+    final validClassIds = validMemberships.map((m) => m.idLop).toSet().toList();
+
+    // Batch load shift assignments
+    final Map<int, List<Map<String, dynamic>>> assignmentsByClass = {};
+    if (validClassIds.isNotEmpty) {
+      final placeholders = List.filled(validClassIds.length, '?').join(',');
       final shiftRows = await _db.rawQuery(
         '''
-        SELECT pc.*, lh.thu_trong_tuan, lh.gio_bat_dau, lh.gio_ket_thuc 
-        FROM phan_ca_hoc_sinh pc 
-        JOIN lich_hoc lh ON pc.id_lich_hoc = lh.id 
-        WHERE pc.id_hoc_sinh = ? 
-          AND pc.id_lop = ? 
-          AND pc.tu_ngay <= ? 
+        SELECT pc.id_lop, pc.id_lich_hoc, pc.tu_ngay, pc.den_ngay,
+               lh.thu_trong_tuan, lh.gio_bat_dau, lh.gio_ket_thuc
+        FROM phan_ca_hoc_sinh pc
+        JOIN lich_hoc lh ON pc.id_lich_hoc = lh.id
+        WHERE pc.id_hoc_sinh = ?
+          AND pc.id_lop IN ($placeholders)
+          AND pc.tu_ngay <= ?
           AND (pc.den_ngay IS NULL OR pc.den_ngay >= ?)
         ''',
-        [studentId, classId, todayStr, todayStr],
+        [studentId, ...validClassIds, todayStr, todayStr],
       );
+      for (final row in shiftRows) {
+        final cId = row['id_lop'] as int;
+        assignmentsByClass.putIfAbsent(cId, () => []).add(row);
+      }
+    }
+
+    // Determine classes with zero assignments for fallback schedules
+    final classesWithoutAssignments = validClassIds
+        .where((id) => !assignmentsByClass.containsKey(id))
+        .toList();
+
+    final Map<int, List<Map<String, dynamic>>> fallbackSchedulesByClass = {};
+    if (classesWithoutAssignments.isNotEmpty) {
+      final placeholders = List.filled(
+        classesWithoutAssignments.length,
+        '?',
+      ).join(',');
+      final scheduleRows = await _db.rawQuery(
+        '''
+        SELECT * FROM lich_hoc
+        WHERE id_lop IN ($placeholders)
+          AND hieu_luc_tu <= ?
+          AND (hieu_luc_den IS NULL OR hieu_luc_den >= ?)
+        ORDER BY id_lop, thu_trong_tuan ASC, gio_bat_dau ASC
+        ''',
+        [...classesWithoutAssignments, todayStr, todayStr],
+      );
+      for (final row in scheduleRows) {
+        final cId = row['id_lop'] as int;
+        fallbackSchedulesByClass.putIfAbsent(cId, () => []).add(row);
+      }
+    }
+
+    final List<StudentActiveClassSummary> activeClasses = [];
+    for (final membership in validMemberships) {
+      final classId = membership.idLop;
+      final classEntity = activeClassMap[classId]!;
+      final shiftRows = assignmentsByClass[classId] ?? const [];
 
       String shiftText = '';
       if (shiftRows.length > 1) {
@@ -96,18 +160,7 @@ class StudentDetailOverviewService {
           shiftText = '$gbd–$gkt${thuStr.isNotEmpty ? ' • $thuStr' : ''}';
         }
       } else {
-        // Check effective schedules for class
-        final scheduleRows = await _db.rawQuery(
-          '''
-          SELECT * FROM lich_hoc 
-          WHERE id_lop = ? 
-            AND hieu_luc_tu <= ? 
-            AND (hieu_luc_den IS NULL OR hieu_luc_den >= ?)
-          ORDER BY thu_trong_tuan ASC
-          ''',
-          [classId, todayStr, todayStr],
-        );
-
+        final scheduleRows = fallbackSchedulesByClass[classId] ?? const [];
         if (scheduleRows.isNotEmpty) {
           final weekdays = scheduleRows
               .map((s) => _formatWeekday(s['thu_trong_tuan'] as int?))
@@ -133,41 +186,25 @@ class StudentDetailOverviewService {
     }
 
     // 4. Current-Month Financial Summary
-    final invoiceRows = await _db.rawQuery(
-      '''
-      SELECT * FROM hoc_phi_thang 
-      WHERE id_hoc_sinh = ? AND thang = ? AND chot_luc IS NOT NULL
-      ''',
-      [studentId, monthStr],
+    final invoices = await _tuitionRepo.getInvoicesInMonthRange(
+      fromMonth: monthStr,
+      toMonth: monthStr,
+      studentId: studentId,
+    );
+
+    final summaries = await _paymentService.getPaymentSummariesForInvoices(
+      invoices,
     );
 
     int finalizedDue = 0;
-    for (final invRow in invoiceRows) {
-      final val = invRow['so_tien_phai_thu'];
-      if (val is num) {
-        finalizedDue += val.toInt();
-      }
-    }
-
-    final paymentRows = await _db.rawQuery(
-      '''
-      SELECT * FROM thanh_toan 
-      WHERE id_hoc_sinh = ? AND strftime('%Y-%m', ngay_thu) = ?
-      ''',
-      [studentId, monthStr],
-    );
-
     int totalPaid = 0;
-    for (final pRow in paymentRows) {
-      final val = pRow['so_tien'];
-      if (val is num) {
-        totalPaid += val.toInt();
-      }
-    }
+    int remainingDebt = 0;
 
-    final remainingDebt = (finalizedDue - totalPaid) > 0
-        ? (finalizedDue - totalPaid)
-        : 0;
+    for (final summary in summaries) {
+      finalizedDue += summary.amountDue;
+      totalPaid += summary.totalPaid;
+      remainingDebt += summary.remainingDebt;
+    }
 
     // Check unfinalized classes for current month
     final unfinalizedRows = await _db.rawQuery(
@@ -188,7 +225,7 @@ class StudentDetailOverviewService {
     final unfinalizedCount = Sqflite.firstIntValue(unfinalizedRows) ?? 0;
 
     StudentFinancialDisplayState finState;
-    if (invoiceRows.isEmpty) {
+    if (invoices.isEmpty) {
       finState = StudentFinancialDisplayState.noFinalizedInvoices;
     } else if (totalPaid == 0 && remainingDebt > 0) {
       finState = StudentFinancialDisplayState.unpaid;
@@ -200,20 +237,19 @@ class StudentDetailOverviewService {
       finState = StudentFinancialDisplayState.hasUnfinalizedClasses;
     }
 
-    // Latest Payment (ever)
-    final latestPaymentRows = await _db.rawQuery(
-      '''
-      SELECT * FROM thanh_toan 
-      WHERE id_hoc_sinh = ? 
-      ORDER BY ngay_thu DESC, created_at DESC 
-      LIMIT 1
-      ''',
-      [studentId],
-    );
-
+    // Latest Payment inside current-month tuition card
     Payment? latestPayment;
-    if (latestPaymentRows.isNotEmpty) {
-      latestPayment = Payment.fromMap(latestPaymentRows.first);
+    final currentMonthPayments = summaries.expand((s) => s.payments).toList();
+
+    if (currentMonthPayments.isNotEmpty) {
+      currentMonthPayments.sort((a, b) {
+        final cmpDate = b.paymentDate.compareTo(a.paymentDate);
+        if (cmpDate != 0) return cmpDate;
+        final cmpCreated = b.createdAt.compareTo(a.createdAt);
+        if (cmpCreated != 0) return cmpCreated;
+        return (b.id ?? 0).compareTo(a.id ?? 0);
+      });
+      latestPayment = currentMonthPayments.first;
     }
 
     final financial = StudentMonthFinancialSummary(
@@ -221,7 +257,7 @@ class StudentDetailOverviewService {
       finalizedDue: finalizedDue,
       totalPaid: totalPaid,
       remainingDebt: remainingDebt,
-      finalizedInvoiceCount: invoiceRows.length,
+      finalizedInvoiceCount: invoices.length,
       unfinalizedClassCount: unfinalizedCount,
       previewUnfinalizedAmount: 0,
       state: finState,
@@ -323,7 +359,16 @@ Future<StudentDetailOverviewService> studentDetailOverviewService(
 ) async {
   final db = await ref.watch(databaseProvider.future);
   final studentService = await ref.watch(studentServiceProvider.future);
-  return StudentDetailOverviewService(db, studentService);
+  final classService = await ref.watch(classServiceProvider.future);
+  final tuitionRepo = await ref.watch(tuitionRepositoryProvider.future);
+  final paymentService = await ref.watch(paymentServiceProvider.future);
+  return StudentDetailOverviewService(
+    db,
+    studentService,
+    classService,
+    tuitionRepo,
+    paymentService,
+  );
 }
 
 @riverpod

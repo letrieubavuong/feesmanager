@@ -208,7 +208,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get appVersion => 'Phiên bản: 1.0.0+1';
 
   @override
-  String get dbVersion => 'Cơ sở dữ liệu: v13';
+  String get dbVersion => 'Cơ sở dữ liệu: v15';
 
   @override
   String get studentFormTitleAdd => 'Thêm học sinh';

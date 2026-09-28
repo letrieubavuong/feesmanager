@@ -139,10 +139,7 @@ class _CreateTuitionPolicyBottomSheetState
             ),
             const SizedBox(width: 12),
             Expanded(child: child),
-            if (trailing != null) ...[
-              trailing,
-              const SizedBox(width: 8),
-            ],
+            if (trailing != null) ...[trailing, const SizedBox(width: 8)],
           ],
         ),
       ),
@@ -231,14 +228,19 @@ class _CreateTuitionPolicyBottomSheetState
                           child: Text(
                             _inlineError!,
                             style: TextStyle(
-                              color: Theme.of(context).colorScheme.onErrorContainer,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onErrorContainer,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                         const SizedBox(height: 16),
                       ],
-                      _buildFieldLabel(l10n.policyFeePerSession, isRequired: true),
+                      _buildFieldLabel(
+                        l10n.policyFeePerSession,
+                        isRequired: true,
+                      ),
                       _buildCustomInputContainer(
                         icon: Icons.payments_rounded,
                         child: TextFormField(
@@ -278,7 +280,10 @@ class _CreateTuitionPolicyBottomSheetState
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildFieldLabel(l10n.policyStandardSessions, isRequired: true),
+                                _buildFieldLabel(
+                                  l10n.policyStandardSessions,
+                                  isRequired: true,
+                                ),
                                 _buildCustomInputContainer(
                                   icon: Icons.tag_rounded,
                                   child: TextFormField(
@@ -291,7 +296,9 @@ class _CreateTuitionPolicyBottomSheetState
                                     ),
                                     decoration: const InputDecoration(
                                       border: InputBorder.none,
-                                      contentPadding: EdgeInsets.symmetric(vertical: 12),
+                                      contentPadding: EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
                                       isDense: true,
                                     ),
                                     validator: (v) {
@@ -329,7 +336,9 @@ class _CreateTuitionPolicyBottomSheetState
                                         fontSize: 14,
                                       ),
                                       border: InputBorder.none,
-                                      contentPadding: EdgeInsets.symmetric(vertical: 12),
+                                      contentPadding: EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
                                       isDense: true,
                                     ),
                                   ),
@@ -340,7 +349,10 @@ class _CreateTuitionPolicyBottomSheetState
                         ],
                       ),
                       const SizedBox(height: 16),
-                      _buildFieldLabel(l10n.tuitionEffectiveFrom, isRequired: true),
+                      _buildFieldLabel(
+                        l10n.tuitionEffectiveFrom,
+                        isRequired: true,
+                      ),
                       _buildCustomInputContainer(
                         icon: Icons.calendar_month_rounded,
                         child: Text(
@@ -381,17 +393,29 @@ class _CreateTuitionPolicyBottomSheetState
                         decoration: BoxDecoration(
                           color: const Color(0xFFEFF6FF),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFC7DCFB), width: 1),
+                          border: Border.all(
+                            color: const Color(0xFFC7DCFB),
+                            width: 1,
+                          ),
                         ),
                         child: TextField(
                           controller: _noteController,
                           maxLines: 2,
                           minLines: 1,
-                          style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A)),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF0F172A),
+                          ),
                           decoration: const InputDecoration(
                             hintText: 'Ghi chú về chính sách học phí...',
-                            hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            hintStyle: TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 14,
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
                             border: InputBorder.none,
                           ),
                         ),
@@ -421,7 +445,9 @@ class _CreateTuitionPolicyBottomSheetState
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 backgroundColor: Colors.white,
                               ),
                               child: Text(
@@ -446,7 +472,9 @@ class _CreateTuitionPolicyBottomSheetState
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
                               child: _isSaving
                                   ? const SizedBox(

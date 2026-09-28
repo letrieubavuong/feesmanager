@@ -309,7 +309,8 @@ class _ScheduleFormBottomSheetState
         hour: int.parse(endParts[0]),
         minute: int.parse(endParts[1]),
       );
-      _effectiveFrom = DateFormat('yyyy-MM-dd').tryParse(s.hieuLucTu) ?? DateTime.now();
+      _effectiveFrom =
+          DateFormat('yyyy-MM-dd').tryParse(s.hieuLucTu) ?? DateTime.now();
       _ghiChuController.text = s.ghiChu ?? '';
     }
   }
@@ -412,10 +413,7 @@ class _ScheduleFormBottomSheetState
             ),
             const SizedBox(width: 12),
             Expanded(child: child),
-            if (trailing != null) ...[
-              trailing,
-              const SizedBox(width: 8),
-            ],
+            if (trailing != null) ...[trailing, const SizedBox(width: 8)],
           ],
         ),
       ),
@@ -504,7 +502,9 @@ class _ScheduleFormBottomSheetState
                           child: Text(
                             _inlineError!,
                             style: TextStyle(
-                              color: Theme.of(context).colorScheme.onErrorContainer,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onErrorContainer,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -554,7 +554,10 @@ class _ScheduleFormBottomSheetState
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildFieldLabel('Giờ bắt đầu', isRequired: true),
+                                _buildFieldLabel(
+                                  'Giờ bắt đầu',
+                                  isRequired: true,
+                                ),
                                 _buildCustomInputContainer(
                                   icon: Icons.access_time_filled_rounded,
                                   child: Text(
@@ -584,7 +587,10 @@ class _ScheduleFormBottomSheetState
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildFieldLabel('Giờ kết thúc', isRequired: true),
+                                _buildFieldLabel(
+                                  'Giờ kết thúc',
+                                  isRequired: true,
+                                ),
                                 _buildCustomInputContainer(
                                   icon: Icons.access_time_filled_rounded,
                                   child: Text(
@@ -653,18 +659,30 @@ class _ScheduleFormBottomSheetState
                         decoration: BoxDecoration(
                           color: const Color(0xFFEFF6FF),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFC7DCFB), width: 1),
+                          border: Border.all(
+                            color: const Color(0xFFC7DCFB),
+                            width: 1,
+                          ),
                         ),
                         child: TextField(
                           controller: _ghiChuController,
                           maxLines: 2,
                           minLines: 1,
                           onChanged: (_) => _onChanged(),
-                          style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A)),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF0F172A),
+                          ),
                           decoration: const InputDecoration(
                             hintText: 'Áp dụng từ tuần này.',
-                            hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            hintStyle: TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 14,
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
                             border: InputBorder.none,
                           ),
                         ),
@@ -694,7 +712,9 @@ class _ScheduleFormBottomSheetState
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 backgroundColor: Colors.white,
                               ),
                               child: const Text(
@@ -718,7 +738,9 @@ class _ScheduleFormBottomSheetState
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
                               child: _isSaving
                                   ? const SizedBox(
@@ -763,8 +785,9 @@ class _ScheduleFormBottomSheetState
           '${_start.hour.toString().padLeft(2, '0')}:${_start.minute.toString().padLeft(2, '0')}';
       final endStr =
           '${_end.hour.toString().padLeft(2, '0')}:${_end.minute.toString().padLeft(2, '0')}';
-      final ghiChu =
-          _ghiChuController.text.trim().isEmpty ? null : _ghiChuController.text.trim();
+      final ghiChu = _ghiChuController.text.trim().isEmpty
+          ? null
+          : _ghiChuController.text.trim();
 
       if (widget.scheduleToEdit != null) {
         final success = await ref

@@ -178,7 +178,11 @@ void main() {
     });
   }
 
-  Future<int> seedMembership(int studentId, int classId, String fromDate) async {
+  Future<int> seedMembership(
+    int studentId,
+    int classId,
+    String fromDate,
+  ) async {
     return await db.insert('tham_gia_lop', {
       'id_hoc_sinh': studentId,
       'id_lop': classId,
@@ -188,7 +192,11 @@ void main() {
     });
   }
 
-  Future<int> seedSession(int classId, String date, {String loai = 'CHINH'}) async {
+  Future<int> seedSession(
+    int classId,
+    String date, {
+    String loai = 'CHINH',
+  }) async {
     final existing = await db.query(
       'lich_hoc',
       where: 'id_lop = ? AND thu_trong_tuan = ?',
@@ -237,34 +245,44 @@ void main() {
     expect(items[1].session.ngay, '2026-09-10');
   });
 
-  test('5. DA_HOC: CO_MAT -> TRE creates audit row & updates diem_danh', () async {
-    final classId = await seedClass('Correction Class');
-    final studentId = await seedStudent('Nguyen Van A');
-    await seedMembership(studentId, classId, '2026-09-01');
-    final sessionId = await seedSession(classId, '2026-09-15');
+  test(
+    '5. DA_HOC: CO_MAT -> TRE creates audit row & updates diem_danh',
+    () async {
+      final classId = await seedClass('Correction Class');
+      final studentId = await seedStudent('Nguyen Van A');
+      await seedMembership(studentId, classId, '2026-09-01');
+      final sessionId = await seedSession(classId, '2026-09-15');
 
-    // Save initial draft CO_MAT and finalize
-    await attendanceService.saveDraft(sessionId, {studentId: AttendanceState.CO_MAT});
-    await attendanceService.finalizeSessionAttendance(sessionId);
+      // Save initial draft CO_MAT and finalize
+      await attendanceService.saveDraft(sessionId, {
+        studentId: AttendanceState.CO_MAT,
+      });
+      await attendanceService.finalizeSessionAttendance(sessionId);
 
-    // Correct finalized attendance: CO_MAT -> TRE
-    await attendanceService.correctFinalizedAttendance(
-      sessionId: sessionId,
-      states: {studentId: AttendanceState.TRE},
-      reason: 'Sửa nhầm trạng thái điểm danh',
-    );
+      // Correct finalized attendance: CO_MAT -> TRE
+      await attendanceService.correctFinalizedAttendance(
+        sessionId: sessionId,
+        states: {studentId: AttendanceState.TRE},
+        reason: 'Sửa nhầm trạng thái điểm danh',
+      );
 
-    // Check updated status in diem_danh
-    final record = await attendanceRepo.getBySessionAndStudent(sessionId, studentId);
-    expect(record?.trangThai, AttendanceStatus.TRE);
+      // Check updated status in diem_danh
+      final record = await attendanceRepo.getBySessionAndStudent(
+        sessionId,
+        studentId,
+      );
+      expect(record?.trangThai, AttendanceStatus.TRE);
 
-    // Check audit row in diem_danh_chinh_sua
-    final audits = await attendanceService.getCorrectionAuditsForSession(sessionId);
-    expect(audits.length, 1);
-    expect(audits.first.trangThaiCu, 'CO_MAT');
-    expect(audits.first.trangThaiMoi, 'TRE');
-    expect(audits.first.lyDo, 'Sửa nhầm trạng thái điểm danh');
-  });
+      // Check audit row in diem_danh_chinh_sua
+      final audits = await attendanceService.getCorrectionAuditsForSession(
+        sessionId,
+      );
+      expect(audits.length, 1);
+      expect(audits.first.trangThaiCu, 'CO_MAT');
+      expect(audits.first.trangThaiMoi, 'TRE');
+      expect(audits.first.lyDo, 'Sửa nhầm trạng thái điểm danh');
+    },
+  );
 
   test('6. Empty reason is rejected', () async {
     final classId = await seedClass('Test Class');
@@ -272,7 +290,9 @@ void main() {
     await seedMembership(studentId, classId, '2026-09-01');
     final sessionId = await seedSession(classId, '2026-09-15');
 
-    await attendanceService.saveDraft(sessionId, {studentId: AttendanceState.CO_MAT});
+    await attendanceService.saveDraft(sessionId, {
+      studentId: AttendanceState.CO_MAT,
+    });
     await attendanceService.finalizeSessionAttendance(sessionId);
 
     expect(
@@ -291,7 +311,9 @@ void main() {
     await seedMembership(studentId, classId, '2026-09-01');
     final sessionId = await seedSession(classId, '2026-09-15');
 
-    await attendanceService.saveDraft(sessionId, {studentId: AttendanceState.CO_MAT});
+    await attendanceService.saveDraft(sessionId, {
+      studentId: AttendanceState.CO_MAT,
+    });
     await attendanceService.finalizeSessionAttendance(sessionId);
 
     expect(
@@ -311,7 +333,9 @@ void main() {
     await seedMembership(studentId, classId, '2026-09-01');
     final sessionId = await seedSession(classId, '2026-09-15');
 
-    await attendanceService.saveDraft(sessionId, {studentId: AttendanceState.CO_MAT});
+    await attendanceService.saveDraft(sessionId, {
+      studentId: AttendanceState.CO_MAT,
+    });
     await attendanceService.finalizeSessionAttendance(sessionId);
 
     expect(
@@ -324,41 +348,50 @@ void main() {
     );
   });
 
-  test('11. Finalized invoice is preserved when attendance is corrected', () async {
-    final classId = await seedClass('Invoice Safety Class');
-    final studentId = await seedStudent('Hoc Sinh Invoice');
-    await seedMembership(studentId, classId, '2026-09-01');
-    final sessionId = await seedSession(classId, '2026-09-15');
+  test(
+    '11. Finalized invoice is preserved when attendance is corrected',
+    () async {
+      final classId = await seedClass('Invoice Safety Class');
+      final studentId = await seedStudent('Hoc Sinh Invoice');
+      await seedMembership(studentId, classId, '2026-09-01');
+      final sessionId = await seedSession(classId, '2026-09-15');
 
-    await attendanceService.saveDraft(sessionId, {studentId: AttendanceState.CO_MAT});
-    await attendanceService.finalizeSessionAttendance(sessionId);
+      await attendanceService.saveDraft(sessionId, {
+        studentId: AttendanceState.CO_MAT,
+      });
+      await attendanceService.finalizeSessionAttendance(sessionId);
 
-    // Create policy for class first
-    await db.insert('chinh_sach_hoc_phi', {
-      'id_lop': classId,
-      'hieu_luc_tu': '2026-09-01',
-      'so_buoi_chuan_thang': 12,
-      'hoc_phi_moi_buoi': 50000,
-      'created_at': '2026-09-01T00:00:00.000',
-      'updated_at': '2026-09-01T00:00:00.000',
-    });
+      // Create policy for class first
+      await db.insert('chinh_sach_hoc_phi', {
+        'id_lop': classId,
+        'hieu_luc_tu': '2026-09-01',
+        'so_buoi_chuan_thang': 12,
+        'hoc_phi_moi_buoi': 50000,
+        'created_at': '2026-09-01T00:00:00.000',
+        'updated_at': '2026-09-01T00:00:00.000',
+      });
 
-    final invoice = await invoiceService.finalizeStudentInvoice(
-      studentId,
-      classId,
-      '2026-09',
-    );
-    final initialDue = invoice.soTienPhaiThu;
+      final invoice = await invoiceService.finalizeStudentInvoice(
+        studentId,
+        classId,
+        '2026-09',
+      );
+      final initialDue = invoice.soTienPhaiThu;
 
-    // Correct attendance post-finalization
-    await attendanceService.correctFinalizedAttendance(
-      sessionId: sessionId,
-      states: {studentId: AttendanceState.NGHI_KHONG_PHEP},
-      reason: 'Sửa điểm danh sau khi chốt',
-    );
+      // Correct attendance post-finalization
+      await attendanceService.correctFinalizedAttendance(
+        sessionId: sessionId,
+        states: {studentId: AttendanceState.NGHI_KHONG_PHEP},
+        reason: 'Sửa điểm danh sau khi chốt',
+      );
 
-    // Verify stored finalized invoice did NOT silently change!
-    final invoiceAfter = await invoiceService.getInvoice(studentId, classId, '2026-09');
-    expect(invoiceAfter?.soTienPhaiThu, initialDue);
-  });
+      // Verify stored finalized invoice did NOT silently change!
+      final invoiceAfter = await invoiceService.getInvoice(
+        studentId,
+        classId,
+        '2026-09',
+      );
+      expect(invoiceAfter?.soTienPhaiThu, initialDue);
+    },
+  );
 }

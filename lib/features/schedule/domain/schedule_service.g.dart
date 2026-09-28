@@ -29,14 +29,14 @@ String _$assignmentRepositoryHash() =>
 @ProviderFor(assignmentRepository)
 final assignmentRepositoryProvider =
     FutureProvider<AssignmentRepository>.internal(
-  assignmentRepository,
-  name: r'assignmentRepositoryProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$assignmentRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+      assignmentRepository,
+      name: r'assignmentRepositoryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$assignmentRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 typedef AssignmentRepositoryRef = FutureProviderRef<AssignmentRepository>;
 String _$classScheduleServiceHash() =>
@@ -46,14 +46,14 @@ String _$classScheduleServiceHash() =>
 @ProviderFor(classScheduleService)
 final classScheduleServiceProvider =
     FutureProvider<ScheduleDomainService>.internal(
-  classScheduleService,
-  name: r'classScheduleServiceProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$classScheduleServiceHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+      classScheduleService,
+      name: r'classScheduleServiceProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$classScheduleServiceHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 typedef ClassScheduleServiceRef = FutureProviderRef<ScheduleDomainService>;
 // ignore_for_file: type=lint

@@ -264,8 +264,9 @@ class AttendanceService {
     if (sessionIds.isEmpty) return [];
 
     final records = await _repo.getBySessionIds(sessionIds);
-    final historySessionIds =
-        await _repo.getSessionsWithCorrectionHistory(sessionIds);
+    final historySessionIds = await _repo.getSessionsWithCorrectionHistory(
+      sessionIds,
+    );
 
     final recordMap = <int, List<AttendanceRecord>>{};
     for (final r in records) {
@@ -333,8 +334,9 @@ class AttendanceService {
       );
     }
 
-    final participantIds =
-        sheet.members.map((m) => m.rosterMember.student.id).toSet();
+    final participantIds = sheet.members
+        .map((m) => m.rosterMember.student.id)
+        .toSet();
     for (final entry in states.entries) {
       final studentId = entry.key;
       final newState = entry.value;
@@ -351,8 +353,9 @@ class AttendanceService {
         );
       }
 
-      final member = sheet.members
-          .firstWhere((m) => m.rosterMember.student.id == studentId);
+      final member = sheet.members.firstWhere(
+        (m) => m.rosterMember.student.id == studentId,
+      );
       final source = member.rosterMember.source;
 
       if (newState == AttendanceState.HOC_BU &&
@@ -377,8 +380,9 @@ class AttendanceService {
       for (final entry in states.entries) {
         final studentId = entry.key;
         final newState = entry.value;
-        final member = sheet.members
-            .firstWhere((m) => m.rosterMember.student.id == studentId);
+        final member = sheet.members.firstWhere(
+          (m) => m.rosterMember.student.id == studentId,
+        );
         final oldRecord = member.persistedRecord;
         final oldStatus = oldRecord?.trangThai;
         final newStatus = newState.toStatus();

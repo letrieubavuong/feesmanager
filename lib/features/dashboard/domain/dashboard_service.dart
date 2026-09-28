@@ -13,6 +13,7 @@ import '../../tuition/data/tuition_policy_repository.dart';
 import '../../tuition/data/tuition_repository.dart';
 import '../../tuition/domain/tuition_policy_service.dart';
 import '../../tuition/domain/tuition_service.dart';
+
 import 'dashboard_overview.dart';
 
 part 'dashboard_service.g.dart';
@@ -93,6 +94,7 @@ class DashboardService {
     final activeClasses = await _classService.getClasses(
       filter: ClassFilter.active,
     );
+    final activeClassIds = activeClasses.map((c) => c.id!).toSet();
     final finalizedInvoices = await _tuitionRepo.getInvoicesInMonthRange(
       fromMonth: monthStr,
       toMonth: monthStr,
@@ -101,15 +103,21 @@ class DashboardService {
       for (final inv in finalizedInvoices) '${inv.idHocSinh}_${inv.idLop}',
     };
 
+    final monthStart = '$monthStr-01';
+    final parsedStart = DateTime.parse(monthStart);
+    final monthEndDt = DateTime(parsedStart.year, parsedStart.month + 1, 0);
+    final monthEnd = DateFormat('yyyy-MM-dd').format(monthEndDt);
+
+    final monthMemberships = await _membershipService
+        .getMembershipsOverlappingDateRange(
+          fromDate: monthStart,
+          toDate: monthEnd,
+        );
+
     int unfinalizedCount = 0;
-    for (final cls in activeClasses) {
-      if (cls.id == null) continue;
-      final memberships = await _membershipService.getMembershipsForClassMonth(
-        cls.id!,
-        monthStr,
-      );
-      for (final m in memberships) {
-        final key = '${m.idHocSinh}_${cls.id}';
+    for (final m in monthMemberships) {
+      if (activeClassIds.contains(m.idLop)) {
+        final key = '${m.idHocSinh}_${m.idLop}';
         if (!finalizedSet.contains(key)) {
           unfinalizedCount++;
         }
@@ -275,18 +283,15 @@ class DashboardService {
     List<dynamic> activeClasses,
     String todayStr,
   ) async {
-    int count = 0;
-    for (final cls in activeClasses) {
-      if (cls.id == null) continue;
-      final policy = await _tuitionPolicyRepo.getEffectivePolicy(
-        cls.id!,
-        todayStr,
-      );
-      if (policy == null) {
-        count++;
-      }
-    }
-    return count;
+    final activeIds = activeClasses
+        .map((c) => c.id as int?)
+        .whereType<int>()
+        .toList();
+    if (activeIds.isEmpty) return 0;
+    final monthStartStr = '${todayStr.substring(0, 7)}-01';
+    final setWithPolicy = await _tuitionPolicyRepo
+        .getClassIdsWithEffectivePolicyOnDate(activeIds, monthStartStr);
+    return activeIds.where((id) => !setWithPolicy.contains(id)).length;
   }
 
   Future<List<DashboardActivity>> _fetchRecentActivities({
@@ -307,7 +312,7 @@ class DashboardService {
     );
     final finalizedInvoiceRows = await _db.query(
       'hoc_phi_thang',
-      where: "trang_thai = 'DA_CHOT'",
+      where: 'chot_luc IS NOT NULL',
       orderBy: 'chot_luc DESC',
       limit: limit,
     );
@@ -411,7 +416,7 @@ class DashboardService {
         DashboardActivity(
           type: DashboardActivityType.attendanceCorrection,
           title: 'Chỉnh sửa điểm danh',
-          subtitle: r['ly_do_chinh_sua'] as String? ?? 'Ghi nhận điều chỉnh',
+          subtitle: r['ly_do'] as String? ?? 'Ghi nhận điều chỉnh',
           timestamp: dt,
         ),
       );

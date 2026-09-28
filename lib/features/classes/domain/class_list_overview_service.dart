@@ -2,8 +2,14 @@ import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../core/database/database_provider.dart';
+import '../../payments/domain/payment_service.dart';
 import '../../schedule/domain/class_schedule.dart';
 import '../../sessions/domain/class_session.dart';
+import '../../tuition/data/tuition_policy_repository.dart';
+import '../../tuition/data/tuition_repository.dart';
+import '../../tuition/domain/tuition_policy_service.dart';
+import '../../tuition/domain/tuition_service.dart';
+
 import 'class.dart';
 import 'class_filter.dart';
 import 'class_list_overview.dart';
@@ -12,8 +18,16 @@ part 'class_list_overview_service.g.dart';
 
 class ClassListOverviewService {
   final Database _db;
+  final TuitionPolicyRepository _tuitionPolicyRepo;
+  final TuitionRepository _tuitionRepo;
+  final PaymentService _paymentService;
 
-  ClassListOverviewService(this._db);
+  ClassListOverviewService(
+    this._db,
+    this._tuitionPolicyRepo,
+    this._tuitionRepo,
+    this._paymentService,
+  );
 
   Future<ClassListOverview> getOverview(
     ClassFilter filter, {
@@ -90,8 +104,9 @@ class ClassListOverviewService {
       [todayStr],
     );
 
-    final todaySessions =
-        todaySessionMaps.map((m) => ClassSession.fromMap(m)).toList();
+    final todaySessions = todaySessionMaps
+        .map((m) => ClassSession.fromMap(m))
+        .toList();
 
     final todaySessionsByClass = <int, List<ClassSession>>{};
     for (final s in todaySessions) {
@@ -111,8 +126,9 @@ class ClassListOverviewService {
       [todayStr, todayStr],
     );
 
-    final pendingSessions =
-        pendingSessionMaps.map((m) => ClassSession.fromMap(m)).toList();
+    final pendingSessions = pendingSessionMaps
+        .map((m) => ClassSession.fromMap(m))
+        .toList();
 
     final overdueAttendanceSessions = <ClassSession>[];
     for (final s in pendingSessions) {
@@ -128,17 +144,12 @@ class ClassListOverviewService {
     final pendingAttendanceCount = overdueAttendanceSessions.length;
 
     // 6. Effective Tuition Policy Check per Class
-    final activePolicyClassMaps = await _db.rawQuery(
-      '''
-      SELECT DISTINCT id_lop FROM chinh_sach_hoc_phi
-      WHERE thang_bat_dau <= ? AND (thang_ket_thuc IS NULL OR thang_ket_thuc >= ?)
-      AND (da_luu_tru IS NULL OR da_luu_tru = 0)
-      ''',
-      [currentMonthStr, currentMonthStr],
-    );
-
-    final classesWithActivePolicy =
-        activePolicyClassMaps.map((m) => m['id_lop'] as int).toSet();
+    final allClassIds = classes.map((c) => c.id!).toList();
+    final classesWithActivePolicy = await _tuitionPolicyRepo
+        .getClassIdsWithEffectivePolicyOnDate(
+          allClassIds,
+          '$currentMonthStr-01',
+        );
 
     int missingTuitionPolicyCount = 0;
     final classesMissingPolicy = <int>[];
@@ -154,23 +165,21 @@ class ClassListOverviewService {
     }
 
     // 7. Current Month Finalized Debt per Class
-    final debtMaps = await _db.rawQuery(
-      '''
-      SELECT h.id_lop, (COALESCE(SUM(h.so_tien_phai_thu), 0) - COALESCE(SUM(p.so_tien), 0)) as debt
-      FROM hoc_phi_thang h
-      LEFT JOIN thanh_toan p ON h.id = p.id_hoa_don
-      WHERE h.thang = ? AND h.trang_thai_chot = 1
-      GROUP BY h.id_lop
-      ''',
-      [currentMonthStr],
+    final finalizedInvoices = await _tuitionRepo.getInvoicesInMonthRange(
+      fromMonth: currentMonthStr,
+      toMonth: currentMonthStr,
+    );
+
+    final summaries = await _paymentService.getPaymentSummariesForInvoices(
+      finalizedInvoices,
     );
 
     final classDebtMap = <int, int>{};
-    for (final row in debtMaps) {
-      final idLop = row['id_lop'] as int;
-      final debt = (row['debt'] as num).toInt();
-      if (debt > 0) {
-        classDebtMap[idLop] = debt;
+    for (final summary in summaries) {
+      final classId = summary.invoice.idLop;
+      if (summary.remainingDebt > 0) {
+        classDebtMap[classId] =
+            (classDebtMap[classId] ?? 0) + summary.remainingDebt;
       }
     }
 
@@ -213,7 +222,8 @@ class ClassListOverviewService {
           } else if (currentTimeStr.compareTo(nextSession.gioBatDau) >= 0 &&
               currentTimeStr.compareTo(nextSession.gioKetThuc) < 0) {
             status = ClassOperationalStatus.inProgress;
-            secondaryText = 'Đang diễn ra (${nextSession.gioBatDau}–${nextSession.gioKetThuc})';
+            secondaryText =
+                'Đang diễn ra (${nextSession.gioBatDau}–${nextSession.gioKetThuc})';
           } else {
             status = ClassOperationalStatus.upcomingToday;
             secondaryText = 'Hôm nay ${nextSession.gioBatDau}';
@@ -230,7 +240,9 @@ class ClassListOverviewService {
           secondaryText = 'Còn nợ ${currencyFmt.format(debt)}đ';
         } else {
           status = ClassOperationalStatus.normal;
-          secondaryText = scheduleText.isNotEmpty ? scheduleText : 'Bình thường';
+          secondaryText = scheduleText.isNotEmpty
+              ? scheduleText
+              : 'Bình thường';
         }
       }
 
@@ -286,13 +298,15 @@ class ClassListOverviewService {
         ''',
         [startOfWeekStr, endOfWeekStr],
       );
-      final classesWithWeekSessions =
-          weekSessionClassMaps.map((m) => m['id_lop'] as int).toSet();
+      final classesWithWeekSessions = weekSessionClassMaps
+          .map((m) => m['id_lop'] as int)
+          .toSet();
 
       final classesMissingWeekSessions = <int>[];
       for (final cls in classes) {
         if (!cls.daLuuTru) {
-          final hasSchedules = (schedulesByClass[cls.id!] ?? const []).isNotEmpty;
+          final hasSchedules =
+              (schedulesByClass[cls.id!] ?? const []).isNotEmpty;
           if (hasSchedules && !classesWithWeekSessions.contains(cls.id!)) {
             classesMissingWeekSessions.add(cls.id!);
           }
@@ -337,10 +351,12 @@ class ClassListOverviewService {
       final entry = byTime.entries.first;
       final timeRange = entry.key;
       final weekdays = entry.value..sort();
-      final weekdayParts = weekdays.map((w) {
-        if (w == 7) return 'CN';
-        return (w + 1).toString(); // 1->2 (Thứ 2), 2->3 (Thứ 3), etc.
-      }).join(',');
+      final weekdayParts = weekdays
+          .map((w) {
+            if (w == 7) return 'CN';
+            return (w + 1).toString(); // 1->2 (Thứ 2), 2->3 (Thứ 3), etc.
+          })
+          .join(',');
       return 'Thứ $weekdayParts • $timeRange';
     }
 
@@ -357,7 +373,17 @@ Future<ClassListOverviewService> classListOverviewService(
   ClassListOverviewServiceRef ref,
 ) async {
   final db = await ref.watch(databaseProvider.future);
-  return ClassListOverviewService(db);
+  final tuitionPolicyRepo = await ref.watch(
+    tuitionPolicyRepositoryProvider.future,
+  );
+  final tuitionRepo = await ref.watch(tuitionRepositoryProvider.future);
+  final paymentService = await ref.watch(paymentServiceProvider.future);
+  return ClassListOverviewService(
+    db,
+    tuitionPolicyRepo,
+    tuitionRepo,
+    paymentService,
+  );
 }
 
 @riverpod

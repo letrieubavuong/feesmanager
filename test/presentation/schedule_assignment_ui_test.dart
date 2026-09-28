@@ -7,13 +7,11 @@ import 'package:path/path.dart';
 import 'package:tuition2027/core/database/app_database.dart';
 import 'package:tuition2027/core/database/database_provider.dart';
 import 'package:tuition2027/features/classes/domain/class.dart';
-import 'package:tuition2027/features/classes/presentation/class_controller.dart';
 import 'package:tuition2027/features/schedule/domain/class_schedule.dart';
 import 'package:tuition2027/features/schedule/domain/student_shift_assignment.dart';
 import 'package:tuition2027/features/schedule/presentation/assignment_controller.dart';
 import 'package:tuition2027/features/schedule/presentation/assignment_tab.dart';
 import 'package:tuition2027/features/schedule/presentation/schedule_controller.dart';
-import 'package:tuition2027/features/schedule_conflicts/presentation/schedule_conflict_providers.dart';
 import 'package:tuition2027/features/memberships/domain/membership.dart';
 import 'package:tuition2027/features/students/domain/student_detail_overview.dart';
 import 'package:tuition2027/features/students/domain/student_detail_overview_service.dart';
@@ -257,7 +255,9 @@ void main() {
       ProviderScope(
         overrides: [
           databaseProvider.overrideWith((ref) async => db),
-          studentDetailOverviewProvider(1).overrideWith((ref) async => overview),
+          studentDetailOverviewProvider(
+            1,
+          ).overrideWith((ref) async => overview),
         ],
         child: const MaterialApp(
           home: Scaffold(body: StudentDetailPage(studentId: 1)),
