@@ -215,50 +215,164 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardGreeting.
   ///
   /// In vi, this message translates to:
-  /// **'Xin chào, Thầy/Cô!'**
+  /// **'Chào thầy cô!'**
   String get dashboardGreeting;
 
-  /// No description provided for @dashboardToday.
+  /// No description provided for @dashboardGreetingSubtitle.
   ///
   /// In vi, this message translates to:
-  /// **'Lịch học hôm nay'**
-  String get dashboardToday;
+  /// **'Chúc một ngày dạy học hiệu quả!'**
+  String get dashboardGreetingSubtitle;
 
-  /// No description provided for @dashboardQuickActions.
+  /// No description provided for @dashboardTodaySessions.
   ///
   /// In vi, this message translates to:
-  /// **'Thao tác nhanh'**
-  String get dashboardQuickActions;
+  /// **'Buổi hôm nay'**
+  String get dashboardTodaySessions;
 
-  /// No description provided for @dashboardOverview.
+  /// No description provided for @dashboardPendingAttendance.
   ///
   /// In vi, this message translates to:
-  /// **'Tổng quan trung tâm'**
-  String get dashboardOverview;
+  /// **'Cần điểm danh'**
+  String get dashboardPendingAttendance;
 
-  /// No description provided for @dashboardSearchPlaceholder.
+  /// No description provided for @dashboardUnfinalizedTuition.
   ///
   /// In vi, this message translates to:
-  /// **'Tìm học sinh hoặc lớp học...'**
-  String get dashboardSearchPlaceholder;
+  /// **'Chưa chốt học phí'**
+  String get dashboardUnfinalizedTuition;
 
-  /// No description provided for @dashboardNoSessionsToday.
+  /// No description provided for @dashboardOutstandingDebt.
   ///
   /// In vi, this message translates to:
-  /// **'Hôm nay không có buổi học nào.'**
-  String get dashboardNoSessionsToday;
+  /// **'Nợ cần xử lý'**
+  String get dashboardOutstandingDebt;
 
-  /// No description provided for @dashboardActiveClasses.
+  /// No description provided for @dashboardTasks.
   ///
   /// In vi, this message translates to:
-  /// **'Lớp học đang mở'**
-  String get dashboardActiveClasses;
+  /// **'Việc cần làm hôm nay'**
+  String get dashboardTasks;
 
-  /// No description provided for @dashboardActiveStudents.
+  /// No description provided for @dashboardAttendanceNow.
   ///
   /// In vi, this message translates to:
-  /// **'Học sinh đang học'**
-  String get dashboardActiveStudents;
+  /// **'Điểm danh ngay'**
+  String get dashboardAttendanceNow;
+
+  /// No description provided for @dashboardGenerateSessions.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sinh buổi học'**
+  String get dashboardGenerateSessions;
+
+  /// No description provided for @dashboardFinalizeTuition.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chốt học phí tháng'**
+  String get dashboardFinalizeTuition;
+
+  /// No description provided for @dashboardExportReport.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xuất báo cáo PDF'**
+  String get dashboardExportReport;
+
+  /// No description provided for @dashboardExportReportSubtitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo cáo học phí & điểm danh'**
+  String get dashboardExportReportSubtitle;
+
+  /// No description provided for @dashboardGenerateSessionsSubtitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo buổi từ lịch học định kỳ'**
+  String get dashboardGenerateSessionsSubtitle;
+
+  /// No description provided for @dashboardNoPendingSessions.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có buổi cần điểm danh'**
+  String get dashboardNoPendingSessions;
+
+  /// No description provided for @dashboardTodaySchedule.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch dạy hôm nay'**
+  String get dashboardTodaySchedule;
+
+  /// No description provided for @dashboardDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xong'**
+  String get dashboardDone;
+
+  /// No description provided for @dashboardNeedsAttendance.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần điểm danh'**
+  String get dashboardNeedsAttendance;
+
+  /// No description provided for @dashboardUpcoming.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp diễn ra'**
+  String get dashboardUpcoming;
+
+  /// No description provided for @dashboardInProgress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang diễn ra'**
+  String get dashboardInProgress;
+
+  /// No description provided for @dashboardCanceled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hủy'**
+  String get dashboardCanceled;
+
+  /// No description provided for @dashboardHoliday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nghỉ lễ'**
+  String get dashboardHoliday;
+
+  /// No description provided for @dashboardWarnings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cảnh báo nghiệp vụ'**
+  String get dashboardWarnings;
+
+  /// No description provided for @dashboardRecentActivity.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cập nhật gần đây'**
+  String get dashboardRecentActivity;
+
+  /// No description provided for @dashboardNoTasks.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có công việc cần làm.'**
+  String get dashboardNoTasks;
+
+  /// No description provided for @dashboardNoWarnings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có cảnh báo nghiệp vụ nào.'**
+  String get dashboardNoWarnings;
+
+  /// No description provided for @dashboardNoSessions.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay không có buổi dạy nào.'**
+  String get dashboardNoSessions;
+
+  /// No description provided for @dashboardNoActivity.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có hoạt động gần đây.'**
+  String get dashboardNoActivity;
 
   /// No description provided for @actionAddStudent.
   ///

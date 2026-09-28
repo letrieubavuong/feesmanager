@@ -7,7 +7,7 @@ part of 'attendance_controller.dart';
 // **************************************************************************
 
 String _$attendanceControllerHash() =>
-    r'e347ce8555ca38e5cdf1057d5bd252b826254762';
+    r'06df58ce77b69323ebf46a6b396bd8228f492c95';
 
 /// Copied from Dart SDK
 class _SystemHash {

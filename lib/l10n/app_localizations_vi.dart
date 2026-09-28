@@ -66,28 +66,86 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dashboardTitle => 'Trang chủ';
 
   @override
-  String get dashboardGreeting => 'Xin chào, Thầy/Cô!';
+  String get dashboardGreeting => 'Chào thầy cô!';
 
   @override
-  String get dashboardToday => 'Lịch học hôm nay';
+  String get dashboardGreetingSubtitle => 'Chúc một ngày dạy học hiệu quả!';
 
   @override
-  String get dashboardQuickActions => 'Thao tác nhanh';
+  String get dashboardTodaySessions => 'Buổi hôm nay';
 
   @override
-  String get dashboardOverview => 'Tổng quan trung tâm';
+  String get dashboardPendingAttendance => 'Cần điểm danh';
 
   @override
-  String get dashboardSearchPlaceholder => 'Tìm học sinh hoặc lớp học...';
+  String get dashboardUnfinalizedTuition => 'Chưa chốt học phí';
 
   @override
-  String get dashboardNoSessionsToday => 'Hôm nay không có buổi học nào.';
+  String get dashboardOutstandingDebt => 'Nợ cần xử lý';
 
   @override
-  String get dashboardActiveClasses => 'Lớp học đang mở';
+  String get dashboardTasks => 'Việc cần làm hôm nay';
 
   @override
-  String get dashboardActiveStudents => 'Học sinh đang học';
+  String get dashboardAttendanceNow => 'Điểm danh ngay';
+
+  @override
+  String get dashboardGenerateSessions => 'Sinh buổi học';
+
+  @override
+  String get dashboardFinalizeTuition => 'Chốt học phí tháng';
+
+  @override
+  String get dashboardExportReport => 'Xuất báo cáo PDF';
+
+  @override
+  String get dashboardExportReportSubtitle => 'Báo cáo học phí & điểm danh';
+
+  @override
+  String get dashboardGenerateSessionsSubtitle =>
+      'Tạo buổi từ lịch học định kỳ';
+
+  @override
+  String get dashboardNoPendingSessions => 'Không có buổi cần điểm danh';
+
+  @override
+  String get dashboardTodaySchedule => 'Lịch dạy hôm nay';
+
+  @override
+  String get dashboardDone => 'Đã xong';
+
+  @override
+  String get dashboardNeedsAttendance => 'Cần điểm danh';
+
+  @override
+  String get dashboardUpcoming => 'Sắp diễn ra';
+
+  @override
+  String get dashboardInProgress => 'Đang diễn ra';
+
+  @override
+  String get dashboardCanceled => 'Đã hủy';
+
+  @override
+  String get dashboardHoliday => 'Nghỉ lễ';
+
+  @override
+  String get dashboardWarnings => 'Cảnh báo nghiệp vụ';
+
+  @override
+  String get dashboardRecentActivity => 'Cập nhật gần đây';
+
+  @override
+  String get dashboardNoTasks => 'Không có công việc cần làm.';
+
+  @override
+  String get dashboardNoWarnings => 'Không có cảnh báo nghiệp vụ nào.';
+
+  @override
+  String get dashboardNoSessions => 'Hôm nay không có buổi dạy nào.';
+
+  @override
+  String get dashboardNoActivity => 'Chưa có hoạt động gần đây.';
 
   @override
   String get actionAddStudent => 'Thêm học sinh';

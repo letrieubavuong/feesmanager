@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../app/common_widgets/app_error_state.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
-import '../../../app/design_system/app_semantic_colors.dart';
+import '../../../app/common_widgets/navy_components.dart';
+import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/app_destination.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/navigation_controller.dart';
@@ -12,68 +14,26 @@ import '../../../l10n/app_localizations.dart';
 import '../../attendance/presentation/attendance_page.dart';
 import '../../classes/domain/class.dart';
 import '../../classes/presentation/class_controller.dart';
-import '../../classes/presentation/class_detail_page.dart';
-import '../../reports/presentation/report_controller.dart';
-import '../../reports/presentation/reports_page.dart';
+import '../../reports/domain/report_scope.dart';
+import '../../reports/domain/report_service.dart';
+import '../../reports/export/report_pdf_exporter.dart';
 import '../../sessions/domain/class_session.dart';
-import '../../sessions/domain/session_service.dart';
-import '../../students/domain/student.dart';
-import '../../students/presentation/student_controller.dart';
-import '../../students/presentation/student_detail_page.dart';
+import '../../sessions/domain/session_generation_service.dart';
+import '../../tuition/domain/invoice_service.dart';
+import '../domain/dashboard_overview.dart';
+import 'dashboard_controller.dart';
 
-final todaySessionsProvider = FutureProvider<List<ClassSession>>((ref) async {
-  final sessionService = await ref.watch(sessionServiceProvider.future);
-  final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-  return sessionService.getSessionsInDateRange(
-    fromDate: todayStr,
-    toDate: todayStr,
-  );
-});
-
-class DashboardPage extends ConsumerStatefulWidget {
+class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
   @override
-  ConsumerState<DashboardPage> createState() => _DashboardPageState();
-}
-
-class _DashboardPageState extends ConsumerState<DashboardPage> {
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final semantics =
-        theme.extension<AppSemanticColors>() ?? AppSemanticColors.dark;
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final dashboardAsync = ref.watch(dashboardControllerProvider);
     final now = DateTime.now();
 
-    final classesAsync = ref.watch(classListControllerProvider);
-    final studentsAsync = ref.watch(studentListControllerProvider);
-    final todaySessionsAsync = ref.watch(todaySessionsProvider);
-    final reportSummaryAsync = ref.watch(reportSummaryProvider);
-
-    final activeClassesCount = classesAsync.when(
-      data: (list) => list.where((c) => !c.daLuuTru).length,
-      loading: () => 0,
-      error: (_, __) => 0,
-    );
-
-    final activeStudentsCount = studentsAsync.when(
-      data: (list) => list.where((s) => !s.daLuuTru).length,
-      loading: () => 0,
-      error: (_, __) => 0,
-    );
-
     return Scaffold(
+      backgroundColor: AppColors.background,
       drawer: const AppGlobalDrawer(),
       appBar: AppBar(
         leading: const GlobalMenuButton(),
@@ -81,571 +41,1394 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: 'Làm mới',
             onPressed: () {
-              ref.invalidate(todaySessionsProvider);
-              ref.invalidate(classListControllerProvider);
-              ref.invalidate(studentListControllerProvider);
-              ref.invalidate(reportSummaryProvider);
+              ref.invalidate(dashboardControllerProvider);
             },
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- A. GREETING HEADER ---
-            Card(
-              color: colorScheme.surfaceContainerHigh,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 26,
-                      backgroundColor: colorScheme.primaryContainer,
-                      child: Icon(
-                        Icons.waving_hand,
-                        color: colorScheme.onPrimaryContainer,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Xin chào thầy!',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            DateFormatter.formatDisplayDate(now),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // --- B. GLOBAL SEARCH BAR ---
-            TextField(
-              key: UiKeys.dashboardSearchInput,
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: l10n.dashboardSearchPlaceholder,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                      )
-                    : null,
-              ),
-              onChanged: (val) => setState(() => _searchQuery = val.trim()),
-            ),
-
-            if (_searchQuery.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _buildSearchResults(
-                context,
-                l10n: l10n,
-                query: _searchQuery,
-                classes: classesAsync.asData?.value ?? [],
-                students: studentsAsync.asData?.value ?? [],
-              ),
-            ],
-
-            const SizedBox(height: 20),
-
-            // --- C. QUICK ACTIONS ---
-            Text(
-              'Thao tác nhanh',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 10),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
+      body: dashboardAsync.when(
+        data: (overview) {
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(dashboardControllerProvider);
+              await ref.read(dashboardControllerProvider.future);
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildCompactQuickAction(
-                    context,
-                    icon: Icons.check_circle_outline,
-                    label: 'Điểm danh',
-                    color: semantics.attendancePresent,
-                    onTap: () {
-                      ref
-                          .read(navigationControllerProvider.notifier)
-                          .goTo(AppDestinationId.classes);
-                    },
+                  // 1. GREETING BANNER
+                  _buildGreetingCard(context, l10n, now),
+
+                  const SizedBox(height: 16),
+
+                  // 2. 4 KPI CARDS
+                  _buildKpiGrid(context, ref, l10n, overview),
+
+                  const SizedBox(height: 20),
+
+                  // 3. BUSINESS QUICK ACTIONS
+                  _buildSectionHeader(l10n.dashboardTasks, Icons.task_alt),
+                  const SizedBox(height: 10),
+                  _buildQuickActionGrid(context, ref, l10n, overview),
+
+                  const SizedBox(height: 20),
+
+                  // 4. TODAY SCHEDULE TIMELINE
+                  _buildSectionHeader(
+                    l10n.dashboardTodaySchedule,
+                    Icons.calendar_today_outlined,
+                    trailing: Text(
+                      '${overview.todaySessions.length} buổi',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  _buildCompactQuickAction(
-                    context,
-                    key: UiKeys.dashboardQuickAddStudent,
-                    icon: Icons.people_outline,
-                    label: 'Học sinh',
-                    color: colorScheme.primary,
-                    onTap: () {
-                      ref
-                          .read(navigationControllerProvider.notifier)
-                          .goTo(AppDestinationId.students);
-                    },
+                  const SizedBox(height: 10),
+                  _buildTodaySchedule(context, l10n, overview.todaySessions),
+
+                  const SizedBox(height: 20),
+
+                  // 5. BUSINESS WARNINGS
+                  _buildSectionHeader(
+                    l10n.dashboardWarnings,
+                    Icons.warning_amber_rounded,
+                    color: AppColors.warning,
                   ),
-                  const SizedBox(width: 8),
-                  _buildCompactQuickAction(
-                    context,
-                    key: UiKeys.dashboardQuickManageClasses,
-                    icon: Icons.class_outlined,
-                    label: 'Lớp học',
-                    color: colorScheme.secondary,
-                    onTap: () {
-                      ref
-                          .read(navigationControllerProvider.notifier)
-                          .goTo(AppDestinationId.classes);
-                    },
+                  const SizedBox(height: 10),
+                  _buildWarningsList(context, ref, l10n, overview.warnings),
+
+                  const SizedBox(height: 20),
+
+                  // 6. RECENT ACTIVITIES
+                  _buildSectionHeader(
+                    l10n.dashboardRecentActivity,
+                    Icons.history,
                   ),
-                  const SizedBox(width: 8),
-                  _buildCompactQuickAction(
+                  const SizedBox(height: 10),
+                  _buildRecentActivities(
                     context,
-                    key: UiKeys.dashboardQuickViewTuition,
-                    icon: Icons.payments_outlined,
-                    label: 'Học phí',
-                    color: semantics.tuitionDraft,
-                    onTap: () {
-                      ref
-                          .read(navigationControllerProvider.notifier)
-                          .goTo(AppDestinationId.tuition);
-                    },
+                    l10n,
+                    overview.recentActivities,
                   ),
-                  const SizedBox(width: 8),
-                  _buildCompactQuickAction(
-                    context,
-                    key: UiKeys.dashboardQuickViewReports,
-                    icon: Icons.bar_chart_outlined,
-                    label: 'Báo cáo',
-                    color: semantics.warning,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ReportsPage()),
-                      );
-                    },
-                  ),
+
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
+          );
+        },
+        loading: () => const AppLoadingState(),
+        error: (error, stack) => AppErrorState(
+          title: l10n.commonError,
+          error: error.toString(),
+          onRetry: () => ref.invalidate(dashboardControllerProvider),
+        ),
+      ),
+    );
+  }
 
-            const SizedBox(height: 20),
+  Widget _buildGreetingCard(
+    BuildContext context,
+    AppLocalizations l10n,
+    DateTime now,
+  ) {
+    final dateFormatted = DateFormatter.formatDisplayDate(now);
 
-            // --- D. LỊCH HÔM NAY ---
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8,
-              runSpacing: 4,
+    return AppSectionCard(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0A84FF), Color(0xFF0066FF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.waving_hand_outlined,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Lịch hôm nay',
-                  style: theme.textTheme.titleSmall?.copyWith(
+                  l10n.dashboardGreeting,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
-                  'Lớp học: $activeClassesCount | Học sinh: $activeStudentsCount',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                  l10n.dashboardGreetingSubtitle,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
                   ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.event_outlined,
+                      color: AppColors.cyanAccent,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      dateFormatted,
+                      style: const TextStyle(
+                        color: AppColors.cyanAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            todaySessionsAsync.when(
-              data: (sessions) {
-                if (sessions.isEmpty) {
-                  return Card(
-                    color: colorScheme.surfaceContainer,
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Center(
-                        child: Text(
-                          'Hôm nay không có buổi học nào',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }
-
-                return Column(
-                  children: sessions.map((session) {
-                    final isDone = session.trangThai == SessionStatus.DA_HOC;
-                    final isCanceled =
-                        session.trangThai == SessionStatus.HUY ||
-                        session.trangThai == SessionStatus.NGHI_LE;
-
-                    Color statusColor = semantics.warning;
-                    String statusLabel = 'Chưa điểm danh';
-                    if (isDone) {
-                      statusColor = semantics.success;
-                      statusLabel = 'Đã chốt';
-                    } else if (isCanceled) {
-                      statusColor = colorScheme.outline;
-                      statusLabel = session.trangThai.name;
-                    }
-
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: statusColor.withValues(alpha: 0.15),
-                          child: Icon(
-                            Icons.schedule,
-                            color: statusColor,
-                            size: 20,
-                          ),
-                        ),
-                        title: Consumer(
-                          builder: (context, ref, _) {
-                            final clsAsync = ref.watch(
-                              classDetailProvider(session.idLop),
-                            );
-                            return clsAsync.when(
-                              data: (c) => Text(
-                                c?.tenLop ?? 'Lớp #${session.idLop}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              loading: () => Text('Lớp #${session.idLop}'),
-                              error: (_, __) => Text('Lớp #${session.idLop}'),
-                            );
-                          },
-                        ),
-                        subtitle: Text(
-                          '${session.gioBatDau} - ${session.gioKetThuc} • ${session.loai.name}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            statusLabel,
-                            style: TextStyle(
-                              color: statusColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                        onTap: () {
-                          if (session.id != null && !isCanceled) {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    AttendancePage(sessionId: session.id!),
-                              ),
-                            );
-                          } else {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    ClassDetailPage(classId: session.idLop),
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
-              loading: () => const AppLoadingState(),
-              error: (err, _) => Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text('Lỗi tải lịch hôm nay: $err'),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // --- E. HỌC PHÍ THÁNG KPI SUMMARY ---
-            Text(
-              'Học phí tháng này',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 10),
-            reportSummaryAsync.when(
-              data: (summary) {
-                final fmt = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
-                return Row(
-                  children: [
-                    Expanded(
-                      child: _buildMetricTile(
-                        context,
-                        title: 'Phải thu',
-                        value: fmt.format(summary.financial.totalInvoiced),
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildMetricTile(
-                        context,
-                        title: 'Đã thu',
-                        value: fmt.format(summary.financial.totalPaid),
-                        color: semantics.success,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildMetricTile(
-                        context,
-                        title: 'Còn nợ',
-                        value: fmt.format(
-                          summary.financial.totalOutstandingDebt,
-                        ),
-                        color: semantics.error,
-                      ),
-                    ),
-                  ],
-                );
-              },
-              loading: () => const AppLoadingState(),
-              error: (_, __) => Row(
-                children: [
-                  Expanded(
-                    child: _buildMetricTile(
-                      context,
-                      title: 'Phải thu',
-                      value: '0 đ',
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildMetricTile(
-                      context,
-                      title: 'Đã thu',
-                      value: '0 đ',
-                      color: semantics.success,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildMetricTile(
-                      context,
-                      title: 'Còn nợ',
-                      value: '0 đ',
-                      color: semantics.error,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildCompactQuickAction(
+  Widget _buildKpiGrid(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    DashboardOverview overview,
+  ) {
+    final fmt = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 400;
+
+        final kpi1 = _buildKpiTile(
+          title: l10n.dashboardTodaySessions,
+          value: '${overview.todaySessionCount}',
+          icon: Icons.calendar_month_outlined,
+          color: AppColors.cyanAccent,
+        );
+
+        final kpi2 = InkWell(
+          onTap: () =>
+              _showPendingAttendanceBottomSheet(context, ref, overview),
+          borderRadius: BorderRadius.circular(12),
+          child: _buildKpiTile(
+            title: l10n.dashboardPendingAttendance,
+            value: '${overview.pendingAttendanceCount}',
+            icon: Icons.assignment_late_outlined,
+            color: overview.pendingAttendanceCount > 0
+                ? AppColors.warning
+                : AppColors.success,
+          ),
+        );
+
+        final kpi3 = _buildKpiTile(
+          title: l10n.dashboardUnfinalizedTuition,
+          value: '${overview.unfinalizedTuitionStudentCount}',
+          icon: Icons.fact_check_outlined,
+          color: AppColors.primary,
+        );
+
+        final kpi4 = _buildKpiTile(
+          title: l10n.dashboardOutstandingDebt,
+          value: fmt.format(overview.outstandingDebt),
+          icon: Icons.account_balance_wallet_outlined,
+          color: overview.outstandingDebt > 0
+              ? AppColors.error
+              : AppColors.success,
+        );
+
+        if (isNarrow) {
+          return Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(child: kpi1),
+                  const SizedBox(width: 8),
+                  Expanded(child: kpi2),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(child: kpi3),
+                  const SizedBox(width: 8),
+                  Expanded(child: kpi4),
+                ],
+              ),
+            ],
+          );
+        } else {
+          return Row(
+            children: [
+              Expanded(child: kpi1),
+              const SizedBox(width: 8),
+              Expanded(child: kpi2),
+              const SizedBox(width: 8),
+              Expanded(child: kpi3),
+              const SizedBox(width: 8),
+              Expanded(child: kpi4),
+            ],
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildKpiTile({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(icon, color: color, size: 16),
+            ],
+          ),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(
+    String title,
+    IconData icon, {
+    Color? color,
+    Widget? trailing,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: color ?? AppColors.cyanAccent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (trailing != null) ...[const SizedBox(width: 8), trailing],
+      ],
+    );
+  }
+
+  Widget _buildQuickActionGrid(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    DashboardOverview overview,
+  ) {
+    final tasksMap = {for (var t in overview.tasks) t.type: t};
+
+    final taskAttendance = tasksMap[DashboardTaskType.attendanceNow];
+    final taskGenerate = tasksMap[DashboardTaskType.generateSessions];
+    final taskFinalize = tasksMap[DashboardTaskType.finalizeTuition];
+    final taskReport = tasksMap[DashboardTaskType.exportReportPdf];
+
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      childAspectRatio: 1.85,
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
+      children: [
+        _buildActionCard(
+          context,
+          key: UiKeys.dashboardQuickAddStudent, // reuse key cleanly
+          title: taskAttendance?.title ?? l10n.dashboardAttendanceNow,
+          subtitle: taskAttendance?.subtitle ?? '',
+          icon: Icons.task_alt,
+          color: AppColors.cyanAccent,
+          onTap: () => _handleAttendanceNow(context, ref, overview),
+        ),
+        _buildActionCard(
+          context,
+          key: UiKeys.dashboardQuickManageClasses,
+          title: taskGenerate?.title ?? l10n.dashboardGenerateSessions,
+          subtitle:
+              taskGenerate?.subtitle ?? l10n.dashboardGenerateSessionsSubtitle,
+          icon: Icons.auto_mode,
+          color: AppColors.success,
+          onTap: () => _showGenerateSessionsBottomSheet(context, ref),
+        ),
+        _buildActionCard(
+          context,
+          key: UiKeys.dashboardQuickViewTuition,
+          title: taskFinalize?.title ?? l10n.dashboardFinalizeTuition,
+          subtitle: taskFinalize?.subtitle ?? '',
+          icon: Icons.fact_check_outlined,
+          color: AppColors.warning,
+          onTap: () => _showFinalizeTuitionBottomSheet(context, ref),
+        ),
+        _buildActionCard(
+          context,
+          key: UiKeys.dashboardQuickViewReports,
+          title: taskReport?.title ?? l10n.dashboardExportReport,
+          subtitle: taskReport?.subtitle ?? l10n.dashboardExportReportSubtitle,
+          icon: Icons.picture_as_pdf_outlined,
+          color: const Color(0xFF8B5CF6),
+          onTap: () => _handleExportReportPdf(context, ref),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionCard(
     BuildContext context, {
     Key? key,
+    required String title,
+    required String subtitle,
     required IconData icon,
-    required String label,
     required Color color,
     required VoidCallback onTap,
   }) {
-    final theme = Theme.of(context);
-    return InkWell(
+    return AppSectionCard(
       key: key,
+      padding: const EdgeInsets.all(10),
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: 64,
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 22),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMetricTile(
-    BuildContext context, {
-    required String title,
-    required String value,
-    required Color color,
-  }) {
-    final theme = Theme.of(context);
-    return Card(
-      color: theme.colorScheme.surfaceContainer,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontSize: 11,
-              ),
-            ),
-            const SizedBox(height: 4),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                value,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
+                if (subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 10,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
             ),
-          ],
-        ),
+          ),
+          const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 16),
+        ],
       ),
     );
   }
 
-  Widget _buildSearchResults(
-    BuildContext context, {
-    required AppLocalizations l10n,
-    required String query,
-    required List<ClassEntity> classes,
-    required List<Student> students,
-  }) {
-    final theme = Theme.of(context);
-    final lowerQuery = query.toLowerCase();
-
-    final matchedClasses = classes
-        .where(
-          (c) => !c.daLuuTru && c.tenLop.toLowerCase().contains(lowerQuery),
-        )
-        .toList();
-
-    final matchedStudents = students
-        .where((s) => !s.daLuuTru && s.hoTen.toLowerCase().contains(lowerQuery))
-        .toList();
-
-    if (matchedClasses.isEmpty && matchedStudents.isEmpty) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+  Widget _buildTodaySchedule(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<DashboardTodaySession> sessions,
+  ) {
+    if (sessions.isEmpty) {
+      return AppSectionCard(
+        padding: const EdgeInsets.all(16),
+        child: Center(
           child: Text(
-            l10n.searchNoResults,
-            style: TextStyle(color: theme.colorScheme.outline),
+            l10n.dashboardNoSessions,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
           ),
         ),
       );
     }
 
-    return Card(
-      elevation: 3,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Text(
-              l10n.searchResults,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const Divider(height: 1),
-          if (matchedClasses.isNotEmpty) ...[
-            ...matchedClasses.map(
-              (c) => ListTile(
-                leading: const Icon(Icons.class_outlined),
-                title: Text(c.tenLop),
-                subtitle: Text(l10n.navClasses),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ClassDetailPage(classId: c.id!),
+    final now = DateTime.now();
+    final currentTimeStr = DateFormat('HH:mm').format(now);
+
+    return AppSectionCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: sessions.length,
+        separatorBuilder: (context, index) =>
+            const Divider(color: AppColors.border, height: 1),
+        itemBuilder: (context, index) {
+          final item = sessions[index];
+          final s = item.session;
+
+          Color statusColor;
+          String statusText;
+
+          if (s.trangThai == SessionStatus.DA_HOC) {
+            statusColor = AppColors.success;
+            statusText = l10n.dashboardDone;
+          } else if (s.trangThai == SessionStatus.HUY) {
+            statusColor = AppColors.textMuted;
+            statusText = l10n.dashboardCanceled;
+          } else if (s.trangThai == SessionStatus.NGHI_LE) {
+            statusColor = AppColors.textMuted;
+            statusText = l10n.dashboardHoliday;
+          } else if (s.gioKetThuc.compareTo(currentTimeStr) < 0) {
+            statusColor = AppColors.error;
+            statusText = l10n.dashboardNeedsAttendance;
+          } else if (s.gioBatDau.compareTo(currentTimeStr) <= 0 &&
+              s.gioKetThuc.compareTo(currentTimeStr) >= 0) {
+            statusColor = AppColors.warning;
+            statusText = l10n.dashboardInProgress;
+          } else {
+            statusColor = AppColors.cyanAccent;
+            statusText = l10n.dashboardUpcoming;
+          }
+
+          return InkWell(
+            onTap: () {
+              if (s.id != null &&
+                  s.trangThai != SessionStatus.HUY &&
+                  s.trangThai != SessionStatus.NGHI_LE) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => AttendancePage(sessionId: s.id!),
+                  ),
+                );
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
                     ),
-                  );
-                },
-              ),
-            ),
-          ],
-          if (matchedStudents.isNotEmpty) ...[
-            ...matchedStudents.map(
-              (s) => ListTile(
-                leading: const Icon(Icons.person_outline),
-                title: Text(s.hoTen),
-                subtitle: Text(l10n.navStudents),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => StudentDetailPage(studentId: s.id!),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    '${s.gioBatDau}–${s.gioKetThuc}',
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
-                  );
-                },
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      item.className,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      statusText,
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ],
+          );
+        },
       ),
     );
+  }
+
+  Widget _buildWarningsList(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    List<DashboardWarning> warnings,
+  ) {
+    if (warnings.isEmpty) {
+      return AppSectionCard(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.check_circle_outline,
+              color: AppColors.success,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                l10n.dashboardNoWarnings,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: warnings.map((w) {
+        return AppSectionCard(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          onTap: () => _handleWarningTap(context, ref, w),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.warning_amber_rounded,
+                  color: AppColors.warning,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      w.title,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      w.description,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                color: AppColors.textMuted,
+                size: 18,
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildRecentActivities(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<DashboardActivity> activities,
+  ) {
+    if (activities.isEmpty) {
+      return AppSectionCard(
+        padding: const EdgeInsets.all(14),
+        child: Center(
+          child: Text(
+            l10n.dashboardNoActivity,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return AppSectionCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: activities.length,
+        separatorBuilder: (context, index) =>
+            const Divider(color: AppColors.border, height: 1),
+        itemBuilder: (context, index) {
+          final act = activities[index];
+
+          IconData icon;
+          Color color;
+
+          switch (act.type) {
+            case DashboardActivityType.paymentRecorded:
+              icon = Icons.payments_outlined;
+              color = AppColors.success;
+              break;
+            case DashboardActivityType.paymentCorrection:
+              icon = Icons.edit_note;
+              color = AppColors.warning;
+              break;
+            case DashboardActivityType.sessionCompleted:
+              icon = Icons.task_alt;
+              color = AppColors.cyanAccent;
+              break;
+            case DashboardActivityType.tuitionFinalized:
+              icon = Icons.fact_check_outlined;
+              color = AppColors.primary;
+              break;
+            case DashboardActivityType.attendanceCorrection:
+              icon = Icons.edit_calendar;
+              color = AppColors.warning;
+              break;
+          }
+
+          final timeStr = DateFormat('HH:mm dd/MM').format(act.timestamp);
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: color, size: 16),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        act.title,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        act.subtitle,
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 11,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  timeStr,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // --- HANDLERS & BOTTOM SHEETS ---
+
+  void _handleAttendanceNow(
+    BuildContext context,
+    WidgetRef ref,
+    DashboardOverview overview,
+  ) {
+    final pendingSessions = overview.todaySessions
+        .where((s) => s.session.trangThai == SessionStatus.DU_KIEN)
+        .toList();
+
+    if (pendingSessions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Hôm nay không có buổi cần điểm danh.')),
+      );
+      return;
+    }
+
+    if (pendingSessions.length == 1) {
+      final sId = pendingSessions.first.session.id;
+      if (sId != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => AttendancePage(sessionId: sId)),
+        );
+      }
+    } else {
+      _showPendingAttendanceBottomSheet(context, ref, overview);
+    }
+  }
+
+  void _showPendingAttendanceBottomSheet(
+    BuildContext context,
+    WidgetRef ref,
+    DashboardOverview overview,
+  ) {
+    final pendingSessions = overview.todaySessions
+        .where((s) => s.session.trangThai == SessionStatus.DU_KIEN)
+        .toList();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'BUỔI HỌC CẦN ĐIỂM DANH HÔM NAY',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: AppColors.textMuted),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const Divider(color: AppColors.border),
+                if (pendingSessions.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(
+                      child: Text(
+                        'Không có buổi học nào cần điểm danh.',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: pendingSessions.length,
+                      separatorBuilder: (_, __) =>
+                          const Divider(color: AppColors.border, height: 1),
+                      itemBuilder: (context, index) {
+                        final item = pendingSessions[index];
+                        final s = item.session;
+                        return ListTile(
+                          title: Text(
+                            item.className,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Giờ: ${s.gioBatDau}–${s.gioKetThuc} • Loạ: ${s.loai.name}',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                          trailing: const Icon(
+                            Icons.chevron_right,
+                            color: AppColors.textMuted,
+                          ),
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            if (s.id != null) {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      AttendancePage(sessionId: s.id!),
+                                ),
+                              );
+                            }
+                          },
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showGenerateSessionsBottomSheet(BuildContext context, WidgetRef ref) {
+    DateTime fromDate = DateTime.now();
+    DateTime toDate = DateTime.now().add(const Duration(days: 14));
+    ClassEntity? selectedClass;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Consumer(
+              builder: (context, ref, _) {
+                final classesAsync = ref.watch(classListControllerProvider);
+
+                return SafeArea(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      top: 16,
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'SINH BUỔI HỌC TỪ LỊCH ĐỊNH KỲ',
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.close,
+                                color: AppColors.textMuted,
+                              ),
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                          ],
+                        ),
+                        const Divider(color: AppColors.border),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Chọn lớp học *',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        classesAsync.when(
+                          data: (classes) {
+                            final activeClasses = classes
+                                .where((c) => !c.daLuuTru)
+                                .toList();
+                            return DropdownButtonFormField<ClassEntity>(
+                              initialValue: selectedClass,
+                              hint: const Text('Chọn lớp học...'),
+                              items: activeClasses.map((c) {
+                                return DropdownMenuItem(
+                                  value: c,
+                                  child: Text(c.tenLop),
+                                );
+                              }).toList(),
+                              onChanged: (val) {
+                                setState(() => selectedClass = val);
+                              },
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                              ),
+                            );
+                          },
+                          loading: () => const AppLoadingState(),
+                          error: (e, _) => Text('Lỗi: $e'),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Từ ngày',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  OutlinedButton.icon(
+                                    icon: const Icon(
+                                      Icons.calendar_today,
+                                      size: 14,
+                                    ),
+                                    label: Text(
+                                      DateFormat('yyyy-MM-dd').format(fromDate),
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                    onPressed: () async {
+                                      final picked = await showDatePicker(
+                                        context: context,
+                                        initialDate: fromDate,
+                                        firstDate: DateTime(2020),
+                                        lastDate: DateTime(2030),
+                                      );
+                                      if (picked != null) {
+                                        setState(() => fromDate = picked);
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Đến ngày',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  OutlinedButton.icon(
+                                    icon: const Icon(
+                                      Icons.calendar_today,
+                                      size: 14,
+                                    ),
+                                    label: Text(
+                                      DateFormat('yyyy-MM-dd').format(toDate),
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                    onPressed: () async {
+                                      final picked = await showDatePicker(
+                                        context: context,
+                                        initialDate: toDate,
+                                        firstDate: DateTime(2020),
+                                        lastDate: DateTime(2030),
+                                      );
+                                      if (picked != null) {
+                                        setState(() => toDate = picked);
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            icon: const Icon(Icons.bolt, color: Colors.white),
+                            label: const Text(
+                              'Sinh buổi học',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            onPressed: selectedClass == null
+                                ? null
+                                : () async {
+                                    try {
+                                      final genService = await ref.read(
+                                        sessionGenerationServiceProvider.future,
+                                      );
+                                      final res = await genService
+                                          .generateForClass(
+                                            classId: selectedClass!.id!,
+                                            fromDate: fromDate,
+                                            toDate: toDate,
+                                          );
+
+                                      if (context.mounted) {
+                                        Navigator.of(context).pop();
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Đã sinh ${res.createdCount} buổi học mới cho ${selectedClass!.tenLop}',
+                                            ),
+                                          ),
+                                        );
+                                        ref.invalidate(
+                                          dashboardControllerProvider,
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(content: Text('Lỗi: $e')),
+                                        );
+                                      }
+                                    }
+                                  },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showFinalizeTuitionBottomSheet(BuildContext context, WidgetRef ref) {
+    final monthStr = DateFormat('yyyy-MM').format(DateTime.now());
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Consumer(
+              builder: (context, ref, _) {
+                final classesAsync = ref.watch(classListControllerProvider);
+
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'CHỐT HỌC PHÍ THÁNG $monthStr',
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.close,
+                            color: AppColors.textMuted,
+                          ),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                    const Divider(color: AppColors.border),
+                    classesAsync.when(
+                      data: (classes) {
+                        final activeClasses = classes
+                            .where((c) => !c.daLuuTru)
+                            .toList();
+                        if (activeClasses.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(
+                              child: Text('Không có lớp học đang hoạt động.'),
+                            ),
+                          );
+                        }
+
+                        return Flexible(
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: activeClasses.length,
+                            separatorBuilder: (_, __) => const Divider(
+                              color: AppColors.border,
+                              height: 1,
+                            ),
+                            itemBuilder: (context, index) {
+                              final cls = activeClasses[index];
+                              return ListTile(
+                                title: Text(
+                                  cls.tenLop,
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  'Môn ${cls.monHoc ?? "—"} • Khối ${cls.khoi ?? "—"}',
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                trailing: const Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 14,
+                                  color: AppColors.textMuted,
+                                ),
+                                onTap: () async {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (dlgCtx) => AlertDialog(
+                                      title: const Text(
+                                        'Xác nhận chốt học phí',
+                                      ),
+                                      content: Text(
+                                        'Bạn có chắc muốn chốt học phí tháng $monthStr cho cả lớp ${cls.tenLop}?',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(dlgCtx).pop(false),
+                                          child: const Text('Hủy'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () =>
+                                              Navigator.of(dlgCtx).pop(true),
+                                          child: const Text('Chốt ngay'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+
+                                  if (confirm == true && context.mounted) {
+                                    try {
+                                      final invoiceService = await ref.read(
+                                        invoiceServiceProvider.future,
+                                      );
+                                      final invoices = await invoiceService
+                                          .finalizeClassInvoices(
+                                            cls.id!,
+                                            monthStr,
+                                          );
+
+                                      if (context.mounted) {
+                                        Navigator.of(context).pop();
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Đã chốt ${invoices.length} hóa đơn học phí cho lớp ${cls.tenLop}',
+                                            ),
+                                          ),
+                                        );
+                                        ref.invalidate(
+                                          dashboardControllerProvider,
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Không thể chốt: ${e.toString().replaceAll("Exception: ", "")}',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                        );
+                      },
+                      loading: () => const AppLoadingState(),
+                      error: (e, _) => Text('Lỗi: $e'),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _handleExportReportPdf(BuildContext context, WidgetRef ref) async {
+    final now = DateTime.now();
+    final monthStr = DateFormat('yyyy-MM').format(now);
+    final scope = ReportScope.forMonth(month: monthStr);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Đang tạo báo cáo PDF tháng $monthStr...')),
+    );
+
+    try {
+      final reportService = await ref.read(reportServiceProvider.future);
+      final summary = await reportService.generateReport(scope);
+      final pdfExporter = ref.read(reportPdfExporterProvider);
+
+      await pdfExporter.export(summary);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi xuất PDF: $e')));
+      }
+    }
+  }
+
+  void _handleWarningTap(
+    BuildContext context,
+    WidgetRef ref,
+    DashboardWarning warning,
+  ) {
+    switch (warning.type) {
+      case DashboardWarningType.unassignedStudents:
+        ref
+            .read(navigationControllerProvider.notifier)
+            .goTo(AppDestinationId.classes);
+        break;
+      case DashboardWarningType.overdueAttendance:
+        final overviewAsync = ref.read(dashboardControllerProvider);
+        if (overviewAsync.hasValue) {
+          _showPendingAttendanceBottomSheet(context, ref, overviewAsync.value!);
+        }
+        break;
+      case DashboardWarningType.missingTuitionPolicy:
+        ref
+            .read(navigationControllerProvider.notifier)
+            .goTo(AppDestinationId.classes);
+        break;
+    }
   }
 }

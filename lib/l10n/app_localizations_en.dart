@@ -66,28 +66,86 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardTitle => 'Home';
 
   @override
-  String get dashboardGreeting => 'Welcome, Teacher!';
+  String get dashboardGreeting => 'Welcome Teacher!';
 
   @override
-  String get dashboardToday => 'Today\'s Schedule';
+  String get dashboardGreetingSubtitle => 'Have a productive teaching day!';
 
   @override
-  String get dashboardQuickActions => 'Quick Actions';
+  String get dashboardTodaySessions => 'Today\'s Sessions';
 
   @override
-  String get dashboardOverview => 'Center Overview';
+  String get dashboardPendingAttendance => 'Needs Attendance';
 
   @override
-  String get dashboardSearchPlaceholder => 'Search students or classes...';
+  String get dashboardUnfinalizedTuition => 'Unfinalized Tuition';
 
   @override
-  String get dashboardNoSessionsToday => 'No sessions scheduled for today.';
+  String get dashboardOutstandingDebt => 'Outstanding Debt';
 
   @override
-  String get dashboardActiveClasses => 'Active Classes';
+  String get dashboardTasks => 'Today\'s Tasks';
 
   @override
-  String get dashboardActiveStudents => 'Active Students';
+  String get dashboardAttendanceNow => 'Mark Attendance Now';
+
+  @override
+  String get dashboardGenerateSessions => 'Generate Sessions';
+
+  @override
+  String get dashboardFinalizeTuition => 'Finalize Monthly Tuition';
+
+  @override
+  String get dashboardExportReport => 'Export PDF Report';
+
+  @override
+  String get dashboardExportReportSubtitle => 'Tuition & Attendance Report';
+
+  @override
+  String get dashboardGenerateSessionsSubtitle =>
+      'Generate sessions from recurring schedule';
+
+  @override
+  String get dashboardNoPendingSessions => 'No pending sessions for attendance';
+
+  @override
+  String get dashboardTodaySchedule => 'Today\'s Schedule';
+
+  @override
+  String get dashboardDone => 'Completed';
+
+  @override
+  String get dashboardNeedsAttendance => 'Needs Attendance';
+
+  @override
+  String get dashboardUpcoming => 'Upcoming';
+
+  @override
+  String get dashboardInProgress => 'In Progress';
+
+  @override
+  String get dashboardCanceled => 'Canceled';
+
+  @override
+  String get dashboardHoliday => 'Holiday';
+
+  @override
+  String get dashboardWarnings => 'Business Warnings';
+
+  @override
+  String get dashboardRecentActivity => 'Recent Activity';
+
+  @override
+  String get dashboardNoTasks => 'No pending tasks.';
+
+  @override
+  String get dashboardNoWarnings => 'No business warnings.';
+
+  @override
+  String get dashboardNoSessions => 'No teaching sessions scheduled for today.';
+
+  @override
+  String get dashboardNoActivity => 'No recent activity.';
 
   @override
   String get actionAddStudent => 'Add Student';
