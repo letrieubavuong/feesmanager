@@ -71,7 +71,6 @@ class ClassListOverviewService {
     // 3. Batch Schedules per Class
     final scheduleMaps = await _db.query(
       'lich_hoc',
-      where: 'da_xoa = 0',
       orderBy: 'id_lop, thu_trong_tuan, gio_bat_dau',
     );
 
