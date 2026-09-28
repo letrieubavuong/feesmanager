@@ -144,53 +144,119 @@ class AssignmentTab extends ConsumerWidget {
                               builder: (sheetContext) => SafeArea(
                                 child: FractionallySizedBox(
                                   heightFactor: 0.7,
-                                  child: Column(children: [
-                                    Padding(padding: const EdgeInsets.all(16),
-                                      child: Row(children: [
-                                        Expanded(child: Text(
-                                          '${_formatWeekday(schedule.thuTrongTuan, l10n)} • ${schedule.gioBatDau} - ${schedule.gioKetThuc}',
-                                          style: const TextStyle(color: AppColors.textPrimary,
-                                            fontSize: 17, fontWeight: FontWeight.bold))),
-                                        IconButton(onPressed: () => Navigator.pop(sheetContext),
-                                          icon: const Icon(Icons.close)),
-                                      ])),
-                                    const Divider(height: 1, color: AppColors.border),
-                                    Expanded(child: activeShiftAssignments.isEmpty
-                                      ? Center(child: Text(l10n.assignmentNoStudentsInShift,
-                                          style: const TextStyle(color: AppColors.textMuted)))
-                                      : ListView.builder(
-                                          padding: const EdgeInsets.all(12),
-                                          itemCount: activeShiftAssignments.length,
-                                          itemBuilder: (context, rowIndex) => _AssignmentRowItem(
-                                            assignment: activeShiftAssignments[rowIndex],
-                                            classId: classId,
-                                            isArchived: isArchived || !isActiveSchedule,
-                                            schedules: schedules,
-                                          ),
-                                        )),
-                                  ]),
+                                  child: Column(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                '${_formatWeekday(schedule.thuTrongTuan, l10n)} • ${schedule.gioBatDau} - ${schedule.gioKetThuc}',
+                                                style: const TextStyle(
+                                                  color: AppColors.textPrimary,
+                                                  fontSize: 17,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            IconButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(sheetContext),
+                                              icon: const Icon(Icons.close),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const Divider(
+                                        height: 1,
+                                        color: AppColors.border,
+                                      ),
+                                      Expanded(
+                                        child: activeShiftAssignments.isEmpty
+                                            ? Center(
+                                                child: Text(
+                                                  l10n.assignmentNoStudentsInShift,
+                                                  style: const TextStyle(
+                                                    color: AppColors.textMuted,
+                                                  ),
+                                                ),
+                                              )
+                                            : ListView.builder(
+                                                padding: const EdgeInsets.all(
+                                                  12,
+                                                ),
+                                                itemCount:
+                                                    activeShiftAssignments
+                                                        .length,
+                                                itemBuilder:
+                                                    (
+                                                      context,
+                                                      rowIndex,
+                                                    ) => _AssignmentRowItem(
+                                                      assignment:
+                                                          activeShiftAssignments[rowIndex],
+                                                      classId: classId,
+                                                      isArchived:
+                                                          isArchived ||
+                                                          !isActiveSchedule,
+                                                      schedules: schedules,
+                                                    ),
+                                              ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                            child: Padding(padding: const EdgeInsets.all(16),
-                              child: Row(children: [
-                                Text(_formatWeekday(schedule.thuTrongTuan, l10n),
-                                  style: const TextStyle(color: AppColors.cyanAccent,
-                                    fontWeight: FontWeight.bold)),
-                                const SizedBox(width: 12),
-                                Expanded(child: Text('${schedule.gioBatDau} - ${schedule.gioKetThuc}',
-                                  style: const TextStyle(color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.bold))),
-                                Text(l10n.assignmentStudentCount(activeShiftAssignments.length),
-                                  style: const TextStyle(color: AppColors.textSecondary)),
-                                if (!isArchived && isActiveSchedule)
-                                  IconButton(tooltip: l10n.assignmentAddStudent,
-                                    onPressed: () => _showAddAssignmentDialog(context, ref,
-                                      initialScheduleId: schedule.id!),
-                                    icon: const Icon(Icons.person_add_outlined,
-                                      color: AppColors.cyanAccent)),
-                                const Icon(Icons.chevron_right, color: AppColors.textMuted),
-                              ]),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    _formatWeekday(schedule.thuTrongTuan, l10n),
+                                    style: const TextStyle(
+                                      color: AppColors.cyanAccent,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      '${schedule.gioBatDau} - ${schedule.gioKetThuc}',
+                                      style: const TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    l10n.assignmentStudentCount(
+                                      activeShiftAssignments.length,
+                                    ),
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  if (!isArchived && isActiveSchedule)
+                                    IconButton(
+                                      tooltip: l10n.assignmentAddStudent,
+                                      onPressed: () => _showAddAssignmentDialog(
+                                        context,
+                                        ref,
+                                        initialScheduleId: schedule.id!,
+                                      ),
+                                      icon: const Icon(
+                                        Icons.person_add_outlined,
+                                        color: AppColors.cyanAccent,
+                                      ),
+                                    ),
+                                  const Icon(
+                                    Icons.chevron_right,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         );

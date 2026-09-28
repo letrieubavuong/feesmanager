@@ -397,7 +397,9 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
     }
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không thể mở liên kết trên thiết bị này.')),
+        const SnackBar(
+          content: Text('Không thể mở liên kết trên thiết bị này.'),
+        ),
       );
     }
   }

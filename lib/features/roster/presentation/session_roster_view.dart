@@ -67,12 +67,22 @@ class SessionRosterView extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('$weekday, $formattedDate',
-                  style: const TextStyle(color: AppColors.textPrimary,
-                    fontSize: 15, fontWeight: FontWeight.bold)),
+                Text(
+                  '$weekday, $formattedDate',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text('${s.gioBatDau} – ${s.gioKetThuc} • ${_getTypeLabel(s.loai)} • ${_getStatusLabel(s.trangThai)}',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                Text(
+                  '${s.gioBatDau} – ${s.gioKetThuc} • ${_getTypeLabel(s.loai)} • ${_getStatusLabel(s.trangThai)}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
@@ -161,30 +171,49 @@ class SessionRosterView extends ConsumerWidget {
     return AppSectionCard(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(children: [
-        StudentAvatar(
-          gioiTinh: member.student.gioiTinh,
-          studentName: member.student.hoTen,
-          radius: 20,
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(member.student.hoTen, maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: AppColors.textPrimary,
-                fontSize: 14, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 3),
-            Text(member.source == RosterInclusionSource.SINGLE_SHIFT_MEMBERSHIP
-                ? 'Tham gia lớp (1 ca)' : 'Phân ca trực tiếp',
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-          ],
-        )),
-        if (member.student.daLuuTru)
-          const AppStatusChip(label: 'Lưu trữ',
-            color: AppColors.textMuted, compact: true),
-      ]),
+      child: Row(
+        children: [
+          StudentAvatar(
+            gioiTinh: member.student.gioiTinh,
+            studentName: member.student.hoTen,
+            radius: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  member.student.hoTen,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  member.source == RosterInclusionSource.SINGLE_SHIFT_MEMBERSHIP
+                      ? 'Tham gia lớp (1 ca)'
+                      : 'Phân ca trực tiếp',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (member.student.daLuuTru)
+            const AppStatusChip(
+              label: 'Lưu trữ',
+              color: AppColors.textMuted,
+              compact: true,
+            ),
+        ],
+      ),
     );
   }
 

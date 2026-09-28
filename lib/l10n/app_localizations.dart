@@ -215,7 +215,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardGreeting.
   ///
   /// In vi, this message translates to:
-  /// **'Chào thầy cô!'**
+  /// **'Xin chào!'**
   String get dashboardGreeting;
 
   /// No description provided for @dashboardGreetingSubtitle.
