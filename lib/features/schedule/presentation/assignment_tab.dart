@@ -6,6 +6,7 @@ import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../classes/presentation/class_controller.dart';
 import '../../students/domain/student.dart';
 import '../../students/presentation/student_detail_page.dart';
 import '../domain/bulk_assignment_result.dart';
@@ -1362,8 +1363,15 @@ class _ChangeShiftBottomSheetState
     extends ConsumerState<ChangeShiftBottomSheet> {
   int? _newScheduleId;
   DateTime _effectiveDate = DateTime.now();
+  final TextEditingController _noteController = TextEditingController();
   bool _isSaving = false;
   String? _error;
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
 
   bool get _canSubmit {
     if (_isSaving || _newScheduleId == null) {
@@ -1406,7 +1414,7 @@ class _ChangeShiftBottomSheetState
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppColors.error.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
             ),
             child: Column(
@@ -1442,7 +1450,7 @@ class _ChangeShiftBottomSheetState
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppColors.warning.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: AppColors.warning.withValues(alpha: 0.3),
               ),
@@ -1482,10 +1490,10 @@ class _ChangeShiftBottomSheetState
         } else {
           return Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: AppColors.success.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: const Row(
               children: [
@@ -1531,7 +1539,7 @@ class _ChangeShiftBottomSheetState
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.error.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
           'Lỗi kiểm tra trùng lịch: $e',
@@ -1555,81 +1563,225 @@ class _ChangeShiftBottomSheetState
     final student = ref
         .watch(studentDetailProvider(widget.assignment.idHocSinh))
         .value;
+    final classEntity = ref.watch(classDetailProvider(widget.classId)).value;
 
     final selectedNewScheduleValue =
         otherSchedules.any((s) => s.id == _newScheduleId)
         ? _newScheduleId
         : null;
 
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 20,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-        ),
+    final classNameText = classEntity != null
+        ? (classEntity.tenLop.startsWith('Lớp')
+              ? classEntity.tenLop
+              : 'Lớp ${classEntity.tenLop}')
+        : '';
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                l10n.changeShiftTitle,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              // 1. TOP HEADER WITH CLOSE BUTTON
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    l10n.changeShiftTitle,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.close,
+                      color: AppColors.textSecondary,
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                '${l10n.creditsHeaderStudent}: ${student?.hoTen ?? 'N/A'}',
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 13,
-                ),
+              const SizedBox(height: 12),
+
+              // 2. STUDENT PROFILE HEADER
+              Row(
+                children: [
+                  StudentAvatar(
+                    gioiTinh: student?.gioiTinh,
+                    studentName: student?.hoTen,
+                    radius: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          student?.hoTen ?? '...',
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (classNameText.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            classNameText,
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
+
               if (_error != null) ...[
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: AppColors.error.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Text(
-                    _error!,
-                    style: const TextStyle(
-                      color: AppColors.error,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: AppColors.error,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),
               ],
+
+              // 3. CA HỌC *
+              RichText(
+                text: const TextSpan(
+                  text: 'Ca học ',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: '*',
+                      style: TextStyle(color: AppColors.error),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
               DropdownButtonFormField<int>(
                 initialValue: selectedNewScheduleValue,
+                isExpanded: true,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+                dropdownColor: AppColors.surfaceHigh,
                 decoration: InputDecoration(
-                  labelText: l10n.changeShiftSelectNew,
-                  border: const OutlineInputBorder(),
+                  hintText: l10n.changeShiftSelectNew,
+                  hintStyle: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 13,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.wb_sunny_outlined,
+                    color: Colors.amber,
+                    size: 20,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 14,
+                  ),
+                  filled: true,
+                  fillColor: AppColors.surfaceHigh.withValues(alpha: 0.3),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: AppColors.primary,
+                      width: 1.5,
+                    ),
+                  ),
                 ),
                 items: otherSchedules.map((s) {
                   final weekdayName = _formatWeekday(s.thuTrongTuan, l10n);
                   return DropdownMenuItem(
                     value: s.id!,
-                    child: Text('$weekdayName: ${s.gioBatDau}-${s.gioKetThuc}'),
+                    child: Text(
+                      'Ca ${weekdayName.toLowerCase()} (${s.gioBatDau} - ${s.gioKetThuc})',
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   );
                 }).toList(),
                 onChanged: (v) => setState(() => _newScheduleId = v),
               ),
               const SizedBox(height: 16),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.changeShiftEffectiveDate),
-                subtitle: Text(DateFormatter.formatDisplayDate(_effectiveDate)),
-                trailing: const Icon(
-                  Icons.calendar_today,
-                  color: AppColors.cyanAccent,
+
+              // 4. NGÀY ÁP DỤNG *
+              RichText(
+                text: const TextSpan(
+                  text: 'Ngày áp dụng ',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: '*',
+                      style: TextStyle(color: AppColors.error),
+                    ),
+                  ],
                 ),
+              ),
+              const SizedBox(height: 6),
+              InkWell(
                 onTap: () async {
                   final picked = await showDatePicker(
                     context: context,
@@ -1657,72 +1809,197 @@ class _ChangeShiftBottomSheetState
                     });
                   }
                 },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceHigh.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.calendar_month_outlined,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          DateFormatter.formatDisplayDate(_effectiveDate),
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.close,
+                        color: AppColors.textMuted,
+                        size: 18,
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
+
+              // 5. GHI CHÚ
+              const Text(
+                'Ghi chú',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _noteController,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Điều chỉnh theo thời khóa biểu mới.',
+                  hintStyle: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 13,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 14,
+                  ),
+                  filled: true,
+                  fillColor: AppColors.surfaceHigh.withValues(alpha: 0.3),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: AppColors.primary,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 6. CONFLICT PREVIEW CARD
               _buildConflictPreviewCard(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
+
+              // 7. ACTION BUTTONS (Hủy / Lưu thay đổi)
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(
-                    onPressed: _isSaving ? null : () => Navigator.pop(context),
-                    child: Text(l10n.commonCancel),
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                      ),
+                      onPressed: _isSaving
+                          ? null
+                          : () => Navigator.pop(context),
+                      child: Text(
+                        l10n.commonCancel,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: _canSubmit
-                        ? () async {
-                            if (_newScheduleId == null) {
-                              setState(
-                                () => _error = l10n.changeShiftValidationSelect,
-                              );
-                              return;
-                            }
-                            setState(() {
-                              _isSaving = true;
-                              _error = null;
-                            });
-                            try {
-                              await ref
-                                  .read(
-                                    classAssignmentControllerProvider(
-                                      widget.classId,
-                                    ).notifier,
-                                  )
-                                  .changeShift(
-                                    studentId: widget.assignment.idHocSinh,
-                                    oldAssignmentId: widget.assignment.id!,
-                                    newScheduleId: _newScheduleId!,
-                                    effectiveDate: _effectiveDate,
-                                  );
-                              if (context.mounted) {
-                                AppFeedback.showSuccessSnackBar(
-                                  context,
-                                  l10n.changeShiftSuccess,
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                      ),
+                      onPressed: _canSubmit
+                          ? () async {
+                              if (_newScheduleId == null) {
+                                setState(
+                                  () =>
+                                      _error = l10n.changeShiftValidationSelect,
                                 );
-                                Navigator.pop(context);
+                                return;
                               }
-                            } catch (e) {
-                              if (context.mounted) {
-                                setState(() {
-                                  _isSaving = false;
-                                  _error = e.toString().replaceAll(
-                                    'Exception: ',
-                                    '',
+                              setState(() {
+                                _isSaving = true;
+                                _error = null;
+                              });
+                              try {
+                                await ref
+                                    .read(
+                                      classAssignmentControllerProvider(
+                                        widget.classId,
+                                      ).notifier,
+                                    )
+                                    .changeShift(
+                                      studentId: widget.assignment.idHocSinh,
+                                      oldAssignmentId: widget.assignment.id!,
+                                      newScheduleId: _newScheduleId!,
+                                      effectiveDate: _effectiveDate,
+                                    );
+                                if (context.mounted) {
+                                  AppFeedback.showSuccessSnackBar(
+                                    context,
+                                    l10n.changeShiftSuccess,
                                   );
-                                });
+                                  Navigator.pop(context);
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  setState(() {
+                                    _isSaving = false;
+                                    _error = e.toString().replaceAll(
+                                      'Exception: ',
+                                      '',
+                                    );
+                                  });
+                                }
                               }
                             }
-                          }
-                        : null,
-                    icon: _isSaving
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.check),
-                    label: Text(l10n.commonConfirm),
+                          : null,
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Lưu thay đổi',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
                   ),
                 ],
               ),
