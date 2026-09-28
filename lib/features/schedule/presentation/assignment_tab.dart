@@ -662,8 +662,14 @@ class _AddAssignmentBottomSheetState
                   final activeSchedules = schedules
                       .where((s) => s.isEffectiveOn(_startDate))
                       .toList();
+                  final selectedValue = activeSchedules.any(
+                    (s) => s.id == _selectedScheduleId,
+                  )
+                      ? _selectedScheduleId
+                      : null;
+
                   return DropdownButtonFormField<int>(
-                    initialValue: _selectedScheduleId,
+                    initialValue: selectedValue,
                     decoration: InputDecoration(
                       labelText: l10n.bulkAssignmentSelectShift,
                       border: const OutlineInputBorder(),
@@ -721,7 +727,29 @@ class _AddAssignmentBottomSheetState
                           lastDate: DateTime(2100),
                         );
                         if (picked != null) {
-                          setState(() => _startDate = picked);
+                          final schedules = ref
+                                  .read(
+                                    classScheduleControllerProvider(
+                                      widget.classId,
+                                    ),
+                                  )
+                                  .value ??
+                              [];
+                          final activeForPicked = schedules
+                              .where((s) => s.isEffectiveOn(picked))
+                              .toList();
+                          final isStillValid = activeForPicked.any(
+                            (s) => s.id == _selectedScheduleId,
+                          );
+
+                          setState(() {
+                            _startDate = picked;
+                            if (!isStillValid) {
+                              _selectedScheduleId = null;
+                              _selectedStudentIds.clear();
+                              _candidates.clear();
+                            }
+                          });
                           _loadCandidates();
                         }
                       },
@@ -1495,6 +1523,12 @@ class _ChangeShiftBottomSheetState
         .watch(studentDetailProvider(widget.assignment.idHocSinh))
         .value;
 
+    final selectedNewScheduleValue = otherSchedules.any(
+      (s) => s.id == _newScheduleId,
+    )
+        ? _newScheduleId
+        : null;
+
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
@@ -1541,7 +1575,7 @@ class _ChangeShiftBottomSheetState
                 const SizedBox(height: 16),
               ],
               DropdownButtonFormField<int>(
-                initialValue: _newScheduleId,
+                initialValue: selectedNewScheduleValue,
                 decoration: InputDecoration(
                   labelText: l10n.changeShiftSelectNew,
                   border: const OutlineInputBorder(),
@@ -1576,7 +1610,23 @@ class _ChangeShiftBottomSheetState
                     lastDate: DateTime(2100),
                   );
                   if (picked != null) {
-                    setState(() => _effectiveDate = picked);
+                    final otherForPicked = widget.schedules
+                        .where(
+                          (s) =>
+                              s.id != widget.assignment.idLichHoc &&
+                              s.isEffectiveOn(picked),
+                        )
+                        .toList();
+                    final isStillValid = otherForPicked.any(
+                      (s) => s.id == _newScheduleId,
+                    );
+
+                    setState(() {
+                      _effectiveDate = picked;
+                      if (!isStillValid) {
+                        _newScheduleId = null;
+                      }
+                    });
                   }
                 },
               ),
