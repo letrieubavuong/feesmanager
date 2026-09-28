@@ -112,6 +112,74 @@ class SessionCreditService {
     return eligibleSessions;
   }
 
+  Future<Map<int, List<ClassSession>>>
+  getEligibleSessionsForStudentsClassMonth(
+    Set<int> studentIds,
+    int classId,
+    String month,
+  ) async {
+    _validateIsoMonth(month);
+
+    final fromDate = DateTime.parse('$month-01');
+    final toDate = DateTime(fromDate.year, fromDate.month + 1, 0);
+
+    final classSessions = await _sessionService.getSessionsForClassAndRange(
+      classId,
+      fromDate,
+      toDate,
+    );
+
+    final candidateSessions = classSessions
+        .where(
+          (s) =>
+              s.loai == SessionType.CHINH &&
+              s.trangThai == SessionStatus.DA_HOC,
+        )
+        .toList();
+
+    candidateSessions.sort((a, b) {
+      final dateCompare = a.ngay.compareTo(b.ngay);
+      if (dateCompare != 0) return dateCompare;
+      final timeCompare = a.gioBatDau.compareTo(b.gioBatDau);
+      if (timeCompare != 0) return timeCompare;
+      return (a.id ?? 0).compareTo(b.id ?? 0);
+    });
+
+    final result = <int, List<ClassSession>>{
+      for (final sid in studentIds) sid: <ClassSession>[],
+    };
+
+    for (final s in candidateSessions) {
+      final roster = await _rosterService.getRosterForSession(s.id!);
+      if (!roster.isOperationallyValid) {
+        throw Exception(
+          'Buổi học (${s.ngay} ${s.gioBatDau}) có lỗi Roster không hợp lệ. Không thể đối soát credit.',
+        );
+      }
+
+      for (final p in roster.participants) {
+        final pid = p.student.id;
+        if (pid != null && studentIds.contains(pid)) {
+          result[pid]!.add(s);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  Future<List<CreditLedgerEntry>> getLedgerForClassStudentsThroughDate(
+    int classId,
+    List<int> studentIds,
+    String throughDate,
+  ) {
+    return _repo.getLedgerForClassStudentsThroughDate(
+      classId,
+      studentIds,
+      throughDate,
+    );
+  }
+
   Future<MonthlyCreditSummary> previewMonth(
     int studentId,
     int classId,

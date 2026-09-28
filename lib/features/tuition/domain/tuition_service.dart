@@ -15,6 +15,10 @@ import '../../sessions/data/session_repository.dart';
 import '../../sessions/domain/class_session.dart';
 import '../../sessions/domain/session_service.dart';
 import '../data/tuition_repository.dart';
+import '../../memberships/domain/membership.dart';
+import '../../session_credits/domain/credit_ledger_entry.dart';
+import '../../session_credits/domain/monthly_credit_summary.dart';
+import 'tuition_policy.dart';
 import 'tuition_policy_service.dart';
 import 'tuition_preview.dart';
 
@@ -68,14 +72,12 @@ class TuitionService {
       );
     }
 
-    // Single canonical owner: Consume previewMonth result from SessionCreditService
     final creditSummary = await _creditService.previewMonth(
       studentId,
       classId,
       month,
     );
 
-    // Fetch student class memberships active during month
     final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 0);
     final monthEndStr = DateFormat('yyyy-MM-dd').format(monthEnd);
 
@@ -88,13 +90,52 @@ class TuitionService {
           den.compareTo(monthStartStr) >= 0;
     }).toList();
 
+    final validMakeupByOriginalSessionId = <int, bool>{};
+    for (final candidate in creditSummary.candidates) {
+      if (candidate.isStandard &&
+          candidate.attendanceState == AttendanceState.NGHI_CO_PHEP) {
+        final hasValid = await _hasValidMakeupAttendance(
+          studentId,
+          candidate.session.id!,
+          classId,
+        );
+        validMakeupByOriginalSessionId[candidate.session.id!] = hasValid;
+      }
+    }
+
+    final studentLedgerEntries = await _creditService.getLedger(
+      studentId,
+      classId,
+    );
+
+    return calculatePreviewFromResolvedData(
+      studentId: studentId,
+      classId: classId,
+      month: month,
+      policy: policy,
+      creditSummary: creditSummary,
+      activeMembershipsInMonth: activeMembershipsInMonth,
+      validMakeupByOriginalSessionId: validMakeupByOriginalSessionId,
+      studentLedgerEntries: studentLedgerEntries,
+    );
+  }
+
+  TuitionPreview calculatePreviewFromResolvedData({
+    required int studentId,
+    required int classId,
+    required String month,
+    required TuitionPolicy policy,
+    required MonthlyCreditSummary creditSummary,
+    required List<ClassMembership> activeMembershipsInMonth,
+    required Map<int, bool> validMakeupByOriginalSessionId,
+    List<CreditLedgerEntry> studentLedgerEntries = const [],
+  }) {
     if (activeMembershipsInMonth.isEmpty) {
       throw Exception(
         'Học sinh không có quá trình học hợp lệ tại lớp trong tháng $month',
       );
     }
 
-    // Resolve discount percentage
     final discountPercentages = activeMembershipsInMonth
         .map((m) => m.mienGiamPhanTram)
         .toSet();
@@ -112,15 +153,7 @@ class TuitionService {
       final session = candidate.session;
       final index = candidate.index;
       final isStandard = candidate.isStandard;
-
-      final attRecord = await _attendanceRepo.getBySessionAndStudent(
-        session.id!,
-        studentId,
-      );
-
-      final attState = attRecord != null
-          ? AttendanceState.fromStatus(attRecord.trangThai)
-          : AttendanceState.CHUA_DIEM_DANH;
+      final attState = candidate.attendanceState;
 
       if (isStandard) {
         if (attState == AttendanceState.CHUA_DIEM_DANH) {
@@ -144,12 +177,8 @@ class TuitionService {
           isCharged = true;
           fee = policy.hocPhiMoiBuoi;
         } else if (attState == AttendanceState.NGHI_CO_PHEP) {
-          // Check if valid completed makeup session exists
-          final hasValidMakeup = await _hasValidMakeupAttendance(
-            studentId,
-            session.id!,
-            classId,
-          );
+          final hasValidMakeup =
+              validMakeupByOriginalSessionId[session.id!] ?? false;
 
           if (hasValidMakeup) {
             chargeType =
@@ -157,12 +186,11 @@ class TuitionService {
             isCharged = true;
             fee = policy.hocPhiMoiBuoi;
           } else {
-            // Usable credit balance as-of this session date minus proposed credit used on/before this session
-            final rawBalanceAsOf = await _creditService.getBalanceAsOf(
-              studentId,
-              classId,
-              session.ngay,
-            );
+            final rawBalanceAsOf = studentLedgerEntries.isEmpty
+                ? creditSummary.openingBalance
+                : studentLedgerEntries
+                    .where((e) => e.ngayHieuLuc.compareTo(session.ngay) <= 0)
+                    .fold<int>(0, (sum, e) => sum + e.delta);
 
             final usableCreditAtDate = rawBalanceAsOf - proposedCreditUsed;
 
@@ -181,7 +209,6 @@ class TuitionService {
             }
           }
         } else {
-          // Fallback
           chargeType = TuitionCandidateChargeType.CHARGEABLE_ATTENDED;
           isCharged = true;
           fee = policy.hocPhiMoiBuoi;
@@ -201,7 +228,6 @@ class TuitionService {
           ),
         );
       } else {
-        // Extra session beyond N
         candidateDetails.add(
           TuitionSessionCandidateDetail(
             session: session,

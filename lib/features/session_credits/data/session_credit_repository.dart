@@ -104,4 +104,22 @@ class SessionCreditRepository {
     if (maps.isEmpty) return null;
     return CreditLedgerEntry.fromMap(maps.first);
   }
+
+  Future<List<CreditLedgerEntry>> getLedgerForClassStudentsThroughDate(
+    int classId,
+    List<int> studentIds,
+    String throughDate,
+  ) async {
+    if (studentIds.isEmpty) return [];
+
+    final placeholders = List.filled(studentIds.length, '?').join(',');
+    final maps = await _db.query(
+      'buoi_du_ledger',
+      where:
+          'id_lop = ? AND id_hoc_sinh IN ($placeholders) AND ngay_hieu_luc <= ?',
+      whereArgs: [classId, ...studentIds, throughDate],
+      orderBy: 'id_hoc_sinh ASC, ngay_hieu_luc ASC, created_at ASC, id ASC',
+    );
+    return maps.map((m) => CreditLedgerEntry.fromMap(m)).toList();
+  }
 }

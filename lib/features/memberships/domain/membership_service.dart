@@ -131,12 +131,11 @@ class MembershipService {
     final monthEndDt = DateTime(parsedStart.year, parsedStart.month + 1, 0);
     final monthEnd = DateFormat('yyyy-MM-dd').format(monthEndDt);
 
-    final all = await _repository.getByClass(classId);
-    return all.where((m) {
-      final den = m.denNgay ?? '9999-12-31';
-      return m.tuNgay.compareTo(monthEnd) <= 0 &&
-          den.compareTo(monthStart) >= 0;
-    }).toList();
+    return _repository.getOverlappingDateRange(
+      fromDate: monthStart,
+      toDate: monthEnd,
+      classId: classId,
+    );
   }
 
   Future<List<int>> getUniqueStudentIdsForClassMonth(

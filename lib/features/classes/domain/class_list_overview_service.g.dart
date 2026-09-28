@@ -13,17 +13,17 @@ String _$classListOverviewServiceHash() =>
 @ProviderFor(classListOverviewService)
 final classListOverviewServiceProvider =
     AutoDisposeFutureProvider<ClassListOverviewService>.internal(
-      classListOverviewService,
-      name: r'classListOverviewServiceProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$classListOverviewServiceHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  classListOverviewService,
+  name: r'classListOverviewServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$classListOverviewServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
-typedef ClassListOverviewServiceRef =
-    AutoDisposeFutureProviderRef<ClassListOverviewService>;
+typedef ClassListOverviewServiceRef
+    = AutoDisposeFutureProviderRef<ClassListOverviewService>;
 String _$classListOverviewHash() => r'e13d745cf75b304df77b471f95746e10fbad7506';
 
 /// Copied from Dart SDK
@@ -57,15 +57,21 @@ class ClassListOverviewFamily extends Family<AsyncValue<ClassListOverview>> {
   const ClassListOverviewFamily();
 
   /// See also [classListOverview].
-  ClassListOverviewProvider call(ClassFilter filter) {
-    return ClassListOverviewProvider(filter);
+  ClassListOverviewProvider call(
+    ClassFilter filter,
+  ) {
+    return ClassListOverviewProvider(
+      filter,
+    );
   }
 
   @override
   ClassListOverviewProvider getProviderOverride(
     covariant ClassListOverviewProvider provider,
   ) {
-    return call(provider.filter);
+    return call(
+      provider.filter,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -87,19 +93,24 @@ class ClassListOverviewFamily extends Family<AsyncValue<ClassListOverview>> {
 class ClassListOverviewProvider
     extends AutoDisposeFutureProvider<ClassListOverview> {
   /// See also [classListOverview].
-  ClassListOverviewProvider(ClassFilter filter)
-    : this._internal(
-        (ref) => classListOverview(ref as ClassListOverviewRef, filter),
-        from: classListOverviewProvider,
-        name: r'classListOverviewProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$classListOverviewHash,
-        dependencies: ClassListOverviewFamily._dependencies,
-        allTransitiveDependencies:
-            ClassListOverviewFamily._allTransitiveDependencies,
-        filter: filter,
-      );
+  ClassListOverviewProvider(
+    ClassFilter filter,
+  ) : this._internal(
+          (ref) => classListOverview(
+            ref as ClassListOverviewRef,
+            filter,
+          ),
+          from: classListOverviewProvider,
+          name: r'classListOverviewProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$classListOverviewHash,
+          dependencies: ClassListOverviewFamily._dependencies,
+          allTransitiveDependencies:
+              ClassListOverviewFamily._allTransitiveDependencies,
+          filter: filter,
+        );
 
   ClassListOverviewProvider._internal(
     super._createNotifier, {
