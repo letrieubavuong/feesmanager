@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../app/common_widgets/navy_components.dart';
+import '../../../app/common_widgets/student_avatar.dart';
+import '../../../app/design_system/app_theme.dart';
 import '../domain/roster_result.dart';
 import '../domain/roster_member.dart';
 import 'roster_controller.dart';
@@ -18,6 +21,7 @@ class SessionRosterView extends ConsumerWidget {
     final rosterAsync = ref.watch(sessionRosterProvider(sessionId));
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Danh sách học sinh buổi học'),
         actions: [
@@ -56,32 +60,23 @@ class SessionRosterView extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Session Info Header
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          color: Theme.of(
-            context,
-          ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '$weekday, $formattedDate | ${s.gioBatDau} - ${s.gioKetThuc}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Loại: ${_getTypeLabel(s.loai)} | Trạng thái: ${_getStatusLabel(s.trangThai)}',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: AppSectionCard(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('$weekday, $formattedDate',
+                  style: const TextStyle(color: AppColors.textPrimary,
+                    fontSize: 15, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text('${s.gioBatDau} – ${s.gioKetThuc} • ${_getTypeLabel(s.loai)} • ${_getStatusLabel(s.trangThai)}',
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              ],
+            ),
           ),
         ),
-
         // Issues/Warnings Section
         if (result.issues.isNotEmpty)
           Padding(
@@ -163,18 +158,33 @@ class SessionRosterView extends ConsumerWidget {
   }
 
   Widget _buildMemberTile(BuildContext context, RosterMember member) {
-    return ListTile(
-      leading: const CircleAvatar(child: Icon(Icons.person, size: 16)),
-      title: Text(member.student.hoTen),
-      subtitle: Text(
-        member.source == RosterInclusionSource.SINGLE_SHIFT_MEMBERSHIP
-            ? 'Tham gia lớp (1 ca)'
-            : 'Phân ca trực tiếp',
-        style: const TextStyle(fontSize: 12),
-      ),
-      trailing: member.student.daLuuTru
-          ? const Chip(label: Text('Lưu trữ', style: TextStyle(fontSize: 10)))
-          : null,
+    return AppSectionCard(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(children: [
+        StudentAvatar(
+          gioiTinh: member.student.gioiTinh,
+          studentName: member.student.hoTen,
+          radius: 20,
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(member.student.hoTen, maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: AppColors.textPrimary,
+                fontSize: 14, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 3),
+            Text(member.source == RosterInclusionSource.SINGLE_SHIFT_MEMBERSHIP
+                ? 'Tham gia lớp (1 ca)' : 'Phân ca trực tiếp',
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          ],
+        )),
+        if (member.student.daLuuTru)
+          const AppStatusChip(label: 'Lưu trữ',
+            color: AppColors.textMuted, compact: true),
+      ]),
     );
   }
 

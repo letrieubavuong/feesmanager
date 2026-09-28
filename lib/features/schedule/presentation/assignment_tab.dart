@@ -134,111 +134,64 @@ class AssignmentTab extends ConsumerWidget {
                         }).toList();
 
                         return AppSectionCard(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(
-                                        alpha: 0.2,
-                                      ),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      _formatWeekday(
-                                        schedule.thuTrongTuan,
-                                        l10n,
-                                      ),
-                                      style: const TextStyle(
-                                        color: AppColors.cyanAccent,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    '${schedule.gioBatDau} - ${schedule.gioKetThuc}',
-                                    style: const TextStyle(
-                                      color: AppColors.textPrimary,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    l10n.assignmentStudentCount(
-                                      activeShiftAssignments.length,
-                                    ),
-                                    style: const TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  if (!isArchived && isActiveSchedule) ...[
-                                    const SizedBox(width: 8),
-                                    ElevatedButton.icon(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.surfaceHigh,
-                                        foregroundColor: AppColors.cyanAccent,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        visualDensity: VisualDensity.compact,
-                                      ),
-                                      onPressed: () => _showAddAssignmentDialog(
-                                        context,
-                                        ref,
-                                        initialScheduleId: schedule.id!,
-                                      ),
-                                      icon: const Icon(
-                                        Icons.person_add_outlined,
-                                        size: 14,
-                                      ),
-                                      label: Text(
-                                        l10n.assignmentAddStudent,
-                                        style: const TextStyle(fontSize: 11),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              const Divider(color: AppColors.border, height: 1),
-                              const SizedBox(height: 8),
-                              if (shiftAssignments.isEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8,
-                                  ),
-                                  child: Text(
-                                    l10n.assignmentNoStudentsInShift,
-                                    style: const TextStyle(
-                                      color: AppColors.textMuted,
-                                      fontSize: 12,
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                  ),
-                                )
-                              else
-                                ...shiftAssignments.map(
-                                  (a) => _AssignmentRowItem(
-                                    assignment: a,
-                                    classId: classId,
-                                    isArchived: isArchived || !isActiveSchedule,
-                                    schedules: schedules,
-                                  ),
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: EdgeInsets.zero,
+                          child: InkWell(
+                            onTap: () => showModalBottomSheet<void>(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: AppColors.surface,
+                              builder: (sheetContext) => SafeArea(
+                                child: FractionallySizedBox(
+                                  heightFactor: 0.7,
+                                  child: Column(children: [
+                                    Padding(padding: const EdgeInsets.all(16),
+                                      child: Row(children: [
+                                        Expanded(child: Text(
+                                          '${_formatWeekday(schedule.thuTrongTuan, l10n)} • ${schedule.gioBatDau} - ${schedule.gioKetThuc}',
+                                          style: const TextStyle(color: AppColors.textPrimary,
+                                            fontSize: 17, fontWeight: FontWeight.bold))),
+                                        IconButton(onPressed: () => Navigator.pop(sheetContext),
+                                          icon: const Icon(Icons.close)),
+                                      ])),
+                                    const Divider(height: 1, color: AppColors.border),
+                                    Expanded(child: activeShiftAssignments.isEmpty
+                                      ? Center(child: Text(l10n.assignmentNoStudentsInShift,
+                                          style: const TextStyle(color: AppColors.textMuted)))
+                                      : ListView.builder(
+                                          padding: const EdgeInsets.all(12),
+                                          itemCount: activeShiftAssignments.length,
+                                          itemBuilder: (context, rowIndex) => _AssignmentRowItem(
+                                            assignment: activeShiftAssignments[rowIndex],
+                                            classId: classId,
+                                            isArchived: isArchived || !isActiveSchedule,
+                                            schedules: schedules,
+                                          ),
+                                        )),
+                                  ]),
                                 ),
-                            ],
+                              ),
+                            ),
+                            child: Padding(padding: const EdgeInsets.all(16),
+                              child: Row(children: [
+                                Text(_formatWeekday(schedule.thuTrongTuan, l10n),
+                                  style: const TextStyle(color: AppColors.cyanAccent,
+                                    fontWeight: FontWeight.bold)),
+                                const SizedBox(width: 12),
+                                Expanded(child: Text('${schedule.gioBatDau} - ${schedule.gioKetThuc}',
+                                  style: const TextStyle(color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.bold))),
+                                Text(l10n.assignmentStudentCount(activeShiftAssignments.length),
+                                  style: const TextStyle(color: AppColors.textSecondary)),
+                                if (!isArchived && isActiveSchedule)
+                                  IconButton(tooltip: l10n.assignmentAddStudent,
+                                    onPressed: () => _showAddAssignmentDialog(context, ref,
+                                      initialScheduleId: schedule.id!),
+                                    icon: const Icon(Icons.person_add_outlined,
+                                      color: AppColors.cyanAccent)),
+                                const Icon(Icons.chevron_right, color: AppColors.textMuted),
+                              ]),
+                            ),
                           ),
                         );
                       },

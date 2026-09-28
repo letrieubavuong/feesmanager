@@ -25,7 +25,6 @@ import '../../sessions/presentation/session_tab.dart';
 import '../../students/presentation/student_detail_page.dart';
 import '../../tuition/presentation/class_tuition_tab.dart';
 import '../../tuition/presentation/create_tuition_policy_bottom_sheet.dart';
-import '../../tuition/presentation/tuition_controller.dart';
 import '../domain/class.dart';
 import '../domain/class_service.dart';
 import 'class_controller.dart';
@@ -46,7 +45,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
     DateTime.now().month,
     1,
   );
-  String _attendanceFilter = 'ALL';
+  String _attendanceFilter = 'DU_KIEN';
 
   @override
   Widget build(BuildContext context) {
@@ -57,10 +56,6 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
     final historyAsync = ref.watch(
       classMembershipHistoryProvider(widget.classId),
     );
-    final currentMonth = DateFormatter.currentMonthString();
-    final policyAsync = ref.watch(
-      effectiveTuitionPolicyProvider((widget.classId, currentMonth)),
-    );
     final sizeAsync = ref.watch(classSizeProvider(widget.classId));
 
     return Scaffold(
@@ -70,66 +65,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
         automaticallyImplyLeading: false,
         leading: const BackButton(),
         title: const Text('Chi tiết lớp học'),
-        actions: [
-          const GlobalMenuButton(),
-          classAsync.when(
-            data: (cls) => cls == null
-                ? const SizedBox.shrink()
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined),
-                        tooltip: 'Sửa lớp',
-                        onPressed: () async {
-                          await showClassFormBottomSheet(context, cls: cls);
-                          ref.invalidate(classDetailProvider(widget.classId));
-                          ref
-                              .read(classListControllerProvider.notifier)
-                              .refresh();
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.request_quote_outlined),
-                        tooltip: 'Mức học phí',
-                        onPressed: () => showCreateTuitionPolicyBottomSheet(
-                          context,
-                          classId: widget.classId,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.event_note_outlined),
-                        tooltip: 'Đơn nghỉ học',
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                LeaveRequestPage(classId: widget.classId),
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        key: cls.daLuuTru
-                            ? UiKeys.classRestoreAction
-                            : UiKeys.classArchiveAction,
-                        icon: Icon(
-                          cls.daLuuTru
-                              ? Icons.restore_rounded
-                              : Icons.folder_off_outlined,
-                          color: cls.daLuuTru
-                              ? AppColors.success
-                              : AppColors.error,
-                        ),
-                        tooltip: cls.daLuuTru
-                            ? 'Kích hoạt lại lớp'
-                            : 'Ngừng hoạt động lớp',
-                        onPressed: () => _handleArchiveToggle(context, cls),
-                      ),
-                    ],
-                  ),
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-        ],
+        actions: const [GlobalMenuButton()],
       ),
       body: classAsync.when(
         data: (cls) {
@@ -173,11 +109,16 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                     ],
                   ),
                 ),
-              _buildHeader(context, cls, sizeAsync, policyAsync),
+              _buildHeader(context, cls, sizeAsync),
               Expanded(
                 child: DefaultTabController(
                   length: 7,
-                  child: Column(
+                  child: Builder(builder: (tabContext) {
+                    final tabs = DefaultTabController.of(tabContext);
+                    return AnimatedBuilder(
+                      animation: tabs,
+                      builder: (context, _) => Stack(children: [
+                        Column(
                     children: [
                       Container(
                         color: AppColors.surface,
@@ -237,6 +178,23 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                       ),
                     ],
                   ),
+                        if (!isStopped && (tabs.index == 0 || tabs.index == 1))
+                          Positioned(right: 20, bottom: 20,
+                            child: FloatingActionButton(
+                              heroTag: 'class-detail-add-${widget.classId}',
+                              tooltip: tabs.index == 0 ? 'Thêm học sinh' : 'Thêm lịch học',
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              onPressed: () => tabs.index == 0
+                                  ? _showAddStudentDialog(context)
+                                  : showScheduleFormBottomSheet(context, classId: widget.classId),
+                              child: Icon(tabs.index == 0
+                                  ? Icons.person_add_outlined : Icons.event_available_outlined),
+                            ),
+                          ),
+                      ]),
+                    );
+                  }),
                 ),
               ),
             ],
@@ -259,7 +217,6 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
     BuildContext context,
     ClassEntity cls,
     AsyncValue<int> sizeAsync,
-    AsyncValue<dynamic> policyAsync,
   ) {
     return AppSectionCard(
       margin: const EdgeInsets.all(12),
@@ -314,94 +271,63 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      '${cls.monHoc ?? 'Môn chưa xác định'} • Khối ${cls.khoi ?? '?'}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
+                    sizeAsync.when(
+                      data: (size) => Text(
+                        'Sĩ số hiện tại: $size / ${cls.siSoToiDa ?? '∞'}',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary, fontSize: 13),
                       ),
+                      loading: () => const Text('Đang tải sĩ số...',
+                          style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                      error: (_, __) => const Text('Chưa tải được sĩ số',
+                          style: TextStyle(color: AppColors.error, fontSize: 13)),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           const Divider(color: AppColors.border, height: 1),
           const SizedBox(height: 8),
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.groups_outlined,
-                    size: 16,
-                    color: AppColors.textMuted,
-                  ),
-                  const SizedBox(width: 6),
-                  sizeAsync.when(
-                    data: (size) => Text(
-                      'Sĩ số hiện tại: $size / ${cls.siSoToiDa ?? '∞'}',
-                      style: TextStyle(
-                        color: (cls.siSoToiDa != null && size >= cls.siSoToiDa!)
-                            ? AppColors.error
-                            : AppColors.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    loading: () => const Text(
-                      '...',
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 13,
-                      ),
-                    ),
-                    error: (_, __) => const Text(
-                      '?',
-                      style: TextStyle(color: AppColors.error, fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
-              policyAsync.when(
-                data: (policy) {
-                  if (policy == null) {
-                    return TextButton(
-                      style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                      onPressed: () => showCreateTuitionPolicyBottomSheet(
-                        context,
-                        classId: widget.classId,
-                      ),
-                      child: const Text(
-                        'Thiết lập học phí',
-                        style: TextStyle(
-                          color: AppColors.warning,
-                          fontSize: 12,
-                        ),
-                      ),
-                    );
-                  }
-                  return Text(
-                    '${NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0).format(policy.hocPhiMoiBuoi)}/buổi',
-                    style: const TextStyle(
-                      color: AppColors.cyanAccent,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  );
-                },
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-            ],
-          ),
+          Row(children: [
+            _headerAction(Icons.edit_outlined, 'Sửa lớp', () async {
+              await showClassFormBottomSheet(context, cls: cls);
+              ref.invalidate(classDetailProvider(widget.classId));
+              ref.read(classListControllerProvider.notifier).refresh();
+            }),
+            _headerAction(Icons.request_quote_outlined, 'Học phí', () =>
+                showCreateTuitionPolicyBottomSheet(context, classId: widget.classId)),
+            _headerAction(Icons.event_note_outlined, 'Đơn nghỉ', () =>
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => LeaveRequestPage(classId: widget.classId)))),
+            _headerAction(
+              cls.daLuuTru ? Icons.restore_rounded : Icons.folder_off_outlined,
+              cls.daLuuTru ? 'Kích hoạt' : 'Ngừng lớp',
+              () => _handleArchiveToggle(context, cls),
+              key: cls.daLuuTru ? UiKeys.classRestoreAction : UiKeys.classArchiveAction,
+              color: cls.daLuuTru ? AppColors.success : AppColors.error,
+            ),
+          ]),
         ],
       ),
     );
+  }
+
+  Widget _headerAction(IconData icon, String label, VoidCallback onPressed,
+      {Key? key, Color color = AppColors.cyanAccent}) {
+    return Expanded(child: InkWell(
+      key: key, onTap: onPressed, borderRadius: BorderRadius.circular(10),
+      child: Padding(padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(height: 5),
+          Text(label, textAlign: TextAlign.center, maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+        ]),
+      ),
+    ));
   }
 
   Widget _buildDateSelector(BuildContext context) {
@@ -454,38 +380,6 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
   ) {
     return Column(
       children: [
-        if (!isArchived)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Danh sách học sinh đang học',
-                    style: TextStyle(
-                      color: AppColors.cyanAccent,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                  ),
-                  onPressed: () => _showAddStudentDialog(context),
-                  icon: const Icon(Icons.person_add_outlined, size: 16),
-                  label: const Text('Thêm học sinh'),
-                ),
-              ],
-            ),
-          ),
         Expanded(
           child: rosterAsync.when(
             data: (memberships) {
@@ -530,7 +424,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
   Widget _buildAttendanceTab(BuildContext context) {
     final yearMonth = DateFormat('yyyy-MM').format(_timelineMonth);
     final monthDisplay =
-        'THÁNG ${DateFormat('MM/yyyy').format(_timelineMonth)}';
+        'Tháng ${DateFormat('MM/yyyy').format(_timelineMonth)}';
 
     final timelineAsync = ref.watch(
       classAttendanceTimelineProvider(
@@ -541,11 +435,11 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
 
     return Column(
       children: [
-        // Month Navigator Bar
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          color: AppColors.surface,
-          child: Row(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+          child: AppSectionCard(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
@@ -563,14 +457,14 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                   });
                 },
               ),
-              Text(
-                monthDisplay,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.calendar_month_outlined,
+                    color: AppColors.cyanAccent, size: 17),
+                const SizedBox(width: 6),
+                Text(monthDisplay,
+                    style: const TextStyle(color: AppColors.textPrimary,
+                        fontSize: 14, fontWeight: FontWeight.bold)),
+              ]),
               IconButton(
                 icon: const Icon(
                   Icons.chevron_right,
@@ -587,23 +481,25 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                 },
               ),
             ],
+            ),
           ),
         ),
 
-        // Filter chips bar
-        Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          color: AppColors.background,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              _buildFilterChip('Tất cả', 'ALL'),
-              _buildFilterChip('Chưa hoàn tất', 'DU_KIEN'),
-              _buildFilterChip('Đã hoàn tất', 'DA_HOC'),
-              _buildFilterChip('Khác', 'KHAC'),
-            ],
-          ),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(children: [
+            const Text('Trạng thái', style: TextStyle(color: AppColors.textSecondary,
+              fontSize: 12, fontWeight: FontWeight.w600)),
+            const SizedBox(width: 8),
+            const Text('Chưa hoàn tất',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+            Switch.adaptive(
+              value: _attendanceFilter == 'DA_HOC',
+              onChanged: (done) => setState(() =>
+                  _attendanceFilter = done ? 'DA_HOC' : 'DU_KIEN'),
+            ),
+            const Text('Đã hoàn tất',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+          ]),
         ),
 
         const Divider(color: AppColors.border, height: 1),
@@ -633,9 +529,6 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                   return item.session.trangThai == SessionStatus.DU_KIEN;
                 } else if (_attendanceFilter == 'DA_HOC') {
                   return item.session.trangThai == SessionStatus.DA_HOC;
-                } else if (_attendanceFilter == 'KHAC') {
-                  return item.session.trangThai == SessionStatus.HUY ||
-                      item.session.trangThai == SessionStatus.NGHI_LE;
                 }
                 return true;
               }).toList();
@@ -681,29 +574,6 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
     );
   }
 
-  Widget _buildFilterChip(String label, String code) {
-    final isSelected = _attendanceFilter == code;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: isSelected,
-        selectedColor: AppColors.primary,
-        backgroundColor: AppColors.surface,
-        labelStyle: TextStyle(
-          color: isSelected ? Colors.white : AppColors.textSecondary,
-          fontSize: 12,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        ),
-        onSelected: (selected) {
-          if (selected) {
-            setState(() => _attendanceFilter = code);
-          }
-        },
-      ),
-    );
-  }
-
   ButtonStyle _compactTimelineButtonStyle({
     required bool filled,
     Color? backgroundColor,
@@ -713,7 +583,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
       return ElevatedButton.styleFrom(
         backgroundColor: backgroundColor,
         foregroundColor: foregroundColor,
-        minimumSize: const Size(0, 32),
+        minimumSize: const Size(0, 28),
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 0),
         visualDensity: const VisualDensity(horizontal: -2, vertical: -3),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -724,7 +594,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
 
     return OutlinedButton.styleFrom(
       foregroundColor: foregroundColor,
-      minimumSize: const Size(0, 32),
+      minimumSize: const Size(0, 28),
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 0),
       visualDensity: const VisualDensity(horizontal: -2, vertical: -3),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1133,6 +1003,7 @@ class HistoryItem extends ConsumerWidget {
 
     return AppSectionCard(
       margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
           studentAsync.when(
@@ -1249,6 +1120,7 @@ class RosterItem extends ConsumerWidget {
 
     return AppSectionCard(
       margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
           studentAsync.when(

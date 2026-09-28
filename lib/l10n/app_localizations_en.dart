@@ -66,7 +66,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardTitle => 'Home';
 
   @override
-  String get dashboardGreeting => 'Welcome Teacher!';
+  String get dashboardGreeting => 'Hello!';
 
   @override
   String get dashboardGreetingSubtitle => 'Have a productive teaching day!';

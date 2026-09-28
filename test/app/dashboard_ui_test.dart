@@ -101,7 +101,7 @@ void main() {
 
   group('Phase 14B.3 Business-First Dashboard UI Tests', () {
     testWidgets(
-      'DashboardPage renders greeting, 4 KPIs, business tasks, schedule & warnings',
+      'DashboardPage renders greeting, tuition KPIs, action rows, schedule & warnings',
       (tester) async {
         await tester.pumpWidget(
           createTestApp(
@@ -117,15 +117,12 @@ void main() {
         await tester.pumpAndSettle();
 
         // Greeting & Header
-        expect(find.text('Chào thầy cô!'), findsOneWidget);
+        expect(find.text('Xin chào!'), findsOneWidget);
         expect(find.text('Trang chủ'), findsOneWidget);
 
-        // 4 KPIs
-        expect(find.text('Buổi hôm nay'), findsOneWidget);
-        expect(find.text('4'), findsOneWidget);
-
-        expect(find.text('Cần điểm danh'), findsAtLeast(1));
-        expect(find.text('2'), findsOneWidget);
+        // Keep tuition metrics; attendance and today's lessons appear below.
+        expect(find.text('Buổi hôm nay'), findsNothing);
+        expect(find.text('Cần điểm danh'), findsNothing);
 
         expect(find.text('Chưa chốt học phí'), findsOneWidget);
         expect(find.text('8'), findsOneWidget);
