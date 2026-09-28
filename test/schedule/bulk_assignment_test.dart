@@ -202,5 +202,28 @@ void main() {
       final candidateIds = candidates.map((s) => s.id).toSet();
       expect(candidateIds.contains(1), isTrue);
     });
+
+    test('Archived class throws Exception on bulk candidates and preview', () async {
+      await db.update('lop', {'da_luu_tru': 1}, where: 'id = ?', whereArgs: [1]);
+
+      expect(
+        () => scheduleService.getBulkAssignmentCandidates(
+          classId: 1,
+          scheduleId: 100,
+          startDate: DateTime(2026, 9, 15),
+        ),
+        throwsA(isA<Exception>()),
+      );
+
+      expect(
+        () => scheduleService.previewBulkAssignment(
+          studentIds: [21, 22],
+          classId: 1,
+          scheduleId: 100,
+          startDate: DateTime(2026, 9, 15),
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
   });
 }

@@ -280,6 +280,12 @@ class ScheduleDomainService {
     required int scheduleId,
     required DateTime startDate,
   }) async {
+    final cls = await _classService.getClassById(classId);
+    if (cls == null) throw Exception('Không tìm thấy lớp học');
+    if (cls.daLuuTru) {
+      throw Exception('Không thể phân ca vào lớp đã lưu trữ');
+    }
+
     final schedule = await _scheduleRepo.getById(scheduleId);
     if (schedule == null) throw Exception('Không tìm thấy lịch học');
     if (schedule.idLop != classId) {
@@ -488,6 +494,12 @@ class ScheduleDomainService {
     required int scheduleId,
     required DateTime startDate,
   }) async {
+    final cls = await _classService.getClassById(classId);
+    if (cls == null) throw Exception('Không tìm thấy lớp học');
+    if (cls.daLuuTru) {
+      throw Exception('Không thể phân ca vào lớp đã lưu trữ');
+    }
+
     final schedule = await _scheduleRepo.getById(scheduleId);
     if (schedule == null) throw Exception('Không tìm thấy lịch học');
     if (schedule.idLop != classId) {

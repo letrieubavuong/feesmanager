@@ -121,6 +121,11 @@ class AssignmentTab extends ConsumerWidget {
                         final isActiveSchedule = schedule.isEffectiveOn(
                           DateTime.now(),
                         );
+                        final todayStr = DateFormatter.formatCanonicalDate(DateTime.now());
+                        final activeShiftAssignments = shiftAssignments.where((a) {
+                          return a.tuNgay.compareTo(todayStr) <= 0 &&
+                              (a.denNgay == null || a.denNgay!.compareTo(todayStr) >= 0);
+                        }).toList();
 
                         return AppSectionCard(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -161,7 +166,7 @@ class AssignmentTab extends ConsumerWidget {
                                   ),
                                   const Spacer(),
                                   Text(
-                                    l10n.assignmentStudentCount(shiftAssignments.length),
+                                    l10n.assignmentStudentCount(activeShiftAssignments.length),
                                     style: const TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: 12,
