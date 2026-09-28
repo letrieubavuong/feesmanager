@@ -34,9 +34,9 @@ class CenterProfileController extends Notifier<CenterProfile> {
     try {
       final prefs = await SharedPreferences.getInstance();
       state = CenterProfile(
-      name: prefs.getString('center_name') ?? 'Tuition2027',
-      address: prefs.getString('center_address') ?? '',
-      phone: prefs.getString('center_phone') ?? '',
+        name: prefs.getString('center_name') ?? 'Tuition2027',
+        address: prefs.getString('center_address') ?? '',
+        phone: prefs.getString('center_phone') ?? '',
       );
     } catch (_) {
       // The default title remains available while preferences load.

@@ -925,6 +925,7 @@ class AppDatabase {
       );
     }
   }
+
   Future<void> _migrateV15ToV16(Database db) async {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS truong_hoc (
@@ -937,12 +938,14 @@ class AppDatabase {
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_truong_hoc_active_name ON truong_hoc(da_luu_tru, ten)',
     );
-    await db.rawInsert('''
+    await db.rawInsert(
+      '''
       INSERT OR IGNORE INTO truong_hoc (ten, created_at)
       SELECT DISTINCT TRIM(truong_dang_hoc), ?
       FROM hoc_sinh
       WHERE truong_dang_hoc IS NOT NULL AND TRIM(truong_dang_hoc) <> ''
-    ''', [DateTime.now().toIso8601String()]);
+    ''',
+      [DateTime.now().toIso8601String()],
+    );
   }
-
 }

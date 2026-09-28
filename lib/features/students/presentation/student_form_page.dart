@@ -91,7 +91,8 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final schools = ref.watch(schoolsProvider).asData?.value ?? const <School>[];
+    final schools =
+        ref.watch(schoolsProvider).asData?.value ?? const <School>[];
 
     return DirtyFormScope(
       isDirty: _isDirty,
@@ -234,10 +235,12 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
                   label: Text(l10n.studentSchool),
                   helperText: 'Chọn trường đã lưu hoặc nhập tên trường mới',
                   dropdownMenuEntries: schools
-                      .map((school) => DropdownMenuEntry<String>(
-                            value: school.name,
-                            label: school.name,
-                          ))
+                      .map(
+                        (school) => DropdownMenuEntry<String>(
+                          value: school.name,
+                          label: school.name,
+                        ),
+                      )
                       .toList(),
                   onSelected: (value) => _onChanged(),
                 ),

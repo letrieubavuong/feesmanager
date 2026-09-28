@@ -21,10 +21,9 @@ class SchoolRepository {
       where: 'da_luu_tru = 0',
       orderBy: 'ten COLLATE NOCASE ASC',
     );
-    return rows.map((row) => School(
-      id: row['id'] as int,
-      name: row['ten'] as String,
-    )).toList();
+    return rows
+        .map((row) => School(id: row['id'] as int, name: row['ten'] as String))
+        .toList();
   }
 
   Future<void> add(String name) async {

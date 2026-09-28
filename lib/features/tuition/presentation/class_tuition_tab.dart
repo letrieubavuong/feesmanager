@@ -75,7 +75,8 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                 _userFilter = null;
               }
 
-              final effectiveFilter = _userFilter ??
+              final effectiveFilter =
+                  _userFilter ??
                   (previewCount > 0
                       ? TuitionPaymentFilter.preview
                       : TuitionPaymentFilter.unpaid);

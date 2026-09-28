@@ -177,4 +177,8 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
       )!,
     );
   }
+
+  static AppSemanticColors of(BuildContext context) {
+    return Theme.of(context).extension<AppSemanticColors>() ?? light;
+  }
 }

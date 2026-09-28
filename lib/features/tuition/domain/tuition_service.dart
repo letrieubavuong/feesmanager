@@ -189,8 +189,8 @@ class TuitionService {
             final rawBalanceAsOf = studentLedgerEntries.isEmpty
                 ? creditSummary.openingBalance
                 : studentLedgerEntries
-                    .where((e) => e.ngayHieuLuc.compareTo(session.ngay) <= 0)
-                    .fold<int>(0, (sum, e) => sum + e.delta);
+                      .where((e) => e.ngayHieuLuc.compareTo(session.ngay) <= 0)
+                      .fold<int>(0, (sum, e) => sum + e.delta);
 
             final usableCreditAtDate = rawBalanceAsOf - proposedCreditUsed;
 

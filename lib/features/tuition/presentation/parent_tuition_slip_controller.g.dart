@@ -39,21 +39,15 @@ class ParentTuitionSlipFamily extends Family<AsyncValue<ParentTuitionSlip>> {
   const ParentTuitionSlipFamily();
 
   /// See also [parentTuitionSlip].
-  ParentTuitionSlipProvider call(
-    (int, int, String) arg,
-  ) {
-    return ParentTuitionSlipProvider(
-      arg,
-    );
+  ParentTuitionSlipProvider call((int, int, String) arg) {
+    return ParentTuitionSlipProvider(arg);
   }
 
   @override
   ParentTuitionSlipProvider getProviderOverride(
     covariant ParentTuitionSlipProvider provider,
   ) {
-    return call(
-      provider.arg,
-    );
+    return call(provider.arg);
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -75,24 +69,19 @@ class ParentTuitionSlipFamily extends Family<AsyncValue<ParentTuitionSlip>> {
 class ParentTuitionSlipProvider
     extends AutoDisposeFutureProvider<ParentTuitionSlip> {
   /// See also [parentTuitionSlip].
-  ParentTuitionSlipProvider(
-    (int, int, String) arg,
-  ) : this._internal(
-          (ref) => parentTuitionSlip(
-            ref as ParentTuitionSlipRef,
-            arg,
-          ),
-          from: parentTuitionSlipProvider,
-          name: r'parentTuitionSlipProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$parentTuitionSlipHash,
-          dependencies: ParentTuitionSlipFamily._dependencies,
-          allTransitiveDependencies:
-              ParentTuitionSlipFamily._allTransitiveDependencies,
-          arg: arg,
-        );
+  ParentTuitionSlipProvider((int, int, String) arg)
+    : this._internal(
+        (ref) => parentTuitionSlip(ref as ParentTuitionSlipRef, arg),
+        from: parentTuitionSlipProvider,
+        name: r'parentTuitionSlipProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$parentTuitionSlipHash,
+        dependencies: ParentTuitionSlipFamily._dependencies,
+        allTransitiveDependencies:
+            ParentTuitionSlipFamily._allTransitiveDependencies,
+        arg: arg,
+      );
 
   ParentTuitionSlipProvider._internal(
     super._createNotifier, {

@@ -55,10 +55,7 @@ class ClassAttendanceTimelineFamily
   ClassAttendanceTimelineProvider getProviderOverride(
     covariant ClassAttendanceTimelineProvider provider,
   ) {
-    return call(
-      classId: provider.classId,
-      yearMonth: provider.yearMonth,
-    );
+    return call(classId: provider.classId, yearMonth: provider.yearMonth);
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -84,23 +81,22 @@ class ClassAttendanceTimelineProvider
     required int classId,
     required String yearMonth,
   }) : this._internal(
-          (ref) => classAttendanceTimeline(
-            ref as ClassAttendanceTimelineRef,
-            classId: classId,
-            yearMonth: yearMonth,
-          ),
-          from: classAttendanceTimelineProvider,
-          name: r'classAttendanceTimelineProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$classAttendanceTimelineHash,
-          dependencies: ClassAttendanceTimelineFamily._dependencies,
-          allTransitiveDependencies:
-              ClassAttendanceTimelineFamily._allTransitiveDependencies,
-          classId: classId,
-          yearMonth: yearMonth,
-        );
+         (ref) => classAttendanceTimeline(
+           ref as ClassAttendanceTimelineRef,
+           classId: classId,
+           yearMonth: yearMonth,
+         ),
+         from: classAttendanceTimelineProvider,
+         name: r'classAttendanceTimelineProvider',
+         debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+             ? null
+             : _$classAttendanceTimelineHash,
+         dependencies: ClassAttendanceTimelineFamily._dependencies,
+         allTransitiveDependencies:
+             ClassAttendanceTimelineFamily._allTransitiveDependencies,
+         classId: classId,
+         yearMonth: yearMonth,
+       );
 
   ClassAttendanceTimelineProvider._internal(
     super._createNotifier, {
@@ -119,8 +115,9 @@ class ClassAttendanceTimelineProvider
   @override
   Override overrideWith(
     FutureOr<List<ClassAttendanceTimelineItem>> Function(
-            ClassAttendanceTimelineRef provider)
-        create,
+      ClassAttendanceTimelineRef provider,
+    )
+    create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -139,7 +136,7 @@ class ClassAttendanceTimelineProvider
 
   @override
   AutoDisposeFutureProviderElement<List<ClassAttendanceTimelineItem>>
-      createElement() {
+  createElement() {
     return _ClassAttendanceTimelineProviderElement(this);
   }
 
