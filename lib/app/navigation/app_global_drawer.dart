@@ -41,7 +41,7 @@ class AppGlobalDrawer extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Tuition2027',
+                        l10n?.appName ?? 'Tuition manager',
                         style: theme.textTheme.titleLarge?.copyWith(
                           color: theme.colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.bold,
@@ -116,7 +116,7 @@ class AppGlobalDrawer extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'v1.0.0+1 | DB v13',
+                  'v2.6 | DB v15',
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.outline,
                   ),
