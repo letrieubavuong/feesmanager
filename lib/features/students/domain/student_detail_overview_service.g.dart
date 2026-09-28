@@ -7,7 +7,7 @@ part of 'student_detail_overview_service.dart';
 // **************************************************************************
 
 String _$studentDetailOverviewServiceHash() =>
-    r'5f3ee964972d436b1faf6da44c22080d4db2757a';
+    r'd2785c87f90b800787ba6dea800103d333f8915d';
 
 /// See also [studentDetailOverviewService].
 @ProviderFor(studentDetailOverviewService)

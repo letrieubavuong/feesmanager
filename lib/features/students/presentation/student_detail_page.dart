@@ -11,16 +11,18 @@ import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
-import '../../../core/database/database_provider.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../attendance/presentation/attendance_page.dart';
+import '../../classes/domain/class_service.dart';
 import '../../classes/presentation/class_controller.dart';
 import '../../classes/presentation/class_detail_page.dart';
 import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
+import '../../payments/domain/payment_service.dart';
 import '../../payments/presentation/record_payment_bottom_sheet.dart';
 import '../../schedule_conflicts/domain/schedule_constraint.dart';
 import '../../schedule_conflicts/presentation/schedule_constraint_dialogs.dart';
+import '../../tuition/domain/tuition_service.dart';
 import '../domain/student.dart';
 import '../domain/student_detail_overview.dart';
 import '../domain/student_detail_overview_service.dart';
@@ -130,7 +132,7 @@ class StudentDetailPage extends ConsumerWidget {
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -183,7 +185,7 @@ class StudentDetailPage extends ConsumerWidget {
         loading: () => const AppLoadingState(),
         error: (error, stack) => AppErrorState(
           title: l10n.commonError,
-          error: error.toString(),
+          error: l10n.studentLoadDetailError,
           onRetry: () =>
               ref.invalidate(studentDetailOverviewProvider(studentId)),
         ),
@@ -1173,41 +1175,29 @@ class StudentDetailPage extends ConsumerWidget {
     StudentDetailOverview overview,
   ) async {
     final l10n = AppLocalizations.of(context)!;
-    final db = await ref.read(databaseProvider.future);
+    final tuitionRepo = await ref.read(tuitionRepositoryProvider.future);
+    final paymentService = await ref.read(paymentServiceProvider.future);
+    final classService = await ref.read(classServiceProvider.future);
 
-    final rows = await db.rawQuery(
-      '''
-      SELECT h.*, l.ten_lop 
-      FROM hoc_phi_thang h
-      JOIN lop l ON h.id_lop = l.id
-      WHERE h.id_hoc_sinh = ? 
-        AND h.thang = ? 
-        AND h.chot_luc IS NOT NULL 
-        AND (h.so_tien_phai_thu - COALESCE((
-          SELECT SUM(so_tien) FROM thanh_toan 
-          WHERE id_hoc_sinh = h.id_hoc_sinh AND id_lop = h.id_lop AND strftime('%Y-%m', ngay_thu) = h.thang
-        ), 0)) > 0
-      ''',
-      [overview.student.id!, overview.financial.month],
+    final invoices = await tuitionRepo.getInvoicesInMonthRange(
+      fromMonth: overview.financial.month,
+      toMonth: overview.financial.month,
+      studentId: overview.student.id!,
     );
 
-    if (rows.isEmpty) {
+    final summaries = await paymentService.getPaymentSummariesForInvoices(
+      invoices,
+    );
+    final debtSummaries = summaries.where((s) => s.remainingDebt > 0).toList();
+
+    if (debtSummaries.isEmpty) {
       if (!context.mounted) return;
       AppFeedback.showWarningSnackBar(context, l10n.studentNoDebtToRecord);
       return;
     }
 
-    if (rows.length == 1) {
-      final r = rows.first;
-      final classId = r['id_lop'] as int;
-      final due = (r['so_tien_phai_thu'] as num).toInt();
-      final paidRows = await db.rawQuery(
-        "SELECT SUM(so_tien) as total FROM thanh_toan WHERE id_hoc_sinh = ? AND id_lop = ? AND strftime('%Y-%m', ngay_thanh_toan) = ?",
-        [overview.student.id!, classId, overview.financial.month],
-      );
-      final paid = (paidRows.first['total'] as num?)?.toInt() ?? 0;
-      final debt = (due - paid) > 0 ? (due - paid) : 0;
-
+    if (debtSummaries.length == 1) {
+      final summary = debtSummaries.first;
       if (!context.mounted) return;
       await showModalBottomSheet(
         context: context,
@@ -1215,13 +1205,17 @@ class StudentDetailPage extends ConsumerWidget {
         useSafeArea: true,
         builder: (_) => RecordPaymentBottomSheet(
           studentId: overview.student.id!,
-          classId: classId,
-          month: overview.financial.month,
-          suggestedAmount: debt,
+          classId: summary.invoice.idLop,
+          month: summary.invoice.thang,
+          suggestedAmount: summary.remainingDebt,
         ),
       );
       ref.invalidate(studentDetailOverviewProvider(overview.student.id!));
     } else {
+      final classIds = debtSummaries.map((s) => s.invoice.idLop).toList();
+      final classes = await classService.getClassesByIds(classIds);
+      final classMap = {for (final c in classes) c.id!: c.tenLop};
+
       if (!context.mounted) return;
       await showModalBottomSheet(
         context: context,
@@ -1244,14 +1238,15 @@ class StudentDetailPage extends ConsumerWidget {
               const SizedBox(height: 12),
               ListView.separated(
                 shrinkWrap: true,
-                itemCount: rows.length,
+                itemCount: debtSummaries.length,
                 separatorBuilder: (_, __) =>
                     const Divider(color: AppColors.border, height: 1),
                 itemBuilder: (context, index) {
-                  final r = rows[index];
-                  final classId = r['id_lop'] as int;
-                  final className = r['ten_lop'] as String;
-                  final due = (r['so_tien_phai_thu'] as num).toInt();
+                  final summary = debtSummaries[index];
+                  final className =
+                      classMap[summary.invoice.idLop] ??
+                      'Lớp ${summary.invoice.idLop}';
+                  final due = summary.remainingDebt;
 
                   return ListTile(
                     title: Text(
@@ -1262,7 +1257,7 @@ class StudentDetailPage extends ConsumerWidget {
                       ),
                     ),
                     subtitle: Text(
-                      'Đã chốt: ${NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(due)}',
+                      'Còn nợ: ${NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(due)}',
                     ),
                     onTap: () async {
                       Navigator.pop(context);
@@ -1272,8 +1267,8 @@ class StudentDetailPage extends ConsumerWidget {
                         useSafeArea: true,
                         builder: (_) => RecordPaymentBottomSheet(
                           studentId: overview.student.id!,
-                          classId: classId,
-                          month: overview.financial.month,
+                          classId: summary.invoice.idLop,
+                          month: summary.invoice.thang,
                           suggestedAmount: due,
                         ),
                       );

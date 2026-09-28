@@ -46,10 +46,7 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: TextField(
                   key: UiKeys.studentSearch,
                   controller: _searchController,
@@ -106,10 +103,7 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: SizedBox(
                   width: double.infinity,
                   child: SegmentedButton<bool>(
@@ -199,14 +193,45 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
             onRefresh: () =>
                 ref.read(studentListControllerProvider.notifier).refresh(),
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               itemCount: students.length,
               itemBuilder: (context, index) {
                 final student = students[index];
                 final isStopped = student.daLuuTru;
+
+                final hasGrade = student.khoi != null;
+                final hasSchool =
+                    student.truongDangHoc != null &&
+                    student.truongDangHoc!.trim().isNotEmpty;
+                String? schoolGradeText;
+                if (hasGrade && hasSchool) {
+                  schoolGradeText =
+                      'Khối ${student.khoi} • ${student.truongDangHoc!.trim()}';
+                } else if (hasGrade) {
+                  schoolGradeText = 'Khối ${student.khoi}';
+                } else if (hasSchool) {
+                  schoolGradeText = student.truongDangHoc!.trim();
+                }
+
+                final hasPhone =
+                    student.sdtPhuHuynh != null &&
+                    student.sdtPhuHuynh!.trim().isNotEmpty;
+                final hasParentName =
+                    student.tenPhuHuynh != null &&
+                    student.tenPhuHuynh!.trim().isNotEmpty;
+                String? parentContactText;
+                if (hasPhone) {
+                  if (hasParentName) {
+                    parentContactText =
+                        '☎ ${student.tenPhuHuynh!.trim()} • ${student.sdtPhuHuynh!.trim()}';
+                  } else {
+                    parentContactText = '☎ PH • ${student.sdtPhuHuynh!.trim()}';
+                  }
+                }
+
                 return AppSectionCard(
                   margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   onTap: () async {
                     await Navigator.of(context).push(
                       MaterialPageRoute(
@@ -233,44 +258,71 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Expanded(
                                   child: Text(
                                     student.hoTen,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       color: AppColors.textPrimary,
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
-                                      decoration: isStopped
-                                          ? TextDecoration.lineThrough
-                                          : null,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                AppActiveStatusBadge(isActive: !isStopped),
+                                const SizedBox(width: 6),
+                                if (!isStopped)
+                                  const Icon(
+                                    Icons.check_circle_rounded,
+                                    color: AppColors.success,
+                                    size: 16,
+                                  )
+                                else
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.textMuted.withValues(
+                                        alpha: 0.15,
+                                      ),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'Ngừng học',
+                                      style: TextStyle(
+                                        color: AppColors.textMuted,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${student.khoi != null ? 'Khối ${student.khoi}' : 'Chưa xếp khối'}'
-                              '${student.truongDangHoc != null ? ' • ${student.truongDangHoc}' : ''}',
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 12,
+                            if (schoolGradeText != null) ...[
+                              const SizedBox(height: 3),
+                              Text(
+                                schoolGradeText,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'PH: ${student.tenPhuHuynh ?? 'Chưa cập nhật'} - ${student.sdtPhuHuynh ?? 'Không có SĐT'}',
-                              style: const TextStyle(
-                                color: AppColors.textMuted,
-                                fontSize: 11,
+                            ],
+                            if (parentContactText != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                parentContactText,
+                                style: const TextStyle(
+                                  color: AppColors.cyanAccent,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                            ],
                           ],
                         ),
                       ),

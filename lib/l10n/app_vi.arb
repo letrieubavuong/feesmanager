@@ -81,6 +81,7 @@
   "studentParentSection": "Thông tin phụ huynh",
   "studentParentName": "Tên phụ huynh",
   "studentParentPhone": "SĐT phụ huynh",
+  "studentCardParentPhone": "PH • {phone}",
   "studentOtherContactSection": "Liên hệ khác",
   "studentPhone": "SĐT học sinh",
   "studentEmail": "Email",
@@ -457,5 +458,11 @@
   "sessionStatusHoliday": "Nghỉ lễ",
   "sessionMarkUpcoming": "Đánh dấu: DỰ KIẾN",
   "sessionMarkCanceled": "Đánh dấu: HỦY",
-  "sessionMarkHoliday": "Đánh dấu: NGHỈ LỄ"
+  "sessionMarkHoliday": "Đánh dấu: NGHỈ LỄ",
+
+  "dashboardRecentCount": "{count} cập nhật",
+  "dashboardLatestActivity": "Mới nhất: {time}",
+  "classGradeHeader": "KHỐI {grade}",
+  "classUnknownGrade": "CHƯA XẾP KHỐI",
+  "studentLoadDetailError": "Không tải được thông tin học sinh."
 }

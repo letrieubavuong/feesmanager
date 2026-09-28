@@ -578,6 +578,12 @@ abstract class AppLocalizations {
   /// **'SĐT phụ huynh'**
   String get studentParentPhone;
 
+  /// No description provided for @studentCardParentPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'PH • {phone}'**
+  String studentCardParentPhone(Object phone);
+
   /// No description provided for @studentOtherContactSection.
   ///
   /// In vi, this message translates to:
@@ -2716,6 +2722,36 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đánh dấu: NGHỈ LỄ'**
   String get sessionMarkHoliday;
+
+  /// No description provided for @dashboardRecentCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} cập nhật'**
+  String dashboardRecentCount(Object count);
+
+  /// No description provided for @dashboardLatestActivity.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mới nhất: {time}'**
+  String dashboardLatestActivity(Object time);
+
+  /// No description provided for @classGradeHeader.
+  ///
+  /// In vi, this message translates to:
+  /// **'KHỐI {grade}'**
+  String classGradeHeader(Object grade);
+
+  /// No description provided for @classUnknownGrade.
+  ///
+  /// In vi, this message translates to:
+  /// **'CHƯA XẾP KHỐI'**
+  String get classUnknownGrade;
+
+  /// No description provided for @studentLoadDetailError.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được thông tin học sinh.'**
+  String get studentLoadDetailError;
 }
 
 class _AppLocalizationsDelegate

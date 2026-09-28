@@ -80,7 +80,7 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
               ref.read(classListOverviewControllerProvider.notifier).refresh(),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -116,10 +116,40 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: overview.rows.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final row = overview.rows[index];
-                      return _buildClassOperationalCard(context, l10n, row);
+                      final currentGrade = row.classEntity.khoi;
+                      final prevGrade = index > 0
+                          ? overview.rows[index - 1].classEntity.khoi
+                          : -999;
+                      final showHeader =
+                          index == 0 || prevGrade != currentGrade;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (showHeader)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: index == 0 ? 4 : 12,
+                                bottom: 6,
+                              ),
+                              child: Text(
+                                currentGrade != null
+                                    ? l10n.classGradeHeader(currentGrade)
+                                    : l10n.classUnknownGrade,
+                                style: const TextStyle(
+                                  color: AppColors.cyanAccent,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ),
+                          _buildClassOperationalCard(context, l10n, row),
+                        ],
+                      );
                     },
                   ),
 

@@ -81,6 +81,7 @@
   "studentParentSection": "Parent Information",
   "studentParentName": "Parent Name",
   "studentParentPhone": "Parent Phone",
+  "studentCardParentPhone": "Parent • {phone}",
   "studentOtherContactSection": "Other Contacts",
   "studentPhone": "Student Phone",
   "studentEmail": "Email",
@@ -457,5 +458,11 @@
   "sessionStatusHoliday": "Holiday",
   "sessionMarkUpcoming": "Mark: UPCOMING",
   "sessionMarkCanceled": "Mark: CANCELED",
-  "sessionMarkHoliday": "Mark: HOLIDAY"
+  "sessionMarkHoliday": "Mark: HOLIDAY",
+
+  "dashboardRecentCount": "{count} updates",
+  "dashboardLatestActivity": "Latest: {time}",
+  "classGradeHeader": "GRADE {grade}",
+  "classUnknownGrade": "UNASSIGNED GRADE",
+  "studentLoadDetailError": "Failed to load student details."
 }

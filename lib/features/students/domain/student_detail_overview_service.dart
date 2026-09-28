@@ -2,14 +2,15 @@ import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../core/database/database_provider.dart';
-import '../../attendance/domain/attendance_record.dart';
-import '../../classes/domain/class.dart';
+import '../../attendance/data/attendance_repository.dart';
+import '../../attendance/domain/attendance_service.dart';
 import '../../classes/domain/class_service.dart';
 import '../../memberships/domain/membership.dart';
 import '../../payments/domain/payment.dart';
 import '../../payments/domain/payment_service.dart';
 import '../../schedule_conflicts/data/schedule_constraint_repository.dart';
-import '../../sessions/domain/class_session.dart';
+import '../../sessions/data/session_repository.dart';
+import '../../sessions/domain/session_service.dart';
 import '../../students/domain/student_service.dart';
 import '../../tuition/data/tuition_repository.dart';
 import '../../tuition/domain/tuition_service.dart';
@@ -24,6 +25,8 @@ class StudentDetailOverviewService {
   final ClassService _classService;
   final TuitionRepository _tuitionRepo;
   final PaymentService _paymentService;
+  final AttendanceRepository _attendanceRepo;
+  final SessionRepository _sessionRepo;
 
   StudentDetailOverviewService(
     this._db,
@@ -31,6 +34,8 @@ class StudentDetailOverviewService {
     this._classService,
     this._tuitionRepo,
     this._paymentService,
+    this._attendanceRepo,
+    this._sessionRepo,
   );
 
   Future<StudentDetailOverview> getOverview(
@@ -264,49 +269,26 @@ class StudentDetailOverviewService {
       latestPayment: latestPayment,
     );
 
-    // 5. Recent Attendance (Latest 3)
-    final attRows = await _db.rawQuery(
-      '''
-      SELECT d.*, b.id as buoi_id, b.id_lop, b.ngay, b.gio_bat_dau, b.gio_ket_thuc, b.trang_thai as buoi_trang_thai, l.ten_lop, l.da_luu_tru
-      FROM diem_danh d 
-      JOIN buoi_hoc b ON d.id_buoi_hoc = b.id 
-      JOIN lop l ON b.id_lop = l.id 
-      WHERE d.id_hoc_sinh = ? 
-      ORDER BY b.ngay DESC, b.gio_bat_dau DESC 
-      LIMIT 3
-      ''',
-      [studentId],
+    // 5. Recent Attendance (Latest 3) — Canonical Batch Loading
+    final recentRecords = await _attendanceRepo.getRecentByStudent(
+      studentId,
+      limit: 3,
     );
 
-    final List<StudentRecentAttendanceItem> recentAttendance = [];
-    for (final row in attRows) {
-      final attMap = {
-        'id': row['id'],
-        'id_buoi_hoc': row['id_buoi_hoc'],
-        'id_hoc_sinh': row['id_hoc_sinh'],
-        'id_lop_goc': row['id_lop_goc'] ?? row['id_lop'],
-        'trang_thai': row['trang_thai'],
-        'loai_tham_gia': row['loai_tham_gia'] ?? 'CHINH',
-        'id_buoi_vang_goc': row['id_buoi_vang_goc'],
-        'ghi_chu': row['ghi_chu'],
-        'created_at': row['created_at'] ?? DateTime.now().toIso8601String(),
-        'updated_at': row['updated_at'] ?? DateTime.now().toIso8601String(),
-      };
-      final attendance = AttendanceRecord.fromMap(attMap);
-      final sessionMap = {
-        'id': row['buoi_id'],
-        'id_lop': row['id_lop'],
-        'ngay': row['ngay'],
-        'gio_bat_dau': row['gio_bat_dau'],
-        'gio_ket_thuc': row['gio_ket_thuc'],
-        'trang_thai': row['buoi_trang_thai'],
-      };
-      final session = ClassSession.fromMap(sessionMap);
-      final classEntity = ClassEntity.fromMap({
-        'id': row['id_lop'],
-        'ten_lop': row['ten_lop'],
-        'da_luu_tru': row['da_luu_tru'] ?? 0,
-      });
+    final sessionIds = recentRecords.map((a) => a.idBuoiHoc).toSet().toList();
+    final sessions = await _sessionRepo.getByIds(sessionIds);
+    final sessionMap = {for (final s in sessions) s.id!: s};
+
+    final classIds = sessions.map((s) => s.idLop).toSet().toList();
+    final classes = await _classService.getClassesByIds(classIds);
+    final classMap = {for (final c in classes) c.id!: c};
+
+    final recentAttendance = <StudentRecentAttendanceItem>[];
+    for (final attendance in recentRecords) {
+      final session = sessionMap[attendance.idBuoiHoc];
+      if (session == null) continue;
+      final classEntity = classMap[session.idLop];
+      if (classEntity == null) continue;
 
       recentAttendance.add(
         StudentRecentAttendanceItem(
@@ -362,12 +344,16 @@ Future<StudentDetailOverviewService> studentDetailOverviewService(
   final classService = await ref.watch(classServiceProvider.future);
   final tuitionRepo = await ref.watch(tuitionRepositoryProvider.future);
   final paymentService = await ref.watch(paymentServiceProvider.future);
+  final attendanceRepo = await ref.watch(attendanceRepositoryProvider.future);
+  final sessionRepo = await ref.watch(sessionRepositoryProvider.future);
   return StudentDetailOverviewService(
     db,
     studentService,
     classService,
     tuitionRepo,
     paymentService,
+    attendanceRepo,
+    sessionRepo,
   );
 }
 

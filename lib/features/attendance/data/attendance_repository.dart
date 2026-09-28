@@ -34,6 +34,25 @@ class AttendanceRepository {
     return AttendanceRecord.fromMap(maps.first);
   }
 
+  Future<List<AttendanceRecord>> getRecentByStudent(
+    int studentId, {
+    int limit = 3,
+  }) async {
+    final List<Map<String, dynamic>> maps = await _db.rawQuery(
+      '''
+      SELECT d.*
+      FROM diem_danh d
+      JOIN buoi_hoc b ON d.id_buoi_hoc = b.id
+      WHERE d.id_hoc_sinh = ?
+      ORDER BY b.ngay DESC, b.gio_bat_dau DESC, b.id DESC
+      LIMIT ?
+      ''',
+      [studentId, limit],
+    );
+
+    return maps.map((map) => AttendanceRecord.fromMap(map)).toList();
+  }
+
   Future<void> upsert(AttendanceRecord record) async {
     final existing = await getBySessionAndStudent(
       record.idBuoiHoc,

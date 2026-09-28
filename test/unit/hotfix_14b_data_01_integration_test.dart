@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'package:tuition2027/features/attendance/data/attendance_repository.dart';
 import 'package:tuition2027/core/database/app_database.dart';
 import 'package:tuition2027/features/classes/data/class_repository.dart';
 import 'package:tuition2027/features/classes/domain/class.dart';
@@ -81,12 +82,16 @@ void main() {
       paymentService,
     );
 
+    final attendanceRepo = AttendanceRepository(db);
+
     studentOverviewService = StudentDetailOverviewService(
       db,
       studentService,
       classService,
       tuitionRepo,
       paymentService,
+      attendanceRepo,
+      sessionRepo,
     );
 
     dashboardService = DashboardService(

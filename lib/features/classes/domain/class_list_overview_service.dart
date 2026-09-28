@@ -57,6 +57,26 @@ class ClassListOverviewService {
 
     final classes = classMaps.map((m) => ClassEntity.fromMap(m)).toList();
 
+    classes.sort((a, b) {
+      final gradeA = a.khoi ?? 999;
+      final gradeB = b.khoi ?? 999;
+
+      final gradeCmp = gradeA.compareTo(gradeB);
+      if (gradeCmp != 0) {
+        return gradeCmp;
+      }
+
+      final subjectA = (a.monHoc ?? a.tenLop).toLowerCase();
+      final subjectB = (b.monHoc ?? b.tenLop).toLowerCase();
+
+      final subjectCmp = subjectA.compareTo(subjectB);
+      if (subjectCmp != 0) {
+        return subjectCmp;
+      }
+
+      return a.tenLop.toLowerCase().compareTo(b.tenLop.toLowerCase());
+    });
+
     // Global active class count (always count da_luu_tru == 0)
     final activeCountResult = await _db.rawQuery(
       'SELECT COUNT(*) as count FROM lop WHERE da_luu_tru = 0',

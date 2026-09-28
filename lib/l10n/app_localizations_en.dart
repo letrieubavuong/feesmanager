@@ -252,6 +252,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get studentParentPhone => 'Parent Phone';
 
   @override
+  String studentCardParentPhone(Object phone) {
+    return 'Parent • $phone';
+  }
+
+  @override
   String get studentOtherContactSection => 'Other Contacts';
 
   @override
@@ -1403,4 +1408,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sessionMarkHoliday => 'Mark: HOLIDAY';
+
+  @override
+  String dashboardRecentCount(Object count) {
+    return '$count updates';
+  }
+
+  @override
+  String dashboardLatestActivity(Object time) {
+    return 'Latest: $time';
+  }
+
+  @override
+  String classGradeHeader(Object grade) {
+    return 'GRADE $grade';
+  }
+
+  @override
+  String get classUnknownGrade => 'UNASSIGNED GRADE';
+
+  @override
+  String get studentLoadDetailError => 'Failed to load student details.';
 }

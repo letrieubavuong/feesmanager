@@ -252,6 +252,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get studentParentPhone => 'SĐT phụ huynh';
 
   @override
+  String studentCardParentPhone(Object phone) {
+    return 'PH • $phone';
+  }
+
+  @override
   String get studentOtherContactSection => 'Liên hệ khác';
 
   @override
@@ -1402,4 +1407,25 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get sessionMarkHoliday => 'Đánh dấu: NGHỈ LỄ';
+
+  @override
+  String dashboardRecentCount(Object count) {
+    return '$count cập nhật';
+  }
+
+  @override
+  String dashboardLatestActivity(Object time) {
+    return 'Mới nhất: $time';
+  }
+
+  @override
+  String classGradeHeader(Object grade) {
+    return 'KHỐI $grade';
+  }
+
+  @override
+  String get classUnknownGrade => 'CHƯA XẾP KHỐI';
+
+  @override
+  String get studentLoadDetailError => 'Không tải được thông tin học sinh.';
 }

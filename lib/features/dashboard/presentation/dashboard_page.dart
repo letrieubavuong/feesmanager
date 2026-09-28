@@ -57,7 +57,7 @@ class DashboardPage extends ConsumerWidget {
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -107,16 +107,9 @@ class DashboardPage extends ConsumerWidget {
 
                   const SizedBox(height: 20),
 
-                  // 6. RECENT ACTIVITIES
-                  _buildSectionHeader(
-                    l10n.dashboardRecentActivity,
-                    Icons.history,
-                  ),
-                  const SizedBox(height: 10),
-                  _buildRecentActivities(
-                    context,
-                    l10n,
-                    overview.recentActivities,
+                  // 6. RECENT ACTIVITIES EXPANDER
+                  DashboardRecentActivitiesExpander(
+                    activities: overview.recentActivities,
                   ),
 
                   const SizedBox(height: 24),
@@ -531,13 +524,11 @@ class DashboardPage extends ConsumerWidget {
     final currentTimeStr = DateFormat('HH:mm').format(now);
 
     return AppSectionCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: ListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: sessions.length,
-        separatorBuilder: (context, index) =>
-            const Divider(color: AppColors.border, height: 1),
         itemBuilder: (context, index) {
           final item = sessions[index];
           final s = item.session;
@@ -566,73 +557,26 @@ class DashboardPage extends ConsumerWidget {
             statusText = l10n.dashboardUpcoming;
           }
 
-          return InkWell(
-            onTap: () {
-              if (s.id != null &&
-                  s.trangThai != SessionStatus.HUY &&
-                  s.trangThai != SessionStatus.NGHI_LE) {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => AttendancePage(sessionId: s.id!),
-                  ),
-                );
-              }
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    '${s.gioBatDau}–${s.gioKetThuc}',
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      item.className,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
+          final canTap =
+              s.id != null &&
+              s.trangThai != SessionStatus.HUY &&
+              s.trangThai != SessionStatus.NGHI_LE;
+
+          return DashboardTodayTimelineItem(
+            item: item,
+            isFirst: index == 0,
+            isLast: index == sessions.length - 1,
+            statusText: statusText,
+            statusColor: statusColor,
+            onTap: canTap
+                ? () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => AttendancePage(sessionId: s.id!),
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      statusText,
-                      style: TextStyle(
-                        color: statusColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                    );
+                  }
+                : null,
           );
         },
       ),
@@ -725,117 +669,6 @@ class DashboardPage extends ConsumerWidget {
           ),
         );
       }).toList(),
-    );
-  }
-
-  Widget _buildRecentActivities(
-    BuildContext context,
-    AppLocalizations l10n,
-    List<DashboardActivity> activities,
-  ) {
-    if (activities.isEmpty) {
-      return AppSectionCard(
-        padding: const EdgeInsets.all(14),
-        child: Center(
-          child: Text(
-            l10n.dashboardNoActivity,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 12,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return AppSectionCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      child: ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: activities.length,
-        separatorBuilder: (context, index) =>
-            const Divider(color: AppColors.border, height: 1),
-        itemBuilder: (context, index) {
-          final act = activities[index];
-
-          IconData icon;
-          Color color;
-
-          switch (act.type) {
-            case DashboardActivityType.paymentRecorded:
-              icon = Icons.payments_outlined;
-              color = AppColors.success;
-              break;
-            case DashboardActivityType.paymentCorrection:
-              icon = Icons.edit_note;
-              color = AppColors.warning;
-              break;
-            case DashboardActivityType.sessionCompleted:
-              icon = Icons.task_alt;
-              color = AppColors.cyanAccent;
-              break;
-            case DashboardActivityType.tuitionFinalized:
-              icon = Icons.fact_check_outlined;
-              color = AppColors.primary;
-              break;
-            case DashboardActivityType.attendanceCorrection:
-              icon = Icons.edit_calendar;
-              color = AppColors.warning;
-              break;
-          }
-
-          final timeStr = DateFormat('HH:mm dd/MM').format(act.timestamp);
-
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(icon, color: color, size: 16),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        act.title,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 1),
-                      Text(
-                        act.subtitle,
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 11,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  timeStr,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 10,
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
     );
   }
 
@@ -1430,5 +1263,333 @@ class DashboardPage extends ConsumerWidget {
             .goTo(AppDestinationId.classes);
         break;
     }
+  }
+}
+
+class DashboardTodayTimelineItem extends StatelessWidget {
+  final DashboardTodaySession item;
+  final bool isFirst;
+  final bool isLast;
+  final String statusText;
+  final Color statusColor;
+  final VoidCallback? onTap;
+
+  const DashboardTodayTimelineItem({
+    super.key,
+    required this.item,
+    required this.isFirst,
+    required this.isLast,
+    required this.statusText,
+    required this.statusColor,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final s = item.session;
+
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 46),
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            // Left Rail Timeline Column
+            SizedBox(
+              width: 24,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Positioned.fill(
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            width: isFirst ? 0 : 2,
+                            color: AppColors.border,
+                          ),
+                        ),
+                        Expanded(
+                          child: Container(
+                            width: isLast ? 0 : 2,
+                            color: AppColors.border,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 9,
+                    height: 9,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // Time Column
+            SizedBox(
+              width: 78,
+              child: Text(
+                '${s.gioBatDau}–${s.gioKetThuc}',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // Class Name
+            Expanded(
+              child: Text(
+                item.className,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 6),
+
+            // Status Pill
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                statusText,
+                style: TextStyle(
+                  color: statusColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class DashboardRecentActivitiesExpander extends StatefulWidget {
+  final List<DashboardActivity> activities;
+
+  const DashboardRecentActivitiesExpander({
+    super.key,
+    required this.activities,
+  });
+
+  @override
+  State<DashboardRecentActivitiesExpander> createState() =>
+      _DashboardRecentActivitiesExpanderState();
+}
+
+class _DashboardRecentActivitiesExpanderState
+    extends State<DashboardRecentActivitiesExpander> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final activities = widget.activities;
+
+    if (activities.isEmpty) {
+      return AppSectionCard(
+        padding: const EdgeInsets.all(14),
+        child: Center(
+          child: Text(
+            l10n.dashboardNoActivity,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final latestStr = DateFormat(
+      'HH:mm • dd/MM',
+    ).format(activities.first.timestamp);
+    final displayedActivities = activities.take(8).toList();
+
+    return AppSectionCard(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row
+          InkWell(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.history,
+                  size: 18,
+                  color: AppColors.cyanAccent,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.dashboardRecentActivity,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (!_isExpanded)
+                        Text(
+                          l10n.dashboardLatestActivity(latestStr),
+                          style: const TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 11,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceSelected,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Text(
+                    '${activities.length}',
+                    style: const TextStyle(
+                      color: AppColors.cyanAccent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Icon(
+                  _isExpanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  color: AppColors.cyanAccent,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+
+          // Expanded Content
+          if (_isExpanded) ...[
+            const SizedBox(height: 8),
+            const Divider(color: AppColors.border, height: 1),
+            const SizedBox(height: 4),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: displayedActivities.length,
+              separatorBuilder: (_, __) =>
+                  const Divider(color: AppColors.border, height: 1),
+              itemBuilder: (context, index) {
+                final act = displayedActivities[index];
+
+                IconData icon;
+                Color color;
+
+                switch (act.type) {
+                  case DashboardActivityType.paymentRecorded:
+                    icon = Icons.payments_outlined;
+                    color = AppColors.success;
+                    break;
+                  case DashboardActivityType.paymentCorrection:
+                    icon = Icons.edit_note;
+                    color = AppColors.warning;
+                    break;
+                  case DashboardActivityType.sessionCompleted:
+                    icon = Icons.task_alt;
+                    color = AppColors.cyanAccent;
+                    break;
+                  case DashboardActivityType.tuitionFinalized:
+                    icon = Icons.fact_check_outlined;
+                    color = AppColors.primary;
+                    break;
+                  case DashboardActivityType.attendanceCorrection:
+                    icon = Icons.edit_calendar;
+                    color = AppColors.warning;
+                    break;
+                }
+
+                final timeStr = DateFormat('HH:mm dd/MM').format(act.timestamp);
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(icon, color: color, size: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              act.title,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (act.subtitle.isNotEmpty)
+                              Text(
+                                act.subtitle,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        timeStr,
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
