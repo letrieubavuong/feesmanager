@@ -6,55 +6,19 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:tuition2027/core/database/app_database.dart';
 import 'package:tuition2027/core/database/database_provider.dart';
-import 'package:tuition2027/features/memberships/presentation/membership_providers.dart';
 import 'package:tuition2027/features/payments/domain/invoice_payment_summary.dart';
 import 'package:tuition2027/features/payments/domain/payment.dart';
 import 'package:tuition2027/features/payments/domain/payment_method.dart';
-import 'package:tuition2027/features/payments/presentation/payment_controller.dart';
 import 'package:tuition2027/features/payments/presentation/widgets/payment_qr_share_card.dart';
 import 'package:tuition2027/features/payments/presentation/widgets/vietqr_code_widget.dart';
 import 'package:tuition2027/features/settings/domain/bank_account_settings.dart';
 import 'package:tuition2027/features/settings/domain/vietqr_generator.dart';
 import 'package:tuition2027/features/students/domain/student.dart';
-import 'package:tuition2027/features/students/presentation/student_detail_page.dart';
 import 'package:tuition2027/features/tuition/domain/class_month_tuition_overview.dart';
+import 'package:tuition2027/features/tuition/domain/parent_tuition_slip.dart';
 import 'package:tuition2027/features/tuition/domain/tuition_invoice.dart';
-import 'package:tuition2027/features/tuition/domain/tuition_policy.dart';
-import 'package:tuition2027/features/tuition/domain/tuition_preview.dart';
 import 'package:tuition2027/features/tuition/presentation/class_tuition_tab.dart';
 import 'package:tuition2027/features/tuition/presentation/tuition_controller.dart';
-
-class _FakeTuitionPreviewController extends TuitionPreviewController {
-  @override
-  Future<TuitionPreview> build(int studentId, int classId, String month) async {
-    final policy = TuitionPolicy(
-      id: 1,
-      idLop: classId,
-      hieuLucTu: '2026-01-01',
-      hocPhiMoiBuoi: 50000,
-      soBuoiChuanThang: 12,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-    return TuitionPreview(
-      studentId: studentId,
-      classId: classId,
-      month: month,
-      policy: policy,
-      soBuoiEligible: 10,
-      soBuoiTinhPhi: 10,
-      creditOpening: 0,
-      creditEarned: 0,
-      creditUsed: 0,
-      creditClosing: 0,
-      tongTruocGiam: 500000,
-      giamPhanTram: 0,
-      giamSoTien: 0,
-      soTienPhaiThu: 500000,
-      candidates: [],
-    );
-  }
-}
 
 void main() {
   sqfliteFfiInit();
@@ -62,7 +26,7 @@ void main() {
 
   group('Phase 14B.6 Tuition Rebuild & QR Share Tests', () {
     late Database db;
-    final nowMonth = '2026-09';
+    const nowMonth = '2026-09';
 
     setUp(() async {
       final tempDir = await Directory.systemTemp.createTemp('tuition_ui_test');
@@ -296,7 +260,7 @@ void main() {
 
     // TEST 46: QR Amount = remaining debt (NOT original invoice amount)
     test('Test 46 - QR code amount uses remaining debt', () {
-      final settings = BankAccountSettings(
+      const settings = BankAccountSettings(
         bankName: 'MBBank',
         bankCode: 'MB',
         bankBin: '970422',
@@ -322,7 +286,7 @@ void main() {
     test(
       'Test 47 - Transfer content template replaces student code, name, class, and month',
       () {
-        final template = 'HP {maHocSinh} {tenHocSinh} {lop} {thang}';
+        const template = 'HP {maHocSinh} {tenHocSinh} {lop} {thang}';
 
         final content = VietQrGenerator.formatTransferContent(
           template: template,
@@ -343,28 +307,50 @@ void main() {
     testWidgets(
       'Test 48 - PaymentQrShareCard displays complete export information',
       (tester) async {
+        const slip = ParentTuitionSlip(
+          studentId: 125,
+          classId: 1,
+          month: '2026-09',
+          studentName: 'Nguyễn Văn Ly',
+          className: 'VẬT LÍ 10',
+          status: ParentTuitionSlipStatus.ready,
+          projectedSessionCount: 13,
+          standardSessionLimit: 12,
+          projectedExtraCount: 1,
+          openingCreditBalance: 2,
+          presentCount: 10,
+          lateCount: 0,
+          excusedAbsenceCount: 1,
+          unexcusedAbsenceCount: 0,
+          makeupCompletedCount: 1,
+          attendanceAsOfDate: '28/09/2026',
+          amountDue: 600000,
+          totalPaid: 150000,
+          remainingDebt: 450000,
+          bank: BankAccountSettings(
+            bankName: 'MBBank',
+            bankCode: 'MB',
+            bankBin: '970422',
+            accountNumber: '0123456789',
+            accountHolder: 'TRAN VAN A',
+            transferTemplate: 'HP {maHocSinh} {lop} {thang}',
+          ),
+          transferContent: 'HP 125 VATLI10 092026',
+          qrPayload: '000201010212...',
+        );
+
         await tester.pumpWidget(
           const MaterialApp(
             home: Scaffold(
               body: SingleChildScrollView(
-                child: PaymentQrShareCard(
-                  studentName: 'Nguyễn Văn Ly',
-                  className: 'VẬT LÍ 10',
-                  month: '2026-09',
-                  remainingAmount: 450000,
-                  bankName: 'MBBank',
-                  accountNumber: '0123456789',
-                  accountHolder: 'TRAN VAN A',
-                  transferContent: 'HP 125 VATLI10 092026',
-                  qrPayload: '000201010212...',
-                ),
+                child: PaymentQrShareCard(slip: slip),
               ),
             ),
           ),
         );
 
-        expect(find.text('THÔNG TIN HỌC PHÍ'), findsOneWidget);
-        expect(find.text('Nguyễn Văn Ly'), findsOneWidget);
+        expect(find.text('PHIẾU HỌC PHÍ'), findsOneWidget);
+        expect(find.text('NGUYỄN VĂN LY'), findsOneWidget);
         expect(find.text('VẬT LÍ 10'), findsOneWidget);
         expect(find.text('450.000đ'), findsOneWidget);
         expect(find.text('MBBank'), findsOneWidget);

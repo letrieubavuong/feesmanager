@@ -1,48 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../tuition/domain/parent_tuition_slip.dart';
 import 'vietqr_code_widget.dart';
 
-/// Clean light-background payment card designed for export/share to parents.
+/// Professional parent tuition slip export card.
+/// Light background (360 logical px width -> ~1080px wide when rendered at 3.0x pixelRatio).
 class PaymentQrShareCard extends StatelessWidget {
-  final String studentName;
-  final String className;
-  final String month;
-  final int remainingAmount;
-  final String bankName;
-  final String accountNumber;
-  final String accountHolder;
-  final String transferContent;
-  final String qrPayload;
+  final ParentTuitionSlip slip;
 
-  const PaymentQrShareCard({
-    super.key,
-    required this.studentName,
-    required this.className,
-    required this.month,
-    required this.remainingAmount,
-    required this.bankName,
-    required this.accountNumber,
-    required this.accountHolder,
-    required this.transferContent,
-    required this.qrPayload,
-  });
+  const PaymentQrShareCard({super.key, required this.slip});
 
   String get _formattedMonth {
-    if (month.contains('-')) {
+    if (slip.month.contains('-')) {
       try {
-        final parsed = DateTime.parse('$month-01');
+        final parsed = DateTime.parse('${slip.month}-01');
         return DateFormat('MM/yyyy').format(parsed);
       } catch (_) {}
     }
-    return month;
+    return slip.month;
   }
 
-  String get _formattedAmount {
-    return '${NumberFormat('#,###', 'vi_VN').format(remainingAmount)}đ';
+  String _formatCurrency(int amount) {
+    return '${NumberFormat('#,###', 'vi_VN').format(amount)}đ';
   }
 
   @override
   Widget build(BuildContext context) {
+    final isFullyPaid = slip.remainingDebt <= 0;
+
     return Container(
       width: 360,
       padding: const EdgeInsets.all(20),
@@ -69,27 +54,28 @@ class PaymentQrShareCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text(
-              'THÔNG TIN HỌC PHÍ',
+              'PHIẾU HỌC PHÍ',
               style: TextStyle(
                 color: Color(0xFF1E40AF),
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
-                letterSpacing: 0.8,
+                letterSpacing: 1.0,
               ),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
-            'Tháng $_formattedMonth',
+            'THÁNG $_formattedMonth',
             style: const TextStyle(
-              color: Color(0xFF64748B),
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+              color: Color(0xFF475569),
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
-          // Student & Class Info
+          // Student & Class Information
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -113,7 +99,7 @@ class PaymentQrShareCard extends StatelessWidget {
                     ),
                     Flexible(
                       child: Text(
-                        studentName,
+                        slip.studentName.toUpperCase(),
                         style: const TextStyle(
                           color: Color(0xFF0F172A),
                           fontSize: 14,
@@ -139,7 +125,7 @@ class PaymentQrShareCard extends StatelessWidget {
                     ),
                     Flexible(
                       child: Text(
-                        className,
+                        slip.className,
                         style: const TextStyle(
                           color: Color(0xFF0F172A),
                           fontSize: 14,
@@ -154,39 +140,11 @@ class PaymentQrShareCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // Amount Section
-          const Text(
-            'SỐ TIỀN CẦN CHUYỂN',
-            style: TextStyle(
-              color: Color(0xFF64748B),
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _formattedAmount,
-            style: const TextStyle(
-              color: Color(0xFF15803D),
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // QR Code Display (Local EMVCo QR, Size 220)
-          VietQrCodeWidget(
-            payload: qrPayload,
-            size: 220,
-            backgroundColor: Colors.white,
-            color: const Color(0xFF0F172A),
-          ),
-          const SizedBox(height: 16),
-
-          // Bank Details Table
+          // SECTION 1: KẾ HOẠCH HỌC TRONG THÁNG
+          _buildSectionHeader('KẾ HOẠCH HỌC TRONG THÁNG'),
+          const SizedBox(height: 8),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -197,46 +155,275 @@ class PaymentQrShareCard extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _buildInfoRow('Ngân hàng', bankName),
+                _buildRowItem(
+                  '📅 Buổi dự kiến',
+                  '${slip.projectedSessionCount} buổi',
+                ),
+                const SizedBox(height: 6),
+                _buildRowItem(
+                  '🎯 Buổi chuẩn',
+                  '${slip.standardSessionLimit} buổi',
+                ),
+                const SizedBox(height: 6),
+                _buildRowItem(
+                  '➕ Dự kiến vượt chuẩn',
+                  '${slip.projectedExtraCount} buổi',
+                ),
+                const SizedBox(height: 6),
+                _buildRowItem(
+                  '💰 Đơn giá',
+                  '${_formatCurrency(slip.feePerSession)} / buổi',
+                ),
+                if (slip.monthlyMaxFee != null && slip.monthlyMaxFee! > 0) ...[
+                  const SizedBox(height: 6),
+                  _buildRowItem(
+                    '🛡 Học phí tối đa',
+                    _formatCurrency(slip.monthlyMaxFee!),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // SECTION 2: ĐỐI SOÁT HỌC SINH
+          _buildSectionHeader('ĐỐI SOÁT HỌC SINH'),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFF1F5F9)),
+            ),
+            child: Column(
+              children: [
+                _buildRowItem(
+                  '🔄 Buổi dư chuyển sang',
+                  '${slip.openingCreditBalance} buổi',
+                  isHighlight: slip.openingCreditBalance > 0,
+                ),
+                const SizedBox(height: 6),
+                _buildRowItem(
+                  '✕ Vắng không phép',
+                  '${slip.unexcusedAbsenceCount} buổi',
+                ),
+                const SizedBox(height: 6),
+                _buildRowItem(
+                  '🗓 Vắng có phép',
+                  '${slip.excusedAbsenceCount} buổi',
+                ),
+                const SizedBox(height: 6),
+                _buildRowItem('⏱ Đi trễ', '${slip.lateCount} buổi'),
+                const SizedBox(height: 6),
+                _buildRowItem(
+                  '↻ Học bù đã hoàn thành',
+                  '${slip.makeupCompletedCount} buổi',
+                ),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 6),
                   child: Divider(color: Color(0xFFE2E8F0), height: 1),
                 ),
-                _buildInfoRow('Số TK', accountNumber, isHighlight: true),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 6),
-                  child: Divider(color: Color(0xFFE2E8F0), height: 1),
-                ),
-                _buildInfoRow('Chủ TK', accountHolder),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 6),
-                  child: Divider(color: Color(0xFFE2E8F0), height: 1),
-                ),
-                _buildInfoRow(
-                  'Nội dung CK',
-                  transferContent,
-                  isHighlight: true,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Lưu ý:',
+                      style: TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 11,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        'Điểm danh tính đến ${slip.attendanceAsOfDate}',
+                        style: const TextStyle(
+                          color: Color(0xFF475569),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.end,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
           const SizedBox(height: 14),
 
-          // Footer Instruction
+          // SECTION 3: HỌC PHÍ & THANH TOÁN
+          _buildSectionHeader('HỌC PHÍ & THANH TOÁN'),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0FDF4),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFDCFCE7)),
+            ),
+            child: Column(
+              children: [
+                _buildRowItem('Phải thu', _formatCurrency(slip.amountDue)),
+                const SizedBox(height: 6),
+                _buildRowItem(
+                  'Đã thu',
+                  _formatCurrency(slip.totalPaid),
+                  valueColor: const Color(0xFF16A34A),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 6),
+                  child: Divider(color: Color(0xFFBBF7D0), height: 1),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        isFullyPaid ? 'TRẠNG THÁI' : 'CÒN PHẢI CHUYỂN',
+                        style: const TextStyle(
+                          color: Color(0xFF15803D),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isFullyPaid
+                          ? 'ĐÃ NỘP ĐỦ'
+                          : _formatCurrency(slip.remainingDebt),
+                      style: TextStyle(
+                        color: isFullyPaid
+                            ? const Color(0xFF16A34A)
+                            : const Color(0xFFB91C1C),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // SECTION 4: QR CODE OR FULLY PAID BADGE
+          if (!isFullyPaid && slip.qrPayload.isNotEmpty) ...[
+            VietQrCodeWidget(
+              payload: slip.qrPayload,
+              size: 220,
+              backgroundColor: Colors.white,
+              color: const Color(0xFF0F172A),
+            ),
+            const SizedBox(height: 14),
+
+            // Bank details table
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFF1F5F9)),
+              ),
+              child: Column(
+                children: [
+                  _buildBankInfoRow('Ngân hàng', slip.bank.bankName),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 6),
+                    child: Divider(color: Color(0xFFE2E8F0), height: 1),
+                  ),
+                  _buildBankInfoRow(
+                    'Số TK',
+                    slip.bank.accountNumber,
+                    isHighlight: true,
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 6),
+                    child: Divider(color: Color(0xFFE2E8F0), height: 1),
+                  ),
+                  _buildBankInfoRow('Chủ TK', slip.bank.accountHolder),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 6),
+                    child: Divider(color: Color(0xFFE2E8F0), height: 1),
+                  ),
+                  _buildBankInfoRow(
+                    'Nội dung CK',
+                    slip.transferContent,
+                    isHighlight: true,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.info_outline, size: 14, color: Color(0xFF94A3B8)),
+                SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    'Vui lòng chuyển đúng số tiền và nội dung trên.',
+                    style: TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ] else if (isFullyPaid) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF86EFAC)),
+              ),
+              child: const Column(
+                children: [
+                  Icon(Icons.check_circle, size: 48, color: Color(0xFF16A34A)),
+                  SizedBox(height: 8),
+                  Text(
+                    'ĐÃ THANH TOÁN ĐỦ HỌC PHÍ',
+                    style: TextStyle(
+                      color: Color(0xFF15803D),
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Cảm ơn phụ huynh đã hoàn tất học phí tháng!',
+                    style: TextStyle(color: Color(0xFF166534), fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 14),
+
+          // Small Footer Disclaimer Note
           const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.info_outline, size: 14, color: Color(0xFF94A3B8)),
-              SizedBox(width: 4),
               Flexible(
                 child: Text(
-                  'Vui lòng chuyển đúng số tiền và nội dung trên.',
+                  '* Số buổi dự kiến dựa trên lịch học hiện hành. Điểm danh và buổi dư được đối soát theo dữ liệu thực tế.',
                   style: TextStyle(
-                    color: Color(0xFF64748B),
-                    fontSize: 11,
+                    color: Color(0xFF94A3B8),
+                    fontSize: 10,
                     fontStyle: FontStyle.italic,
                   ),
-                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                 ),
               ),
             ],
@@ -246,7 +433,62 @@ class PaymentQrShareCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {bool isHighlight = false}) {
+  Widget _buildSectionHeader(String title) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: Color(0xFF334155),
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRowItem(
+    String label,
+    String value, {
+    bool isHighlight = false,
+    Color? valueColor,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          value,
+          style: TextStyle(
+            color:
+                valueColor ??
+                (isHighlight
+                    ? const Color(0xFF1E40AF)
+                    : const Color(0xFF0F172A)),
+            fontSize: 13,
+            fontWeight: isHighlight ? FontWeight.bold : FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBankInfoRow(
+    String label,
+    String value, {
+    bool isHighlight = false,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,

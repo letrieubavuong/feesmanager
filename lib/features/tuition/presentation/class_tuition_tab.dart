@@ -860,10 +860,11 @@ class _StudentTuitionCard extends ConsumerWidget {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => VietQrPaymentPage(
-                          studentName: student.hoTen,
-                          studentCode: student.id!.toString(),
-                          className: clsAsync?.tenLop ?? '',
+                          studentId: student.id!,
+                          classId: classId,
                           month: month,
+                          studentName: student.hoTen,
+                          className: clsAsync?.tenLop ?? '',
                           remainingAmount: remainingDebt,
                         ),
                       ),
