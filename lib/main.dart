@@ -6,6 +6,7 @@ import 'app/design_system/app_theme.dart';
 import 'app/design_system/theme_controller.dart';
 import 'app/localization/locale_controller.dart';
 import 'app/navigation/app_shell.dart';
+import 'app/presentation/splash_gate.dart';
 import 'dev/demo_seed_bootstrap.dart';
 import 'l10n/app_localizations.dart';
 
@@ -59,7 +60,7 @@ class TuitionApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: const AppShell(),
+      home: const SplashGate(child: AppShell()),
     );
   }
 }
