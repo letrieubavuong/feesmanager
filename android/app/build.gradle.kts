@@ -22,7 +22,7 @@ android {
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionName = "2.6" // User-facing Android version; pubspec uses semantic 2.6.0.
     }
 
     buildTypes {
