@@ -132,7 +132,7 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
                           if (showHeader)
                             Padding(
                               padding: EdgeInsets.only(
-                                top: index == 0 ? 4 : 12,
+                                top: index == 0 ? 2 : 10,
                                 bottom: 6,
                               ),
                               child: Text(
@@ -159,7 +159,7 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
                   const SizedBox(height: 20),
                   _buildWarningsSection(context, l10n, overview.warnings),
                 ],
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -421,6 +421,7 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
     final (statusLabel, statusColor) = _getBadgeDetails(row.status, l10n);
 
     return AppSectionCard(
+      margin: EdgeInsets.zero,
       padding: const EdgeInsets.all(12),
       onTap: () async {
         await Navigator.of(context).push(

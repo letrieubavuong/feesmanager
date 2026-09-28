@@ -329,10 +329,12 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
           const SizedBox(height: 10),
           const Divider(color: AppColors.border, height: 1),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(
                     Icons.groups_outlined,
@@ -405,8 +407,9 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
   Widget _buildDateSelector(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           const Text(
             'Sĩ số tại ngày:',
@@ -457,12 +460,14 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Danh sách học sinh đang học',
-                  style: TextStyle(
-                    color: AppColors.cyanAccent,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                const Expanded(
+                  child: Text(
+                    'Danh sách học sinh đang học',
+                    style: TextStyle(
+                      color: AppColors.cyanAccent,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 ElevatedButton.icon(
@@ -699,6 +704,35 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
     );
   }
 
+  ButtonStyle _compactTimelineButtonStyle({
+    required bool filled,
+    Color? backgroundColor,
+    Color? foregroundColor,
+  }) {
+    if (filled) {
+      return ElevatedButton.styleFrom(
+        backgroundColor: backgroundColor,
+        foregroundColor: foregroundColor,
+        minimumSize: const Size(0, 32),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 0),
+        visualDensity: const VisualDensity(horizontal: -2, vertical: -3),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        elevation: 0,
+      );
+    }
+
+    return OutlinedButton.styleFrom(
+      foregroundColor: foregroundColor,
+      minimumSize: const Size(0, 32),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 0),
+      visualDensity: const VisualDensity(horizontal: -2, vertical: -3),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      side: const BorderSide(color: AppColors.border),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    );
+  }
+
   Widget _buildTimelineRow(
     BuildContext context,
     ClassAttendanceTimelineItem item,
@@ -790,6 +824,8 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       AppStatusChip(
@@ -844,7 +880,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 6),
                   ],
 
                   // Action Buttons
@@ -852,13 +888,10 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
+                        style: _compactTimelineButtonStyle(
+                          filled: true,
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 6,
-                          ),
                         ),
                         onPressed: () async {
                           await Navigator.of(context).push(
@@ -874,78 +907,87 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                             ),
                           );
                         },
-                        icon: const Icon(Icons.fact_check_outlined, size: 16),
+                        icon: const Icon(Icons.fact_check_outlined, size: 13),
                         label: const Text(
                           'Điểm danh',
-                          style: TextStyle(fontSize: 12),
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     )
                   else if (session.trangThai == SessionStatus.DA_HOC)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.border),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                          ),
-                          onPressed: () async {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    AttendancePage(sessionId: session.id!),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            OutlinedButton(
+                              style: _compactTimelineButtonStyle(
+                                filled: false,
+                                foregroundColor: AppColors.textSecondary,
                               ),
-                            );
-                            ref.invalidate(
-                              classAttendanceTimelineProvider(
-                                classId: widget.classId,
-                                yearMonth: yearMonth,
+                              onPressed: () async {
+                                await Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        AttendancePage(sessionId: session.id!),
+                                  ),
+                                );
+                                ref.invalidate(
+                                  classAttendanceTimelineProvider(
+                                    classId: widget.classId,
+                                    yearMonth: yearMonth,
+                                  ),
+                                );
+                              },
+                              child: const Text(
+                                'Xem',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            );
-                          },
-                          child: const Text(
-                            'Xem',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
                             ),
-                          ),
+                            const SizedBox(width: 6),
+                            ElevatedButton.icon(
+                              style: _compactTimelineButtonStyle(
+                                filled: true,
+                                backgroundColor: AppColors.warning,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () async {
+                                await Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        AttendancePage(sessionId: session.id!),
+                                  ),
+                                );
+                                ref.invalidate(
+                                  classAttendanceTimelineProvider(
+                                    classId: widget.classId,
+                                    yearMonth: yearMonth,
+                                  ),
+                                );
+                              },
+                              icon: const Icon(
+                                Icons.edit_note_rounded,
+                                size: 13,
+                              ),
+                              label: const Text(
+                                'Sửa điểm danh',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.warning,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                          ),
-                          onPressed: () async {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    AttendancePage(sessionId: session.id!),
-                              ),
-                            );
-                            ref.invalidate(
-                              classAttendanceTimelineProvider(
-                                classId: widget.classId,
-                                yearMonth: yearMonth,
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.edit_note, size: 14),
-                          label: const Text(
-                            'Sửa điểm danh',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                 ],
               ),
