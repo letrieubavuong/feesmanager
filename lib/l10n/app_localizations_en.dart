@@ -1024,4 +1024,93 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paymentEditSuccess => 'Payment updated successfully';
+
+  @override
+  String get studentDetailTitle => 'Student Detail';
+
+  @override
+  String get studentStatusActive => 'Active';
+
+  @override
+  String get studentStatusStopped => 'Stopped';
+
+  @override
+  String studentJoinedFrom(Object date) {
+    return 'Joined: $date';
+  }
+
+  @override
+  String studentActiveClassesCount(Object count) {
+    return '$count active classes';
+  }
+
+  @override
+  String studentOutstandingDebt(Object amount) {
+    return 'Outstanding debt: $amount';
+  }
+
+  @override
+  String get studentEditProfile => 'Edit Profile';
+
+  @override
+  String get studentAddToClass => 'Add to Class';
+
+  @override
+  String get studentBusyTime => 'Busy Time';
+
+  @override
+  String get studentRecordPayment => 'Record Payment';
+
+  @override
+  String get studentActiveClasses => 'Active Classes';
+
+  @override
+  String studentTuitionMonth(Object month) {
+    return 'Tuition $month';
+  }
+
+  @override
+  String get studentFinalizedDue => 'Finalized';
+
+  @override
+  String get studentPaid => 'Collected';
+
+  @override
+  String get studentDebt => 'Outstanding';
+
+  @override
+  String get studentTuitionPartiallyPaid => 'Partially Paid';
+
+  @override
+  String get studentTuitionPaid => 'Paid';
+
+  @override
+  String get studentTuitionUnpaid => 'Unpaid';
+
+  @override
+  String get studentTuitionPendingFinalization => 'Pending Finalization';
+
+  @override
+  String get studentLatestPayment => 'Latest Payment';
+
+  @override
+  String get studentNoPayment => 'No payments this month';
+
+  @override
+  String get studentRecentAttendance => 'Recent Attendance';
+
+  @override
+  String get studentSeeAll => 'See All';
+
+  @override
+  String get studentBusyTimes => 'Busy Times';
+
+  @override
+  String get studentNoActiveClasses => 'No active classes';
+
+  @override
+  String get studentNoDebtToRecord => 'No finalized unpaid tuition invoices.';
+
+  @override
+  String get studentSelectTuitionInvoice => 'Select Tuition Invoice';
 }

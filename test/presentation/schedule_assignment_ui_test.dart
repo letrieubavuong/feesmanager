@@ -14,6 +14,9 @@ import 'package:tuition2027/features/schedule/presentation/assignment_controller
 import 'package:tuition2027/features/schedule/presentation/assignment_tab.dart';
 import 'package:tuition2027/features/schedule/presentation/schedule_controller.dart';
 import 'package:tuition2027/features/schedule_conflicts/presentation/schedule_conflict_providers.dart';
+import 'package:tuition2027/features/memberships/domain/membership.dart';
+import 'package:tuition2027/features/students/domain/student_detail_overview.dart';
+import 'package:tuition2027/features/students/domain/student_detail_overview_service.dart';
 import 'package:tuition2027/features/students/domain/student.dart';
 import 'package:tuition2027/features/students/presentation/student_detail_page.dart';
 
@@ -219,18 +222,42 @@ void main() {
   });
 
   testWidgets('Student Detail shows assigned schedule', (tester) async {
+    final overview = StudentDetailOverview(
+      student: testStudent,
+      activeClasses: [
+        StudentActiveClassSummary(
+          classEntity: testClass,
+          membership: ClassMembership(
+            id: 1,
+            idHocSinh: 1,
+            idLop: 1,
+            tuNgay: '2026-09-08',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+          shiftText: '17:30–19:00 • Thứ Hai',
+        ),
+      ],
+      firstActiveMembershipDate: DateTime.now(),
+      financial: const StudentMonthFinancialSummary(
+        month: '2026-09',
+        finalizedDue: 0,
+        totalPaid: 0,
+        remainingDebt: 0,
+        finalizedInvoiceCount: 0,
+        unfinalizedClassCount: 1,
+        previewUnfinalizedAmount: 0,
+        state: StudentFinancialDisplayState.noFinalizedInvoices,
+      ),
+      recentAttendance: const [],
+      activeBusyTimes: const [],
+    );
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           databaseProvider.overrideWith((ref) async => db),
-          studentDetailProvider(1).overrideWith((ref) async => testStudent),
-          studentScheduleProvider(
-            1,
-          ).overrideWith((ref) async => [testAssignment]),
-          studentConstraintsProvider(1).overrideWith((ref) async => []),
-          scheduleDetailProvider(1).overrideWith((ref) async => testSchedule),
-          classDetailProvider(1).overrideWith((ref) async => testClass),
-          studentMembershipHistoryProvider(1).overrideWith((ref) async => []),
+          studentDetailOverviewProvider(1).overrideWith((ref) async => overview),
         ],
         child: const MaterialApp(
           home: Scaffold(body: StudentDetailPage(studentId: 1)),

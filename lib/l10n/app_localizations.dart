@@ -2053,6 +2053,168 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Đã cập nhật khoản thu thành công'**
   String get paymentEditSuccess;
+
+  /// No description provided for @studentDetailTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chi tiết học sinh'**
+  String get studentDetailTitle;
+
+  /// No description provided for @studentStatusActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang học'**
+  String get studentStatusActive;
+
+  /// No description provided for @studentStatusStopped.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngừng học'**
+  String get studentStatusStopped;
+
+  /// No description provided for @studentJoinedFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tham gia từ: {date}'**
+  String studentJoinedFrom(Object date);
+
+  /// No description provided for @studentActiveClassesCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} lớp đang tham gia'**
+  String studentActiveClassesCount(Object count);
+
+  /// No description provided for @studentOutstandingDebt.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn nợ: {amount}'**
+  String studentOutstandingDebt(Object amount);
+
+  /// No description provided for @studentEditProfile.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa hồ sơ'**
+  String get studentEditProfile;
+
+  /// No description provided for @studentAddToClass.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm vào lớp'**
+  String get studentAddToClass;
+
+  /// No description provided for @studentBusyTime.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ bận'**
+  String get studentBusyTime;
+
+  /// No description provided for @studentRecordPayment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi nhận thu'**
+  String get studentRecordPayment;
+
+  /// No description provided for @studentActiveClasses.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lớp đang tham gia'**
+  String get studentActiveClasses;
+
+  /// No description provided for @studentTuitionMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'Học phí tháng {month}'**
+  String studentTuitionMonth(Object month);
+
+  /// No description provided for @studentFinalizedDue.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chốt'**
+  String get studentFinalizedDue;
+
+  /// No description provided for @studentPaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thu'**
+  String get studentPaid;
+
+  /// No description provided for @studentDebt.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn nợ'**
+  String get studentDebt;
+
+  /// No description provided for @studentTuitionPartiallyPaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thanh toán một phần'**
+  String get studentTuitionPartiallyPaid;
+
+  /// No description provided for @studentTuitionPaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thanh toán'**
+  String get studentTuitionPaid;
+
+  /// No description provided for @studentTuitionUnpaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa thanh toán'**
+  String get studentTuitionUnpaid;
+
+  /// No description provided for @studentTuitionPendingFinalization.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn lớp chưa chốt'**
+  String get studentTuitionPendingFinalization;
+
+  /// No description provided for @studentLatestPayment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khoản thu gần nhất'**
+  String get studentLatestPayment;
+
+  /// No description provided for @studentNoPayment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có khoản thu trong tháng này'**
+  String get studentNoPayment;
+
+  /// No description provided for @studentRecentAttendance.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm danh gần đây'**
+  String get studentRecentAttendance;
+
+  /// No description provided for @studentSeeAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem tất cả'**
+  String get studentSeeAll;
+
+  /// No description provided for @studentBusyTimes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ bận'**
+  String get studentBusyTimes;
+
+  /// No description provided for @studentNoActiveClasses.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tham gia lớp nào'**
+  String get studentNoActiveClasses;
+
+  /// No description provided for @studentNoDebtToRecord.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có khoản học phí đã chốt cần thanh toán.'**
+  String get studentNoDebtToRecord;
+
+  /// No description provided for @studentSelectTuitionInvoice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn khoản học phí cần thanh toán'**
+  String get studentSelectTuitionInvoice;
 }
 
 class _AppLocalizationsDelegate

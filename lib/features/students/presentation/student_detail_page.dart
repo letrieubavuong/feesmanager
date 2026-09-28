@@ -1,32 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../app/common_widgets/app_error_state.dart';
 import '../../../app/common_widgets/app_feedback.dart';
+import '../../../app/common_widgets/app_loading_state.dart';
+import '../../../app/common_widgets/attendance_status_icon.dart';
 import '../../../app/common_widgets/navy_components.dart';
-import '../../../app/common_widgets/searchable_selectors.dart';
 import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
-import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
-import '../domain/student.dart';
-import '../domain/student_service.dart';
-import '../../memberships/domain/membership.dart';
-import '../../memberships/domain/membership_service.dart';
+import '../../../core/database/database_provider.dart';
+import '../../../core/utils/date_formatter.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../attendance/presentation/attendance_page.dart';
 import '../../classes/presentation/class_controller.dart';
+import '../../classes/presentation/class_detail_page.dart';
+import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
+import '../../payments/presentation/record_payment_bottom_sheet.dart';
 import '../../schedule_conflicts/domain/schedule_constraint.dart';
-import '../../schedule_conflicts/presentation/schedule_conflict_providers.dart';
 import '../../schedule_conflicts/presentation/schedule_constraint_dialogs.dart';
-import 'student_form_page.dart';
+import '../domain/student.dart';
+import '../domain/student_detail_overview.dart';
+import '../domain/student_detail_overview_service.dart';
+import '../domain/student_service.dart';
 import 'student_controller.dart';
-
-import 'package:tuition2027/core/utils/date_formatter.dart';
-import '../../schedule/domain/student_shift_assignment.dart';
-import '../../schedule/domain/schedule_service.dart';
-import '../../schedule/domain/class_schedule.dart';
-import '../../session_credits/presentation/session_credit_page.dart';
+import 'student_form_page.dart';
 
 part 'student_detail_page.g.dart';
+
+@riverpod
+Future<Student?> studentDetail(StudentDetailRef ref, int id) async {
+  final service = await ref.watch(studentServiceProvider.future);
+  return service.getStudentById(id);
+}
 
 class StudentDetailPage extends ConsumerWidget {
   final int studentId;
@@ -34,55 +42,75 @@ class StudentDetailPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final studentAsync = ref.watch(studentDetailProvider(studentId));
+    final l10n = AppLocalizations.of(context)!;
+    final overviewAsync = ref.watch(studentDetailOverviewProvider(studentId));
 
     return Scaffold(
       backgroundColor: AppColors.background,
       drawer: const AppGlobalDrawer(),
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         leading: const BackButton(),
-        title: const Text('Chi tiết học sinh'),
+        title: Text(l10n.studentDetailTitle),
         actions: [
-          const GlobalMenuButton(),
-          studentAsync.when(
-            data: (student) {
-              if (student == null) return const SizedBox.shrink();
+          overviewAsync.when(
+            data: (overview) {
+              final student = overview.student;
               final isStopped = student.daLuuTru;
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
                     icon: const Icon(Icons.edit_outlined),
-                    tooltip: 'Sửa thông tin',
+                    tooltip: l10n.studentEditProfile,
                     onPressed: () async {
                       await Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (context) =>
-                              StudentFormPage(student: student),
+                          builder: (_) => StudentFormPage(student: student),
                         ),
                       );
-                      ref.invalidate(studentDetailProvider(studentId));
-                      ref
-                          .read(studentListControllerProvider.notifier)
-                          .refresh();
+                      ref.invalidate(studentDetailOverviewProvider(studentId));
                     },
                   ),
-                  IconButton(
-                    key: isStopped
-                        ? UiKeys.studentRestoreAction
-                        : UiKeys.studentArchiveAction,
-                    icon: Icon(
-                      isStopped
-                          ? Icons.restore_rounded
-                          : Icons.person_off_outlined,
-                      color: isStopped ? AppColors.success : AppColors.error,
-                    ),
-                    tooltip: isStopped
-                        ? 'Cho hoạt động lại'
-                        : 'Đánh dấu ngừng học',
-                    onPressed: () =>
-                        _toggleArchiveStatus(context, ref, student),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (value) {
+                      if (value == 'toggle_status') {
+                        _toggleArchiveStatus(context, ref, student);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        key: isStopped
+                            ? UiKeys.studentRestoreAction
+                            : UiKeys.studentArchiveAction,
+                        value: 'toggle_status',
+                        child: Row(
+                          children: [
+                            Icon(
+                              isStopped
+                                  ? Icons.restore_rounded
+                                  : Icons.person_off_outlined,
+                              color: isStopped
+                                  ? AppColors.success
+                                  : AppColors.error,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              isStopped
+                                  ? 'Cho hoạt động lại'
+                                  : l10n.studentStatusStopped,
+                              style: TextStyle(
+                                color: isStopped
+                                    ? AppColors.success
+                                    : AppColors.error,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               );
@@ -92,563 +120,88 @@ class StudentDetailPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: studentAsync.when(
-        data: (student) {
-          if (student == null) {
-            return const Center(
-              child: Text(
-                'Không tìm thấy học sinh',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            );
-          }
-          final isStopped = student.daLuuTru;
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context, student),
-                const SizedBox(height: 16),
-                const AppSectionHeader(title: 'Thông tin cá nhân & Liên hệ'),
-                AppSectionCard(
-                  child: Column(
-                    children: [
-                      CompactInfoRow(
-                        icon: Icons.cake_outlined,
-                        label: 'Ngày sinh',
-                        value: student.ngaySinh != null
-                            ? DateFormatter.formatDisplayDate(student.ngaySinh)
-                            : 'Chưa cập nhật',
-                      ),
-                      CompactInfoRow(
-                        icon: Icons.location_on_outlined,
-                        label: 'Địa chỉ',
-                        value: student.diaChi ?? 'Chưa cập nhật',
-                      ),
-                      CompactInfoRow(
-                        icon: Icons.public_outlined,
-                        label: 'Facebook',
-                        value: student.facebook ?? 'Chưa cập nhật',
-                      ),
-                      const Divider(color: AppColors.border, height: 16),
-                      CompactInfoRow(
-                        icon: Icons.person_outline,
-                        label: 'Phụ huynh',
-                        value: student.tenPhuHuynh ?? 'Chưa cập nhật',
-                      ),
-                      CompactInfoRow(
-                        icon: Icons.phone_outlined,
-                        label: 'SĐT Phụ huynh',
-                        value: student.sdtPhuHuynh ?? 'Chưa cập nhật',
-                        valueColor: student.sdtPhuHuynh != null
-                            ? AppColors.cyanAccent
-                            : null,
-                      ),
-                      CompactInfoRow(
-                        icon: Icons.phone_android_outlined,
-                        label: 'SĐT Học sinh',
-                        value: student.sdtHocSinh ?? 'Chưa cập nhật',
-                      ),
-                      CompactInfoRow(
-                        icon: Icons.email_outlined,
-                        label: 'Email',
-                        value: student.email ?? 'Chưa cập nhật',
-                      ),
-                      if (student.ghiChu != null &&
-                          student.ghiChu!.isNotEmpty) ...[
-                        const Divider(color: AppColors.border, height: 16),
-                        CompactInfoRow(
-                          icon: Icons.notes_outlined,
-                          label: 'Ghi chú',
-                          value: student.ghiChu!,
-                        ),
-                      ],
-                    ],
+      body: overviewAsync.when(
+        data: (overview) {
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(studentDetailOverviewProvider(studentId));
+              await ref.read(studentDetailOverviewProvider(studentId).future);
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. STUDENT IDENTITY HEADER
+                  _buildHeader(context, overview),
+
+                  const SizedBox(height: 14),
+
+                  // 2. 2 KPI CARDS
+                  _buildKpiSection(context, l10n, overview),
+
+                  const SizedBox(height: 16),
+
+                  // 3. 4 BUSINESS ACTIONS
+                  _buildBusinessActions(context, ref, l10n, overview),
+
+                  const SizedBox(height: 20),
+
+                  // 4. LỚP ĐANG THAM GIA
+                  _buildActiveClassesSection(context, l10n, overview),
+
+                  const SizedBox(height: 20),
+
+                  // 5. HỌC PHÍ THÁNG
+                  _buildTuitionSection(context, ref, l10n, overview),
+
+                  const SizedBox(height: 20),
+
+                  // 6. ĐIỂM DANH GẦN ĐÂY & GIỜ BẬN
+                  _buildAttendanceAndBusyTimesSection(
+                    context,
+                    ref,
+                    l10n,
+                    overview,
                   ),
-                ),
-                const SizedBox(height: 16),
-                _buildMembershipSection(context, ref, student.id!, isStopped),
-                const SizedBox(height: 16),
-                _buildConstraintSection(context, ref, student.id!),
-                const SizedBox(height: 16),
-                _buildScheduleSection(context, ref, student.id!),
-              ],
+
+                  // 7. GHI CHÚ
+                  if (overview.student.ghiChu != null &&
+                      overview.student.ghiChu!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    _buildNotesSection(context, l10n, overview.student),
+                  ],
+
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
-        error: (e, _) => Center(
-          child: Text(
-            'Lỗi: $e',
-            style: const TextStyle(color: AppColors.error),
-          ),
+        loading: () => const AppLoadingState(),
+        error: (error, stack) => AppErrorState(
+          title: l10n.commonError,
+          error: error.toString(),
+          onRetry: () =>
+              ref.invalidate(studentDetailOverviewProvider(studentId)),
         ),
       ),
     );
   }
 
-  Widget _buildMembershipSection(
-    BuildContext context,
-    WidgetRef ref,
-    int studentId,
-    bool isStudentStopped,
-  ) {
-    final membershipsAsync = ref.watch(
-      studentMembershipHistoryProvider(studentId),
-    );
+  Widget _buildHeader(BuildContext context, StudentDetailOverview overview) {
+    final s = overview.student;
+    final isStopped = s.daLuuTru;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppSectionHeader(
-          title: 'Lớp đang học',
-          actionLabel: 'Thêm vào lớp',
-          onAction: isStudentStopped
-              ? null
-              : () async {
-                  final classList = await ref.read(
-                    classListControllerProvider.future,
-                  );
-                  if (!context.mounted) return;
-                  final activeClasses = classList
-                      .where((c) => !c.daLuuTru)
-                      .toList();
-                  if (activeClasses.isEmpty) {
-                    AppFeedback.showErrorSnackBar(
-                      context,
-                      'Không có lớp học nào đang hoạt động.',
-                    );
-                    return;
-                  }
-                  final chosenClass = await showClassSelectorDialog(
-                    context,
-                    classes: activeClasses,
-                  );
-                  if (chosenClass != null && context.mounted) {
-                    await showEnrollStudentBottomSheet(
-                      context,
-                      classId: chosenClass.id!,
-                      initialStudentId: studentId,
-                    );
-                    ref.invalidate(studentMembershipHistoryProvider(studentId));
-                  }
-                },
-        ),
-        membershipsAsync.when(
-          data: (memberships) {
-            if (memberships.isEmpty) {
-              return const AppSectionCard(
-                child: Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
-                      'Học sinh chưa tham gia lớp nào.',
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }
-            return Column(
-              children: memberships
-                  .map((m) => _buildMembershipTile(context, ref, m))
-                  .toList(),
-            );
-          },
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
-          ),
-          error: (e, _) => Text(
-            'Lỗi tải danh sách lớp: $e',
-            style: const TextStyle(color: AppColors.error),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildScheduleSection(
-    BuildContext context,
-    WidgetRef ref,
-    int studentId,
-  ) {
-    final assignmentsAsync = ref.watch(studentScheduleProvider(studentId));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const AppSectionHeader(title: 'Phân ca lịch học'),
-        assignmentsAsync.when(
-          data: (assignments) {
-            if (assignments.isEmpty) {
-              return const AppSectionCard(
-                child: Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
-                      'Chưa có ca học nào được phân.',
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }
-            return Column(
-              children: assignments
-                  .map((a) => _buildAssignmentTile(context, ref, a))
-                  .toList(),
-            );
-          },
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
-          ),
-          error: (e, _) => Text(
-            'Lỗi tải ca học: $e',
-            style: const TextStyle(color: AppColors.error),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildConstraintSection(
-    BuildContext context,
-    WidgetRef ref,
-    int studentId,
-  ) {
-    final constraintsAsync = ref.watch(studentConstraintsProvider(studentId));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppSectionHeader(
-          title: 'Giờ bận',
-          actionLabel: 'Thêm giờ bận',
-          onAction: () => showAddConstraintDialog(context, ref, studentId),
-        ),
-        constraintsAsync.when(
-          data: (constraints) {
-            if (constraints.isEmpty) {
-              return const AppSectionCard(
-                child: Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
-                      'Chưa thiết lập giờ bận nào.',
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }
-            return Column(
-              children: constraints
-                  .map((c) => _buildConstraintTile(context, ref, c, studentId))
-                  .toList(),
-            );
-          },
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
-          ),
-          error: (e, _) => Text(
-            'Lỗi tải giờ bận: $e',
-            style: const TextStyle(color: AppColors.error),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildConstraintTile(
-    BuildContext context,
-    WidgetRef ref,
-    ScheduleConstraint c,
-    int studentId,
-  ) {
-    final isCancelled = c.status == ConstraintStatus.DA_HUY;
-
-    var subtitleText = c.occurrenceType == OccurrenceType.DINH_KY
-        ? 'Thứ ${c.weekday} (${c.startTime} - ${c.endTime}) | Từ ${DateFormatter.formatDisplayDate(c.effectiveFrom)}${c.effectiveTo != null ? " đến ${DateFormatter.formatDisplayDate(c.effectiveTo!)}" : ""}'
-        : 'Ngày ${DateFormatter.formatDisplayDate(c.specificDate)} (${c.startTime} - ${c.endTime})';
-
-    if (c.travelBufferMinutes > 0) {
-      subtitleText += ' | Đệm: ${c.travelBufferMinutes} phút';
-    }
-    if (c.note != null && c.note!.isNotEmpty) {
-      subtitleText += ' | Ghi chú: ${c.note}';
-    }
-
-    return AppSectionCard(
-      margin: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Icon(
-            c.type == ConstraintType.HARD_BLOCK
-                ? Icons.block
-                : c.type == ConstraintType.OTHER_CENTER
-                ? Icons.domain
-                : Icons.star_border,
-            color: isCancelled
-                ? AppColors.textMuted
-                : (c.type == ConstraintType.HARD_BLOCK
-                      ? AppColors.error
-                      : AppColors.warning),
-            size: 22,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${c.type.displayName}${c.sourceName != null ? " - ${c.sourceName}" : ""}',
-                  style: TextStyle(
-                    color: isCancelled
-                        ? AppColors.textMuted
-                        : AppColors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    decoration: isCancelled ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitleText,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (!isCancelled)
-            TextButton(
-              onPressed: () async {
-                final confirm = await AppFeedback.showConfirmBottomSheet(
-                  context,
-                  title: 'Xóa giờ bận',
-                  message: 'Bạn có chắc chắn muốn xóa giờ bận này?',
-                  confirmLabel: 'Xóa giờ bận',
-                  cancelLabel: 'Không',
-                  isDestructive: true,
-                );
-
-                if (confirm == true && c.id != null) {
-                  await ref
-                      .read(scheduleConstraintControllerProvider.notifier)
-                      .cancelConstraint(c.id!, studentId);
-                }
-              },
-              child: const Text(
-                'Xóa',
-                style: TextStyle(color: AppColors.error, fontSize: 13),
-              ),
-            )
-          else
-            const AppStatusChip(
-              label: 'Đã xóa',
-              color: AppColors.textMuted,
-              compact: true,
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAssignmentTile(
-    BuildContext context,
-    WidgetRef ref,
-    StudentShiftAssignment a,
-  ) {
-    return AppSectionCard(
-      margin: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.calendar_month_outlined,
-            color: AppColors.cyanAccent,
-            size: 22,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Consumer(
-                  builder: (context, ref, _) {
-                    final scheduleAsync = ref.watch(
-                      scheduleDetailProvider(a.idLichHoc),
-                    );
-                    return scheduleAsync.when(
-                      data: (s) => Text(
-                        '${DateFormatter.formatVietnameseWeekday(s?.thuTrongTuan ?? 0)}: ${s?.gioBatDau} - ${s?.gioKetThuc}',
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      loading: () => const Text(
-                        '...',
-                        style: TextStyle(color: AppColors.textMuted),
-                      ),
-                      error: (_, __) => const Text(
-                        'Lỗi tải lịch',
-                        style: TextStyle(color: AppColors.error),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 2),
-                Consumer(
-                  builder: (context, ref, _) {
-                    final classAsync = ref.watch(classDetailProvider(a.idLop));
-                    return classAsync.when(
-                      data: (c) => Text(
-                        'Lớp: ${c?.tenLop ?? 'Không xác định'}',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                      loading: () => const Text(
-                        '...',
-                        style: TextStyle(color: AppColors.textMuted),
-                      ),
-                      error: (_, __) => const Text(
-                        'Lỗi tải lớp',
-                        style: TextStyle(color: AppColors.error),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMembershipTile(
-    BuildContext context,
-    WidgetRef ref,
-    ClassMembership m,
-  ) {
-    final classAsync = ref.watch(classDetailProvider(m.idLop));
-    final isActive = m.isActiveOn(DateTime.now());
-
-    return AppSectionCard(
-      margin: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: classAsync.when(
-                        data: (c) => Text(
-                          c?.tenLop ?? 'Lớp không xác định',
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            decoration: c?.daLuuTru == true
-                                ? TextDecoration.lineThrough
-                                : null,
-                          ),
-                        ),
-                        loading: () => const Text(
-                          '...',
-                          style: TextStyle(color: AppColors.textMuted),
-                        ),
-                        error: (_, __) => const Text(
-                          'Lỗi',
-                          style: TextStyle(color: AppColors.error),
-                        ),
-                      ),
-                    ),
-                    AppStatusChip(
-                      label: isActive ? 'Đang học' : 'Đã nghỉ',
-                      color: isActive ? AppColors.success : AppColors.textMuted,
-                      compact: true,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Tham gia: ${DateFormatter.formatDisplayDate(m.tuNgay)}${m.denNgay != null ? ' - Nghỉ: ${DateFormatter.formatDisplayDate(m.denNgay!)}' : ''}',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-                if (m.lyDoKetThuc != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    'Lý do: ${m.lyDoKetThuc}',
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
-                      fontStyle: FontStyle.italic,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              side: const BorderSide(color: AppColors.border),
-            ),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => SessionCreditPage(
-                    studentId: m.idHocSinh,
-                    classId: m.idLop,
-                  ),
-                ),
-              );
-            },
-            child: const Text(
-              'Buổi dư',
-              style: TextStyle(color: AppColors.cyanAccent, fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context, Student student) {
-    final isStopped = student.daLuuTru;
     return AppSectionCard(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           StudentAvatar(
-            gioiTinh: student.gioiTinh,
-            studentName: student.hoTen,
-            radius: 32,
+            gioiTinh: s.gioiTinh,
+            studentName: s.hoTen,
+            radius: 30,
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -656,30 +209,87 @@ class StudentDetailPage extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
                       child: Text(
-                        student.hoTen,
+                        s.hoTen,
                         style: const TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    AppActiveStatusBadge(isActive: !isStopped),
+                    const SizedBox(width: 8),
+                    AppStatusChip(
+                      label: isStopped ? 'Ngừng học' : 'Đang học',
+                      color: isStopped ? AppColors.textMuted : AppColors.success,
+                      compact: true,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  '${student.khoi != null ? 'Khối ${student.khoi}' : 'Chưa xếp khối'} • ${student.truongDangHoc ?? 'Chưa cập nhật trường'}',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
+                Row(
+                  children: [
+                    if (s.gioiTinh != null && s.gioiTinh!.isNotEmpty) ...[
+                      Icon(
+                        s.gioiTinh == 'NAM' ? Icons.male : Icons.female,
+                        size: 14,
+                        color: s.gioiTinh == 'NAM'
+                            ? AppColors.primary
+                            : Colors.pinkAccent,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        s.gioiTinh == 'NAM' ? 'Nam' : 'Nữ',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                    if (s.sdtPhuHuynh != null &&
+                        s.sdtPhuHuynh!.isNotEmpty) ...[
+                      const Icon(
+                        Icons.phone_outlined,
+                        size: 14,
+                        color: AppColors.cyanAccent,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${s.sdtPhuHuynh} (PH)',
+                        style: const TextStyle(
+                          color: AppColors.cyanAccent,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
+                if (overview.firstActiveMembershipDate != null) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.event_outlined,
+                        size: 14,
+                        color: AppColors.textMuted,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Tham gia từ: ${DateFormatter.formatDisplayDate(overview.firstActiveMembershipDate!)}',
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -688,85 +298,1069 @@ class StudentDetailPage extends ConsumerWidget {
     );
   }
 
-  void _toggleArchiveStatus(
+  Widget _buildKpiSection(
+    BuildContext context,
+    AppLocalizations l10n,
+    StudentDetailOverview overview,
+  ) {
+    final fmt = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+    final activeCount = overview.activeClasses.length;
+    final debt = overview.financial.remainingDebt;
+
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.cyanAccent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.school_outlined,
+                    color: AppColors.cyanAccent,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.studentActiveClassesCount(activeCount),
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: (debt > 0 ? AppColors.error : AppColors.success)
+                        .withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: debt > 0 ? AppColors.error : AppColors.success,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Còn nợ: ${fmt.format(debt)}',
+                        style: TextStyle(
+                          color: debt > 0 ? AppColors.error : AppColors.success,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBusinessActions(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    StudentDetailOverview overview,
+  ) {
+    final isStopped = overview.student.daLuuTru;
+
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      childAspectRatio: 2.1,
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
+      children: [
+        _buildActionCard(
+          context,
+          title: l10n.studentEditProfile,
+          icon: Icons.edit_note_outlined,
+          color: AppColors.primary,
+          onTap: () async {
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => StudentFormPage(student: overview.student),
+              ),
+            );
+            ref.invalidate(studentDetailOverviewProvider(studentId));
+          },
+        ),
+        _buildActionCard(
+          context,
+          title: l10n.studentAddToClass,
+          icon: Icons.group_add_outlined,
+          color: AppColors.success,
+          enabled: !isStopped,
+          onTap: () =>
+              _showSelectClassForEnrollment(context, ref, overview.student.id!),
+        ),
+        _buildActionCard(
+          context,
+          title: l10n.studentBusyTime,
+          icon: Icons.schedule_outlined,
+          color: AppColors.warning,
+          onTap: () async {
+            await showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              useSafeArea: true,
+              builder: (_) =>
+                  BusyTimeFormBottomSheet(studentId: overview.student.id!),
+            );
+            ref.invalidate(studentDetailOverviewProvider(studentId));
+          },
+        ),
+        _buildActionCard(
+          context,
+          title: l10n.studentRecordPayment,
+          icon: Icons.payments_outlined,
+          color: const Color(0xFF8B5CF6),
+          onTap: () => _handleRecordPayment(context, ref, overview),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionCard(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required Color color,
+    bool enabled = true,
+    required VoidCallback onTap,
+  }) {
+    final opacity = enabled ? 1.0 : 0.4;
+    return AppSectionCard(
+      padding: const EdgeInsets.all(10),
+      onTap: enabled ? onTap : null,
+      child: Opacity(
+        opacity: opacity,
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              color: AppColors.textMuted,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActiveClassesSection(
+    BuildContext context,
+    AppLocalizations l10n,
+    StudentDetailOverview overview,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(
+          l10n.studentActiveClasses,
+          Icons.school_outlined,
+        ),
+        const SizedBox(height: 10),
+        if (overview.activeClasses.isEmpty)
+          AppSectionCard(
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: Text(
+                l10n.studentNoActiveClasses,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          )
+        else
+          Column(
+            children: overview.activeClasses.map((item) {
+              return AppSectionCard(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                onTap: () {
+                  if (item.classEntity.id != null) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ClassDetailPage(
+                          classId: item.classEntity.id!,
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.class_outlined,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.classEntity.tenLop,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (item.shiftText.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              item.shiftText,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.check_circle,
+                      color: AppColors.success,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.textMuted,
+                      size: 18,
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildTuitionSection(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    StudentDetailOverview overview,
+  ) {
+    final fmt = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+    final fin = overview.financial;
+
+    String statusText;
+    Color statusColor;
+
+    switch (fin.state) {
+      case StudentFinancialDisplayState.fullyPaid:
+        statusText = l10n.studentTuitionPaid;
+        statusColor = AppColors.success;
+        break;
+      case StudentFinancialDisplayState.partiallyPaid:
+        statusText = l10n.studentTuitionPartiallyPaid;
+        statusColor = AppColors.warning;
+        break;
+      case StudentFinancialDisplayState.unpaid:
+        statusText = l10n.studentTuitionUnpaid;
+        statusColor = AppColors.error;
+        break;
+      case StudentFinancialDisplayState.hasUnfinalizedClasses:
+        statusText = l10n.studentTuitionPendingFinalization;
+        statusColor = AppColors.cyanAccent;
+        break;
+      case StudentFinancialDisplayState.noFinalizedInvoices:
+        statusText = l10n.dashboardUnfinalizedTuition;
+        statusColor = AppColors.textMuted;
+        break;
+    }
+
+    final monthFormatted =
+        fin.month.length == 7 ? '${fin.month.substring(5)}/${fin.month.substring(0, 4)}' : fin.month;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(
+          'Học phí tháng $monthFormatted',
+          Icons.account_balance_wallet_outlined,
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              statusText,
+              style: TextStyle(
+                color: statusColor,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        AppSectionCard(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildFinancialMetricCol(
+                    l10n.studentFinalizedDue,
+                    fmt.format(fin.finalizedDue),
+                    AppColors.textPrimary,
+                  ),
+                  Container(height: 30, width: 1, color: AppColors.border),
+                  _buildFinancialMetricCol(
+                    l10n.studentPaid,
+                    fmt.format(fin.totalPaid),
+                    AppColors.success,
+                  ),
+                  Container(height: 30, width: 1, color: AppColors.border),
+                  _buildFinancialMetricCol(
+                    l10n.studentDebt,
+                    fmt.format(fin.remainingDebt),
+                    fin.remainingDebt > 0 ? AppColors.error : AppColors.success,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Divider(color: AppColors.border, height: 1),
+              const SizedBox(height: 10),
+              if (fin.latestPayment != null)
+                InkWell(
+                  onTap: () {
+                    // Open payment history / details
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.payments_outlined,
+                        color: AppColors.success,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${l10n.studentLatestPayment}: ${fmt.format(fin.latestPayment!.amount)} • ${DateFormatter.formatDisplayDate(fin.latestPayment!.paymentDate)}',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textMuted,
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Text(
+                  l10n.studentNoPayment,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFinancialMetricCol(String label, String value, Color valueColor) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 11,
+          ),
+        ),
+        const SizedBox(height: 4),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: TextStyle(
+              color: valueColor,
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAttendanceAndBusyTimesSection(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    StudentDetailOverview overview,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 360;
+
+        final attendancePanel = _buildRecentAttendanceCard(
+          context,
+          l10n,
+          overview.recentAttendance,
+        );
+        final busyTimesPanel = _buildBusyTimesCard(
+          context,
+          ref,
+          l10n,
+          overview.activeBusyTimes,
+        );
+
+        if (isNarrow) {
+          return Column(
+            children: [
+              attendancePanel,
+              const SizedBox(height: 16),
+              busyTimesPanel,
+            ],
+          );
+        } else {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: attendancePanel),
+              const SizedBox(width: 12),
+              Expanded(child: busyTimesPanel),
+            ],
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildRecentAttendanceCard(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<StudentRecentAttendanceItem> items,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(
+          l10n.studentRecentAttendance,
+          Icons.fact_check_outlined,
+        ),
+        const SizedBox(height: 8),
+        AppSectionCard(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          child: items.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Center(
+                    child: Text(
+                      'Chưa có dữ liệu điểm danh',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) =>
+                      const Divider(color: AppColors.border, height: 1),
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    final dateStr =
+                        DateFormatter.formatDisplayDate(item.session.ngay);
+                    final shortDate =
+                        dateStr.length >= 5 ? dateStr.substring(0, 5) : dateStr;
+
+                    return InkWell(
+                      onTap: () {
+                        if (item.session.id != null) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  AttendancePage(sessionId: item.session.id!),
+                            ),
+                          );
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          children: [
+                            Text(
+                              shortDate,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                item.classEntity.tenLop,
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            AttendanceStatusIcon(
+                              status: item.attendance.trangThai,
+                              size: 16,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBusyTimesCard(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    List<ScheduleConstraint> constraints,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(
+          l10n.studentBusyTimes,
+          Icons.schedule_outlined,
+          color: AppColors.warning,
+        ),
+        const SizedBox(height: 8),
+        AppSectionCard(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          child: constraints.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Center(
+                    child: Text(
+                      'Không có giờ bận',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: constraints.take(3).length,
+                  separatorBuilder: (_, __) =>
+                      const Divider(color: AppColors.border, height: 1),
+                  itemBuilder: (context, index) {
+                    final c = constraints[index];
+                    String titleStr = '';
+                    if (c.occurrenceType == OccurrenceType.DINH_KY &&
+                        c.weekday != null) {
+                      titleStr = _formatWeekday(c.weekday);
+                    } else if (c.specificDate != null) {
+                      titleStr = DateFormatter.formatDisplayDate(c.specificDate!);
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.schedule,
+                            color: AppColors.warning,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  titleStr,
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  '${c.startTime}–${c.endTime}',
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNotesSection(
+    BuildContext context,
+    AppLocalizations l10n,
+    Student student,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(
+          l10n.studentNotes,
+          Icons.notes_outlined,
+        ),
+        const SizedBox(height: 8),
+        AppSectionCard(
+          padding: const EdgeInsets.all(12),
+          child: Text(
+            student.ghiChu!,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionHeader(
+    String title,
+    IconData icon, {
+    Color? color,
+    Widget? trailing,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: color ?? AppColors.cyanAccent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (trailing != null) ...[
+          const SizedBox(width: 8),
+          trailing,
+        ],
+      ],
+    );
+  }
+
+  String _formatWeekday(int? thu) {
+    switch (thu) {
+      case 1:
+        return 'Thứ 2';
+      case 2:
+        return 'Thứ 3';
+      case 3:
+        return 'Thứ 4';
+      case 4:
+        return 'Thứ 5';
+      case 5:
+        return 'Thứ 6';
+      case 6:
+        return 'Thứ 7';
+      case 7:
+        return 'Chủ Nhật';
+      default:
+        return '';
+    }
+  }
+
+  Future<void> _showSelectClassForEnrollment(
+    BuildContext context,
+    WidgetRef ref,
+    int studentId,
+  ) async {
+    final classesAsync = ref.read(classListControllerProvider);
+    final classes = classesAsync.value ?? [];
+    final activeClasses = classes.where((c) => !c.daLuuTru).toList();
+
+    if (activeClasses.isEmpty) {
+      AppFeedback.showWarningSnackBar(context, 'Không có lớp học đang hoạt động.');
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Chọn lớp học để ghi danh',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 300),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: activeClasses.length,
+                separatorBuilder: (_, __) =>
+                    const Divider(color: AppColors.border, height: 1),
+                itemBuilder: (context, index) {
+                  final c = activeClasses[index];
+                  return ListTile(
+                    title: Text(
+                      c.tenLop,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.cyanAccent,
+                    ),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        useSafeArea: true,
+                        builder: (_) => EnrollStudentBottomSheet(
+                          classId: c.id!,
+                          initialStudentId: studentId,
+                        ),
+                      );
+                      ref.invalidate(
+                        studentDetailOverviewProvider(studentId),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleRecordPayment(
+    BuildContext context,
+    WidgetRef ref,
+    StudentDetailOverview overview,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final db = await ref.read(databaseProvider.future);
+
+    final rows = await db.rawQuery(
+      '''
+      SELECT h.*, l.ten_lop 
+      FROM hoc_phi_thang h
+      JOIN lop l ON h.id_lop = l.id
+      WHERE h.id_hoc_sinh = ? 
+        AND h.thang = ? 
+        AND h.chot_luc IS NOT NULL 
+        AND (h.so_tien_phai_thu - COALESCE((
+          SELECT SUM(so_tien) FROM thanh_toan 
+          WHERE id_hoc_sinh = h.id_hoc_sinh AND id_lop = h.id_lop AND strftime('%Y-%m', ngay_thu) = h.thang
+        ), 0)) > 0
+      ''',
+      [overview.student.id!, overview.financial.month],
+    );
+
+    if (rows.isEmpty) {
+      AppFeedback.showWarningSnackBar(context, l10n.studentNoDebtToRecord);
+      return;
+    }
+
+    if (rows.length == 1) {
+      final r = rows.first;
+      final classId = r['id_lop'] as int;
+      final due = (r['so_tien_phai_thu'] as num).toInt();
+      final paidRows = await db.rawQuery(
+        "SELECT SUM(so_tien) as total FROM thanh_toan WHERE id_hoc_sinh = ? AND id_lop = ? AND strftime('%Y-%m', ngay_thu) = ?",
+        [overview.student.id!, classId, overview.financial.month],
+      );
+      final paid = (paidRows.first['total'] as num?)?.toInt() ?? 0;
+      final debt = (due - paid) > 0 ? (due - paid) : 0;
+
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (_) => RecordPaymentBottomSheet(
+          studentId: overview.student.id!,
+          classId: classId,
+          month: overview.financial.month,
+          suggestedAmount: debt,
+        ),
+      );
+      ref.invalidate(studentDetailOverviewProvider(overview.student.id!));
+    } else {
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (_) => Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.studentSelectTuitionInvoice,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListView.separated(
+                shrinkWrap: true,
+                itemCount: rows.length,
+                separatorBuilder: (_, __) =>
+                    const Divider(color: AppColors.border, height: 1),
+                itemBuilder: (context, index) {
+                  final r = rows[index];
+                  final classId = r['id_lop'] as int;
+                  final className = r['ten_lop'] as String;
+                  final due = (r['so_tien_phai_thu'] as num).toInt();
+
+                  return ListTile(
+                    title: Text(
+                      className,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Đã chốt: ${NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(due)}',
+                    ),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        useSafeArea: true,
+                        builder: (_) => RecordPaymentBottomSheet(
+                          studentId: overview.student.id!,
+                          classId: classId,
+                          month: overview.financial.month,
+                          suggestedAmount: due,
+                        ),
+                      );
+                      ref.invalidate(
+                        studentDetailOverviewProvider(overview.student.id!),
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleArchiveStatus(
     BuildContext context,
     WidgetRef ref,
     Student student,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     final isStopped = student.daLuuTru;
-    final confirm = await AppFeedback.showConfirmBottomSheet(
-      context,
-      title: isStopped ? 'Cho học sinh hoạt động lại' : 'Đánh dấu ngừng học',
-      message: isStopped
-          ? 'Bạn có chắc chắn muốn cho học sinh "${student.hoTen}" hoạt động lại tại trung tâm?'
-          : 'Đánh dấu học sinh "${student.hoTen}" ngừng học nghĩa là dừng mọi hoạt động tại trung tâm.\n\n'
-                '• Toàn bộ lịch sử học, điểm danh, học phí và thanh toán được GIỮ NGUYÊN.\n'
-                '• Học sinh sẽ chuyển sang mục Ngừng học.\n'
-                '• Không thể đánh dấu ngừng học nếu học sinh vẫn còn lớp đang tham gia.\n'
-                '• Bạn có thể cho học sinh hoạt động lại bất kỳ lúc nào.',
-      confirmLabel: isStopped ? 'Cho hoạt động lại' : 'Đánh dấu ngừng học',
-      isDestructive: !isStopped,
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          isStopped
+              ? 'Cho hoạt động lại'
+              : l10n.studentStatusStopped,
+        ),
+        content: Text(
+          isStopped
+              ? 'Bạn có chắc muốn cho học sinh "${student.hoTen}" hoạt động lại?'
+              : 'Bạn có chắc muốn đánh dấu học sinh "${student.hoTen}" ngừng học?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.commonCancel),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isStopped ? AppColors.success : AppColors.error,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.commonConfirm),
+          ),
+        ],
+      ),
     );
 
-    if (!confirm || !context.mounted) return;
-
-    try {
-      if (isStopped) {
-        await ref
-            .read(studentListControllerProvider.notifier)
-            .restore(student.id!);
-      } else {
-        await ref
-            .read(studentListControllerProvider.notifier)
-            .archive(student.id!);
-      }
-      ref.invalidate(studentDetailProvider(student.id!));
-      ref.read(studentListControllerProvider.notifier).refresh();
-      if (context.mounted) {
-        AppFeedback.showSuccessSnackBar(
-          context,
-          isStopped
-              ? 'Đã cho học sinh hoạt động lại'
-              : 'Đã đánh dấu học sinh ngừng học',
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        AppFeedback.showErrorSnackBar(
-          context,
-          e.toString().replaceAll('Exception: ', ''),
-        );
+    if (confirmed == true && context.mounted) {
+      try {
+        if (isStopped) {
+          await ref
+              .read(studentListControllerProvider.notifier)
+              .restore(student.id!);
+        } else {
+          await ref
+              .read(studentListControllerProvider.notifier)
+              .archive(student.id!);
+        }
+        ref.invalidate(studentDetailOverviewProvider(student.id!));
+        ref.invalidate(studentDetailProvider(student.id!));
+        if (context.mounted) {
+          AppFeedback.showSuccessSnackBar(
+            context,
+            isStopped
+                ? 'Đã cho học sinh hoạt động lại'
+                : 'Đã đánh dấu học sinh ngừng học',
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          AppFeedback.showErrorSnackBar(
+            context,
+            e.toString().replaceAll('Exception: ', ''),
+          );
+        }
       }
     }
   }
-}
-
-@riverpod
-Future<Student?> studentDetail(StudentDetailRef ref, int id) async {
-  final service = await ref.watch(studentServiceProvider.future);
-  return service.getStudentById(id);
-}
-
-@riverpod
-Future<List<ClassMembership>> studentMembershipHistory(
-  StudentMembershipHistoryRef ref,
-  int id,
-) async {
-  final service = await ref.watch(membershipServiceProvider.future);
-  return service.getMembershipHistory(id);
-}
-
-@riverpod
-Future<List<StudentShiftAssignment>> studentSchedule(
-  StudentScheduleRef ref,
-  int id,
-) async {
-  final service = await ref.watch(classScheduleServiceProvider.future);
-  return service.getAssignmentsForStudent(id);
-}
-
-@riverpod
-Future<ClassSchedule?> scheduleDetail(ScheduleDetailRef ref, int id) async {
-  final service = await ref.watch(classScheduleServiceProvider.future);
-  return service.getScheduleById(id);
 }

@@ -1021,4 +1021,94 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get paymentEditSuccess => 'Đã cập nhật khoản thu thành công';
+
+  @override
+  String get studentDetailTitle => 'Chi tiết học sinh';
+
+  @override
+  String get studentStatusActive => 'Đang học';
+
+  @override
+  String get studentStatusStopped => 'Ngừng học';
+
+  @override
+  String studentJoinedFrom(Object date) {
+    return 'Tham gia từ: $date';
+  }
+
+  @override
+  String studentActiveClassesCount(Object count) {
+    return '$count lớp đang tham gia';
+  }
+
+  @override
+  String studentOutstandingDebt(Object amount) {
+    return 'Còn nợ: $amount';
+  }
+
+  @override
+  String get studentEditProfile => 'Sửa hồ sơ';
+
+  @override
+  String get studentAddToClass => 'Thêm vào lớp';
+
+  @override
+  String get studentBusyTime => 'Giờ bận';
+
+  @override
+  String get studentRecordPayment => 'Ghi nhận thu';
+
+  @override
+  String get studentActiveClasses => 'Lớp đang tham gia';
+
+  @override
+  String studentTuitionMonth(Object month) {
+    return 'Học phí tháng $month';
+  }
+
+  @override
+  String get studentFinalizedDue => 'Đã chốt';
+
+  @override
+  String get studentPaid => 'Đã thu';
+
+  @override
+  String get studentDebt => 'Còn nợ';
+
+  @override
+  String get studentTuitionPartiallyPaid => 'Đã thanh toán một phần';
+
+  @override
+  String get studentTuitionPaid => 'Đã thanh toán';
+
+  @override
+  String get studentTuitionUnpaid => 'Chưa thanh toán';
+
+  @override
+  String get studentTuitionPendingFinalization => 'Còn lớp chưa chốt';
+
+  @override
+  String get studentLatestPayment => 'Khoản thu gần nhất';
+
+  @override
+  String get studentNoPayment => 'Chưa có khoản thu trong tháng này';
+
+  @override
+  String get studentRecentAttendance => 'Điểm danh gần đây';
+
+  @override
+  String get studentSeeAll => 'Xem tất cả';
+
+  @override
+  String get studentBusyTimes => 'Giờ bận';
+
+  @override
+  String get studentNoActiveClasses => 'Chưa tham gia lớp nào';
+
+  @override
+  String get studentNoDebtToRecord =>
+      'Không có khoản học phí đã chốt cần thanh toán.';
+
+  @override
+  String get studentSelectTuitionInvoice => 'Chọn khoản học phí cần thanh toán';
 }
