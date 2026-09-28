@@ -5,6 +5,7 @@ import '../../../core/database/database_provider.dart';
 import '../../../core/utils/date_and_time_validators.dart';
 import '../data/schedule_repository.dart';
 import '../data/assignment_repository.dart';
+import 'bulk_assignment_result.dart';
 import 'class_schedule.dart';
 import 'student_shift_assignment.dart';
 import '../../memberships/domain/membership_service.dart';
@@ -273,6 +274,62 @@ class ScheduleDomainService {
         .toList();
   }
 
+  // Bulk Candidate Query with Date Interval Overlap Filtering
+  Future<List<Student>> getBulkAssignmentCandidates({
+    required int classId,
+    required int scheduleId,
+    required DateTime startDate,
+  }) async {
+    final schedule = await _scheduleRepo.getById(scheduleId);
+    if (schedule == null) throw Exception('Không tìm thấy lịch học');
+    if (schedule.idLop != classId) {
+      throw Exception('Lịch học không thuộc lớp này');
+    }
+
+    final dateFormat = DateFormat('yyyy-MM-dd');
+    final startStr = dateFormat.format(startDate);
+
+    if (startStr.compareTo(schedule.hieuLucTu) < 0) {
+      throw Exception(
+        'Ngày phân ca ($startStr) trước khi lịch học có hiệu lực (${schedule.hieuLucTu})',
+      );
+    }
+    if (schedule.hieuLucDen != null &&
+        startStr.compareTo(schedule.hieuLucDen!) > 0) {
+      throw Exception(
+        'Ngày phân ca ($startStr) sau khi lịch học hết hiệu lực (${schedule.hieuLucDen})',
+      );
+    }
+
+    // 1. Get active student IDs in class at startDate
+    final activeStudentIds = await _membershipService
+        .getActiveStudentIdsInClass(classId, startDate);
+
+    // 2. Query overlapping assignments for this schedule
+    final overlappingAssignments = await _assignmentRepo
+        .getOverlappingBySchedule(
+          scheduleId: scheduleId,
+          startDate: startStr,
+        );
+    final alreadyAssignedStudentIds =
+        overlappingAssignments.map((a) => a.idHocSinh).toSet();
+
+    // 3. Load students ONCE
+    final allStudents = await _studentService.getStudents();
+
+    // 4. Filter candidates: active membership, NOT in alreadyAssignedStudentIds, not archived
+    final candidates = allStudents.where((s) {
+      if (s.id == null || s.daLuuTru) return false;
+      if (!activeStudentIds.contains(s.id)) return false;
+      if (alreadyAssignedStudentIds.contains(s.id)) return false;
+      return true;
+    }).toList();
+
+    // 5. Sort alphabetically by name
+    candidates.sort((a, b) => a.hoTen.compareTo(b.hoTen));
+    return candidates;
+  }
+
   Future<AssignmentConflictResult> assignStudent({
     required int studentId,
     required int classId,
@@ -345,6 +402,210 @@ class ScheduleDomainService {
       canAssign: true,
       assignmentId: newId,
       detailedResult: conflictResult,
+    );
+  }
+
+  // Common Candidate Validation Internal Helper
+  Future<BulkAssignmentItemResult> _validateCandidateInternal({
+    required int studentId,
+    required String studentName,
+    required int classId,
+    required int scheduleId,
+    required ClassSchedule schedule,
+    required String startStr,
+    String? endStr,
+    int? excludeAssignmentId,
+  }) async {
+    // 1. Check duplicate/overlap for same student & schedule
+    final isOverlapping = await _assignmentRepo
+        .hasOverlappingStudentAssignment(
+          studentId: studentId,
+          scheduleId: scheduleId,
+          startDate: startStr,
+          endDate: endStr,
+          excludeAssignmentId: excludeAssignmentId,
+        );
+    if (isOverlapping) {
+      return BulkAssignmentItemResult(
+        studentId: studentId,
+        studentName: studentName,
+        status: BulkAssignmentStatus.alreadyAssigned,
+        message: 'Học sinh đã có phân ca trùng khớp trong thời gian này',
+      );
+    }
+
+    // 2. Validate membership & schedule boundaries
+    try {
+      await _validateAssignmentInterval(
+        studentId,
+        classId,
+        schedule,
+        startStr,
+        endStr,
+      );
+    } catch (e) {
+      return BulkAssignmentItemResult(
+        studentId: studentId,
+        studentName: studentName,
+        status: BulkAssignmentStatus.invalidBoundary,
+        message: e.toString().replaceAll('Exception: ', ''),
+      );
+    }
+
+    // 3. Conflict evaluation via ScheduleConflictService
+    final conflictResult = await _conflictService.evaluateCandidateAssignment(
+      studentId: studentId,
+      targetScheduleId: scheduleId,
+      startDate: startStr,
+      endDate: endStr,
+      excludeAssignmentId: excludeAssignmentId,
+    );
+
+    if (!conflictResult.canAssign) {
+      return BulkAssignmentItemResult(
+        studentId: studentId,
+        studentName: studentName,
+        status: BulkAssignmentStatus.hardConflict,
+        conflictResult: conflictResult,
+        message: conflictResult.hardConflicts.isNotEmpty
+            ? conflictResult.hardConflicts.first.message
+            : 'Xung đột lịch học',
+      );
+    }
+
+    return BulkAssignmentItemResult(
+      studentId: studentId,
+      studentName: studentName,
+      status: BulkAssignmentStatus.ready,
+      conflictResult: conflictResult,
+    );
+  }
+
+  // Pre-flight Bulk Assignment Preview
+  Future<BulkAssignmentPreview> previewBulkAssignment({
+    required List<int> studentIds,
+    required int classId,
+    required int scheduleId,
+    required DateTime startDate,
+  }) async {
+    final schedule = await _scheduleRepo.getById(scheduleId);
+    if (schedule == null) throw Exception('Không tìm thấy lịch học');
+    if (schedule.idLop != classId) {
+      throw Exception('Lịch học không thuộc lớp này');
+    }
+
+    final dateFormat = DateFormat('yyyy-MM-dd');
+    final startStr = dateFormat.format(startDate);
+
+    final uniqueStudentIds = studentIds.toSet().toList();
+    final allStudents = await _studentService.getStudents();
+    final studentMap = {for (var s in allStudents) s.id!: s};
+
+    final readyStudents = <Student>[];
+    final blocked = <BulkAssignmentItemResult>[];
+    final warnings = <BulkAssignmentItemResult>[];
+
+    for (final sId in uniqueStudentIds) {
+      final student = studentMap[sId];
+      final studentName = student?.hoTen ?? 'Học sinh #$sId';
+
+      if (student == null || student.daLuuTru) {
+        blocked.add(BulkAssignmentItemResult(
+          studentId: sId,
+          studentName: studentName,
+          status: BulkAssignmentStatus.invalidBoundary,
+          message: 'Học sinh không tồn tại hoặc đã bị ngừng học',
+        ));
+        continue;
+      }
+
+      final itemResult = await _validateCandidateInternal(
+        studentId: sId,
+        studentName: studentName,
+        classId: classId,
+        scheduleId: scheduleId,
+        schedule: schedule,
+        startStr: startStr,
+      );
+
+      if (itemResult.isReady) {
+        readyStudents.add(student);
+        if (itemResult.hasWarnings) {
+          warnings.add(itemResult);
+        }
+      } else {
+        blocked.add(itemResult);
+      }
+    }
+
+    return BulkAssignmentPreview(
+      readyStudents: readyStudents,
+      blocked: blocked,
+      warnings: warnings,
+    );
+  }
+
+  // Bulk Assignment Transaction
+  Future<BulkAssignmentResult> assignStudentsBulk({
+    required List<int> studentIds,
+    required int classId,
+    required int scheduleId,
+    required DateTime startDate,
+    String? note,
+  }) async {
+    final preview = await previewBulkAssignment(
+      studentIds: studentIds,
+      classId: classId,
+      scheduleId: scheduleId,
+      startDate: startDate,
+    );
+
+    final dateFormat = DateFormat('yyyy-MM-dd');
+    final startStr = dateFormat.format(startDate);
+    final now = DateTime.now();
+
+    final itemResults = <BulkAssignmentItemResult>[
+      ...preview.blocked,
+      ...preview.warnings,
+    ];
+
+    if (preview.readyStudents.isEmpty) {
+      return BulkAssignmentResult(
+        totalAttempted: studentIds.toSet().length,
+        successCount: 0,
+        items: itemResults,
+      );
+    }
+
+    // Execute ONE SQLite transaction for all valid ready students
+    final validStudents = preview.readyStudents;
+    await _assignmentRepo.db.transaction((txn) async {
+      for (final student in validStudents) {
+        await _assignmentRepo.createInTxn(
+          txn,
+          StudentShiftAssignment(
+            idHocSinh: student.id!,
+            idLop: classId,
+            idLichHoc: scheduleId,
+            tuNgay: startStr,
+            denNgay: null,
+            ghiChu: note,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+        itemResults.add(BulkAssignmentItemResult(
+          studentId: student.id!,
+          studentName: student.hoTen,
+          status: BulkAssignmentStatus.ready,
+        ));
+      }
+    });
+
+    return BulkAssignmentResult(
+      totalAttempted: studentIds.toSet().length,
+      successCount: validStudents.length,
+      items: itemResults,
     );
   }
 

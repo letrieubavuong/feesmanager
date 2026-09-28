@@ -1,4 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../students/domain/student.dart';
+import '../domain/bulk_assignment_result.dart';
 import '../domain/student_shift_assignment.dart';
 import '../domain/schedule_service.dart';
 
@@ -15,6 +17,52 @@ class ClassAssignmentController extends _$ClassAssignmentController {
   Future<void> refresh() async {
     ref.invalidateSelf();
     await future;
+  }
+
+  Future<List<Student>> loadBulkCandidates({
+    required int scheduleId,
+    required DateTime startDate,
+  }) async {
+    final service = await ref.read(classScheduleServiceProvider.future);
+    return service.getBulkAssignmentCandidates(
+      classId: classId,
+      scheduleId: scheduleId,
+      startDate: startDate,
+    );
+  }
+
+  Future<BulkAssignmentPreview> previewBulk({
+    required List<int> studentIds,
+    required int scheduleId,
+    required DateTime startDate,
+  }) async {
+    final service = await ref.read(classScheduleServiceProvider.future);
+    return service.previewBulkAssignment(
+      studentIds: studentIds,
+      classId: classId,
+      scheduleId: scheduleId,
+      startDate: startDate,
+    );
+  }
+
+  Future<BulkAssignmentResult> assignBulk({
+    required List<int> studentIds,
+    required int scheduleId,
+    required DateTime startDate,
+    String? note,
+  }) async {
+    state = const AsyncValue.loading();
+    final service = await ref.read(classScheduleServiceProvider.future);
+    final result = await service.assignStudentsBulk(
+      studentIds: studentIds,
+      classId: classId,
+      scheduleId: scheduleId,
+      startDate: startDate,
+      note: note,
+    );
+    ref.invalidateSelf();
+    await future;
+    return result;
   }
 
   Future<AssignmentConflictResult> assign({

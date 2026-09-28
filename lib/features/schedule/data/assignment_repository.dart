@@ -96,6 +96,52 @@ class AssignmentRepository {
     );
   }
 
+  Future<List<StudentShiftAssignment>> getOverlappingBySchedule({
+    required int scheduleId,
+    required String startDate,
+    String? endDate,
+  }) async {
+    final candidateEnd = endDate ?? '9999-12-31';
+    final List<Map<String, dynamic>> maps = await _db.query(
+      'phan_ca_hoc_sinh',
+      where:
+          'id_lich_hoc = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+      whereArgs: [scheduleId, candidateEnd, startDate],
+      orderBy: 'tu_ngay DESC',
+    );
+    return List.generate(
+      maps.length,
+      (i) => StudentShiftAssignment.fromMap(maps[i]),
+    );
+  }
+
+  Future<bool> hasOverlappingStudentAssignment({
+    required int studentId,
+    required int scheduleId,
+    required String startDate,
+    String? endDate,
+    int? excludeAssignmentId,
+  }) async {
+    final candidateEnd = endDate ?? '9999-12-31';
+    final whereBuffer = StringBuffer(
+      'id_hoc_sinh = ? AND id_lich_hoc = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+    );
+    final args = <dynamic>[studentId, scheduleId, candidateEnd, startDate];
+
+    if (excludeAssignmentId != null) {
+      whereBuffer.write(' AND id != ?');
+      args.add(excludeAssignmentId);
+    }
+
+    final List<Map<String, dynamic>> maps = await _db.query(
+      'phan_ca_hoc_sinh',
+      where: whereBuffer.toString(),
+      whereArgs: args,
+      limit: 1,
+    );
+    return maps.isNotEmpty;
+  }
+
   Future<List<StudentShiftAssignment>> getActiveByStudent(
     int studentId,
     String dateStr,
