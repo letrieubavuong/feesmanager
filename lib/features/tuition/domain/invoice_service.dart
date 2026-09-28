@@ -2,6 +2,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/database/database_provider.dart';
 import '../../memberships/domain/membership_service.dart';
+import '../../payments/data/payment_repository.dart';
+import '../../payments/domain/payment_service.dart';
 import '../../session_credits/data/session_credit_repository.dart';
 import '../../session_credits/domain/credit_ledger_entry.dart';
 import '../../session_credits/domain/credit_ledger_reason.dart';
@@ -19,6 +21,7 @@ class InvoiceService {
   final SessionCreditService _creditService;
   final SessionCreditRepository _creditRepo;
   final MembershipService _membershipService;
+  final PaymentRepository _paymentRepo;
   final Database _db;
 
   InvoiceService(
@@ -27,6 +30,7 @@ class InvoiceService {
     this._creditService,
     this._creditRepo,
     this._membershipService,
+    this._paymentRepo,
     this._db,
   );
 
@@ -253,6 +257,86 @@ class InvoiceService {
 
     return finalizedInvoices;
   }
+
+  Future<TuitionInvoice> recalculateFinalizedInvoiceWithoutPayments({
+    required int studentId,
+    required int classId,
+    required String month,
+    required String reason,
+  }) async {
+    final trimmedReason = reason.trim();
+    if (trimmedReason.isEmpty) {
+      throw Exception('Vui lòng nhập lý do tính lại học phí.');
+    }
+
+    final oldInvoice = await getInvoice(studentId, classId, month);
+    if (oldInvoice == null || !oldInvoice.trangThai.isFinalizedSnapshot) {
+      throw Exception('Hóa đơn chưa được chốt.');
+    }
+
+    final totalPaid = await _paymentRepo.getTotalPaidForInvoice(oldInvoice.id!);
+    if (totalPaid > 0) {
+      throw Exception('Hóa đơn đã có thanh toán. Không thể tự động tính lại.');
+    }
+
+    if (oldInvoice.creditUsed > 0 || oldInvoice.creditEarned > 0) {
+      throw Exception(
+        'Hóa đơn đã có tác động credit. Không thể tự động tính lại.',
+      );
+    }
+
+    final preview = await _tuitionService.previewTuition(
+      studentId,
+      classId,
+      month,
+    );
+    final now = DateTime.now();
+
+    final updatedInvoice = oldInvoice.copyWith(
+      idChinhSachHocPhi: preview.policy.id!,
+      soBuoiEligible: preview.soBuoiEligible,
+      soBuoiTinhPhi: preview.soBuoiTinhPhi,
+      creditOpening: preview.creditOpening,
+      creditEarned: preview.creditEarned,
+      creditUsed: preview.creditUsed,
+      creditClosing: preview.creditClosing,
+      tongTruocGiam: preview.tongTruocGiam,
+      giamPhanTram: preview.giamPhanTram,
+      giamSoTien: preview.giamSoTien,
+      soTienPhaiThu: preview.soTienPhaiThu,
+      chotLuc: now,
+      updatedAt: now,
+      ghiChu: 'Tính lại học phí: $trimmedReason',
+    );
+
+    TuitionInvoice? result;
+    await _db.transaction((txn) async {
+      await _tuitionRepo.updateInvoiceInTxn(txn, updatedInvoice);
+
+      await txn.insert('hoc_phi_chinh_sua', {
+        'id_hoc_phi_thang': oldInvoice.id!,
+        'old_so_buoi_eligible': oldInvoice.soBuoiEligible,
+        'new_so_buoi_eligible': preview.soBuoiEligible,
+        'old_so_buoi_tinh_phi': oldInvoice.soBuoiTinhPhi,
+        'new_so_buoi_tinh_phi': preview.soBuoiTinhPhi,
+        'old_so_tien_phai_thu': oldInvoice.soTienPhaiThu,
+        'new_so_tien_phai_thu': preview.soTienPhaiThu,
+        'old_policy_id': oldInvoice.idChinhSachHocPhi,
+        'new_policy_id': preview.policy.id!,
+        'reason': trimmedReason,
+        'changed_at': now.toIso8601String(),
+      });
+
+      final maps = await txn.query(
+        'hoc_phi_thang',
+        where: 'id = ?',
+        whereArgs: [oldInvoice.id!],
+      );
+      result = TuitionInvoice.fromMap(maps.first);
+    });
+
+    return result!;
+  }
 }
 
 class _StudentFinalizationPlan {
@@ -274,6 +358,7 @@ Future<InvoiceService> invoiceService(InvoiceServiceRef ref) async {
   final creditService = await ref.watch(sessionCreditServiceProvider.future);
   final creditRepo = await ref.watch(sessionCreditRepositoryProvider.future);
   final membershipService = await ref.watch(membershipServiceProvider.future);
+  final paymentRepo = await ref.watch(paymentRepositoryProvider.future);
   final db = await ref.watch(databaseProvider.future);
 
   return InvoiceService(
@@ -282,6 +367,7 @@ Future<InvoiceService> invoiceService(InvoiceServiceRef ref) async {
     creditService,
     creditRepo,
     membershipService,
+    paymentRepo,
     db,
   );
 }

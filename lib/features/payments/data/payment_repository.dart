@@ -174,4 +174,31 @@ class PaymentRepository {
     if (maps.isEmpty) return null;
     return Payment.fromMap(maps.first);
   }
+
+  Future<Payment?> findByTransactionIdExcludingPaymentInTxn(
+    Transaction txn,
+    String transactionId,
+    int paymentId,
+  ) async {
+    final trimmed = transactionId.trim();
+    if (trimmed.isEmpty) return null;
+
+    final maps = await txn.query(
+      'thanh_toan',
+      where: 'ma_giao_dich = ? AND id != ?',
+      whereArgs: [trimmed, paymentId],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return Payment.fromMap(maps.first);
+  }
+
+  Future<int> updateInTxn(Transaction txn, Payment payment) async {
+    return await txn.update(
+      'thanh_toan',
+      payment.toMap(),
+      where: 'id = ?',
+      whereArgs: [payment.id],
+    );
+  }
 }

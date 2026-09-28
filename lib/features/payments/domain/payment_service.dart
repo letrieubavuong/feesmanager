@@ -156,6 +156,131 @@ class PaymentService {
     return createdPayment!;
   }
 
+  Future<Payment> updatePayment({
+    required int paymentId,
+    required int amount,
+    required String paymentDate,
+    required PaymentMethod method,
+    String? transactionId,
+    String? note,
+    required String correctionReason,
+  }) async {
+    _validateIsoDate(paymentDate);
+
+    if (amount <= 0) {
+      throw Exception('Số tiền thanh toán phải lớn hơn 0');
+    }
+
+    if (correctionReason.trim().isEmpty) {
+      throw Exception('Vui lòng nhập lý do điều chỉnh khoản thu');
+    }
+
+    final trimmedTxId = transactionId?.trim().isEmpty == true
+        ? null
+        : transactionId?.trim();
+
+    Payment? updatedPayment;
+
+    await _db.transaction((txn) async {
+      final oldPayment = await _paymentRepo.getByIdInTxn(txn, paymentId);
+      if (oldPayment == null) {
+        throw Exception('Không tìm thấy khoản thu #$paymentId');
+      }
+
+      if (oldPayment.invoiceId == null) {
+        throw Exception('Khoản thu không thuộc hóa đơn chốt nào');
+      }
+
+      final invoice = await _tuitionRepo.getInvoiceInTxn(
+        txn,
+        oldPayment.studentId,
+        oldPayment.classId,
+        oldPayment.month,
+      );
+      if (invoice == null || !invoice.trangThai.isFinalizedSnapshot) {
+        throw Exception('Hóa đơn chưa được chốt.');
+      }
+
+      final allPayments = await _paymentRepo.getPaymentsForInvoiceInTxn(
+        txn,
+        invoice.id!,
+      );
+
+      final otherPaid = allPayments
+          .where((p) => p.id != paymentId)
+          .fold<int>(0, (sum, p) => sum + p.amount);
+
+      final newTotalPaid = otherPaid + amount;
+      if (newTotalPaid > invoice.soTienPhaiThu) {
+        throw Exception(
+          'Tổng số tiền đã thanh toán (${NumberFormat('#,###').format(newTotalPaid)}đ) vượt quá tổng học phí phải thu (${NumberFormat('#,###').format(invoice.soTienPhaiThu)}đ)',
+        );
+      }
+
+      if (trimmedTxId != null) {
+        final existingTx = await _paymentRepo
+            .findByTransactionIdExcludingPaymentInTxn(
+              txn,
+              trimmedTxId,
+              paymentId,
+            );
+        if (existingTx != null) {
+          throw Exception(
+            'Mã giao dịch "$trimmedTxId" đã tồn tại trong hệ thống.',
+          );
+        }
+      }
+
+      final now = DateTime.now();
+      final newPayment = oldPayment.copyWith(
+        amount: amount,
+        paymentDate: paymentDate,
+        method: method,
+        transactionId: trimmedTxId,
+        note: note?.trim().isEmpty == true ? null : note?.trim(),
+      );
+
+      await _paymentRepo.updateInTxn(txn, newPayment);
+
+      final newStatus = PaymentSettlementRules.deriveStatus(
+        isFinalized: invoice.trangThai.isFinalizedSnapshot,
+        amountDue: invoice.soTienPhaiThu,
+        totalPaid: newTotalPaid,
+      );
+
+      final rowsUpdated = await _tuitionRepo.updateInvoiceStatusInTxn(
+        txn,
+        invoice.id!,
+        newStatus,
+        now,
+      );
+
+      if (rowsUpdated != 1) {
+        throw Exception('Lỗi cập nhật trạng thái hóa đơn học phí.');
+      }
+
+      await txn.insert('thanh_toan_chinh_sua', {
+        'id_thanh_toan': paymentId,
+        'so_tien_cu': oldPayment.amount,
+        'so_tien_moi': amount,
+        'ngay_thanh_toan_cu': oldPayment.paymentDate,
+        'ngay_thanh_toan_moi': paymentDate,
+        'phuong_thuc_cu': oldPayment.method.name,
+        'phuong_thuc_moi': method.name,
+        'ma_giao_dich_cu': oldPayment.transactionId,
+        'ma_giao_dich_moi': trimmedTxId,
+        'ghi_chu_cu': oldPayment.note,
+        'ghi_chu_moi': note?.trim().isEmpty == true ? null : note?.trim(),
+        'ly_do_chinh_sua': correctionReason.trim(),
+        'changed_at': now.toIso8601String(),
+      });
+
+      updatedPayment = await _paymentRepo.getByIdInTxn(txn, paymentId);
+    });
+
+    return updatedPayment!;
+  }
+
   Future<InvoicePaymentSummary?> getPaymentSummary(
     int studentId,
     int classId,

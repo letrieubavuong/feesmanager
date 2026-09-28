@@ -836,4 +836,110 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weekdaySunday => 'Sunday';
+
+  @override
+  String get attendanceTitle => 'Session Attendance';
+
+  @override
+  String get attendanceMarkAllPresent => 'Mark All Present';
+
+  @override
+  String get attendanceMarkAllMakeup => 'Mark All Makeup';
+
+  @override
+  String get attendanceUndo => 'Undo';
+
+  @override
+  String get attendanceDraftSave => 'Save Draft';
+
+  @override
+  String get attendanceFinalizeSession => 'Finalize Session';
+
+  @override
+  String get attendanceChangeShift => 'Shift Change';
+
+  @override
+  String get attendanceScheduleMakeup => 'Schedule Makeup';
+
+  @override
+  String get attendanceCancelAdjustment => 'Cancel Adjustment';
+
+  @override
+  String get attendanceAddStudent => 'Add Student';
+
+  @override
+  String get attendancePresent => 'Present';
+
+  @override
+  String get attendanceLate => 'Late';
+
+  @override
+  String get attendanceExcused => 'Excused';
+
+  @override
+  String get attendanceUnexcused => 'Unexcused';
+
+  @override
+  String get attendanceNotMarked => 'Not Marked';
+
+  @override
+  String get tuitionKpiPreview => 'Estimated';
+
+  @override
+  String get tuitionKpiFinalized => 'Finalized';
+
+  @override
+  String get tuitionKpiPaid => 'Collected';
+
+  @override
+  String get tuitionKpiDebt => 'Outstanding Debt';
+
+  @override
+  String get tuitionFinalizeMonth => 'Finalize Monthly Tuition';
+
+  @override
+  String get tuitionRecalculate => 'Recalculate Tuition';
+
+  @override
+  String get tuitionPaymentHistory => 'Payment History';
+
+  @override
+  String get tuitionPaymentAction => 'Record Payment';
+
+  @override
+  String get tuitionQrAction => 'QR Code';
+
+  @override
+  String get tuitionPendingAttendance => 'Insufficient attendance data';
+
+  @override
+  String get tuitionWaitingCompletion => 'Awaiting session completion';
+
+  @override
+  String get tuitionFinalizeFirstNotice =>
+      'Finalize tuition before collecting payments.';
+
+  @override
+  String get tuitionMonthlyCap => 'Monthly Tuition Cap';
+
+  @override
+  String get tuitionEffectiveFrom => 'Effective From Date';
+
+  @override
+  String get paymentHistoryTitle => 'Payment History';
+
+  @override
+  String get paymentEditTitle => 'Edit Payment';
+
+  @override
+  String get paymentRecordTitle => 'Record Payment';
+
+  @override
+  String get paymentEditReason => 'Correction Reason';
+
+  @override
+  String get paymentEditReasonValidation => 'Please enter a correction reason';
+
+  @override
+  String get paymentEditSuccess => 'Payment updated successfully';
 }

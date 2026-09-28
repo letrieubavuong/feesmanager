@@ -6,7 +6,7 @@ part of 'invoice_service.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$invoiceServiceHash() => r'ae4db0145e369dded003944e0d2cc173b1d1142c';
+String _$invoiceServiceHash() => r'5308112126debcc7c873fa72bb7ae5c5e2886c3e';
 
 /// See also [invoiceService].
 @ProviderFor(invoiceService)

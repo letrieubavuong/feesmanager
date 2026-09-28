@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int _dbVersion = 13;
+  static const int _dbVersion = 14;
 
   final String dbName;
   Database? _database;
@@ -75,6 +75,9 @@ class AppDatabase {
     if (version >= 13) {
       await _migrateV12ToV13(db);
     }
+    if (version >= 14) {
+      await _migrateV13ToV14(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -113,6 +116,9 @@ class AppDatabase {
     }
     if (oldVersion < 13) {
       await _migrateV12ToV13(db);
+    }
+    if (oldVersion < 14) {
+      await _migrateV13ToV14(db);
     }
   }
 
@@ -809,6 +815,54 @@ class AppDatabase {
     );
     await db.execute(
       'CREATE INDEX idx_rang_buoc_student_date ON rang_buoc_lich_hoc_sinh(id_hoc_sinh, ngay_cu_the)',
+    );
+  }
+
+  Future<void> _migrateV13ToV14(Database db) async {
+    await db.execute('''
+      CREATE TABLE thanh_toan_chinh_sua (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_thanh_toan INTEGER NOT NULL,
+        so_tien_cu INTEGER NOT NULL,
+        so_tien_moi INTEGER NOT NULL,
+        ngay_thanh_toan_cu TEXT NOT NULL,
+        ngay_thanh_toan_moi TEXT NOT NULL,
+        phuong_thuc_cu TEXT NOT NULL,
+        phuong_thuc_moi TEXT NOT NULL,
+        ma_giao_dich_cu TEXT NULL,
+        ma_giao_dich_moi TEXT NULL,
+        ghi_chu_cu TEXT NULL,
+        ghi_chu_moi TEXT NULL,
+        ly_do_chinh_sua TEXT NOT NULL,
+        changed_at TEXT NOT NULL,
+        FOREIGN KEY (id_thanh_toan) REFERENCES thanh_toan (id) ON DELETE RESTRICT
+      )
+    ''');
+
+    await db.execute(
+      'CREATE INDEX idx_thanh_toan_chinh_sua_payment ON thanh_toan_chinh_sua(id_thanh_toan)',
+    );
+
+    await db.execute('''
+      CREATE TABLE hoc_phi_chinh_sua (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_hoc_phi_thang INTEGER NOT NULL,
+        old_so_buoi_eligible INTEGER NOT NULL,
+        new_so_buoi_eligible INTEGER NOT NULL,
+        old_so_buoi_tinh_phi INTEGER NOT NULL,
+        new_so_buoi_tinh_phi INTEGER NOT NULL,
+        old_so_tien_phai_thu INTEGER NOT NULL,
+        new_so_tien_phai_thu INTEGER NOT NULL,
+        old_policy_id INTEGER NOT NULL,
+        new_policy_id INTEGER NOT NULL,
+        reason TEXT NOT NULL,
+        changed_at TEXT NOT NULL,
+        FOREIGN KEY (id_hoc_phi_thang) REFERENCES hoc_phi_thang (id) ON DELETE RESTRICT
+      )
+    ''');
+
+    await db.execute(
+      'CREATE INDEX idx_hoc_phi_chinh_sua_invoice ON hoc_phi_chinh_sua(id_hoc_phi_thang)',
     );
   }
 }

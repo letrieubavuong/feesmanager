@@ -171,8 +171,7 @@ class AttendancePage extends ConsumerWidget {
 
         // 1. PHAT_SINH session banner
         if (sheet.session.loai == SessionType.PHAT_SINH &&
-            sheet.session.trangThai == SessionStatus.DU_KIEN &&
-            sheet.members.isNotEmpty)
+            sheet.session.trangThai == SessionStatus.DU_KIEN)
           Container(
             color: AppColors.primary.withValues(alpha: 0.12),
             padding: const EdgeInsets.all(12),
@@ -210,8 +209,7 @@ class AttendancePage extends ConsumerWidget {
 
         // 2. HOC_BU without roster banner
         if (sheet.session.loai == SessionType.HOC_BU &&
-            sheet.requiresOneOffAdjustments &&
-            sheet.members.isNotEmpty)
+            sheet.requiresOneOffAdjustments)
           Container(
             color: AppColors.warning.withValues(alpha: 0.12),
             padding: const EdgeInsets.all(12),

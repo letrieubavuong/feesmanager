@@ -79,6 +79,48 @@ class PaymentController extends _$PaymentController {
       ref.invalidate(classMonthStudentsProvider((classId, month)));
       ref.invalidate(classTuitionPoliciesProvider(classId));
       ref.invalidate(effectiveTuitionPolicyProvider((classId, month)));
+      ref.invalidate(classMonthTuitionOverviewProvider((classId, month)));
+    });
+    if (state.hasError) {
+      throw state.error!;
+    }
+    return result;
+  }
+
+  Future<Payment> updatePayment({
+    required int paymentId,
+    required int studentId,
+    required int classId,
+    required String month,
+    required int amount,
+    required String paymentDate,
+    required PaymentMethod method,
+    String? transactionId,
+    String? note,
+    required String correctionReason,
+  }) async {
+    state = const AsyncLoading();
+    late Payment result;
+    state = await AsyncValue.guard(() async {
+      final service = await ref.read(paymentServiceProvider.future);
+      result = await service.updatePayment(
+        paymentId: paymentId,
+        amount: amount,
+        paymentDate: paymentDate,
+        method: method,
+        transactionId: transactionId,
+        note: note,
+        correctionReason: correctionReason,
+      );
+
+      ref.invalidate(invoicePaymentsProvider((studentId, classId, month)));
+      ref.invalidate(
+        invoicePaymentSummaryProvider((studentId, classId, month)),
+      );
+      ref.invalidate(classMonthPaymentSummariesProvider((classId, month)));
+      ref.invalidate(classMonthInvoicesProvider((classId, month)));
+      ref.invalidate(studentInvoiceProvider(studentId, classId, month));
+      ref.invalidate(classMonthTuitionOverviewProvider((classId, month)));
     });
     if (state.hasError) {
       throw state.error!;

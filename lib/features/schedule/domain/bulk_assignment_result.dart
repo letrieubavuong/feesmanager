@@ -29,8 +29,7 @@ class BulkAssignmentItemResult {
       status == BulkAssignmentStatus.hardConflict ||
       status == BulkAssignmentStatus.invalidBoundary ||
       status == BulkAssignmentStatus.failed;
-  bool get hasWarnings =>
-      conflictResult != null && conflictResult!.hasWarnings;
+  bool get hasWarnings => conflictResult != null && conflictResult!.hasWarnings;
 }
 
 class BulkAssignmentPreview {

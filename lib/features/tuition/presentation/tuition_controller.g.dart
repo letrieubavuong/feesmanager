@@ -538,6 +538,132 @@ class _StudentInvoiceProviderElement
   String get month => (origin as StudentInvoiceProvider).month;
 }
 
+String _$classMonthTuitionOverviewHash() =>
+    r'41287bbf9849643093d4b95d08d5f799d9c2cd03';
+
+/// See also [classMonthTuitionOverview].
+@ProviderFor(classMonthTuitionOverview)
+const classMonthTuitionOverviewProvider = ClassMonthTuitionOverviewFamily();
+
+/// See also [classMonthTuitionOverview].
+class ClassMonthTuitionOverviewFamily
+    extends Family<AsyncValue<ClassMonthTuitionOverview>> {
+  /// See also [classMonthTuitionOverview].
+  const ClassMonthTuitionOverviewFamily();
+
+  /// See also [classMonthTuitionOverview].
+  ClassMonthTuitionOverviewProvider call((int, String) arg) {
+    return ClassMonthTuitionOverviewProvider(arg);
+  }
+
+  @override
+  ClassMonthTuitionOverviewProvider getProviderOverride(
+    covariant ClassMonthTuitionOverviewProvider provider,
+  ) {
+    return call(provider.arg);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'classMonthTuitionOverviewProvider';
+}
+
+/// See also [classMonthTuitionOverview].
+class ClassMonthTuitionOverviewProvider
+    extends AutoDisposeFutureProvider<ClassMonthTuitionOverview> {
+  /// See also [classMonthTuitionOverview].
+  ClassMonthTuitionOverviewProvider((int, String) arg)
+    : this._internal(
+        (ref) =>
+            classMonthTuitionOverview(ref as ClassMonthTuitionOverviewRef, arg),
+        from: classMonthTuitionOverviewProvider,
+        name: r'classMonthTuitionOverviewProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$classMonthTuitionOverviewHash,
+        dependencies: ClassMonthTuitionOverviewFamily._dependencies,
+        allTransitiveDependencies:
+            ClassMonthTuitionOverviewFamily._allTransitiveDependencies,
+        arg: arg,
+      );
+
+  ClassMonthTuitionOverviewProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.arg,
+  }) : super.internal();
+
+  final (int, String) arg;
+
+  @override
+  Override overrideWith(
+    FutureOr<ClassMonthTuitionOverview> Function(
+      ClassMonthTuitionOverviewRef provider,
+    )
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ClassMonthTuitionOverviewProvider._internal(
+        (ref) => create(ref as ClassMonthTuitionOverviewRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        arg: arg,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<ClassMonthTuitionOverview> createElement() {
+    return _ClassMonthTuitionOverviewProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ClassMonthTuitionOverviewProvider && other.arg == arg;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, arg.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin ClassMonthTuitionOverviewRef
+    on AutoDisposeFutureProviderRef<ClassMonthTuitionOverview> {
+  /// The parameter `arg` of this provider.
+  (int, String) get arg;
+}
+
+class _ClassMonthTuitionOverviewProviderElement
+    extends AutoDisposeFutureProviderElement<ClassMonthTuitionOverview>
+    with ClassMonthTuitionOverviewRef {
+  _ClassMonthTuitionOverviewProviderElement(super.provider);
+
+  @override
+  (int, String) get arg => (origin as ClassMonthTuitionOverviewProvider).arg;
+}
+
 String _$tuitionPolicyControllerHash() =>
     r'3aac76bd61c64bad9b15029a6e799ee8ae731218';
 
@@ -736,7 +862,7 @@ class _TuitionPreviewControllerProviderElement
   String get month => (origin as TuitionPreviewControllerProvider).month;
 }
 
-String _$invoiceControllerHash() => r'26c0b55db0537ac74fc5518c0d72a6f0ad080c94';
+String _$invoiceControllerHash() => r'709fb774093bcbc2e9876f12c0151f5c0dd202b3';
 
 /// See also [InvoiceController].
 @ProviderFor(InvoiceController)

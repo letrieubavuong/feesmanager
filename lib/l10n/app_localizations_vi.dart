@@ -834,4 +834,109 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get weekdaySunday => 'Chủ Nhật';
+
+  @override
+  String get attendanceTitle => 'Điểm danh buổi học';
+
+  @override
+  String get attendanceMarkAllPresent => 'Có mặt hết';
+
+  @override
+  String get attendanceMarkAllMakeup => 'Học bù hết';
+
+  @override
+  String get attendanceUndo => 'Hoàn tác';
+
+  @override
+  String get attendanceDraftSave => 'Lưu nháp';
+
+  @override
+  String get attendanceFinalizeSession => 'Hoàn tất buổi học';
+
+  @override
+  String get attendanceChangeShift => 'Đổi ca';
+
+  @override
+  String get attendanceScheduleMakeup => 'Xếp học bù';
+
+  @override
+  String get attendanceCancelAdjustment => 'Hủy điều chỉnh';
+
+  @override
+  String get attendanceAddStudent => 'Thêm học sinh';
+
+  @override
+  String get attendancePresent => 'Có mặt';
+
+  @override
+  String get attendanceLate => 'Trễ';
+
+  @override
+  String get attendanceExcused => 'Có phép';
+
+  @override
+  String get attendanceUnexcused => 'Không phép';
+
+  @override
+  String get attendanceNotMarked => 'Chưa điểm danh';
+
+  @override
+  String get tuitionKpiPreview => 'Tạm tính';
+
+  @override
+  String get tuitionKpiFinalized => 'Đã chốt';
+
+  @override
+  String get tuitionKpiPaid => 'Đã thu';
+
+  @override
+  String get tuitionKpiDebt => 'Còn nợ';
+
+  @override
+  String get tuitionFinalizeMonth => 'Chốt học phí tháng';
+
+  @override
+  String get tuitionRecalculate => 'Tính lại học phí';
+
+  @override
+  String get tuitionPaymentHistory => 'Lịch sử thu';
+
+  @override
+  String get tuitionPaymentAction => 'Thanh toán';
+
+  @override
+  String get tuitionQrAction => 'QR';
+
+  @override
+  String get tuitionPendingAttendance => 'Chưa đủ dữ liệu tính học phí';
+
+  @override
+  String get tuitionWaitingCompletion => 'Đang chờ hoàn tất buổi học';
+
+  @override
+  String get tuitionFinalizeFirstNotice => 'Chốt học phí trước khi thu tiền.';
+
+  @override
+  String get tuitionMonthlyCap => 'Trần học phí tháng';
+
+  @override
+  String get tuitionEffectiveFrom => 'Hiệu lực từ ngày';
+
+  @override
+  String get paymentHistoryTitle => 'Lịch sử thu tiền';
+
+  @override
+  String get paymentEditTitle => 'Sửa khoản thu';
+
+  @override
+  String get paymentRecordTitle => 'Ghi nhận thanh toán';
+
+  @override
+  String get paymentEditReason => 'Lý do sửa';
+
+  @override
+  String get paymentEditReasonValidation => 'Vui lòng nhập lý do sửa khoản thu';
+
+  @override
+  String get paymentEditSuccess => 'Đã cập nhật khoản thu thành công';
 }

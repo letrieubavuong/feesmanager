@@ -1681,6 +1681,216 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chủ Nhật'**
   String get weekdaySunday;
+
+  /// No description provided for @attendanceTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm danh buổi học'**
+  String get attendanceTitle;
+
+  /// No description provided for @attendanceMarkAllPresent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có mặt hết'**
+  String get attendanceMarkAllPresent;
+
+  /// No description provided for @attendanceMarkAllMakeup.
+  ///
+  /// In vi, this message translates to:
+  /// **'Học bù hết'**
+  String get attendanceMarkAllMakeup;
+
+  /// No description provided for @attendanceUndo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tác'**
+  String get attendanceUndo;
+
+  /// No description provided for @attendanceDraftSave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu nháp'**
+  String get attendanceDraftSave;
+
+  /// No description provided for @attendanceFinalizeSession.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tất buổi học'**
+  String get attendanceFinalizeSession;
+
+  /// No description provided for @attendanceChangeShift.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi ca'**
+  String get attendanceChangeShift;
+
+  /// No description provided for @attendanceScheduleMakeup.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xếp học bù'**
+  String get attendanceScheduleMakeup;
+
+  /// No description provided for @attendanceCancelAdjustment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy điều chỉnh'**
+  String get attendanceCancelAdjustment;
+
+  /// No description provided for @attendanceAddStudent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm học sinh'**
+  String get attendanceAddStudent;
+
+  /// No description provided for @attendancePresent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có mặt'**
+  String get attendancePresent;
+
+  /// No description provided for @attendanceLate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trễ'**
+  String get attendanceLate;
+
+  /// No description provided for @attendanceExcused.
+  ///
+  /// In vi, this message translates to:
+  /// **'Có phép'**
+  String get attendanceExcused;
+
+  /// No description provided for @attendanceUnexcused.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không phép'**
+  String get attendanceUnexcused;
+
+  /// No description provided for @attendanceNotMarked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa điểm danh'**
+  String get attendanceNotMarked;
+
+  /// No description provided for @tuitionKpiPreview.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạm tính'**
+  String get tuitionKpiPreview;
+
+  /// No description provided for @tuitionKpiFinalized.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chốt'**
+  String get tuitionKpiFinalized;
+
+  /// No description provided for @tuitionKpiPaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã thu'**
+  String get tuitionKpiPaid;
+
+  /// No description provided for @tuitionKpiDebt.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn nợ'**
+  String get tuitionKpiDebt;
+
+  /// No description provided for @tuitionFinalizeMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chốt học phí tháng'**
+  String get tuitionFinalizeMonth;
+
+  /// No description provided for @tuitionRecalculate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tính lại học phí'**
+  String get tuitionRecalculate;
+
+  /// No description provided for @tuitionPaymentHistory.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch sử thu'**
+  String get tuitionPaymentHistory;
+
+  /// No description provided for @tuitionPaymentAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán'**
+  String get tuitionPaymentAction;
+
+  /// No description provided for @tuitionQrAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'QR'**
+  String get tuitionQrAction;
+
+  /// No description provided for @tuitionPendingAttendance.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa đủ dữ liệu tính học phí'**
+  String get tuitionPendingAttendance;
+
+  /// No description provided for @tuitionWaitingCompletion.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ hoàn tất buổi học'**
+  String get tuitionWaitingCompletion;
+
+  /// No description provided for @tuitionFinalizeFirstNotice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chốt học phí trước khi thu tiền.'**
+  String get tuitionFinalizeFirstNotice;
+
+  /// No description provided for @tuitionMonthlyCap.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trần học phí tháng'**
+  String get tuitionMonthlyCap;
+
+  /// No description provided for @tuitionEffectiveFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hiệu lực từ ngày'**
+  String get tuitionEffectiveFrom;
+
+  /// No description provided for @paymentHistoryTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch sử thu tiền'**
+  String get paymentHistoryTitle;
+
+  /// No description provided for @paymentEditTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa khoản thu'**
+  String get paymentEditTitle;
+
+  /// No description provided for @paymentRecordTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi nhận thanh toán'**
+  String get paymentRecordTitle;
+
+  /// No description provided for @paymentEditReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do sửa'**
+  String get paymentEditReason;
+
+  /// No description provided for @paymentEditReasonValidation.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vui lòng nhập lý do sửa khoản thu'**
+  String get paymentEditReasonValidation;
+
+  /// No description provided for @paymentEditSuccess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã cập nhật khoản thu thành công'**
+  String get paymentEditSuccess;
 }
 
 class _AppLocalizationsDelegate

@@ -313,12 +313,10 @@ class ScheduleDomainService {
 
     // 2. Query overlapping assignments for this schedule
     final overlappingAssignments = await _assignmentRepo
-        .getOverlappingBySchedule(
-          scheduleId: scheduleId,
-          startDate: startStr,
-        );
-    final alreadyAssignedStudentIds =
-        overlappingAssignments.map((a) => a.idHocSinh).toSet();
+        .getOverlappingBySchedule(scheduleId: scheduleId, startDate: startStr);
+    final alreadyAssignedStudentIds = overlappingAssignments
+        .map((a) => a.idHocSinh)
+        .toSet();
 
     // 3. Load students ONCE
     final allStudents = await _studentService.getStudents();
@@ -423,14 +421,13 @@ class ScheduleDomainService {
     int? excludeAssignmentId,
   }) async {
     // 1. Check duplicate/overlap for same student & schedule
-    final isOverlapping = await _assignmentRepo
-        .hasOverlappingStudentAssignment(
-          studentId: studentId,
-          scheduleId: scheduleId,
-          startDate: startStr,
-          endDate: endStr,
-          excludeAssignmentId: excludeAssignmentId,
-        );
+    final isOverlapping = await _assignmentRepo.hasOverlappingStudentAssignment(
+      studentId: studentId,
+      scheduleId: scheduleId,
+      startDate: startStr,
+      endDate: endStr,
+      excludeAssignmentId: excludeAssignmentId,
+    );
     if (isOverlapping) {
       return BulkAssignmentItemResult(
         studentId: studentId,
@@ -522,12 +519,14 @@ class ScheduleDomainService {
       final studentName = student?.hoTen ?? 'Học sinh #$sId';
 
       if (student == null || student.daLuuTru) {
-        blocked.add(BulkAssignmentItemResult(
-          studentId: sId,
-          studentName: studentName,
-          status: BulkAssignmentStatus.invalidBoundary,
-          message: 'Học sinh không tồn tại hoặc đã bị ngừng học',
-        ));
+        blocked.add(
+          BulkAssignmentItemResult(
+            studentId: sId,
+            studentName: studentName,
+            status: BulkAssignmentStatus.invalidBoundary,
+            message: 'Học sinh không tồn tại hoặc đã bị ngừng học',
+          ),
+        );
         continue;
       }
 
@@ -606,11 +605,13 @@ class ScheduleDomainService {
             updatedAt: now,
           ),
         );
-        itemResults.add(BulkAssignmentItemResult(
-          studentId: student.id!,
-          studentName: student.hoTen,
-          status: BulkAssignmentStatus.ready,
-        ));
+        itemResults.add(
+          BulkAssignmentItemResult(
+            studentId: student.id!,
+            studentName: student.hoTen,
+            status: BulkAssignmentStatus.ready,
+          ),
+        );
       }
     });
 

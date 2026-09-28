@@ -21,6 +21,7 @@ import 'package:tuition2027/features/sessions/data/session_repository.dart';
 import 'package:tuition2027/features/sessions/domain/session_service.dart';
 import 'package:tuition2027/features/students/data/student_repository.dart';
 import 'package:tuition2027/features/students/domain/student_service.dart';
+import 'package:tuition2027/features/payments/data/payment_repository.dart';
 import 'package:tuition2027/features/tuition/data/tuition_policy_repository.dart';
 import 'package:tuition2027/features/tuition/data/tuition_repository.dart';
 import 'package:tuition2027/features/tuition/domain/invoice_service.dart';
@@ -122,12 +123,15 @@ void main() {
         sessionRepo,
       );
 
+      final paymentRepo = PaymentRepository(db);
+
       invoiceService = InvoiceService(
         tuitionRepo,
         tuitionService,
         creditService,
         creditRepo,
         membershipService,
+        paymentRepo,
         db,
       );
 
@@ -343,5 +347,79 @@ void main() {
         );
       },
     );
+
+    test(
+      'Phase 14B.1 Recalculate 0đ invoice without payments updates snapshot via TuitionService',
+      () async {
+        await db.execute('''
+        INSERT INTO phan_ca_hoc_sinh (id_hoc_sinh, id_lop, id_lich_hoc, tu_ngay, created_at, updated_at)
+        VALUES (1, 1, 1, '2026-01-01', '2026-01-01', '2026-01-01')
+      ''');
+
+        // Create zero invoice for Oct 2026
+        await db.execute('''
+        INSERT INTO hoc_phi_thang (id, id_hoc_sinh, id_lop, thang, id_chinh_sach_hoc_phi, so_buoi_eligible, so_buoi_tinh_phi, credit_opening, credit_earned, credit_used, credit_closing, tong_truoc_giam, so_tien_phai_thu, trang_thai, created_at, updated_at)
+        VALUES (99, 1, 1, '2026-10', 1, 0, 0, 0, 0, 0, 0, 0, 0, 'DA_CHOT', '2026-10-01', '2026-10-01')
+      ''');
+
+        // Add 2 completed Monday sessions (2026-10-05 & 2026-10-12) after invoice was finalized
+        final dates = ['2026-10-05', '2026-10-12'];
+        for (int i = 0; i < dates.length; i++) {
+          final dateStr = dates[i];
+          final sessionId = 101 + i;
+          await db.execute('''
+          INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
+          VALUES ($sessionId, 1, 1, '$dateStr', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-10-01', '2026-10-01')
+        ''');
+          await db.execute('''
+          INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
+          VALUES ($sessionId, 1, 1, 'CO_MAT', '2026-10-01', '2026-10-01')
+        ''');
+        }
+
+        final recalc = await invoiceService
+            .recalculateFinalizedInvoiceWithoutPayments(
+              studentId: 1,
+              classId: 1,
+              month: '2026-10',
+              reason: 'Điểm danh bổ sung sau chốt',
+            );
+
+        expect(recalc.soBuoiEligible, 2);
+        expect(recalc.soBuoiTinhPhi, 2);
+        expect(recalc.soTienPhaiThu, 100000);
+
+        // Verify audit row created
+        final audit = await db.query(
+          'hoc_phi_chinh_sua',
+          where: 'id_hoc_phi_thang = ?',
+          whereArgs: [99],
+        );
+        expect(audit.length, 1);
+        expect(audit.first['reason'], 'Điểm danh bổ sung sau chốt');
+      },
+    );
+
+    test('Phase 14B.1 Recalculate invoice with payments is REJECTED', () async {
+      await db.execute('''
+        INSERT INTO hoc_phi_thang (id, id_hoc_sinh, id_lop, thang, id_chinh_sach_hoc_phi, so_buoi_eligible, so_buoi_tinh_phi, credit_opening, credit_earned, credit_used, credit_closing, tong_truoc_giam, so_tien_phai_thu, trang_thai, created_at, updated_at)
+        VALUES (100, 1, 1, '2026-11', 1, 2, 2, 0, 0, 0, 0, 100000, 100000, 'CON_NO', '2026-11-01', '2026-11-01')
+      ''');
+
+      await db.execute('''
+        INSERT INTO thanh_toan (id_hoc_sinh, id_lop, id_hoc_phi_thang, thang, so_tien, ngay_thanh_toan, phuong_thuc, created_at)
+        VALUES (1, 1, 100, '2026-11', 50000, '2026-11-05', 'TIEN_MAT', '2026-11-05')
+      ''');
+
+      expect(
+        () => invoiceService.recalculateFinalizedInvoiceWithoutPayments(
+          studentId: 1,
+          classId: 1,
+          month: '2026-11',
+          reason: 'Sửa hóa đơn đã trả tiền',
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
   });
 }

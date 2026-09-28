@@ -128,6 +128,7 @@ void main() {
         creditService,
         creditRepo,
         membershipService,
+        paymentRepo,
         db,
       );
 
@@ -792,5 +793,111 @@ void main() {
         expect(payments.last.paymentDate, '2026-09-10');
       },
     );
+
+    test(
+      'Phase 14B.1 Payment Edit: change 200k -> 150k, update debt, invoice status & audit row',
+      () async {
+        final p = await paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          amount: 200000,
+          paymentDate: '2026-09-10',
+          method: PaymentMethod.TIEN_MAT,
+        );
+
+        final updatedP = await paymentService.updatePayment(
+          paymentId: p.id!,
+          amount: 150000,
+          paymentDate: '2026-09-12',
+          method: PaymentMethod.CHUYEN_KHOAN,
+          transactionId: 'TX_EDIT_1',
+          note: 'Sửa bớt 50k',
+          correctionReason: 'Thầy thu nhầm',
+        );
+
+        expect(updatedP.amount, 150000);
+        expect(updatedP.paymentDate, '2026-09-12');
+        expect(updatedP.method, PaymentMethod.CHUYEN_KHOAN);
+        expect(updatedP.transactionId, 'TX_EDIT_1');
+        expect(updatedP.note, 'Sửa bớt 50k');
+
+        // Check summary & debt (Invoice total: 600k, paid: 150k => remaining: 450k)
+        final summary = await paymentService.getPaymentSummary(1, 1, '2026-09');
+        expect(summary?.totalPaid, 150000);
+        expect(summary?.remainingDebt, 450000);
+        expect(summary?.settlementStatus, TuitionInvoiceStatus.CON_NO);
+
+        // Verify audit row created on disk
+        final auditRows = await db.query(
+          'thanh_toan_chinh_sua',
+          where: 'id_thanh_toan = ?',
+          whereArgs: [p.id],
+        );
+        expect(auditRows.length, 1);
+        expect(auditRows.first['so_tien_cu'], 200000);
+        expect(auditRows.first['so_tien_moi'], 150000);
+        expect(auditRows.first['ly_do_chinh_sua'], 'Thầy thu nhầm');
+      },
+    );
+
+    test(
+      'Phase 14B.1 Payment Edit: duplicate transaction ID is rejected',
+      () async {
+        await paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          amount: 100000,
+          paymentDate: '2026-09-10',
+          method: PaymentMethod.CHUYEN_KHOAN,
+          transactionId: 'TX_EXISTING',
+        );
+
+        final p2 = await paymentService.recordPayment(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          amount: 100000,
+          paymentDate: '2026-09-11',
+          method: PaymentMethod.TIEN_MAT,
+        );
+
+        expect(
+          () => paymentService.updatePayment(
+            paymentId: p2.id!,
+            amount: 100000,
+            paymentDate: '2026-09-11',
+            method: PaymentMethod.CHUYEN_KHOAN,
+            transactionId: 'TX_EXISTING',
+            correctionReason: 'Sửa mã giao dịch trùng',
+          ),
+          throwsA(isA<Exception>()),
+        );
+      },
+    );
+
+    test('Phase 14B.1 Payment Edit: overpayment rejected', () async {
+      final p = await paymentService.recordPayment(
+        studentId: 1,
+        classId: 1,
+        month: '2026-09',
+        amount: 500000,
+        paymentDate: '2026-09-10',
+        method: PaymentMethod.TIEN_MAT,
+      );
+
+      // Invoice total is 600k. Changing 500k to 700k should be rejected as overpayment.
+      expect(
+        () => paymentService.updatePayment(
+          paymentId: p.id!,
+          amount: 700000,
+          paymentDate: '2026-09-10',
+          method: PaymentMethod.TIEN_MAT,
+          correctionReason: 'Tăng tiền quá mức',
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
   });
 }

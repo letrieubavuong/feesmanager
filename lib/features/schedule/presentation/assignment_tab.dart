@@ -121,10 +121,15 @@ class AssignmentTab extends ConsumerWidget {
                         final isActiveSchedule = schedule.isEffectiveOn(
                           DateTime.now(),
                         );
-                        final todayStr = DateFormatter.formatCanonicalDate(DateTime.now());
-                        final activeShiftAssignments = shiftAssignments.where((a) {
+                        final todayStr = DateFormatter.formatCanonicalDate(
+                          DateTime.now(),
+                        );
+                        final activeShiftAssignments = shiftAssignments.where((
+                          a,
+                        ) {
                           return a.tuNgay.compareTo(todayStr) <= 0 &&
-                              (a.denNgay == null || a.denNgay!.compareTo(todayStr) >= 0);
+                              (a.denNgay == null ||
+                                  a.denNgay!.compareTo(todayStr) >= 0);
                         }).toList();
 
                         return AppSectionCard(
@@ -147,7 +152,10 @@ class AssignmentTab extends ConsumerWidget {
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      _formatWeekday(schedule.thuTrongTuan, l10n),
+                                      _formatWeekday(
+                                        schedule.thuTrongTuan,
+                                        l10n,
+                                      ),
                                       style: const TextStyle(
                                         color: AppColors.cyanAccent,
                                         fontWeight: FontWeight.bold,
@@ -166,7 +174,9 @@ class AssignmentTab extends ConsumerWidget {
                                   ),
                                   const Spacer(),
                                   Text(
-                                    l10n.assignmentStudentCount(activeShiftAssignments.length),
+                                    l10n.assignmentStudentCount(
+                                      activeShiftAssignments.length,
+                                    ),
                                     style: const TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: 12,
@@ -206,7 +216,9 @@ class AssignmentTab extends ConsumerWidget {
                               const SizedBox(height: 8),
                               if (shiftAssignments.isEmpty)
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
                                   child: Text(
                                     l10n.assignmentNoStudentsInShift,
                                     style: const TextStyle(
@@ -342,7 +354,10 @@ class _AssignmentRowItem extends ConsumerWidget {
                   ),
                   error: (_, __) => Text(
                     l10n.commonError,
-                    style: const TextStyle(color: AppColors.error, fontSize: 13),
+                    style: const TextStyle(
+                      color: AppColors.error,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
                 Text(
@@ -356,7 +371,9 @@ class _AssignmentRowItem extends ConsumerWidget {
             ),
           ),
           AppStatusChip(
-            label: isActive ? l10n.assignmentStatusActive : l10n.assignmentStatusClosed,
+            label: isActive
+                ? l10n.assignmentStatusActive
+                : l10n.assignmentStatusClosed,
             color: isActive ? AppColors.success : AppColors.textMuted,
             compact: true,
           ),
@@ -447,7 +464,10 @@ class _AssignmentRowItem extends ConsumerWidget {
                       const SizedBox(width: 8),
                       Text(
                         l10n.assignmentCloseShift,
-                        style: const TextStyle(color: AppColors.error, fontSize: 13),
+                        style: const TextStyle(
+                          color: AppColors.error,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -479,10 +499,7 @@ class _AssignmentRowItem extends ConsumerWidget {
             .read(classAssignmentControllerProvider(classId).notifier)
             .close(assignmentId: assignment.id!, endDate: pickedDate);
         if (context.mounted) {
-          AppFeedback.showSuccessSnackBar(
-            context,
-            l10n.assignmentCloseSuccess,
-          );
+          AppFeedback.showSuccessSnackBar(context, l10n.assignmentCloseSuccess);
         }
       } catch (e) {
         if (context.mounted) {
@@ -561,7 +578,9 @@ class _AddAssignmentBottomSheetState
         setState(() {
           _candidates = candidates;
           _isLoadingCandidates = false;
-          _selectedStudentIds.retainWhere((id) => candidates.any((c) => c.id == id));
+          _selectedStudentIds.retainWhere(
+            (id) => candidates.any((c) => c.id == id),
+          );
         });
       }
     } catch (e) {
@@ -578,7 +597,9 @@ class _AddAssignmentBottomSheetState
   List<Student> get _filteredCandidates {
     if (_searchQuery.trim().isEmpty) return _candidates;
     final query = _searchQuery.trim().toLowerCase();
-    return _candidates.where((s) => s.hoTen.toLowerCase().contains(query)).toList();
+    return _candidates
+        .where((s) => s.hoTen.toLowerCase().contains(query))
+        .toList();
   }
 
   bool get _isAllFilteredSelected {
@@ -628,13 +649,15 @@ class _AddAssignmentBottomSheetState
                 children: [
                   Text(
                     l10n.bulkAssignmentSheetTitle,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                    icon: const Icon(
+                      Icons.close,
+                      color: AppColors.textSecondary,
+                    ),
                     onPressed: _isSaving ? null : () => Navigator.pop(context),
                   ),
                 ],
@@ -667,9 +690,8 @@ class _AddAssignmentBottomSheetState
                   final activeSchedules = schedules
                       .where((s) => s.isEffectiveOn(_startDate))
                       .toList();
-                  final selectedValue = activeSchedules.any(
-                    (s) => s.id == _selectedScheduleId,
-                  )
+                  final selectedValue =
+                      activeSchedules.any((s) => s.id == _selectedScheduleId)
                       ? _selectedScheduleId
                       : null;
 
@@ -684,7 +706,9 @@ class _AddAssignmentBottomSheetState
                       final weekdayName = _formatWeekday(s.thuTrongTuan, l10n);
                       return DropdownMenuItem(
                         value: s.id!,
-                        child: Text('$weekdayName: ${s.gioBatDau}-${s.gioKetThuc}'),
+                        child: Text(
+                          '$weekdayName: ${s.gioBatDau}-${s.gioKetThuc}',
+                        ),
                       );
                     }).toList(),
                     onChanged: _isSaving
@@ -732,7 +756,8 @@ class _AddAssignmentBottomSheetState
                           lastDate: DateTime(2100),
                         );
                         if (picked != null) {
-                          final schedules = ref
+                          final schedules =
+                              ref
                                   .read(
                                     classScheduleControllerProvider(
                                       widget.classId,
@@ -803,7 +828,9 @@ class _AddAssignmentBottomSheetState
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Center(
-                      child: CircularProgressIndicator(color: AppColors.primary),
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
                     ),
                   )
                 else if (_candidates.isEmpty)
@@ -844,14 +871,13 @@ class _AddAssignmentBottomSheetState
                     child: ListView.separated(
                       shrinkWrap: true,
                       itemCount: filteredList.length,
-                      separatorBuilder: (_, __) => const Divider(
-                        color: AppColors.border,
-                        height: 1,
-                      ),
+                      separatorBuilder: (_, __) =>
+                          const Divider(color: AppColors.border, height: 1),
                       itemBuilder: (ctx, idx) {
                         final student = filteredList[idx];
-                        final isSelected =
-                            _selectedStudentIds.contains(student.id);
+                        final isSelected = _selectedStudentIds.contains(
+                          student.id,
+                        );
 
                         return CheckboxListTile(
                           dense: true,
@@ -1122,7 +1148,9 @@ class _AddAssignmentBottomSheetState
                           ? () => Navigator.pop(ctx, true)
                           : null,
                       child: Text(
-                        l10n.bulkAssignmentPreviewConfirmBtn(preview.readyStudents.length),
+                        l10n.bulkAssignmentPreviewConfirmBtn(
+                          preview.readyStudents.length,
+                        ),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -1528,9 +1556,8 @@ class _ChangeShiftBottomSheetState
         .watch(studentDetailProvider(widget.assignment.idHocSinh))
         .value;
 
-    final selectedNewScheduleValue = otherSchedules.any(
-      (s) => s.id == _newScheduleId,
-    )
+    final selectedNewScheduleValue =
+        otherSchedules.any((s) => s.id == _newScheduleId)
         ? _newScheduleId
         : null;
 
@@ -1549,9 +1576,9 @@ class _ChangeShiftBottomSheetState
             children: [
               Text(
                 l10n.changeShiftTitle,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
@@ -1589,9 +1616,7 @@ class _ChangeShiftBottomSheetState
                   final weekdayName = _formatWeekday(s.thuTrongTuan, l10n);
                   return DropdownMenuItem(
                     value: s.id!,
-                    child: Text(
-                      '$weekdayName: ${s.gioBatDau}-${s.gioKetThuc}',
-                    ),
+                    child: Text('$weekdayName: ${s.gioBatDau}-${s.gioKetThuc}'),
                   );
                 }).toList(),
                 onChanged: (v) => setState(() => _newScheduleId = v),
@@ -1600,9 +1625,7 @@ class _ChangeShiftBottomSheetState
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.changeShiftEffectiveDate),
-                subtitle: Text(
-                  DateFormatter.formatDisplayDate(_effectiveDate),
-                ),
+                subtitle: Text(DateFormatter.formatDisplayDate(_effectiveDate)),
                 trailing: const Icon(
                   Icons.calendar_today,
                   color: AppColors.cyanAccent,

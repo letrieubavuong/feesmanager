@@ -5,6 +5,7 @@ import '../../../app/common_widgets/app_page_scaffold.dart';
 import '../../../app/common_widgets/dirty_form_scope.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../domain/payment.dart';
 import '../domain/payment_method.dart';
 import 'payment_controller.dart';
 
@@ -13,14 +14,18 @@ class RecordPaymentBottomSheet extends ConsumerStatefulWidget {
   final int classId;
   final String month;
   final int suggestedAmount;
+  final Payment? existingPayment;
 
   const RecordPaymentBottomSheet({
     super.key,
     required this.studentId,
     required this.classId,
     required this.month,
-    required this.suggestedAmount,
+    this.suggestedAmount = 0,
+    this.existingPayment,
   });
+
+  bool get isEditMode => existingPayment != null;
 
   @override
   ConsumerState<RecordPaymentBottomSheet> createState() =>
@@ -33,8 +38,9 @@ class _RecordPaymentBottomSheetState
   late TextEditingController _amountController;
   late TextEditingController _txIdController;
   late TextEditingController _noteController;
-  DateTime _paymentDate = DateTime.now();
-  PaymentMethod _selectedMethod = PaymentMethod.TIEN_MAT;
+  late TextEditingController _reasonController;
+  late DateTime _paymentDate;
+  late PaymentMethod _selectedMethod;
   bool _isDirty = false;
   bool _isSaving = false;
   String? _error;
@@ -42,13 +48,28 @@ class _RecordPaymentBottomSheetState
   @override
   void initState() {
     super.initState();
-    _amountController = TextEditingController(
-      text: widget.suggestedAmount > 0
-          ? widget.suggestedAmount.toString()
-          : '0',
-    )..addListener(_onChanged);
-    _txIdController = TextEditingController()..addListener(_onChanged);
-    _noteController = TextEditingController()..addListener(_onChanged);
+    final p = widget.existingPayment;
+    if (p != null) {
+      _amountController = TextEditingController(text: p.amount.toString())
+        ..addListener(_onChanged);
+      _txIdController = TextEditingController(text: p.transactionId ?? '')
+        ..addListener(_onChanged);
+      _noteController = TextEditingController(text: p.note ?? '')
+        ..addListener(_onChanged);
+      _paymentDate = DateTime.tryParse(p.paymentDate) ?? DateTime.now();
+      _selectedMethod = p.method;
+    } else {
+      _amountController = TextEditingController(
+        text: widget.suggestedAmount > 0
+            ? widget.suggestedAmount.toString()
+            : '0',
+      )..addListener(_onChanged);
+      _txIdController = TextEditingController()..addListener(_onChanged);
+      _noteController = TextEditingController()..addListener(_onChanged);
+      _paymentDate = DateTime.now();
+      _selectedMethod = PaymentMethod.TIEN_MAT;
+    }
+    _reasonController = TextEditingController()..addListener(_onChanged);
   }
 
   void _onChanged() {
@@ -62,6 +83,7 @@ class _RecordPaymentBottomSheetState
     _amountController.dispose();
     _txIdController.dispose();
     _noteController.dispose();
+    _reasonController.dispose();
     super.dispose();
   }
 
@@ -99,9 +121,11 @@ class _RecordPaymentBottomSheetState
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Ghi nhận thanh toán',
-                          style: TextStyle(
+                        Text(
+                          widget.isEditMode
+                              ? 'Sửa khoản thu'
+                              : 'Ghi nhận thanh toán',
+                          style: const TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -238,6 +262,24 @@ class _RecordPaymentBottomSheetState
                       ),
                       maxLines: 2,
                     ),
+                    if (widget.isEditMode) ...[
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _reasonController,
+                        style: const TextStyle(color: AppColors.textPrimary),
+                        decoration: const InputDecoration(
+                          labelText: 'Lý do sửa *',
+                          border: OutlineInputBorder(),
+                        ),
+                        maxLines: 2,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Vui lòng nhập lý do sửa khoản thu';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -268,7 +310,11 @@ class _RecordPaymentBottomSheetState
                                   ),
                                 )
                               : const Icon(Icons.check),
-                          label: const Text('Xác nhận thanh toán'),
+                          label: Text(
+                            widget.isEditMode
+                                ? 'Lưu thay đổi'
+                                : 'Xác nhận thanh toán',
+                          ),
                         ),
                       ],
                     ),
@@ -294,29 +340,52 @@ class _RecordPaymentBottomSheetState
       final amount = int.parse(_amountController.text.trim());
       final dateStr = DateFormatter.formatCanonicalDate(_paymentDate);
 
-      await ref
-          .read(paymentControllerProvider.notifier)
-          .recordPayment(
-            studentId: widget.studentId,
-            classId: widget.classId,
-            month: widget.month,
-            amount: amount,
-            paymentDate: dateStr,
-            method: _selectedMethod,
-            transactionId: _txIdController.text.trim().isNotEmpty
-                ? _txIdController.text.trim()
-                : null,
-            note: _noteController.text.trim().isNotEmpty
-                ? _noteController.text.trim()
-                : null,
-          );
+      if (widget.isEditMode) {
+        await ref
+            .read(paymentControllerProvider.notifier)
+            .updatePayment(
+              paymentId: widget.existingPayment!.id!,
+              studentId: widget.studentId,
+              classId: widget.classId,
+              month: widget.month,
+              amount: amount,
+              paymentDate: dateStr,
+              method: _selectedMethod,
+              transactionId: _txIdController.text.trim().isNotEmpty
+                  ? _txIdController.text.trim()
+                  : null,
+              note: _noteController.text.trim().isNotEmpty
+                  ? _noteController.text.trim()
+                  : null,
+              correctionReason: _reasonController.text.trim(),
+            );
+      } else {
+        await ref
+            .read(paymentControllerProvider.notifier)
+            .recordPayment(
+              studentId: widget.studentId,
+              classId: widget.classId,
+              month: widget.month,
+              amount: amount,
+              paymentDate: dateStr,
+              method: _selectedMethod,
+              transactionId: _txIdController.text.trim().isNotEmpty
+                  ? _txIdController.text.trim()
+                  : null,
+              note: _noteController.text.trim().isNotEmpty
+                  ? _noteController.text.trim()
+                  : null,
+            );
+      }
 
       if (mounted) {
         setState(() => _isSaving = false);
         _isDirty = false;
         AppFeedback.showSuccessSnackBar(
           context,
-          'Đã ghi nhận thanh toán thành công',
+          widget.isEditMode
+              ? 'Đã cập nhật khoản thu thành công'
+              : 'Đã ghi nhận thanh toán thành công',
         );
         Navigator.pop(context, true);
       }
@@ -349,6 +418,28 @@ Future<bool?> showRecordPaymentBottomSheet(
       classId: classId,
       month: month,
       suggestedAmount: suggestedAmount,
+    ),
+  );
+}
+
+Future<bool?> showEditPaymentBottomSheet(
+  BuildContext context, {
+  required int studentId,
+  required int classId,
+  required String month,
+  required Payment existingPayment,
+}) {
+  return showModalBottomSheet<bool>(
+    context: context,
+    isScrollControlled: true,
+    isDismissible: false,
+    enableDrag: false,
+    useSafeArea: true,
+    builder: (_) => RecordPaymentBottomSheet(
+      studentId: studentId,
+      classId: classId,
+      month: month,
+      existingPayment: existingPayment,
     ),
   );
 }

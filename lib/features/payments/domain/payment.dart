@@ -54,4 +54,32 @@ class Payment {
     note: map['ghi_chu'] as String?,
     createdAt: DateTime.parse(map['created_at'] as String),
   );
+
+  Payment copyWith({
+    int? id,
+    int? studentId,
+    int? classId,
+    int? invoiceId,
+    String? month,
+    int? amount,
+    String? paymentDate,
+    PaymentMethod? method,
+    String? transactionId,
+    String? note,
+    DateTime? createdAt,
+  }) {
+    return Payment(
+      id: id ?? this.id,
+      studentId: studentId ?? this.studentId,
+      classId: classId ?? this.classId,
+      invoiceId: invoiceId ?? this.invoiceId,
+      month: month ?? this.month,
+      amount: amount ?? this.amount,
+      paymentDate: paymentDate ?? this.paymentDate,
+      method: method ?? this.method,
+      transactionId: transactionId ?? this.transactionId,
+      note: note ?? this.note,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }

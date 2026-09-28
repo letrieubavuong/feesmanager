@@ -26,7 +26,9 @@ void main() {
   late ScheduleDomainService scheduleService;
 
   Future<Database> createTestDb() async {
-    final tempDir = await Directory.systemTemp.createTemp('bulk_assignment_test');
+    final tempDir = await Directory.systemTemp.createTemp(
+      'bulk_assignment_test',
+    );
     final dbPath = p.join(
       tempDir.path,
       'test_${DateTime.now().microsecondsSinceEpoch}.db',
@@ -127,23 +129,26 @@ void main() {
   });
 
   group('Bulk Student Shift Assignment Domain Tests', () {
-    test('getBulkAssignmentCandidates excludes already assigned 20 students', () async {
-      final candidates = await scheduleService.getBulkAssignmentCandidates(
-        classId: 1,
-        scheduleId: 100,
-        startDate: DateTime(2026, 9, 15),
-      );
+    test(
+      'getBulkAssignmentCandidates excludes already assigned 20 students',
+      () async {
+        final candidates = await scheduleService.getBulkAssignmentCandidates(
+          classId: 1,
+          scheduleId: 100,
+          startDate: DateTime(2026, 9, 15),
+        );
 
-      // Total 50 students - 20 already assigned = 30 candidates
-      expect(candidates.length, equals(30));
+        // Total 50 students - 20 already assigned = 30 candidates
+        expect(candidates.length, equals(30));
 
-      // Candidates should be students 21 to 50
-      final candidateIds = candidates.map((s) => s.id).toSet();
-      expect(candidateIds.contains(1), isFalse);
-      expect(candidateIds.contains(20), isFalse);
-      expect(candidateIds.contains(21), isTrue);
-      expect(candidateIds.contains(50), isTrue);
-    });
+        // Candidates should be students 21 to 50
+        final candidateIds = candidates.map((s) => s.id).toSet();
+        expect(candidateIds.contains(1), isFalse);
+        expect(candidateIds.contains(20), isFalse);
+        expect(candidateIds.contains(21), isTrue);
+        expect(candidateIds.contains(50), isTrue);
+      },
+    );
 
     test('previewBulkAssignment separates valid vs blocked students', () async {
       // Preview with student 1 (already assigned) and student 21 (ready)
@@ -157,73 +162,91 @@ void main() {
       expect(preview.readyStudents.length, equals(3));
       expect(preview.blocked.length, equals(1));
       expect(preview.blocked.first.studentId, equals(1));
-      expect(preview.blocked.first.status, equals(BulkAssignmentStatus.alreadyAssigned));
-    });
-
-    test('assignStudentsBulk executes in ONE transaction and persists assignments', () async {
-      final result = await scheduleService.assignStudentsBulk(
-        studentIds: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
-        classId: 1,
-        scheduleId: 100,
-        startDate: DateTime(2026, 9, 15),
-      );
-
-      expect(result.totalAttempted, equals(10));
-      expect(result.successCount, equals(10));
-
-      // Re-query candidates -> 30 candidates - 10 new assignments = 20 candidates left
-      final candidatesAfter = await scheduleService.getBulkAssignmentCandidates(
-        classId: 1,
-        scheduleId: 100,
-        startDate: DateTime(2026, 9, 15),
-      );
-
-      expect(candidatesAfter.length, equals(20));
-    });
-
-    test('Expired old assignment allows student to be candidate for new date', () async {
-      // Student 1's assignment was closed on 2026-09-10
-      await db.update(
-        'phan_ca_hoc_sinh',
-        {'den_ngay': '2026-09-10'},
-        where: 'id = ?',
-        whereArgs: [1],
-      );
-
-      // Candidate query for startDate = 2026-10-01
-      final candidates = await scheduleService.getBulkAssignmentCandidates(
-        classId: 1,
-        scheduleId: 100,
-        startDate: DateTime(2026, 10, 1),
-      );
-
-      // Student 1's old assignment ended 2026-09-10 -> DOES NOT OVERLAP with 2026-10-01
-      // Student 1 IS NOW A VALID CANDIDATE AGAIN!
-      final candidateIds = candidates.map((s) => s.id).toSet();
-      expect(candidateIds.contains(1), isTrue);
-    });
-
-    test('Archived class throws Exception on bulk candidates and preview', () async {
-      await db.update('lop', {'da_luu_tru': 1}, where: 'id = ?', whereArgs: [1]);
-
       expect(
-        () => scheduleService.getBulkAssignmentCandidates(
+        preview.blocked.first.status,
+        equals(BulkAssignmentStatus.alreadyAssigned),
+      );
+    });
+
+    test(
+      'assignStudentsBulk executes in ONE transaction and persists assignments',
+      () async {
+        final result = await scheduleService.assignStudentsBulk(
+          studentIds: [21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
           classId: 1,
           scheduleId: 100,
           startDate: DateTime(2026, 9, 15),
-        ),
-        throwsA(isA<Exception>()),
-      );
+        );
 
-      expect(
-        () => scheduleService.previewBulkAssignment(
-          studentIds: [21, 22],
+        expect(result.totalAttempted, equals(10));
+        expect(result.successCount, equals(10));
+
+        // Re-query candidates -> 30 candidates - 10 new assignments = 20 candidates left
+        final candidatesAfter = await scheduleService
+            .getBulkAssignmentCandidates(
+              classId: 1,
+              scheduleId: 100,
+              startDate: DateTime(2026, 9, 15),
+            );
+
+        expect(candidatesAfter.length, equals(20));
+      },
+    );
+
+    test(
+      'Expired old assignment allows student to be candidate for new date',
+      () async {
+        // Student 1's assignment was closed on 2026-09-10
+        await db.update(
+          'phan_ca_hoc_sinh',
+          {'den_ngay': '2026-09-10'},
+          where: 'id = ?',
+          whereArgs: [1],
+        );
+
+        // Candidate query for startDate = 2026-10-01
+        final candidates = await scheduleService.getBulkAssignmentCandidates(
           classId: 1,
           scheduleId: 100,
-          startDate: DateTime(2026, 9, 15),
-        ),
-        throwsA(isA<Exception>()),
-      );
-    });
+          startDate: DateTime(2026, 10, 1),
+        );
+
+        // Student 1's old assignment ended 2026-09-10 -> DOES NOT OVERLAP with 2026-10-01
+        // Student 1 IS NOW A VALID CANDIDATE AGAIN!
+        final candidateIds = candidates.map((s) => s.id).toSet();
+        expect(candidateIds.contains(1), isTrue);
+      },
+    );
+
+    test(
+      'Archived class throws Exception on bulk candidates and preview',
+      () async {
+        await db.update(
+          'lop',
+          {'da_luu_tru': 1},
+          where: 'id = ?',
+          whereArgs: [1],
+        );
+
+        expect(
+          () => scheduleService.getBulkAssignmentCandidates(
+            classId: 1,
+            scheduleId: 100,
+            startDate: DateTime(2026, 9, 15),
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        expect(
+          () => scheduleService.previewBulkAssignment(
+            studentIds: [21, 22],
+            classId: 1,
+            scheduleId: 100,
+            startDate: DateTime(2026, 9, 15),
+          ),
+          throwsA(isA<Exception>()),
+        );
+      },
+    );
   });
 }

@@ -397,7 +397,7 @@ class _InvoicePaymentsProviderElement
   (int, int, String) get arg => (origin as InvoicePaymentsProvider).arg;
 }
 
-String _$paymentControllerHash() => r'2c8e2b86b463e0fe4705e9c30c5b02cf12a1115a';
+String _$paymentControllerHash() => r'0f947b44bd2147746acd250b1980468325f9df9d';
 
 /// See also [PaymentController].
 @ProviderFor(PaymentController)
