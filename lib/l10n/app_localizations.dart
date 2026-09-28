@@ -1423,6 +1423,264 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Có thể ghi +1'**
   String get creditsCanEarnTag;
+
+  /// No description provided for @assignmentTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phân ca học sinh'**
+  String get assignmentTitle;
+
+  /// No description provided for @assignmentBulkBtn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phân ca nhiều HS'**
+  String get assignmentBulkBtn;
+
+  /// No description provided for @assignmentAddStudent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm học sinh'**
+  String get assignmentAddStudent;
+
+  /// No description provided for @assignmentStudentCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} học sinh'**
+  String assignmentStudentCount(Object count);
+
+  /// No description provided for @assignmentNoStudentsInShift.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có học sinh trong ca này'**
+  String get assignmentNoStudentsInShift;
+
+  /// No description provided for @assignmentNoSchedules.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có lịch học định kỳ nào để phân ca.'**
+  String get assignmentNoSchedules;
+
+  /// No description provided for @assignmentStatusActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang học'**
+  String get assignmentStatusActive;
+
+  /// No description provided for @assignmentStatusClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết thúc'**
+  String get assignmentStatusClosed;
+
+  /// No description provided for @assignmentEditStartDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa ngày bắt đầu'**
+  String get assignmentEditStartDate;
+
+  /// No description provided for @assignmentChangeShift.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển ca'**
+  String get assignmentChangeShift;
+
+  /// No description provided for @assignmentCloseShift.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kết thúc phân ca'**
+  String get assignmentCloseShift;
+
+  /// No description provided for @assignmentCloseConfirmTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'CHỌN NGÀY KẾT THÚC PHÂN CA'**
+  String get assignmentCloseConfirmTitle;
+
+  /// No description provided for @assignmentCloseSuccess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã kết thúc phân ca học sinh'**
+  String get assignmentCloseSuccess;
+
+  /// No description provided for @bulkAssignmentSheetTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phân ca hàng loạt học sinh'**
+  String get bulkAssignmentSheetTitle;
+
+  /// No description provided for @bulkAssignmentSelectShift.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ca học *'**
+  String get bulkAssignmentSelectShift;
+
+  /// No description provided for @bulkAssignmentStartDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày bắt đầu phân ca'**
+  String get bulkAssignmentStartDate;
+
+  /// No description provided for @bulkAssignmentCandidateHeader.
+  ///
+  /// In vi, this message translates to:
+  /// **'Danh sách học sinh đủ điều kiện'**
+  String get bulkAssignmentCandidateHeader;
+
+  /// No description provided for @bulkAssignmentSearchPlaceholder.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm tên học sinh...'**
+  String get bulkAssignmentSearchPlaceholder;
+
+  /// No description provided for @bulkAssignmentAllAssigned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả học sinh đủ điều kiện đã được phân vào ca này.'**
+  String get bulkAssignmentAllAssigned;
+
+  /// No description provided for @bulkAssignmentSelectAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn tất cả ({count})'**
+  String bulkAssignmentSelectAll(Object count);
+
+  /// No description provided for @bulkAssignmentSubmit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phân ca {count} học sinh'**
+  String bulkAssignmentSubmit(Object count);
+
+  /// No description provided for @bulkAssignmentProcessing.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang xử lý...'**
+  String get bulkAssignmentProcessing;
+
+  /// No description provided for @bulkAssignmentSuccess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã phân ca thành công {count} học sinh'**
+  String bulkAssignmentSuccess(Object count);
+
+  /// No description provided for @bulkAssignmentPreviewTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'KẾT QUẢ KIỂM TRA PHÂN CA'**
+  String get bulkAssignmentPreviewTitle;
+
+  /// No description provided for @bulkAssignmentPreviewReady.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hợp lệ sẵn sàng phân ca: {count} học sinh'**
+  String bulkAssignmentPreviewReady(Object count);
+
+  /// No description provided for @bulkAssignmentPreviewBlocked.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thể phân ca: {count} học sinh'**
+  String bulkAssignmentPreviewBlocked(Object count);
+
+  /// No description provided for @bulkAssignmentPreviewWarnings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cảnh báo không ưu tiên: {count} học sinh'**
+  String bulkAssignmentPreviewWarnings(Object count);
+
+  /// No description provided for @bulkAssignmentPreviewConfirmBtn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phân ca {count} HS hợp lệ'**
+  String bulkAssignmentPreviewConfirmBtn(Object count);
+
+  /// No description provided for @editStartDateTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa ngày bắt đầu phân ca'**
+  String get editStartDateTitle;
+
+  /// No description provided for @editStartDateNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày bắt đầu phân ca mới'**
+  String get editStartDateNew;
+
+  /// No description provided for @editStartDateSuccess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cập nhật ngày bắt đầu phân ca thành công'**
+  String get editStartDateSuccess;
+
+  /// No description provided for @changeShiftTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển ca học định kỳ'**
+  String get changeShiftTitle;
+
+  /// No description provided for @changeShiftSelectNew.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn ca học mới'**
+  String get changeShiftSelectNew;
+
+  /// No description provided for @changeShiftEffectiveDate.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày áp dụng ca mới'**
+  String get changeShiftEffectiveDate;
+
+  /// No description provided for @changeShiftSuccess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển ca học sinh thành công'**
+  String get changeShiftSuccess;
+
+  /// No description provided for @changeShiftValidationSelect.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vui lòng chọn ca học mới'**
+  String get changeShiftValidationSelect;
+
+  /// No description provided for @weekdayMonday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thứ 2'**
+  String get weekdayMonday;
+
+  /// No description provided for @weekdayTuesday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thứ 3'**
+  String get weekdayTuesday;
+
+  /// No description provided for @weekdayWednesday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thứ 4'**
+  String get weekdayWednesday;
+
+  /// No description provided for @weekdayThursday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thứ 5'**
+  String get weekdayThursday;
+
+  /// No description provided for @weekdayFriday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thứ 6'**
+  String get weekdayFriday;
+
+  /// No description provided for @weekdaySaturday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thứ 7'**
+  String get weekdaySaturday;
+
+  /// No description provided for @weekdaySunday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chủ Nhật'**
+  String get weekdaySunday;
 }
 
 class _AppLocalizationsDelegate

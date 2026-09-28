@@ -5,6 +5,7 @@ import '../../../app/common_widgets/navy_components.dart';
 import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../students/domain/student.dart';
 import '../../students/presentation/student_detail_page.dart';
 import '../domain/bulk_assignment_result.dart';
@@ -13,6 +14,27 @@ import '../domain/student_shift_assignment.dart';
 import 'assignment_controller.dart';
 import 'schedule_controller.dart';
 import '../../schedule_conflicts/presentation/schedule_conflict_providers.dart';
+
+String _formatWeekday(int thu, AppLocalizations l10n) {
+  switch (thu) {
+    case 1:
+      return l10n.weekdayMonday;
+    case 2:
+      return l10n.weekdayTuesday;
+    case 3:
+      return l10n.weekdayWednesday;
+    case 4:
+      return l10n.weekdayThursday;
+    case 5:
+      return l10n.weekdayFriday;
+    case 6:
+      return l10n.weekdaySaturday;
+    case 7:
+      return l10n.weekdaySunday;
+    default:
+      return '';
+  }
+}
 
 class AssignmentTab extends ConsumerWidget {
   final int classId;
@@ -26,6 +48,7 @@ class AssignmentTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final assignmentsAsync = ref.watch(
       classAssignmentControllerProvider(classId),
     );
@@ -44,9 +67,9 @@ class AssignmentTab extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Phân ca học sinh',
-                    style: TextStyle(
+                  Text(
+                    l10n.assignmentTitle,
+                    style: const TextStyle(
                       color: AppColors.cyanAccent,
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -59,7 +82,7 @@ class AssignmentTab extends ConsumerWidget {
                     ),
                     onPressed: () => _showAddAssignmentDialog(context, ref),
                     icon: const Icon(Icons.group_add_outlined, size: 16),
-                    label: const Text('Phân ca nhiều HS'),
+                    label: Text(l10n.assignmentBulkBtn),
                   ),
                 ],
               ),
@@ -70,10 +93,10 @@ class AssignmentTab extends ConsumerWidget {
                 return schedulesAsync.when(
                   data: (schedules) {
                     if (schedules.isEmpty) {
-                      return const Center(
+                      return Center(
                         child: Text(
-                          'Chưa có lịch học định kỳ nào để phân ca.',
-                          style: TextStyle(
+                          l10n.assignmentNoSchedules,
+                          style: const TextStyle(
                             color: AppColors.textMuted,
                             fontStyle: FontStyle.italic,
                           ),
@@ -119,9 +142,7 @@ class AssignmentTab extends ConsumerWidget {
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      schedule.thuTrongTuan == 7
-                                          ? 'Chủ Nhật'
-                                          : 'Thứ ${schedule.thuTrongTuan + 1}',
+                                      _formatWeekday(schedule.thuTrongTuan, l10n),
                                       style: const TextStyle(
                                         color: AppColors.cyanAccent,
                                         fontWeight: FontWeight.bold,
@@ -140,7 +161,7 @@ class AssignmentTab extends ConsumerWidget {
                                   ),
                                   const Spacer(),
                                   Text(
-                                    '${shiftAssignments.length} học sinh',
+                                    l10n.assignmentStudentCount(shiftAssignments.length),
                                     style: const TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: 12,
@@ -167,9 +188,9 @@ class AssignmentTab extends ConsumerWidget {
                                         Icons.person_add_outlined,
                                         size: 14,
                                       ),
-                                      label: const Text(
-                                        'Thêm học sinh',
-                                        style: TextStyle(fontSize: 11),
+                                      label: Text(
+                                        l10n.assignmentAddStudent,
+                                        style: const TextStyle(fontSize: 11),
                                       ),
                                     ),
                                   ],
@@ -179,11 +200,11 @@ class AssignmentTab extends ConsumerWidget {
                               const Divider(color: AppColors.border, height: 1),
                               const SizedBox(height: 8),
                               if (shiftAssignments.isEmpty)
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 8),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
                                   child: Text(
-                                    'Chưa có học sinh trong ca này',
-                                    style: TextStyle(
+                                    l10n.assignmentNoStudentsInShift,
+                                    style: const TextStyle(
                                       color: AppColors.textMuted,
                                       fontSize: 12,
                                       fontStyle: FontStyle.italic,
@@ -210,7 +231,7 @@ class AssignmentTab extends ConsumerWidget {
                   ),
                   error: (e, _) => Center(
                     child: Text(
-                      'Lỗi: $e',
+                      '${l10n.commonError}: $e',
                       style: const TextStyle(color: AppColors.error),
                     ),
                   ),
@@ -221,7 +242,7 @@ class AssignmentTab extends ConsumerWidget {
               ),
               error: (e, _) => Center(
                 child: Text(
-                  'Lỗi: $e',
+                  '${l10n.commonError}: $e',
                   style: const TextStyle(color: AppColors.error),
                 ),
               ),
@@ -264,6 +285,7 @@ class _AssignmentRowItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final studentAsync = ref.watch(studentDetailProvider(assignment.idHocSinh));
     final isActive =
         assignment.denNgay == null ||
@@ -302,7 +324,7 @@ class _AssignmentRowItem extends ConsumerWidget {
               children: [
                 studentAsync.when(
                   data: (s) => Text(
-                    s?.hoTen ?? 'Chưa rõ tên',
+                    s?.hoTen ?? 'N/A',
                     style: TextStyle(
                       color: AppColors.textPrimary,
                       fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
@@ -313,13 +335,13 @@ class _AssignmentRowItem extends ConsumerWidget {
                     '...',
                     style: TextStyle(color: AppColors.textMuted, fontSize: 13),
                   ),
-                  error: (_, __) => const Text(
-                    'Lỗi',
-                    style: TextStyle(color: AppColors.error, fontSize: 13),
+                  error: (_, __) => Text(
+                    l10n.commonError,
+                    style: const TextStyle(color: AppColors.error, fontSize: 13),
                   ),
                 ),
                 Text(
-                  'Từ: ${DateFormatter.formatDisplayDate(assignment.tuNgay)}${assignment.denNgay != null ? ' - ${DateFormatter.formatDisplayDate(assignment.denNgay!)}' : ''}',
+                  '${DateFormatter.formatDisplayDate(assignment.tuNgay)}${assignment.denNgay != null ? ' - ${DateFormatter.formatDisplayDate(assignment.denNgay!)}' : ''}',
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 11,
@@ -329,7 +351,7 @@ class _AssignmentRowItem extends ConsumerWidget {
             ),
           ),
           AppStatusChip(
-            label: isActive ? 'Đang học' : 'Kết thúc',
+            label: isActive ? l10n.assignmentStatusActive : l10n.assignmentStatusClosed,
             color: isActive ? AppColors.success : AppColors.textMuted,
             compact: true,
           ),
@@ -368,19 +390,19 @@ class _AssignmentRowItem extends ConsumerWidget {
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'edit_date',
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.edit_calendar_outlined,
                         size: 18,
                         color: AppColors.cyanAccent,
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Text(
-                        'Sửa ngày bắt đầu',
-                        style: TextStyle(
+                        l10n.assignmentEditStartDate,
+                        style: const TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 13,
                         ),
@@ -388,19 +410,19 @@ class _AssignmentRowItem extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'change_shift',
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.published_with_changes,
                         size: 18,
                         color: AppColors.primary,
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Text(
-                        'Chuyển ca',
-                        style: TextStyle(
+                        l10n.assignmentChangeShift,
+                        style: const TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 13,
                         ),
@@ -408,19 +430,19 @@ class _AssignmentRowItem extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'close',
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.stop_circle_outlined,
                         size: 18,
                         color: AppColors.error,
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Text(
-                        'Kết thúc phân ca',
-                        style: TextStyle(color: AppColors.error, fontSize: 13),
+                        l10n.assignmentCloseShift,
+                        style: const TextStyle(color: AppColors.error, fontSize: 13),
                       ),
                     ],
                   ),
@@ -437,12 +459,13 @@ class _AssignmentRowItem extends ConsumerWidget {
     WidgetRef ref,
     StudentShiftAssignment assignment,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     final pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime.parse(assignment.tuNgay),
       lastDate: DateTime(2100),
-      helpText: 'CHỌN NGÀY KẾT THÚC PHÂN CA',
+      helpText: l10n.assignmentCloseConfirmTitle,
     );
 
     if (pickedDate != null && context.mounted) {
@@ -453,7 +476,7 @@ class _AssignmentRowItem extends ConsumerWidget {
         if (context.mounted) {
           AppFeedback.showSuccessSnackBar(
             context,
-            'Đã kết thúc phân ca học sinh',
+            l10n.assignmentCloseSuccess,
           );
         }
       } catch (e) {
@@ -533,7 +556,6 @@ class _AddAssignmentBottomSheetState
         setState(() {
           _candidates = candidates;
           _isLoadingCandidates = false;
-          // Keep selected IDs that remain valid candidates
           _selectedStudentIds.retainWhere((id) => candidates.any((c) => c.id == id));
         });
       }
@@ -577,6 +599,7 @@ class _AddAssignmentBottomSheetState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final schedulesAsync = ref.watch(
       classScheduleControllerProvider(widget.classId),
     );
@@ -599,7 +622,7 @@ class _AddAssignmentBottomSheetState
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Phân ca hàng loạt học sinh',
+                    l10n.bulkAssignmentSheetTitle,
                     style: Theme.of(context)
                         .textTheme
                         .titleLarge
@@ -633,7 +656,7 @@ class _AddAssignmentBottomSheetState
                 const SizedBox(height: 12),
               ],
 
-              // 1. SELECT SHIFT (CA HỌC)
+              // 1. SELECT SHIFT
               schedulesAsync.when(
                 data: (schedules) {
                   final activeSchedules = schedules
@@ -641,14 +664,13 @@ class _AddAssignmentBottomSheetState
                       .toList();
                   return DropdownButtonFormField<int>(
                     initialValue: _selectedScheduleId,
-                    decoration: const InputDecoration(
-                      labelText: 'Chọn ca học *',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.access_time),
+                    decoration: InputDecoration(
+                      labelText: l10n.bulkAssignmentSelectShift,
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.access_time),
                     ),
                     items: activeSchedules.map((s) {
-                      final weekdayName =
-                          DateFormatter.formatVietnameseWeekday(s.thuTrongTuan);
+                      final weekdayName = _formatWeekday(s.thuTrongTuan, l10n);
                       return DropdownMenuItem(
                         value: s.id!,
                         child: Text('$weekdayName: ${s.gioBatDau}-${s.gioKetThuc}'),
@@ -667,17 +689,17 @@ class _AddAssignmentBottomSheetState
                 loading: () =>
                     const CircularProgressIndicator(color: AppColors.primary),
                 error: (e, _) => Text(
-                  'Lỗi: $e',
+                  '${l10n.commonError}: $e',
                   style: const TextStyle(color: AppColors.error),
                 ),
               ),
 
               const SizedBox(height: 12),
 
-              // 2. START DATE (NGÀY BẮT ĐẦU)
+              // 2. START DATE
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Ngày bắt đầu phân ca'),
+                title: Text(l10n.bulkAssignmentStartDate),
                 subtitle: Text(
                   DateFormatter.formatDisplayDate(_startDate),
                   style: const TextStyle(
@@ -712,9 +734,9 @@ class _AddAssignmentBottomSheetState
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Danh sách học sinh đủ điều kiện',
-                      style: TextStyle(
+                    Text(
+                      l10n.bulkAssignmentCandidateHeader,
+                      style: const TextStyle(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -734,11 +756,11 @@ class _AddAssignmentBottomSheetState
 
                 TextField(
                   enabled: !_isSaving,
-                  decoration: const InputDecoration(
-                    hintText: 'Tìm tên học sinh...',
-                    prefixIcon: Icon(Icons.search, size: 20),
+                  decoration: InputDecoration(
+                    hintText: l10n.bulkAssignmentSearchPlaceholder,
+                    prefixIcon: const Icon(Icons.search, size: 20),
                     isDense: true,
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                   onChanged: (val) => setState(() => _searchQuery = val),
                 ),
@@ -759,10 +781,10 @@ class _AddAssignmentBottomSheetState
                       color: AppColors.surfaceHigh,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Text(
-                      'Tất cả học sinh đủ điều kiện đã được phân vào ca này.',
+                    child: Text(
+                      l10n.bulkAssignmentAllAssigned,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.textMuted,
                         fontStyle: FontStyle.italic,
                       ),
@@ -773,7 +795,7 @@ class _AddAssignmentBottomSheetState
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     title: Text(
-                      'Chọn tất cả (${filteredList.length})',
+                      l10n.bulkAssignmentSelectAll(filteredList.length),
                       style: const TextStyle(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.bold,
@@ -869,8 +891,8 @@ class _AddAssignmentBottomSheetState
                       : const Icon(Icons.group_add),
                   label: Text(
                     _isSaving
-                        ? 'Đang xử lý...'
-                        : 'Phân ca ${_selectedStudentIds.length} học sinh',
+                        ? l10n.bulkAssignmentProcessing
+                        : l10n.bulkAssignmentSubmit(_selectedStudentIds.length),
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -887,6 +909,8 @@ class _AddAssignmentBottomSheetState
 
   void _startBulkProcess() async {
     if (_selectedScheduleId == null || _selectedStudentIds.isEmpty) return;
+
+    final l10n = AppLocalizations.of(context)!;
 
     setState(() {
       _isSaving = true;
@@ -909,7 +933,7 @@ class _AddAssignmentBottomSheetState
 
       if (preview.blocked.isNotEmpty || preview.warnings.isNotEmpty) {
         // Show preview summary before write
-        final proceed = await _showPreviewSummarySheet(context, preview);
+        final proceed = await _showPreviewSummarySheet(context, preview, l10n);
         if (proceed != true) {
           setState(() => _isSaving = false);
           return;
@@ -927,7 +951,7 @@ class _AddAssignmentBottomSheetState
         setState(() => _isSaving = false);
         AppFeedback.showSuccessSnackBar(
           context,
-          'Đã phân ca thành công ${result.successCount} học sinh',
+          l10n.bulkAssignmentSuccess(result.successCount),
         );
         Navigator.pop(context);
       }
@@ -944,6 +968,7 @@ class _AddAssignmentBottomSheetState
   Future<bool?> _showPreviewSummarySheet(
     BuildContext context,
     BulkAssignmentPreview preview,
+    AppLocalizations l10n,
   ) {
     return showModalBottomSheet<bool>(
       context: context,
@@ -960,9 +985,9 @@ class _AddAssignmentBottomSheetState
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'KẾT QUẢ KIỂM TRA PHÂN CA',
-                style: TextStyle(
+              Text(
+                l10n.bulkAssignmentPreviewTitle,
+                style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -972,7 +997,7 @@ class _AddAssignmentBottomSheetState
               const SizedBox(height: 8),
 
               Text(
-                'Hợp lệ sẵn sàng phân ca: ${preview.readyStudents.length} học sinh',
+                l10n.bulkAssignmentPreviewReady(preview.readyStudents.length),
                 style: const TextStyle(
                   color: AppColors.success,
                   fontWeight: FontWeight.bold,
@@ -982,7 +1007,7 @@ class _AddAssignmentBottomSheetState
               if (preview.blocked.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(
-                  'Không thể phân ca: ${preview.blocked.length} học sinh',
+                  l10n.bulkAssignmentPreviewBlocked(preview.blocked.length),
                   style: const TextStyle(
                     color: AppColors.error,
                     fontWeight: FontWeight.bold,
@@ -999,7 +1024,7 @@ class _AddAssignmentBottomSheetState
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Text(
-                          '• ${item.studentName}: ${item.message ?? "Lỗi không xác định"}',
+                          '• ${item.studentName}: ${item.message ?? l10n.commonError}',
                           style: const TextStyle(
                             color: AppColors.error,
                             fontSize: 12,
@@ -1014,7 +1039,7 @@ class _AddAssignmentBottomSheetState
               if (preview.warnings.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(
-                  'Cảnh báo không ưu tiên: ${preview.warnings.length} học sinh',
+                  l10n.bulkAssignmentPreviewWarnings(preview.warnings.length),
                   style: const TextStyle(
                     color: AppColors.warning,
                     fontWeight: FontWeight.bold,
@@ -1031,7 +1056,7 @@ class _AddAssignmentBottomSheetState
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Text(
-                          '• ${item.studentName}: ${item.message ?? "Có cảnh báo lịch học"}',
+                          '• ${item.studentName}: ${item.message ?? ""}',
                           style: const TextStyle(
                             color: AppColors.warning,
                             fontSize: 12,
@@ -1050,7 +1075,7 @@ class _AddAssignmentBottomSheetState
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Hủy'),
+                      child: Text(l10n.commonCancel),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1064,7 +1089,7 @@ class _AddAssignmentBottomSheetState
                           ? () => Navigator.pop(ctx, true)
                           : null,
                       child: Text(
-                        'Phân ca ${preview.readyStudents.length} HS hợp lệ',
+                        l10n.bulkAssignmentPreviewConfirmBtn(preview.readyStudents.length),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -1109,6 +1134,8 @@ class _EditAssignmentBottomSheetState extends State<EditAssignmentBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Consumer(
       builder: (context, ref, _) {
         final student = ref
@@ -1128,14 +1155,14 @@ class _EditAssignmentBottomSheetState extends State<EditAssignmentBottomSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Sửa ngày bắt đầu phân ca',
+                    l10n.editStartDateTitle,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Học sinh: ${student?.hoTen ?? 'N/A'}',
+                    '${l10n.creditsHeaderStudent}: ${student?.hoTen ?? 'N/A'}',
                     style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 13,
@@ -1161,7 +1188,7 @@ class _EditAssignmentBottomSheetState extends State<EditAssignmentBottomSheet> {
                   ],
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Ngày bắt đầu phân ca mới'),
+                    title: Text(l10n.editStartDateNew),
                     subtitle: Text(
                       DateFormatter.formatDisplayDate(_newStartDate),
                     ),
@@ -1189,7 +1216,7 @@ class _EditAssignmentBottomSheetState extends State<EditAssignmentBottomSheet> {
                         onPressed: _isSaving
                             ? null
                             : () => Navigator.pop(context),
-                        child: const Text('Hủy'),
+                        child: Text(l10n.commonCancel),
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton.icon(
@@ -1214,7 +1241,7 @@ class _EditAssignmentBottomSheetState extends State<EditAssignmentBottomSheet> {
                                   if (context.mounted) {
                                     AppFeedback.showSuccessSnackBar(
                                       context,
-                                      'Cập nhật ngày bắt đầu phân ca thành công',
+                                      l10n.editStartDateSuccess,
                                     );
                                     Navigator.pop(context);
                                   }
@@ -1239,7 +1266,7 @@ class _EditAssignmentBottomSheetState extends State<EditAssignmentBottomSheet> {
                                 ),
                               )
                             : const Icon(Icons.check),
-                        label: const Text('Lưu thay đổi'),
+                        label: Text(l10n.commonSave),
                       ),
                     ],
                   ),
@@ -1455,6 +1482,7 @@ class _ChangeShiftBottomSheetState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final otherSchedules = widget.schedules
         .where(
           (s) =>
@@ -1481,14 +1509,14 @@ class _ChangeShiftBottomSheetState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Chuyển ca học định kỳ',
+                l10n.changeShiftTitle,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Học sinh: ${student?.hoTen ?? 'N/A'}',
+                '${l10n.creditsHeaderStudent}: ${student?.hoTen ?? 'N/A'}',
                 style: const TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 13,
@@ -1514,15 +1542,16 @@ class _ChangeShiftBottomSheetState
               ],
               DropdownButtonFormField<int>(
                 initialValue: _newScheduleId,
-                decoration: const InputDecoration(
-                  labelText: 'Chọn ca học mới',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.changeShiftSelectNew,
+                  border: const OutlineInputBorder(),
                 ),
                 items: otherSchedules.map((s) {
+                  final weekdayName = _formatWeekday(s.thuTrongTuan, l10n);
                   return DropdownMenuItem(
                     value: s.id!,
                     child: Text(
-                      '${DateFormatter.formatVietnameseWeekday(s.thuTrongTuan)}: ${s.gioBatDau}-${s.gioKetThuc}',
+                      '$weekdayName: ${s.gioBatDau}-${s.gioKetThuc}',
                     ),
                   );
                 }).toList(),
@@ -1531,7 +1560,7 @@ class _ChangeShiftBottomSheetState
               const SizedBox(height: 16),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Ngày áp dụng ca mới'),
+                title: Text(l10n.changeShiftEffectiveDate),
                 subtitle: Text(
                   DateFormatter.formatDisplayDate(_effectiveDate),
                 ),
@@ -1559,7 +1588,7 @@ class _ChangeShiftBottomSheetState
                 children: [
                   TextButton(
                     onPressed: _isSaving ? null : () => Navigator.pop(context),
-                    child: const Text('Hủy'),
+                    child: Text(l10n.commonCancel),
                   ),
                   const SizedBox(width: 12),
                   ElevatedButton.icon(
@@ -1567,7 +1596,7 @@ class _ChangeShiftBottomSheetState
                         ? () async {
                             if (_newScheduleId == null) {
                               setState(
-                                () => _error = 'Vui lòng chọn ca học mới',
+                                () => _error = l10n.changeShiftValidationSelect,
                               );
                               return;
                             }
@@ -1591,7 +1620,7 @@ class _ChangeShiftBottomSheetState
                               if (context.mounted) {
                                 AppFeedback.showSuccessSnackBar(
                                   context,
-                                  'Chuyển ca học sinh thành công',
+                                  l10n.changeShiftSuccess,
                                 );
                                 Navigator.pop(context);
                               }
@@ -1615,7 +1644,7 @@ class _ChangeShiftBottomSheetState
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.check),
-                    label: const Text('Xác nhận'),
+                    label: Text(l10n.commonConfirm),
                   ),
                 ],
               ),

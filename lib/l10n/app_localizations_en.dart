@@ -688,4 +688,152 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get creditsCanEarnTag => 'Eligible +1';
+
+  @override
+  String get assignmentTitle => 'Student Shift Assignment';
+
+  @override
+  String get assignmentBulkBtn => 'Bulk Shift Assign';
+
+  @override
+  String get assignmentAddStudent => 'Add Student';
+
+  @override
+  String assignmentStudentCount(Object count) {
+    return '$count students';
+  }
+
+  @override
+  String get assignmentNoStudentsInShift =>
+      'No students assigned to this shift';
+
+  @override
+  String get assignmentNoSchedules =>
+      'No recurring schedules set for assignment.';
+
+  @override
+  String get assignmentStatusActive => 'Active';
+
+  @override
+  String get assignmentStatusClosed => 'Ended';
+
+  @override
+  String get assignmentEditStartDate => 'Edit Start Date';
+
+  @override
+  String get assignmentChangeShift => 'Change Shift';
+
+  @override
+  String get assignmentCloseShift => 'End Assignment';
+
+  @override
+  String get assignmentCloseConfirmTitle => 'SELECT ASSIGNMENT END DATE';
+
+  @override
+  String get assignmentCloseSuccess => 'Shift assignment ended successfully';
+
+  @override
+  String get bulkAssignmentSheetTitle => 'Bulk Student Shift Assignment';
+
+  @override
+  String get bulkAssignmentSelectShift => 'Select Shift *';
+
+  @override
+  String get bulkAssignmentStartDate => 'Shift Start Date';
+
+  @override
+  String get bulkAssignmentCandidateHeader => 'Eligible Students List';
+
+  @override
+  String get bulkAssignmentSearchPlaceholder => 'Search student name...';
+
+  @override
+  String get bulkAssignmentAllAssigned =>
+      'All eligible students are already assigned to this shift.';
+
+  @override
+  String bulkAssignmentSelectAll(Object count) {
+    return 'Select All ($count)';
+  }
+
+  @override
+  String bulkAssignmentSubmit(Object count) {
+    return 'Assign Shift ($count students)';
+  }
+
+  @override
+  String get bulkAssignmentProcessing => 'Processing...';
+
+  @override
+  String bulkAssignmentSuccess(Object count) {
+    return 'Successfully assigned $count students';
+  }
+
+  @override
+  String get bulkAssignmentPreviewTitle => 'SHIFT ASSIGNMENT PRE-CHECK RESULT';
+
+  @override
+  String bulkAssignmentPreviewReady(Object count) {
+    return 'Ready to assign: $count students';
+  }
+
+  @override
+  String bulkAssignmentPreviewBlocked(Object count) {
+    return 'Cannot assign: $count students';
+  }
+
+  @override
+  String bulkAssignmentPreviewWarnings(Object count) {
+    return 'Low priority warnings: $count students';
+  }
+
+  @override
+  String bulkAssignmentPreviewConfirmBtn(Object count) {
+    return 'Assign $count valid students';
+  }
+
+  @override
+  String get editStartDateTitle => 'Edit Shift Start Date';
+
+  @override
+  String get editStartDateNew => 'New Shift Start Date';
+
+  @override
+  String get editStartDateSuccess => 'Shift start date updated successfully';
+
+  @override
+  String get changeShiftTitle => 'Change Recurring Shift';
+
+  @override
+  String get changeShiftSelectNew => 'Select New Shift';
+
+  @override
+  String get changeShiftEffectiveDate => 'Effective Date for New Shift';
+
+  @override
+  String get changeShiftSuccess => 'Shift changed successfully';
+
+  @override
+  String get changeShiftValidationSelect => 'Please select a new shift';
+
+  @override
+  String get weekdayMonday => 'Monday';
+
+  @override
+  String get weekdayTuesday => 'Tuesday';
+
+  @override
+  String get weekdayWednesday => 'Wednesday';
+
+  @override
+  String get weekdayThursday => 'Thursday';
+
+  @override
+  String get weekdayFriday => 'Friday';
+
+  @override
+  String get weekdaySaturday => 'Saturday';
+
+  @override
+  String get weekdaySunday => 'Sunday';
 }

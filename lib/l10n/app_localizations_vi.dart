@@ -687,4 +687,151 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get creditsCanEarnTag => 'Có thể ghi +1';
+
+  @override
+  String get assignmentTitle => 'Phân ca học sinh';
+
+  @override
+  String get assignmentBulkBtn => 'Phân ca nhiều HS';
+
+  @override
+  String get assignmentAddStudent => 'Thêm học sinh';
+
+  @override
+  String assignmentStudentCount(Object count) {
+    return '$count học sinh';
+  }
+
+  @override
+  String get assignmentNoStudentsInShift => 'Chưa có học sinh trong ca này';
+
+  @override
+  String get assignmentNoSchedules =>
+      'Chưa có lịch học định kỳ nào để phân ca.';
+
+  @override
+  String get assignmentStatusActive => 'Đang học';
+
+  @override
+  String get assignmentStatusClosed => 'Kết thúc';
+
+  @override
+  String get assignmentEditStartDate => 'Sửa ngày bắt đầu';
+
+  @override
+  String get assignmentChangeShift => 'Chuyển ca';
+
+  @override
+  String get assignmentCloseShift => 'Kết thúc phân ca';
+
+  @override
+  String get assignmentCloseConfirmTitle => 'CHỌN NGÀY KẾT THÚC PHÂN CA';
+
+  @override
+  String get assignmentCloseSuccess => 'Đã kết thúc phân ca học sinh';
+
+  @override
+  String get bulkAssignmentSheetTitle => 'Phân ca hàng loạt học sinh';
+
+  @override
+  String get bulkAssignmentSelectShift => 'Chọn ca học *';
+
+  @override
+  String get bulkAssignmentStartDate => 'Ngày bắt đầu phân ca';
+
+  @override
+  String get bulkAssignmentCandidateHeader => 'Danh sách học sinh đủ điều kiện';
+
+  @override
+  String get bulkAssignmentSearchPlaceholder => 'Tìm tên học sinh...';
+
+  @override
+  String get bulkAssignmentAllAssigned =>
+      'Tất cả học sinh đủ điều kiện đã được phân vào ca này.';
+
+  @override
+  String bulkAssignmentSelectAll(Object count) {
+    return 'Chọn tất cả ($count)';
+  }
+
+  @override
+  String bulkAssignmentSubmit(Object count) {
+    return 'Phân ca $count học sinh';
+  }
+
+  @override
+  String get bulkAssignmentProcessing => 'Đang xử lý...';
+
+  @override
+  String bulkAssignmentSuccess(Object count) {
+    return 'Đã phân ca thành công $count học sinh';
+  }
+
+  @override
+  String get bulkAssignmentPreviewTitle => 'KẾT QUẢ KIỂM TRA PHÂN CA';
+
+  @override
+  String bulkAssignmentPreviewReady(Object count) {
+    return 'Hợp lệ sẵn sàng phân ca: $count học sinh';
+  }
+
+  @override
+  String bulkAssignmentPreviewBlocked(Object count) {
+    return 'Không thể phân ca: $count học sinh';
+  }
+
+  @override
+  String bulkAssignmentPreviewWarnings(Object count) {
+    return 'Cảnh báo không ưu tiên: $count học sinh';
+  }
+
+  @override
+  String bulkAssignmentPreviewConfirmBtn(Object count) {
+    return 'Phân ca $count HS hợp lệ';
+  }
+
+  @override
+  String get editStartDateTitle => 'Sửa ngày bắt đầu phân ca';
+
+  @override
+  String get editStartDateNew => 'Ngày bắt đầu phân ca mới';
+
+  @override
+  String get editStartDateSuccess => 'Cập nhật ngày bắt đầu phân ca thành công';
+
+  @override
+  String get changeShiftTitle => 'Chuyển ca học định kỳ';
+
+  @override
+  String get changeShiftSelectNew => 'Chọn ca học mới';
+
+  @override
+  String get changeShiftEffectiveDate => 'Ngày áp dụng ca mới';
+
+  @override
+  String get changeShiftSuccess => 'Chuyển ca học sinh thành công';
+
+  @override
+  String get changeShiftValidationSelect => 'Vui lòng chọn ca học mới';
+
+  @override
+  String get weekdayMonday => 'Thứ 2';
+
+  @override
+  String get weekdayTuesday => 'Thứ 3';
+
+  @override
+  String get weekdayWednesday => 'Thứ 4';
+
+  @override
+  String get weekdayThursday => 'Thứ 5';
+
+  @override
+  String get weekdayFriday => 'Thứ 6';
+
+  @override
+  String get weekdaySaturday => 'Thứ 7';
+
+  @override
+  String get weekdaySunday => 'Chủ Nhật';
 }
