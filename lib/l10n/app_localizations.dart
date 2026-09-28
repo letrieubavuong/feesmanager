@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appName.
   ///
   /// In vi, this message translates to:
-  /// **'Tuition2027'**
+  /// **'Quản lý học phí'**
   String get appName;
 
   /// No description provided for @navHome.
@@ -491,7 +491,7 @@ abstract class AppLocalizations {
   /// No description provided for @appVersion.
   ///
   /// In vi, this message translates to:
-  /// **'Phiên bản: 1.0.0+1'**
+  /// **'Phiên bản: 2.6'**
   String get appVersion;
 
   /// No description provided for @dbVersion.

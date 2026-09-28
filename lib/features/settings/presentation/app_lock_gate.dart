@@ -40,12 +40,7 @@ class _AppLockGateState extends ConsumerState<AppLockGate>
 
   @override
   Widget build(BuildContext context) {
-    final lockState = ref.watch(appLockControllerProvider);
-
-    if (lockState.isPinSet && lockState.isLocked) {
-      return const LockScreen();
-    }
-
+    // Tạm khóa chức năng mở khóa bằng mã PIN, vào thẳng ứng dụng
     return widget.child;
   }
 }
