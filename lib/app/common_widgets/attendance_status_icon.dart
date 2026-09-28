@@ -55,7 +55,11 @@ class AttendanceStatusIcon extends StatelessWidget {
       case AttendanceStatus.NGHI_KHONG_PHEP:
         return (Icons.close_rounded, AppColors.error, l10n.attendanceUnexcused);
       case AttendanceStatus.HOC_BU:
-        return (Icons.event_repeat_rounded, AppColors.primary, 'Học bù');
+        return (
+          Icons.event_repeat_rounded,
+          AppColors.primary,
+          l10n.attendanceMakeup,
+        );
     }
   }
 }

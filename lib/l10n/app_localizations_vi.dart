@@ -921,6 +921,42 @@ class AppLocalizationsVi extends AppLocalizations {
   String get attendanceTitle => 'Điểm danh buổi học';
 
   @override
+  String get attendanceShortTitle => 'Điểm danh';
+
+  @override
+  String get attendanceCompleted => 'Đã hoàn tất';
+
+  @override
+  String get attendanceEditingCompleted => 'Đang sửa điểm danh đã hoàn tất';
+
+  @override
+  String get attendanceStudents => 'HỌC SINH';
+
+  @override
+  String get attendanceLegend => 'Chú thích điểm danh';
+
+  @override
+  String get attendanceEdit => 'Sửa điểm danh';
+
+  @override
+  String get attendanceSaveCorrection => 'Lưu chỉnh sửa';
+
+  @override
+  String get attendanceCancelCorrection => 'Hủy chỉnh sửa';
+
+  @override
+  String get attendanceApprovedLeave => 'Đơn nghỉ đã duyệt';
+
+  @override
+  String get attendanceApplySuggestion => 'Áp dụng';
+
+  @override
+  String get attendanceMakeup => 'Học bù';
+
+  @override
+  String get attendanceFinalizeShort => 'Hoàn tất';
+
+  @override
   String get attendanceMarkAllPresent => 'Có mặt hết';
 
   @override
@@ -1299,4 +1335,71 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get qrCardInstruction =>
       'Vui lòng chuyển đúng số tiền và nội dung trên.';
+
+  @override
+  String get sessionTabTitle => 'Buổi học';
+
+  @override
+  String get sessionFrom => 'Từ';
+
+  @override
+  String get sessionTo => 'Đến';
+
+  @override
+  String get sessionAddAction => '+ Buổi học';
+
+  @override
+  String get sessionGenerateOption => 'Sinh buổi từ lịch học';
+
+  @override
+  String get sessionAddManualOption => 'Thêm buổi học bù/phát sinh';
+
+  @override
+  String get sessionNoSessionsTitle => 'Chưa có buổi học.';
+
+  @override
+  String get sessionNoSessionsSubtitle =>
+      'Sinh buổi học từ lịch định kỳ để bắt đầu.';
+
+  @override
+  String get sessionNoFilteredTitle =>
+      'Không có buổi học trong khoảng thời gian đã chọn.';
+
+  @override
+  String sessionMonthHeader(Object monthYear) {
+    return 'THÁNG $monthYear';
+  }
+
+  @override
+  String get sessionToday => 'Hôm nay';
+
+  @override
+  String get sessionTypeMain => 'Chính';
+
+  @override
+  String get sessionTypeMakeup => 'Học bù';
+
+  @override
+  String get sessionTypeExtra => 'Phát sinh';
+
+  @override
+  String get sessionStatusUpcoming => 'Dự kiến';
+
+  @override
+  String get sessionStatusCompleted => 'Đã học';
+
+  @override
+  String get sessionStatusCanceled => 'Hủy';
+
+  @override
+  String get sessionStatusHoliday => 'Nghỉ lễ';
+
+  @override
+  String get sessionMarkUpcoming => 'Đánh dấu: DỰ KIẾN';
+
+  @override
+  String get sessionMarkCanceled => 'Đánh dấu: HỦY';
+
+  @override
+  String get sessionMarkHoliday => 'Đánh dấu: NGHỈ LỄ';
 }

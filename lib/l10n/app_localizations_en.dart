@@ -923,6 +923,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attendanceTitle => 'Session Attendance';
 
   @override
+  String get attendanceShortTitle => 'Attendance';
+
+  @override
+  String get attendanceCompleted => 'Completed';
+
+  @override
+  String get attendanceEditingCompleted => 'Editing Completed Attendance';
+
+  @override
+  String get attendanceStudents => 'STUDENTS';
+
+  @override
+  String get attendanceLegend => 'Attendance Legend';
+
+  @override
+  String get attendanceEdit => 'Edit Attendance';
+
+  @override
+  String get attendanceSaveCorrection => 'Save Correction';
+
+  @override
+  String get attendanceCancelCorrection => 'Cancel Correction';
+
+  @override
+  String get attendanceApprovedLeave => 'Approved leave request';
+
+  @override
+  String get attendanceApplySuggestion => 'Apply';
+
+  @override
+  String get attendanceMakeup => 'Makeup';
+
+  @override
+  String get attendanceFinalizeShort => 'Finalize';
+
+  @override
   String get attendanceMarkAllPresent => 'Mark All Present';
 
   @override
@@ -1301,4 +1337,70 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get qrCardInstruction =>
       'Please transfer the exact amount and content above.';
+
+  @override
+  String get sessionTabTitle => 'Sessions';
+
+  @override
+  String get sessionFrom => 'From';
+
+  @override
+  String get sessionTo => 'To';
+
+  @override
+  String get sessionAddAction => '+ Session';
+
+  @override
+  String get sessionGenerateOption => 'Generate from schedule';
+
+  @override
+  String get sessionAddManualOption => 'Add makeup/extra session';
+
+  @override
+  String get sessionNoSessionsTitle => 'No sessions yet.';
+
+  @override
+  String get sessionNoSessionsSubtitle =>
+      'Generate sessions from schedule to start.';
+
+  @override
+  String get sessionNoFilteredTitle => 'No sessions in selected date range.';
+
+  @override
+  String sessionMonthHeader(Object monthYear) {
+    return 'MONTH $monthYear';
+  }
+
+  @override
+  String get sessionToday => 'Today';
+
+  @override
+  String get sessionTypeMain => 'Main';
+
+  @override
+  String get sessionTypeMakeup => 'Makeup';
+
+  @override
+  String get sessionTypeExtra => 'Extra';
+
+  @override
+  String get sessionStatusUpcoming => 'Upcoming';
+
+  @override
+  String get sessionStatusCompleted => 'Completed';
+
+  @override
+  String get sessionStatusCanceled => 'Canceled';
+
+  @override
+  String get sessionStatusHoliday => 'Holiday';
+
+  @override
+  String get sessionMarkUpcoming => 'Mark: UPCOMING';
+
+  @override
+  String get sessionMarkCanceled => 'Mark: CANCELED';
+
+  @override
+  String get sessionMarkHoliday => 'Mark: HOLIDAY';
 }

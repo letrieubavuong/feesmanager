@@ -1850,6 +1850,78 @@ abstract class AppLocalizations {
   /// **'Điểm danh buổi học'**
   String get attendanceTitle;
 
+  /// No description provided for @attendanceShortTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điểm danh'**
+  String get attendanceShortTitle;
+
+  /// No description provided for @attendanceCompleted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hoàn tất'**
+  String get attendanceCompleted;
+
+  /// No description provided for @attendanceEditingCompleted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang sửa điểm danh đã hoàn tất'**
+  String get attendanceEditingCompleted;
+
+  /// No description provided for @attendanceStudents.
+  ///
+  /// In vi, this message translates to:
+  /// **'HỌC SINH'**
+  String get attendanceStudents;
+
+  /// No description provided for @attendanceLegend.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chú thích điểm danh'**
+  String get attendanceLegend;
+
+  /// No description provided for @attendanceEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa điểm danh'**
+  String get attendanceEdit;
+
+  /// No description provided for @attendanceSaveCorrection.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu chỉnh sửa'**
+  String get attendanceSaveCorrection;
+
+  /// No description provided for @attendanceCancelCorrection.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy chỉnh sửa'**
+  String get attendanceCancelCorrection;
+
+  /// No description provided for @attendanceApprovedLeave.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đơn nghỉ đã duyệt'**
+  String get attendanceApprovedLeave;
+
+  /// No description provided for @attendanceApplySuggestion.
+  ///
+  /// In vi, this message translates to:
+  /// **'Áp dụng'**
+  String get attendanceApplySuggestion;
+
+  /// No description provided for @attendanceMakeup.
+  ///
+  /// In vi, this message translates to:
+  /// **'Học bù'**
+  String get attendanceMakeup;
+
+  /// No description provided for @attendanceFinalizeShort.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tất'**
+  String get attendanceFinalizeShort;
+
   /// No description provided for @attendanceMarkAllPresent.
   ///
   /// In vi, this message translates to:
@@ -2518,6 +2590,132 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Vui lòng chuyển đúng số tiền và nội dung trên.'**
   String get qrCardInstruction;
+
+  /// No description provided for @sessionTabTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi học'**
+  String get sessionTabTitle;
+
+  /// No description provided for @sessionFrom.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ'**
+  String get sessionFrom;
+
+  /// No description provided for @sessionTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đến'**
+  String get sessionTo;
+
+  /// No description provided for @sessionAddAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'+ Buổi học'**
+  String get sessionAddAction;
+
+  /// No description provided for @sessionGenerateOption.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sinh buổi từ lịch học'**
+  String get sessionGenerateOption;
+
+  /// No description provided for @sessionAddManualOption.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm buổi học bù/phát sinh'**
+  String get sessionAddManualOption;
+
+  /// No description provided for @sessionNoSessionsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có buổi học.'**
+  String get sessionNoSessionsTitle;
+
+  /// No description provided for @sessionNoSessionsSubtitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sinh buổi học từ lịch định kỳ để bắt đầu.'**
+  String get sessionNoSessionsSubtitle;
+
+  /// No description provided for @sessionNoFilteredTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có buổi học trong khoảng thời gian đã chọn.'**
+  String get sessionNoFilteredTitle;
+
+  /// No description provided for @sessionMonthHeader.
+  ///
+  /// In vi, this message translates to:
+  /// **'THÁNG {monthYear}'**
+  String sessionMonthHeader(Object monthYear);
+
+  /// No description provided for @sessionToday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hôm nay'**
+  String get sessionToday;
+
+  /// No description provided for @sessionTypeMain.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chính'**
+  String get sessionTypeMain;
+
+  /// No description provided for @sessionTypeMakeup.
+  ///
+  /// In vi, this message translates to:
+  /// **'Học bù'**
+  String get sessionTypeMakeup;
+
+  /// No description provided for @sessionTypeExtra.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phát sinh'**
+  String get sessionTypeExtra;
+
+  /// No description provided for @sessionStatusUpcoming.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dự kiến'**
+  String get sessionStatusUpcoming;
+
+  /// No description provided for @sessionStatusCompleted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã học'**
+  String get sessionStatusCompleted;
+
+  /// No description provided for @sessionStatusCanceled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy'**
+  String get sessionStatusCanceled;
+
+  /// No description provided for @sessionStatusHoliday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nghỉ lễ'**
+  String get sessionStatusHoliday;
+
+  /// No description provided for @sessionMarkUpcoming.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh dấu: DỰ KIẾN'**
+  String get sessionMarkUpcoming;
+
+  /// No description provided for @sessionMarkCanceled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh dấu: HỦY'**
+  String get sessionMarkCanceled;
+
+  /// No description provided for @sessionMarkHoliday.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh dấu: NGHỈ LỄ'**
+  String get sessionMarkHoliday;
 }
 
 class _AppLocalizationsDelegate
