@@ -112,7 +112,7 @@ void main() {
         final dbV12 = await appDb.database;
 
         // Assert version is 12
-        expect(await dbV12.getVersion(), 13);
+        expect(await dbV12.getVersion(), AppDatabase.schemaVersion);
 
         // Assert Phase 0-9 data preserved (students, classes, policies, invoices)
         final hs = await dbV12.query('hoc_sinh', where: 'id = 101');

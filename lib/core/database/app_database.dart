@@ -3,7 +3,8 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int _dbVersion = 15;
+  static const int schemaVersion = 15;
+  static const int _dbVersion = schemaVersion;
 
   final String dbName;
   Database? _database;
@@ -826,7 +827,7 @@ class AppDatabase {
 
   Future<void> _migrateV13ToV14(Database db) async {
     await db.execute('''
-      CREATE TABLE thanh_toan_chinh_sua (
+      CREATE TABLE IF NOT EXISTS thanh_toan_chinh_sua (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         id_thanh_toan INTEGER NOT NULL,
         so_tien_cu INTEGER NOT NULL,
@@ -846,11 +847,11 @@ class AppDatabase {
     ''');
 
     await db.execute(
-      'CREATE INDEX idx_thanh_toan_chinh_sua_payment ON thanh_toan_chinh_sua(id_thanh_toan)',
+      'CREATE INDEX IF NOT EXISTS idx_thanh_toan_chinh_sua_payment ON thanh_toan_chinh_sua(id_thanh_toan)',
     );
 
     await db.execute('''
-      CREATE TABLE hoc_phi_chinh_sua (
+      CREATE TABLE IF NOT EXISTS hoc_phi_chinh_sua (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         id_hoc_phi_thang INTEGER NOT NULL,
         old_so_buoi_eligible INTEGER NOT NULL,
@@ -868,13 +869,13 @@ class AppDatabase {
     ''');
 
     await db.execute(
-      'CREATE INDEX idx_hoc_phi_chinh_sua_invoice ON hoc_phi_chinh_sua(id_hoc_phi_thang)',
+      'CREATE INDEX IF NOT EXISTS idx_hoc_phi_chinh_sua_invoice ON hoc_phi_chinh_sua(id_hoc_phi_thang)',
     );
   }
 
   Future<void> _migrateV14ToV15(Database db) async {
     await db.execute('''
-      CREATE TABLE diem_danh_chinh_sua (
+      CREATE TABLE IF NOT EXISTS diem_danh_chinh_sua (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         id_diem_danh INTEGER NULL,
         id_buoi_hoc INTEGER NOT NULL,
@@ -889,10 +890,33 @@ class AppDatabase {
     ''');
 
     await db.execute(
-      'CREATE INDEX idx_diem_danh_chinh_sua_buoi_hoc ON diem_danh_chinh_sua(id_buoi_hoc)',
+      'CREATE INDEX IF NOT EXISTS idx_diem_danh_chinh_sua_buoi_hoc ON diem_danh_chinh_sua(id_buoi_hoc)',
     );
     await db.execute(
-      'CREATE INDEX idx_diem_danh_chinh_sua_hoc_sinh ON diem_danh_chinh_sua(id_hoc_sinh)',
+      'CREATE INDEX IF NOT EXISTS idx_diem_danh_chinh_sua_hoc_sinh ON diem_danh_chinh_sua(id_hoc_sinh)',
     );
+
+    await _verifyAttendanceCorrectionAuditSchema(db);
+  }
+
+  Future<void> _verifyAttendanceCorrectionAuditSchema(Database db) async {
+    final info = await db.rawQuery('PRAGMA table_info(diem_danh_chinh_sua)');
+    final columns = info.map((row) => row['name'] as String).toSet();
+    const required = <String>{
+      'id',
+      'id_diem_danh',
+      'id_buoi_hoc',
+      'id_hoc_sinh',
+      'trang_thai_cu',
+      'trang_thai_moi',
+      'ly_do',
+      'changed_at',
+    };
+    final missing = required.difference(columns);
+    if (missing.isNotEmpty) {
+      throw StateError(
+        'Schema diem_danh_chinh_sua không tương thích. Thiếu cột: ${missing.join(", ")}',
+      );
+    }
   }
 }

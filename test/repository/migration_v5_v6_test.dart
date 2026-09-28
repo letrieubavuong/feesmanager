@@ -136,7 +136,7 @@ void main() {
       final db = await appDb.database;
 
       // 3. Verify version
-      expect(await db.getVersion(), 13);
+      expect(await db.getVersion(), AppDatabase.schemaVersion);
 
       // 4. Verify Phase 1-3 data preservation
       final student = (await db.query('hoc_sinh', where: 'id = 11')).first;
@@ -241,7 +241,7 @@ void main() {
       final appDb = AppDatabase(dbName: dbPath);
       final db = await appDb.database;
 
-      expect(await db.getVersion(), 13);
+      expect(await db.getVersion(), AppDatabase.schemaVersion);
 
       // All Phase 0-4 tables exist
       final tables = await db.rawQuery(

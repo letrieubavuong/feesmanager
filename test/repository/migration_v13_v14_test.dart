@@ -128,7 +128,7 @@ void main() {
         final appDb = AppDatabase(dbName: dbPath);
         final dbV14 = await appDb.database;
 
-        expect(await dbV14.getVersion(), 14);
+        expect(await dbV14.getVersion(), AppDatabase.schemaVersion);
 
         // Assert tables created
         final paymentAuditTable = await dbV14.rawQuery(

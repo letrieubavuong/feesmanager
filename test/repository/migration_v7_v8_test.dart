@@ -232,7 +232,7 @@ void main() {
       final appDb = AppDatabase(dbName: dbPath);
       final dbV8 = await appDb.database;
 
-      expect(await dbV8.getVersion(), 13);
+      expect(await dbV8.getVersion(), AppDatabase.schemaVersion);
 
       // Assert all rows survive
       final hs = await dbV8.query('hoc_sinh', where: 'id = 11');
@@ -493,7 +493,7 @@ void main() {
         final appDb = AppDatabase(dbName: freshDbPath);
         final db = await appDb.database;
 
-        expect(await db.getVersion(), 13);
+        expect(await db.getVersion(), AppDatabase.schemaVersion);
 
         final tables = await db.rawQuery(
           "SELECT name FROM sqlite_master WHERE type='table'",

@@ -169,7 +169,7 @@ void main() {
         final appDb = AppDatabase(dbName: dbPath);
         final dbV10 = await appDb.database;
 
-        expect(await dbV10.getVersion(), 13);
+        expect(await dbV10.getVersion(), AppDatabase.schemaVersion);
 
         // Verify all rows survive
         final rows = await dbV10.query('buoi_du_ledger', orderBy: 'id ASC');
@@ -212,7 +212,7 @@ void main() {
         final appDb = AppDatabase(dbName: freshDbPath);
         final db = await appDb.database;
 
-        expect(await db.getVersion(), 13);
+        expect(await db.getVersion(), AppDatabase.schemaVersion);
 
         final violations = await db.rawQuery('PRAGMA foreign_key_check');
         expect(violations, isEmpty);

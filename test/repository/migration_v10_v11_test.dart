@@ -136,7 +136,7 @@ void main() {
       final appDb = AppDatabase(dbName: dbPath);
       final dbV11 = await appDb.database;
 
-      expect(await dbV11.getVersion(), 13);
+      expect(await dbV11.getVersion(), AppDatabase.schemaVersion);
 
       // Assert all Phase 0-8 data survived
       final hs = await dbV11.query('hoc_sinh', where: 'id = 101');
@@ -167,7 +167,7 @@ void main() {
         final appDb = AppDatabase(dbName: freshDbPath);
         final db = await appDb.database;
 
-        expect(await db.getVersion(), 13);
+        expect(await db.getVersion(), AppDatabase.schemaVersion);
 
         final tables = await db.rawQuery(
           "SELECT name FROM sqlite_master WHERE type='table'",
