@@ -846,7 +846,11 @@ class _StudentTuitionCard extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(width: 6),
+        ]),
+        const SizedBox(height: 10),
+        const Divider(height: 1, color: AppColors.border),
+        const SizedBox(height: 6),
+        Row(mainAxisAlignment: MainAxisAlignment.end, children: [
           if (isUnpaid) ...[
             // Actions for UNPAID student: [Thu tiền] [QR] [⋮]
             Row(
@@ -1035,6 +1039,7 @@ class _StudentTuitionCard extends ConsumerWidget {
                 ),
               ],
             ),
+          ],
         ]),
       ]),
     );
