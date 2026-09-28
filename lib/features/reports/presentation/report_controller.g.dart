@@ -28,14 +28,14 @@ String _$reportScopeNotifierHash() =>
 @ProviderFor(ReportScopeNotifier)
 final reportScopeNotifierProvider =
     AutoDisposeNotifierProvider<ReportScopeNotifier, ReportScope>.internal(
-      ReportScopeNotifier.new,
-      name: r'reportScopeNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$reportScopeNotifierHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  ReportScopeNotifier.new,
+  name: r'reportScopeNotifierProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$reportScopeNotifierHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$ReportScopeNotifier = AutoDisposeNotifier<ReportScope>;
 // ignore_for_file: type=lint

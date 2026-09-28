@@ -6,9 +6,11 @@ import '../../roster/domain/roster_service.dart';
 import '../../sessions/domain/class_session.dart';
 import '../../sessions/domain/session_service.dart';
 import '../data/attendance_repository.dart';
+import 'attendance_correction_audit_record.dart';
 import 'attendance_record.dart';
 import 'attendance_sheet.dart';
 import 'attendance_state.dart';
+import 'class_attendance_timeline_item.dart';
 
 part 'attendance_service.g.dart';
 
@@ -239,6 +241,228 @@ class AttendanceService {
       sessionId,
       oneOffRosterResolved: !sheet.requiresOneOffAdjustments,
     );
+  }
+
+  Future<List<ClassAttendanceTimelineItem>> getClassAttendanceTimeline(
+    int classId,
+    String yearMonth,
+  ) async {
+    final sessions = await _sessionService.getSessionsForMonth(
+      classId,
+      yearMonth,
+    );
+
+    sessions.sort((a, b) {
+      final dateCmp = b.ngay.compareTo(a.ngay);
+      if (dateCmp != 0) return dateCmp;
+      final timeCmp = b.gioBatDau.compareTo(a.gioBatDau);
+      if (timeCmp != 0) return timeCmp;
+      return (b.id ?? 0).compareTo(a.id ?? 0);
+    });
+
+    final sessionIds = sessions.map((s) => s.id!).whereType<int>().toList();
+    if (sessionIds.isEmpty) return [];
+
+    final records = await _repo.getBySessionIds(sessionIds);
+    final historySessionIds =
+        await _repo.getSessionsWithCorrectionHistory(sessionIds);
+
+    final recordMap = <int, List<AttendanceRecord>>{};
+    for (final r in records) {
+      recordMap.putIfAbsent(r.idBuoiHoc, () => []).add(r);
+    }
+
+    final items = <ClassAttendanceTimelineItem>[];
+    for (final session in sessions) {
+      final sRecords = recordMap[session.id] ?? [];
+      int presentCount = 0;
+      int lateCount = 0;
+      int excusedCount = 0;
+      int unexcusedCount = 0;
+
+      for (final r in sRecords) {
+        if (r.trangThai == AttendanceStatus.CO_MAT ||
+            r.trangThai == AttendanceStatus.HOC_BU) {
+          presentCount++;
+        } else if (r.trangThai == AttendanceStatus.TRE) {
+          lateCount++;
+        } else if (r.trangThai == AttendanceStatus.NGHI_CO_PHEP) {
+          excusedCount++;
+        } else if (r.trangThai == AttendanceStatus.NGHI_KHONG_PHEP) {
+          unexcusedCount++;
+        }
+      }
+
+      items.add(
+        ClassAttendanceTimelineItem(
+          session: session,
+          presentCount: presentCount,
+          lateCount: lateCount,
+          excusedCount: excusedCount,
+          unexcusedCount: unexcusedCount,
+          recordedCount: sRecords.length,
+          hasCorrectionHistory: historySessionIds.contains(session.id),
+        ),
+      );
+    }
+
+    return items;
+  }
+
+  Future<void> correctFinalizedAttendance({
+    required int sessionId,
+    required Map<int, AttendanceState> states,
+    required String reason,
+  }) async {
+    final trimmedReason = reason.trim();
+    if (trimmedReason.isEmpty) {
+      throw Exception('Vui lòng nhập lý do chỉnh sửa điểm danh.');
+    }
+
+    final sheet = await getAttendanceForSession(sessionId);
+
+    if (sheet.session.trangThai != SessionStatus.DA_HOC) {
+      throw Exception(
+        'Chỉ có thể sửa điểm danh cho buổi học đã hoàn tất (ĐÃ HỌC).',
+      );
+    }
+
+    if (!sheet.isOperationallyValid) {
+      throw Exception(
+        'Không thể sửa điểm danh: Dữ liệu hiện tại không hợp lệ.',
+      );
+    }
+
+    final participantIds =
+        sheet.members.map((m) => m.rosterMember.student.id).toSet();
+    for (final entry in states.entries) {
+      final studentId = entry.key;
+      final newState = entry.value;
+
+      if (!participantIds.contains(studentId)) {
+        throw Exception(
+          'Học sinh (ID: $studentId) không thuộc danh sách lớp buổi này.',
+        );
+      }
+
+      if (newState == AttendanceState.CHUA_DIEM_DANH) {
+        throw Exception(
+          'Buổi học đã hoàn tất không thể chuyển trạng thái học sinh về CHƯA ĐIỂM DANH.',
+        );
+      }
+
+      final member = sheet.members
+          .firstWhere((m) => m.rosterMember.student.id == studentId);
+      final source = member.rosterMember.source;
+
+      if (newState == AttendanceState.HOC_BU &&
+          source != RosterInclusionSource.HOC_BU) {
+        throw Exception(
+          'Trạng thái HỌC BÙ chỉ áp dụng cho học sinh được xếp học bù.',
+        );
+      }
+
+      if (source == RosterInclusionSource.HOC_BU &&
+          (newState == AttendanceState.CO_MAT ||
+              newState == AttendanceState.TRE)) {
+        throw Exception(
+          'Học sinh học bù không thể đánh dấu Có mặt hoặc Trễ. Vui lòng chọn Học bù hoặc Nghỉ.',
+        );
+      }
+    }
+
+    final now = DateTime.now();
+
+    await _repo.db.transaction((txn) async {
+      for (final entry in states.entries) {
+        final studentId = entry.key;
+        final newState = entry.value;
+        final member = sheet.members
+            .firstWhere((m) => m.rosterMember.student.id == studentId);
+        final oldRecord = member.persistedRecord;
+        final oldStatus = oldRecord?.trangThai;
+        final newStatus = newState.toStatus();
+
+        if (oldStatus == newStatus) {
+          continue;
+        }
+
+        AttendanceParticipationType loaiThamGia;
+        int idLopGoc;
+        int? idBuoiVangGoc;
+
+        final source = member.rosterMember.source;
+        final adj = member.rosterMember.adjustment;
+
+        if (source == RosterInclusionSource.DOI_CA) {
+          loaiThamGia = AttendanceParticipationType.DOI_CA;
+          idLopGoc = adj!.idLopGoc;
+          idBuoiVangGoc = null;
+        } else if (source == RosterInclusionSource.HOC_BU) {
+          loaiThamGia = AttendanceParticipationType.HOC_BU;
+          idLopGoc = adj!.idLopGoc;
+          idBuoiVangGoc = adj.idBuoiHocGoc;
+        } else if (source == RosterInclusionSource.PHAT_SINH) {
+          loaiThamGia = AttendanceParticipationType.CHINH;
+          idLopGoc = adj!.idLopGoc;
+          idBuoiVangGoc = null;
+        } else {
+          loaiThamGia = AttendanceParticipationType.CHINH;
+          idLopGoc = member.rosterMember.membership.idLop;
+          idBuoiVangGoc = null;
+        }
+
+        final record = AttendanceRecord(
+          idBuoiHoc: sessionId,
+          idHocSinh: studentId,
+          idLopGoc: idLopGoc,
+          trangThai: newStatus!,
+          loaiThamGia: loaiThamGia,
+          idBuoiVangGoc: idBuoiVangGoc,
+          createdAt: oldRecord?.createdAt ?? now,
+          updatedAt: now,
+        );
+
+        final existing = await txn.query(
+          'diem_danh',
+          where: 'id_buoi_hoc = ? AND id_hoc_sinh = ?',
+          whereArgs: [sessionId, studentId],
+          limit: 1,
+        );
+
+        int recordId;
+        if (existing.isNotEmpty) {
+          recordId = existing.first['id'] as int;
+          final map = record.toMap();
+          map['created_at'] = existing.first['created_at'];
+          await txn.update(
+            'diem_danh',
+            map,
+            where: 'id = ?',
+            whereArgs: [recordId],
+          );
+        } else {
+          recordId = await txn.insert('diem_danh', record.toMap());
+        }
+
+        final audit = AttendanceCorrectionAuditRecord(
+          idDiemDanh: recordId,
+          idBuoiHoc: sessionId,
+          idHocSinh: studentId,
+          trangThaiCu: oldStatus?.name,
+          trangThaiMoi: newStatus.name,
+          lyDo: trimmedReason,
+          changedAt: now,
+        );
+        await txn.insert('diem_danh_chinh_sua', audit.toMap());
+      }
+    });
+  }
+
+  Future<List<AttendanceCorrectionAuditRecord>> getCorrectionAuditsForSession(
+    int sessionId,
+  ) async {
+    return _repo.getCorrectionAuditsForSession(sessionId);
   }
 }
 

@@ -13,14 +13,14 @@ String _$leaveRequestRepositoryHash() =>
 @ProviderFor(leaveRequestRepository)
 final leaveRequestRepositoryProvider =
     FutureProvider<LeaveRequestRepository>.internal(
-      leaveRequestRepository,
-      name: r'leaveRequestRepositoryProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$leaveRequestRepositoryHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  leaveRequestRepository,
+  name: r'leaveRequestRepositoryProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$leaveRequestRepositoryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef LeaveRequestRepositoryRef = FutureProviderRef<LeaveRequestRepository>;
 String _$leaveRequestServiceHash() =>
@@ -30,14 +30,14 @@ String _$leaveRequestServiceHash() =>
 @ProviderFor(leaveRequestService)
 final leaveRequestServiceProvider =
     FutureProvider<LeaveRequestService>.internal(
-      leaveRequestService,
-      name: r'leaveRequestServiceProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$leaveRequestServiceHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  leaveRequestService,
+  name: r'leaveRequestServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$leaveRequestServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef LeaveRequestServiceRef = FutureProviderRef<LeaveRequestService>;
 // ignore_for_file: type=lint

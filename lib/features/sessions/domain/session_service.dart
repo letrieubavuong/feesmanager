@@ -51,6 +51,24 @@ class SessionService {
     classId: classId,
   );
 
+  Future<List<ClassSession>> getSessionsForMonth(
+    int classId,
+    String yearMonth,
+  ) async {
+    final parts = yearMonth.split('-');
+    final year = int.parse(parts[0]);
+    final month = int.parse(parts[1]);
+    final firstDay = DateTime(year, month, 1);
+    final lastDay = DateTime(year, month + 1, 0);
+    final fromDate = DateFormat('yyyy-MM-dd').format(firstDay);
+    final toDate = DateFormat('yyyy-MM-dd').format(lastDay);
+    return getSessionsInDateRange(
+      fromDate: fromDate,
+      toDate: toDate,
+      classId: classId,
+    );
+  }
+
   Future<List<ClassSession>> getCompletedSessionsInRange({
     required String fromDate,
     required String toDate,

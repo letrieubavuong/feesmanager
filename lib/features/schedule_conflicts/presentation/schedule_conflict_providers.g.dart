@@ -13,17 +13,17 @@ String _$scheduleConstraintRepositoryHash() =>
 @ProviderFor(scheduleConstraintRepository)
 final scheduleConstraintRepositoryProvider =
     FutureProvider<ScheduleConstraintRepository>.internal(
-      scheduleConstraintRepository,
-      name: r'scheduleConstraintRepositoryProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$scheduleConstraintRepositoryHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  scheduleConstraintRepository,
+  name: r'scheduleConstraintRepositoryProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$scheduleConstraintRepositoryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
-typedef ScheduleConstraintRepositoryRef =
-    FutureProviderRef<ScheduleConstraintRepository>;
+typedef ScheduleConstraintRepositoryRef
+    = FutureProviderRef<ScheduleConstraintRepository>;
 String _$scheduleConflictServiceHash() =>
     r'd0cb19b0f08ee8d369b6bf683171e0a2a3bce471';
 
@@ -31,14 +31,14 @@ String _$scheduleConflictServiceHash() =>
 @ProviderFor(scheduleConflictService)
 final scheduleConflictServiceProvider =
     FutureProvider<ScheduleConflictService>.internal(
-      scheduleConflictService,
-      name: r'scheduleConflictServiceProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$scheduleConflictServiceHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  scheduleConflictService,
+  name: r'scheduleConflictServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$scheduleConflictServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef ScheduleConflictServiceRef = FutureProviderRef<ScheduleConflictService>;
 String _$studentConstraintsHash() =>
@@ -76,15 +76,21 @@ class StudentConstraintsFamily
   const StudentConstraintsFamily();
 
   /// See also [studentConstraints].
-  StudentConstraintsProvider call(int studentId) {
-    return StudentConstraintsProvider(studentId);
+  StudentConstraintsProvider call(
+    int studentId,
+  ) {
+    return StudentConstraintsProvider(
+      studentId,
+    );
   }
 
   @override
   StudentConstraintsProvider getProviderOverride(
     covariant StudentConstraintsProvider provider,
   ) {
-    return call(provider.studentId);
+    return call(
+      provider.studentId,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -106,19 +112,24 @@ class StudentConstraintsFamily
 class StudentConstraintsProvider
     extends AutoDisposeFutureProvider<List<ScheduleConstraint>> {
   /// See also [studentConstraints].
-  StudentConstraintsProvider(int studentId)
-    : this._internal(
-        (ref) => studentConstraints(ref as StudentConstraintsRef, studentId),
-        from: studentConstraintsProvider,
-        name: r'studentConstraintsProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$studentConstraintsHash,
-        dependencies: StudentConstraintsFamily._dependencies,
-        allTransitiveDependencies:
-            StudentConstraintsFamily._allTransitiveDependencies,
-        studentId: studentId,
-      );
+  StudentConstraintsProvider(
+    int studentId,
+  ) : this._internal(
+          (ref) => studentConstraints(
+            ref as StudentConstraintsRef,
+            studentId,
+          ),
+          from: studentConstraintsProvider,
+          name: r'studentConstraintsProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$studentConstraintsHash,
+          dependencies: StudentConstraintsFamily._dependencies,
+          allTransitiveDependencies:
+              StudentConstraintsFamily._allTransitiveDependencies,
+          studentId: studentId,
+        );
 
   StudentConstraintsProvider._internal(
     super._createNotifier, {
@@ -135,7 +146,7 @@ class StudentConstraintsProvider
   @override
   Override overrideWith(
     FutureOr<List<ScheduleConstraint>> Function(StudentConstraintsRef provider)
-    create,
+        create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -202,14 +213,18 @@ class AssignmentConflictPreviewFamily
   AssignmentConflictPreviewProvider call(
     (int, int, String, String?, int?) arg,
   ) {
-    return AssignmentConflictPreviewProvider(arg);
+    return AssignmentConflictPreviewProvider(
+      arg,
+    );
   }
 
   @override
   AssignmentConflictPreviewProvider getProviderOverride(
     covariant AssignmentConflictPreviewProvider provider,
   ) {
-    return call(provider.arg);
+    return call(
+      provider.arg,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -231,20 +246,24 @@ class AssignmentConflictPreviewFamily
 class AssignmentConflictPreviewProvider
     extends AutoDisposeFutureProvider<ScheduleConflictResult> {
   /// See also [assignmentConflictPreview].
-  AssignmentConflictPreviewProvider((int, int, String, String?, int?) arg)
-    : this._internal(
-        (ref) =>
-            assignmentConflictPreview(ref as AssignmentConflictPreviewRef, arg),
-        from: assignmentConflictPreviewProvider,
-        name: r'assignmentConflictPreviewProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$assignmentConflictPreviewHash,
-        dependencies: AssignmentConflictPreviewFamily._dependencies,
-        allTransitiveDependencies:
-            AssignmentConflictPreviewFamily._allTransitiveDependencies,
-        arg: arg,
-      );
+  AssignmentConflictPreviewProvider(
+    (int, int, String, String?, int?) arg,
+  ) : this._internal(
+          (ref) => assignmentConflictPreview(
+            ref as AssignmentConflictPreviewRef,
+            arg,
+          ),
+          from: assignmentConflictPreviewProvider,
+          name: r'assignmentConflictPreviewProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$assignmentConflictPreviewHash,
+          dependencies: AssignmentConflictPreviewFamily._dependencies,
+          allTransitiveDependencies:
+              AssignmentConflictPreviewFamily._allTransitiveDependencies,
+          arg: arg,
+        );
 
   AssignmentConflictPreviewProvider._internal(
     super._createNotifier, {
@@ -261,9 +280,8 @@ class AssignmentConflictPreviewProvider
   @override
   Override overrideWith(
     FutureOr<ScheduleConflictResult> Function(
-      AssignmentConflictPreviewRef provider,
-    )
-    create,
+            AssignmentConflictPreviewRef provider)
+        create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -328,15 +346,21 @@ class OneOffConflictPreviewFamily
   const OneOffConflictPreviewFamily();
 
   /// See also [oneOffConflictPreview].
-  OneOffConflictPreviewProvider call((int, String, String, String, int?) arg) {
-    return OneOffConflictPreviewProvider(arg);
+  OneOffConflictPreviewProvider call(
+    (int, String, String, String, int?) arg,
+  ) {
+    return OneOffConflictPreviewProvider(
+      arg,
+    );
   }
 
   @override
   OneOffConflictPreviewProvider getProviderOverride(
     covariant OneOffConflictPreviewProvider provider,
   ) {
-    return call(provider.arg);
+    return call(
+      provider.arg,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -358,19 +382,24 @@ class OneOffConflictPreviewFamily
 class OneOffConflictPreviewProvider
     extends AutoDisposeFutureProvider<ScheduleConflictResult> {
   /// See also [oneOffConflictPreview].
-  OneOffConflictPreviewProvider((int, String, String, String, int?) arg)
-    : this._internal(
-        (ref) => oneOffConflictPreview(ref as OneOffConflictPreviewRef, arg),
-        from: oneOffConflictPreviewProvider,
-        name: r'oneOffConflictPreviewProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$oneOffConflictPreviewHash,
-        dependencies: OneOffConflictPreviewFamily._dependencies,
-        allTransitiveDependencies:
-            OneOffConflictPreviewFamily._allTransitiveDependencies,
-        arg: arg,
-      );
+  OneOffConflictPreviewProvider(
+    (int, String, String, String, int?) arg,
+  ) : this._internal(
+          (ref) => oneOffConflictPreview(
+            ref as OneOffConflictPreviewRef,
+            arg,
+          ),
+          from: oneOffConflictPreviewProvider,
+          name: r'oneOffConflictPreviewProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$oneOffConflictPreviewHash,
+          dependencies: OneOffConflictPreviewFamily._dependencies,
+          allTransitiveDependencies:
+              OneOffConflictPreviewFamily._allTransitiveDependencies,
+          arg: arg,
+        );
 
   OneOffConflictPreviewProvider._internal(
     super._createNotifier, {
@@ -387,7 +416,7 @@ class OneOffConflictPreviewProvider
   @override
   Override overrideWith(
     FutureOr<ScheduleConflictResult> Function(OneOffConflictPreviewRef provider)
-    create,
+        create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -453,15 +482,21 @@ class OneOffSessionConflictPreviewFamily
   const OneOffSessionConflictPreviewFamily();
 
   /// See also [oneOffSessionConflictPreview].
-  OneOffSessionConflictPreviewProvider call((int, int, int?) arg) {
-    return OneOffSessionConflictPreviewProvider(arg);
+  OneOffSessionConflictPreviewProvider call(
+    (int, int, int?) arg,
+  ) {
+    return OneOffSessionConflictPreviewProvider(
+      arg,
+    );
   }
 
   @override
   OneOffSessionConflictPreviewProvider getProviderOverride(
     covariant OneOffSessionConflictPreviewProvider provider,
   ) {
-    return call(provider.arg);
+    return call(
+      provider.arg,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -483,22 +518,24 @@ class OneOffSessionConflictPreviewFamily
 class OneOffSessionConflictPreviewProvider
     extends AutoDisposeFutureProvider<ScheduleConflictResult> {
   /// See also [oneOffSessionConflictPreview].
-  OneOffSessionConflictPreviewProvider((int, int, int?) arg)
-    : this._internal(
-        (ref) => oneOffSessionConflictPreview(
-          ref as OneOffSessionConflictPreviewRef,
-          arg,
-        ),
-        from: oneOffSessionConflictPreviewProvider,
-        name: r'oneOffSessionConflictPreviewProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$oneOffSessionConflictPreviewHash,
-        dependencies: OneOffSessionConflictPreviewFamily._dependencies,
-        allTransitiveDependencies:
-            OneOffSessionConflictPreviewFamily._allTransitiveDependencies,
-        arg: arg,
-      );
+  OneOffSessionConflictPreviewProvider(
+    (int, int, int?) arg,
+  ) : this._internal(
+          (ref) => oneOffSessionConflictPreview(
+            ref as OneOffSessionConflictPreviewRef,
+            arg,
+          ),
+          from: oneOffSessionConflictPreviewProvider,
+          name: r'oneOffSessionConflictPreviewProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$oneOffSessionConflictPreviewHash,
+          dependencies: OneOffSessionConflictPreviewFamily._dependencies,
+          allTransitiveDependencies:
+              OneOffSessionConflictPreviewFamily._allTransitiveDependencies,
+          arg: arg,
+        );
 
   OneOffSessionConflictPreviewProvider._internal(
     super._createNotifier, {
@@ -515,9 +552,8 @@ class OneOffSessionConflictPreviewProvider
   @override
   Override overrideWith(
     FutureOr<ScheduleConflictResult> Function(
-      OneOffSessionConflictPreviewRef provider,
-    )
-    create,
+            OneOffSessionConflictPreviewRef provider)
+        create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -575,14 +611,14 @@ String _$scheduleConstraintControllerHash() =>
 @ProviderFor(ScheduleConstraintController)
 final scheduleConstraintControllerProvider =
     AsyncNotifierProvider<ScheduleConstraintController, void>.internal(
-      ScheduleConstraintController.new,
-      name: r'scheduleConstraintControllerProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$scheduleConstraintControllerHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  ScheduleConstraintController.new,
+  name: r'scheduleConstraintControllerProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$scheduleConstraintControllerHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$ScheduleConstraintController = AsyncNotifier<void>;
 // ignore_for_file: type=lint

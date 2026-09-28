@@ -8,7 +8,9 @@ import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../attendance/domain/class_attendance_timeline_item.dart';
 import '../../attendance/presentation/attendance_page.dart';
+import '../../attendance/presentation/class_attendance_timeline_controller.dart';
 import '../../leave/presentation/leave_request_page.dart';
 import '../../memberships/domain/membership.dart';
 import '../../memberships/domain/membership_service.dart';
@@ -19,7 +21,6 @@ import '../../memberships/presentation/re_enroll_student_bottom_sheet.dart';
 import '../../schedule/presentation/assignment_tab.dart';
 import '../../schedule/presentation/schedule_tab.dart';
 import '../../sessions/domain/class_session.dart';
-import '../../sessions/presentation/session_controller.dart';
 import '../../sessions/presentation/session_tab.dart';
 import '../../students/presentation/student_detail_page.dart';
 import '../../tuition/presentation/class_tuition_tab.dart';
@@ -40,6 +41,12 @@ class ClassDetailPage extends ConsumerStatefulWidget {
 
 class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
   DateTime _referenceDate = DateTime.now();
+  DateTime _timelineMonth = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    1,
+  );
+  String _attendanceFilter = 'ALL';
 
   @override
   Widget build(BuildContext context) {
@@ -516,130 +523,451 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
   }
 
   Widget _buildAttendanceTab(BuildContext context) {
-    final sessionsAsync = ref.watch(
-      classSessionControllerProvider(widget.classId),
+    final yearMonth = DateFormat('yyyy-MM').format(_timelineMonth);
+    final monthDisplay = 'THÁNG ${DateFormat('MM/yyyy').format(_timelineMonth)}';
+
+    final timelineAsync = ref.watch(
+      classAttendanceTimelineProvider(
+        classId: widget.classId,
+        yearMonth: yearMonth,
+      ),
     );
 
-    return sessionsAsync.when(
-      data: (sessions) {
-        if (sessions.isEmpty) {
-          return const Center(
-            child: Text(
-              'Chưa có buổi học nào được sinh.',
-              style: TextStyle(
-                color: AppColors.textMuted,
-                fontStyle: FontStyle.italic,
+    return Column(
+      children: [
+        // Month Navigator Bar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          color: AppColors.surface,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_left, color: AppColors.cyanAccent),
+                onPressed: () {
+                  setState(() {
+                    _timelineMonth = DateTime(
+                      _timelineMonth.year,
+                      _timelineMonth.month - 1,
+                      1,
+                    );
+                  });
+                },
               ),
-            ),
-          );
-        }
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          itemCount: sessions.length,
-          itemBuilder: (context, index) {
-            final session = sessions[index];
-            final date = DateTime.parse(session.ngay);
-            final formattedDate = DateFormatter.formatDisplayDate(session.ngay);
-            final weekday = DateFormatter.formatVietnameseWeekday(date.weekday);
+              Text(
+                monthDisplay,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right, color: AppColors.cyanAccent),
+                onPressed: () {
+                  setState(() {
+                    _timelineMonth = DateTime(
+                      _timelineMonth.year,
+                      _timelineMonth.month + 1,
+                      1,
+                    );
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
 
-            Color statusColor;
-            String statusText;
-            switch (session.trangThai) {
-              case SessionStatus.DU_KIEN:
-                statusColor = AppColors.warning;
-                statusText = 'Chưa điểm danh';
-                break;
-              case SessionStatus.DA_HOC:
-                statusColor = AppColors.success;
-                statusText = 'Đã điểm danh';
-                break;
-              case SessionStatus.HUY:
-                statusColor = AppColors.error;
-                statusText = 'Đã hủy';
-                break;
-              case SessionStatus.NGHI_LE:
-                statusColor = AppColors.textMuted;
-                statusText = 'Nghỉ lễ';
-                break;
-            }
+        // Filter chips bar
+        Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          color: AppColors.background,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              _buildFilterChip('Tất cả', 'ALL'),
+              _buildFilterChip('Chưa hoàn tất', 'DU_KIEN'),
+              _buildFilterChip('Đã hoàn tất', 'DA_HOC'),
+              _buildFilterChip('Khác', 'KHAC'),
+            ],
+          ),
+        ),
 
-            return AppSectionCard(
-              margin: const EdgeInsets.only(bottom: 8),
-              onTap: () async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        AttendancePage(sessionId: session.id!),
+        const Divider(color: AppColors.border, height: 1),
+
+        // Timeline Content
+        Expanded(
+          child: timelineAsync.when(
+            data: (items) {
+              if (items.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24.0),
+                    child: Text(
+                      'Tháng này chưa có buổi học.',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                   ),
                 );
-                ref.invalidate(classSessionControllerProvider(widget.classId));
-              },
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.fact_check_outlined,
-                      color: statusColor,
-                      size: 22,
+              }
+
+              final filtered = items.where((item) {
+                if (_attendanceFilter == 'DU_KIEN') {
+                  return item.session.trangThai == SessionStatus.DU_KIEN;
+                } else if (_attendanceFilter == 'DA_HOC') {
+                  return item.session.trangThai == SessionStatus.DA_HOC;
+                } else if (_attendanceFilter == 'KHAC') {
+                  return item.session.trangThai == SessionStatus.HUY ||
+                      item.session.trangThai == SessionStatus.NGHI_LE;
+                }
+                return true;
+              }).toList();
+
+              if (filtered.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24.0),
+                    child: Text(
+                      'Không có buổi học phù hợp bộ lọc.',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: filtered.length,
+                itemBuilder: (context, index) {
+                  final item = filtered[index];
+                  final isLast = index == filtered.length - 1;
+                  return _buildTimelineRow(context, item, isLast, yearMonth);
+                },
+              );
+            },
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+            error: (e, _) => Center(
+              child: Text(
+                'Lỗi: $e',
+                style: const TextStyle(color: AppColors.error),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip(String label, String code) {
+    final isSelected = _attendanceFilter == code;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: isSelected,
+        selectedColor: AppColors.primary,
+        backgroundColor: AppColors.surface,
+        labelStyle: TextStyle(
+          color: isSelected ? Colors.white : AppColors.textSecondary,
+          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+        onSelected: (selected) {
+          if (selected) {
+            setState(() => _attendanceFilter = code);
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildTimelineRow(
+    BuildContext context,
+    ClassAttendanceTimelineItem item,
+    bool isLast,
+    String yearMonth,
+  ) {
+    final session = item.session;
+    final date = DateTime.parse(session.ngay);
+    final dayStr = DateFormat('dd/MM').format(date);
+    final weekdayStr =
+        '${DateFormatter.formatVietnameseWeekday(date.weekday)} • ${session.gioBatDau}–${session.gioKetThuc}';
+
+    Color nodeColor;
+    String statusText;
+    switch (session.trangThai) {
+      case SessionStatus.DU_KIEN:
+        nodeColor = AppColors.warning;
+        statusText = '◷ Chưa hoàn tất';
+        break;
+      case SessionStatus.DA_HOC:
+        nodeColor = AppColors.success;
+        statusText = '✓ Đã hoàn tất';
+        break;
+      case SessionStatus.HUY:
+        nodeColor = AppColors.error;
+        statusText = 'Đã hủy';
+        break;
+      case SessionStatus.NGHI_LE:
+        nodeColor = AppColors.textMuted;
+        statusText = 'Nghỉ lễ';
+        break;
+    }
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Left Rail Column
+          SizedBox(
+            width: 54,
+            child: Column(
+              children: [
+                Text(
+                  dayStr,
+                  style: TextStyle(
+                    color: nodeColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: nodeColor,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: nodeColor.withValues(alpha: 0.4),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+                if (!isLast)
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '$weekday, $formattedDate',
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            AppStatusChip(
-                              label: statusText,
-                              color: statusColor,
-                              compact: true,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${session.gioBatDau} - ${session.gioKetThuc} | ${session.loai.displayName}',
+                    child: Container(
+                      width: 2,
+                      color: AppColors.border,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Right Card
+          Expanded(
+            child: AppSectionCard(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          weekdayStr,
                           style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
+                            color: AppColors.textPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      AppStatusChip(
+                        label: statusText,
+                        color: nodeColor,
+                        compact: true,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      AppStatusChip(
+                        label: session.loai.displayName,
+                        color: AppColors.cyanAccent,
+                        compact: true,
+                      ),
+                      if (item.hasCorrectionHistory)
+                        const AppStatusChip(
+                          label: 'Đã chỉnh sửa',
+                          color: AppColors.cyanAccent,
+                          compact: true,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
+                  if (session.trangThai != SessionStatus.HUY &&
+                      session.trangThai != SessionStatus.NGHI_LE) ...[
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        _buildSummaryBadge(
+                          'Có mặt ${item.presentCount}',
+                          AppColors.success,
+                        ),
+                        _buildSummaryBadge(
+                          'Trễ ${item.lateCount}',
+                          AppColors.warning,
+                        ),
+                        _buildSummaryBadge(
+                          'Có phép ${item.excusedCount}',
+                          AppColors.cyanAccent,
+                        ),
+                        _buildSummaryBadge(
+                          'Không phép ${item.unexcusedCount}',
+                          AppColors.error,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+
+                  // Action Buttons
+                  if (session.trangThai == SessionStatus.DU_KIEN)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
+                          ),
+                        ),
+                        onPressed: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  AttendancePage(sessionId: session.id!),
+                            ),
+                          );
+                          ref.invalidate(
+                            classAttendanceTimelineProvider(
+                              classId: widget.classId,
+                              yearMonth: yearMonth,
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.fact_check_outlined, size: 16),
+                        label: const Text(
+                          'Điểm danh',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    )
+                  else if (session.trangThai == SessionStatus.DA_HOC)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.border),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                          ),
+                          onPressed: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    AttendancePage(sessionId: session.id!),
+                              ),
+                            );
+                            ref.invalidate(
+                              classAttendanceTimelineProvider(
+                                classId: widget.classId,
+                                yearMonth: yearMonth,
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Xem',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.warning,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                          ),
+                          onPressed: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    AttendancePage(sessionId: session.id!),
+                              ),
+                            );
+                            ref.invalidate(
+                              classAttendanceTimelineProvider(
+                                classId: widget.classId,
+                                yearMonth: yearMonth,
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.edit_note, size: 14),
+                          label: const Text(
+                            'Sửa điểm danh',
+                            style: TextStyle(fontSize: 12),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(
-                    Icons.chevron_right,
-                    color: AppColors.textMuted,
-                    size: 20,
-                  ),
                 ],
               ),
-            );
-          },
-        );
-      },
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          ),
+        ],
       ),
-      error: (e, _) => Center(
-        child: Text('Lỗi: $e', style: const TextStyle(color: AppColors.error)),
+    );
+  }
+
+  Widget _buildSummaryBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

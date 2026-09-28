@@ -151,4 +151,42 @@ class AttendanceController extends _$AttendanceController {
       rethrow;
     }
   }
+
+  Future<void> saveCorrection(String reason) async {
+    if (_draft == null) return;
+    final service = await ref.read(attendanceServiceProvider.future);
+
+    final prevState = state;
+    state = const AsyncValue.loading();
+    try {
+      await service.correctFinalizedAttendance(
+        sessionId: sessionId,
+        states: _draft!,
+        reason: reason,
+      );
+      _draft = null;
+      final newSheet = await service.getAttendanceForSession(sessionId);
+      state = AsyncValue.data(newSheet);
+
+      final classId = newSheet.session.idLop;
+      final month = newSheet.session.ngay.substring(0, 7);
+      for (final member in newSheet.members) {
+        final studentId = member.rosterMember.student.id;
+        if (studentId != null) {
+          ref.invalidate(
+            tuitionPreviewControllerProvider(studentId, classId, month),
+          );
+        }
+      }
+      ref.invalidate(classMonthTuitionOverviewProvider((classId, month)));
+      ref.invalidate(classMonthInvoicesProvider((classId, month)));
+      ref.invalidate(classMonthPaymentSummariesProvider((classId, month)));
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      if (prevState.hasValue) {
+        state = AsyncValue.data(prevState.value!);
+      }
+      rethrow;
+    }
+  }
 }

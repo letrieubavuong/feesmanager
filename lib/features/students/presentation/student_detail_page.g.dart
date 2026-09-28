@@ -39,15 +39,21 @@ class StudentDetailFamily extends Family<AsyncValue<Student?>> {
   const StudentDetailFamily();
 
   /// See also [studentDetail].
-  StudentDetailProvider call(int id) {
-    return StudentDetailProvider(id);
+  StudentDetailProvider call(
+    int id,
+  ) {
+    return StudentDetailProvider(
+      id,
+    );
   }
 
   @override
   StudentDetailProvider getProviderOverride(
     covariant StudentDetailProvider provider,
   ) {
-    return call(provider.id);
+    return call(
+      provider.id,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -68,19 +74,24 @@ class StudentDetailFamily extends Family<AsyncValue<Student?>> {
 /// See also [studentDetail].
 class StudentDetailProvider extends AutoDisposeFutureProvider<Student?> {
   /// See also [studentDetail].
-  StudentDetailProvider(int id)
-    : this._internal(
-        (ref) => studentDetail(ref as StudentDetailRef, id),
-        from: studentDetailProvider,
-        name: r'studentDetailProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$studentDetailHash,
-        dependencies: StudentDetailFamily._dependencies,
-        allTransitiveDependencies:
-            StudentDetailFamily._allTransitiveDependencies,
-        id: id,
-      );
+  StudentDetailProvider(
+    int id,
+  ) : this._internal(
+          (ref) => studentDetail(
+            ref as StudentDetailRef,
+            id,
+          ),
+          from: studentDetailProvider,
+          name: r'studentDetailProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$studentDetailHash,
+          dependencies: StudentDetailFamily._dependencies,
+          allTransitiveDependencies:
+              StudentDetailFamily._allTransitiveDependencies,
+          id: id,
+        );
 
   StudentDetailProvider._internal(
     super._createNotifier, {
@@ -137,8 +148,7 @@ mixin StudentDetailRef on AutoDisposeFutureProviderRef<Student?> {
 }
 
 class _StudentDetailProviderElement
-    extends AutoDisposeFutureProviderElement<Student?>
-    with StudentDetailRef {
+    extends AutoDisposeFutureProviderElement<Student?> with StudentDetailRef {
   _StudentDetailProviderElement(super.provider);
 
   @override
@@ -159,15 +169,21 @@ class StudentMembershipHistoryFamily
   const StudentMembershipHistoryFamily();
 
   /// See also [studentMembershipHistory].
-  StudentMembershipHistoryProvider call(int id) {
-    return StudentMembershipHistoryProvider(id);
+  StudentMembershipHistoryProvider call(
+    int id,
+  ) {
+    return StudentMembershipHistoryProvider(
+      id,
+    );
   }
 
   @override
   StudentMembershipHistoryProvider getProviderOverride(
     covariant StudentMembershipHistoryProvider provider,
   ) {
-    return call(provider.id);
+    return call(
+      provider.id,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -189,20 +205,24 @@ class StudentMembershipHistoryFamily
 class StudentMembershipHistoryProvider
     extends AutoDisposeFutureProvider<List<ClassMembership>> {
   /// See also [studentMembershipHistory].
-  StudentMembershipHistoryProvider(int id)
-    : this._internal(
-        (ref) =>
-            studentMembershipHistory(ref as StudentMembershipHistoryRef, id),
-        from: studentMembershipHistoryProvider,
-        name: r'studentMembershipHistoryProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$studentMembershipHistoryHash,
-        dependencies: StudentMembershipHistoryFamily._dependencies,
-        allTransitiveDependencies:
-            StudentMembershipHistoryFamily._allTransitiveDependencies,
-        id: id,
-      );
+  StudentMembershipHistoryProvider(
+    int id,
+  ) : this._internal(
+          (ref) => studentMembershipHistory(
+            ref as StudentMembershipHistoryRef,
+            id,
+          ),
+          from: studentMembershipHistoryProvider,
+          name: r'studentMembershipHistoryProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$studentMembershipHistoryHash,
+          dependencies: StudentMembershipHistoryFamily._dependencies,
+          allTransitiveDependencies:
+              StudentMembershipHistoryFamily._allTransitiveDependencies,
+          id: id,
+        );
 
   StudentMembershipHistoryProvider._internal(
     super._createNotifier, {
@@ -219,9 +239,8 @@ class StudentMembershipHistoryProvider
   @override
   Override overrideWith(
     FutureOr<List<ClassMembership>> Function(
-      StudentMembershipHistoryRef provider,
-    )
-    create,
+            StudentMembershipHistoryRef provider)
+        create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -284,15 +303,21 @@ class StudentScheduleFamily
   const StudentScheduleFamily();
 
   /// See also [studentSchedule].
-  StudentScheduleProvider call(int id) {
-    return StudentScheduleProvider(id);
+  StudentScheduleProvider call(
+    int id,
+  ) {
+    return StudentScheduleProvider(
+      id,
+    );
   }
 
   @override
   StudentScheduleProvider getProviderOverride(
     covariant StudentScheduleProvider provider,
   ) {
-    return call(provider.id);
+    return call(
+      provider.id,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -314,19 +339,24 @@ class StudentScheduleFamily
 class StudentScheduleProvider
     extends AutoDisposeFutureProvider<List<StudentShiftAssignment>> {
   /// See also [studentSchedule].
-  StudentScheduleProvider(int id)
-    : this._internal(
-        (ref) => studentSchedule(ref as StudentScheduleRef, id),
-        from: studentScheduleProvider,
-        name: r'studentScheduleProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$studentScheduleHash,
-        dependencies: StudentScheduleFamily._dependencies,
-        allTransitiveDependencies:
-            StudentScheduleFamily._allTransitiveDependencies,
-        id: id,
-      );
+  StudentScheduleProvider(
+    int id,
+  ) : this._internal(
+          (ref) => studentSchedule(
+            ref as StudentScheduleRef,
+            id,
+          ),
+          from: studentScheduleProvider,
+          name: r'studentScheduleProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$studentScheduleHash,
+          dependencies: StudentScheduleFamily._dependencies,
+          allTransitiveDependencies:
+              StudentScheduleFamily._allTransitiveDependencies,
+          id: id,
+        );
 
   StudentScheduleProvider._internal(
     super._createNotifier, {
@@ -343,7 +373,7 @@ class StudentScheduleProvider
   @override
   Override overrideWith(
     FutureOr<List<StudentShiftAssignment>> Function(StudentScheduleRef provider)
-    create,
+        create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -361,7 +391,7 @@ class StudentScheduleProvider
 
   @override
   AutoDisposeFutureProviderElement<List<StudentShiftAssignment>>
-  createElement() {
+      createElement() {
     return _StudentScheduleProviderElement(this);
   }
 
@@ -406,15 +436,21 @@ class ScheduleDetailFamily extends Family<AsyncValue<ClassSchedule?>> {
   const ScheduleDetailFamily();
 
   /// See also [scheduleDetail].
-  ScheduleDetailProvider call(int id) {
-    return ScheduleDetailProvider(id);
+  ScheduleDetailProvider call(
+    int id,
+  ) {
+    return ScheduleDetailProvider(
+      id,
+    );
   }
 
   @override
   ScheduleDetailProvider getProviderOverride(
     covariant ScheduleDetailProvider provider,
   ) {
-    return call(provider.id);
+    return call(
+      provider.id,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -435,19 +471,24 @@ class ScheduleDetailFamily extends Family<AsyncValue<ClassSchedule?>> {
 /// See also [scheduleDetail].
 class ScheduleDetailProvider extends AutoDisposeFutureProvider<ClassSchedule?> {
   /// See also [scheduleDetail].
-  ScheduleDetailProvider(int id)
-    : this._internal(
-        (ref) => scheduleDetail(ref as ScheduleDetailRef, id),
-        from: scheduleDetailProvider,
-        name: r'scheduleDetailProvider',
-        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-            ? null
-            : _$scheduleDetailHash,
-        dependencies: ScheduleDetailFamily._dependencies,
-        allTransitiveDependencies:
-            ScheduleDetailFamily._allTransitiveDependencies,
-        id: id,
-      );
+  ScheduleDetailProvider(
+    int id,
+  ) : this._internal(
+          (ref) => scheduleDetail(
+            ref as ScheduleDetailRef,
+            id,
+          ),
+          from: scheduleDetailProvider,
+          name: r'scheduleDetailProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$scheduleDetailHash,
+          dependencies: ScheduleDetailFamily._dependencies,
+          allTransitiveDependencies:
+              ScheduleDetailFamily._allTransitiveDependencies,
+          id: id,
+        );
 
   ScheduleDetailProvider._internal(
     super._createNotifier, {

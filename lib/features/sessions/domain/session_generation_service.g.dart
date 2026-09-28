@@ -13,16 +13,16 @@ String _$sessionGenerationServiceHash() =>
 @ProviderFor(sessionGenerationService)
 final sessionGenerationServiceProvider =
     FutureProvider<SessionGenerationService>.internal(
-      sessionGenerationService,
-      name: r'sessionGenerationServiceProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$sessionGenerationServiceHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  sessionGenerationService,
+  name: r'sessionGenerationServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$sessionGenerationServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
-typedef SessionGenerationServiceRef =
-    FutureProviderRef<SessionGenerationService>;
+typedef SessionGenerationServiceRef
+    = FutureProviderRef<SessionGenerationService>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

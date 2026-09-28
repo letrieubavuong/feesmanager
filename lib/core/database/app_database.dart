@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int _dbVersion = 14;
+  static const int _dbVersion = 15;
 
   final String dbName;
   Database? _database;
@@ -78,6 +78,9 @@ class AppDatabase {
     if (version >= 14) {
       await _migrateV13ToV14(db);
     }
+    if (version >= 15) {
+      await _migrateV14ToV15(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -119,6 +122,9 @@ class AppDatabase {
     }
     if (oldVersion < 14) {
       await _migrateV13ToV14(db);
+    }
+    if (oldVersion < 15) {
+      await _migrateV14ToV15(db);
     }
   }
 
@@ -863,6 +869,30 @@ class AppDatabase {
 
     await db.execute(
       'CREATE INDEX idx_hoc_phi_chinh_sua_invoice ON hoc_phi_chinh_sua(id_hoc_phi_thang)',
+    );
+  }
+
+  Future<void> _migrateV14ToV15(Database db) async {
+    await db.execute('''
+      CREATE TABLE diem_danh_chinh_sua (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_diem_danh INTEGER NULL,
+        id_buoi_hoc INTEGER NOT NULL,
+        id_hoc_sinh INTEGER NOT NULL,
+        trang_thai_cu TEXT NULL,
+        trang_thai_moi TEXT NOT NULL,
+        ly_do TEXT NOT NULL,
+        changed_at TEXT NOT NULL,
+        FOREIGN KEY (id_buoi_hoc) REFERENCES buoi_hoc (id) ON DELETE RESTRICT,
+        FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id) ON DELETE RESTRICT
+      )
+    ''');
+
+    await db.execute(
+      'CREATE INDEX idx_diem_danh_chinh_sua_buoi_hoc ON diem_danh_chinh_sua(id_buoi_hoc)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_diem_danh_chinh_sua_hoc_sinh ON diem_danh_chinh_sua(id_hoc_sinh)',
     );
   }
 }
