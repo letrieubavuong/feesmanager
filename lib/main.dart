@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'app/design_system/app_theme.dart';
 import 'app/design_system/theme_controller.dart';
 import 'app/localization/locale_controller.dart';
 import 'app/navigation/app_shell.dart';
+import 'dev/demo_seed_bootstrap.dart';
 import 'l10n/app_localizations.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ProviderScope(child: TuitionApp()));
+  final container = ProviderContainer();
+  await runDemoSeedIfEnabled(container);
+  runApp(
+    UncontrolledProviderScope(container: container, child: const TuitionApp()),
+  );
 }
 
 class TuitionApp extends ConsumerWidget {
