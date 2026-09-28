@@ -1113,4 +1113,84 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get studentSelectTuitionInvoice => 'Select Tuition Invoice';
+
+  @override
+  String get classKpiActive => 'Active Classes';
+
+  @override
+  String get classKpiTodaySessions => 'Today Sessions';
+
+  @override
+  String get classKpiPendingAttendance => 'Needs Attendance';
+
+  @override
+  String get classKpiMissingTuition => 'No Fee Config';
+
+  @override
+  String get classListTitle => 'Class List';
+
+  @override
+  String classCountActive(Object count) {
+    return '$count active classes';
+  }
+
+  @override
+  String classCountStopped(Object count) {
+    return '$count stopped classes';
+  }
+
+  @override
+  String get classStatusNeedsAttendance => 'Needs Attendance';
+
+  @override
+  String get classStatusInProgress => 'In Progress';
+
+  @override
+  String get classStatusUpcoming => 'Upcoming';
+
+  @override
+  String get classStatusCompleted => 'Completed';
+
+  @override
+  String get classStatusMissingTuition => 'No Fee Config';
+
+  @override
+  String get classStatusDebt => 'Has Debt';
+
+  @override
+  String get classNeedsAction => 'Requires Attention';
+
+  @override
+  String get classSeeAll => 'See All';
+
+  @override
+  String classWarningMissingTuition(Object count) {
+    return '$count classes missing tuition policy';
+  }
+
+  @override
+  String classWarningOverdueAttendance(Object count) {
+    return '$count overdue sessions need attendance';
+  }
+
+  @override
+  String classWarningMissingSessions(Object count) {
+    return '$count classes missing sessions this week';
+  }
+
+  @override
+  String classStudentCount(Object count) {
+    return '$count students';
+  }
+
+  @override
+  String classMultipleShifts(Object count) {
+    return '$count active shifts';
+  }
+
+  @override
+  String get classEmptyActiveTitle => 'No active classes.';
+
+  @override
+  String get classEmptyStoppedTitle => 'No stopped classes.';
 }

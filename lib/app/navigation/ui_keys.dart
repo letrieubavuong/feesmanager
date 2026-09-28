@@ -64,4 +64,5 @@ class UiKeys {
   static const Key studentRestoreAction = Key('student_restore_action');
   static const Key classArchiveAction = Key('class_archive_action');
   static const Key classRestoreAction = Key('class_restore_action');
+  static const Key classAddButton = Key('class_add_button');
 }

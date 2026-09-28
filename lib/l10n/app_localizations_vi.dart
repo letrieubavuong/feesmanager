@@ -1111,4 +1111,84 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get studentSelectTuitionInvoice => 'Chọn khoản học phí cần thanh toán';
+
+  @override
+  String get classKpiActive => 'Lớp hoạt động';
+
+  @override
+  String get classKpiTodaySessions => 'Buổi hôm nay';
+
+  @override
+  String get classKpiPendingAttendance => 'Cần điểm danh';
+
+  @override
+  String get classKpiMissingTuition => 'Chưa có học phí';
+
+  @override
+  String get classListTitle => 'Danh sách lớp';
+
+  @override
+  String classCountActive(Object count) {
+    return '$count lớp đang hoạt động';
+  }
+
+  @override
+  String classCountStopped(Object count) {
+    return '$count lớp ngừng hoạt động';
+  }
+
+  @override
+  String get classStatusNeedsAttendance => 'Cần điểm danh';
+
+  @override
+  String get classStatusInProgress => 'Đang diễn ra';
+
+  @override
+  String get classStatusUpcoming => 'Sắp diễn ra';
+
+  @override
+  String get classStatusCompleted => 'Đã hoàn tất';
+
+  @override
+  String get classStatusMissingTuition => 'Chưa có học phí';
+
+  @override
+  String get classStatusDebt => 'Còn nợ';
+
+  @override
+  String get classNeedsAction => 'Cần xử lý';
+
+  @override
+  String get classSeeAll => 'Xem tất cả';
+
+  @override
+  String classWarningMissingTuition(Object count) {
+    return '$count lớp chưa thiết lập học phí';
+  }
+
+  @override
+  String classWarningOverdueAttendance(Object count) {
+    return '$count buổi quá giờ cần điểm danh';
+  }
+
+  @override
+  String classWarningMissingSessions(Object count) {
+    return '$count lớp chưa sinh buổi tuần này';
+  }
+
+  @override
+  String classStudentCount(Object count) {
+    return '$count học sinh';
+  }
+
+  @override
+  String classMultipleShifts(Object count) {
+    return '$count ca đang áp dụng';
+  }
+
+  @override
+  String get classEmptyActiveTitle => 'Chưa có lớp đang hoạt động.';
+
+  @override
+  String get classEmptyStoppedTitle => 'Chưa có lớp ngừng hoạt động.';
 }

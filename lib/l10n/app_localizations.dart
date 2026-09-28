@@ -2215,6 +2215,138 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chọn khoản học phí cần thanh toán'**
   String get studentSelectTuitionInvoice;
+
+  /// No description provided for @classKpiActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lớp hoạt động'**
+  String get classKpiActive;
+
+  /// No description provided for @classKpiTodaySessions.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi hôm nay'**
+  String get classKpiTodaySessions;
+
+  /// No description provided for @classKpiPendingAttendance.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần điểm danh'**
+  String get classKpiPendingAttendance;
+
+  /// No description provided for @classKpiMissingTuition.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có học phí'**
+  String get classKpiMissingTuition;
+
+  /// No description provided for @classListTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Danh sách lớp'**
+  String get classListTitle;
+
+  /// No description provided for @classCountActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} lớp đang hoạt động'**
+  String classCountActive(Object count);
+
+  /// No description provided for @classCountStopped.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} lớp ngừng hoạt động'**
+  String classCountStopped(Object count);
+
+  /// No description provided for @classStatusNeedsAttendance.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần điểm danh'**
+  String get classStatusNeedsAttendance;
+
+  /// No description provided for @classStatusInProgress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang diễn ra'**
+  String get classStatusInProgress;
+
+  /// No description provided for @classStatusUpcoming.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp diễn ra'**
+  String get classStatusUpcoming;
+
+  /// No description provided for @classStatusCompleted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hoàn tất'**
+  String get classStatusCompleted;
+
+  /// No description provided for @classStatusMissingTuition.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có học phí'**
+  String get classStatusMissingTuition;
+
+  /// No description provided for @classStatusDebt.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn nợ'**
+  String get classStatusDebt;
+
+  /// No description provided for @classNeedsAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần xử lý'**
+  String get classNeedsAction;
+
+  /// No description provided for @classSeeAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem tất cả'**
+  String get classSeeAll;
+
+  /// No description provided for @classWarningMissingTuition.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} lớp chưa thiết lập học phí'**
+  String classWarningMissingTuition(Object count);
+
+  /// No description provided for @classWarningOverdueAttendance.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} buổi quá giờ cần điểm danh'**
+  String classWarningOverdueAttendance(Object count);
+
+  /// No description provided for @classWarningMissingSessions.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} lớp chưa sinh buổi tuần này'**
+  String classWarningMissingSessions(Object count);
+
+  /// No description provided for @classStudentCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} học sinh'**
+  String classStudentCount(Object count);
+
+  /// No description provided for @classMultipleShifts.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} ca đang áp dụng'**
+  String classMultipleShifts(Object count);
+
+  /// No description provided for @classEmptyActiveTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có lớp đang hoạt động.'**
+  String get classEmptyActiveTitle;
+
+  /// No description provided for @classEmptyStoppedTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có lớp ngừng hoạt động.'**
+  String get classEmptyStoppedTitle;
 }
 
 class _AppLocalizationsDelegate
