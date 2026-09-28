@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../app/common_widgets/app_empty_state.dart';
 import '../../../app/common_widgets/app_error_state.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
@@ -199,35 +200,12 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                 final student = students[index];
                 final isStopped = student.daLuuTru;
 
-                final hasGrade = student.khoi != null;
-                final hasSchool =
-                    student.truongDangHoc != null &&
-                    student.truongDangHoc!.trim().isNotEmpty;
-                String? schoolGradeText;
-                if (hasGrade && hasSchool) {
-                  schoolGradeText =
-                      'Khối ${student.khoi} • ${student.truongDangHoc!.trim()}';
-                } else if (hasGrade) {
-                  schoolGradeText = 'Khối ${student.khoi}';
-                } else if (hasSchool) {
-                  schoolGradeText = student.truongDangHoc!.trim();
-                }
-
-                final hasPhone =
-                    student.sdtPhuHuynh != null &&
-                    student.sdtPhuHuynh!.trim().isNotEmpty;
-                final hasParentName =
-                    student.tenPhuHuynh != null &&
-                    student.tenPhuHuynh!.trim().isNotEmpty;
-                String? parentContactText;
-                if (hasPhone) {
-                  if (hasParentName) {
-                    parentContactText =
-                        '☎ ${student.tenPhuHuynh!.trim()} • ${student.sdtPhuHuynh!.trim()}';
-                  } else {
-                    parentContactText = '☎ PH • ${student.sdtPhuHuynh!.trim()}';
-                  }
-                }
+                final parentPhone = student.sdtPhuHuynh?.trim();
+                final hasPhone = parentPhone != null && parentPhone.isNotEmpty;
+                final parentName = student.tenPhuHuynh?.trim();
+                final contactLabel = parentName == null || parentName.isEmpty
+                    ? 'PH • ${parentPhone ?? "Chưa có SĐT"}'
+                    : '$parentName • ${parentPhone ?? "Chưa có SĐT"}';
 
                 return AppSectionCard(
                   margin: const EdgeInsets.only(bottom: 8),
@@ -300,29 +278,46 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                                   ),
                               ],
                             ),
-                            if (schoolGradeText != null) ...[
-                              const SizedBox(height: 3),
-                              Text(
-                                schoolGradeText,
-                                style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 12,
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    contactLabel,
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                            if (parentContactText != null) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                parentContactText,
-                                style: const TextStyle(
-                                  color: AppColors.cyanAccent,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
+                                const SizedBox(width: 6),
+                                _contactButton(
+                                  icon: Icons.call_outlined,
+                                  tooltip: 'Gọi phụ huynh',
+                                  enabled: hasPhone,
+                                  onPressed: () => _openContact(
+                                    context,
+                                    Uri(scheme: 'tel', path: parentPhone),
+                                  ),
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                                const SizedBox(width: 6),
+                                _contactButton(
+                                  icon: Icons.chat_bubble_outline,
+                                  label: 'Zalo',
+                                  tooltip: 'Mở Zalo phụ huynh',
+                                  enabled: hasPhone,
+                                  onPressed: () => _openContact(
+                                    context,
+                                    Uri.https(
+                                      'zalo.me',
+                                      '/${parentPhone!.replaceAll(RegExp(r'[^0-9]'), '')}',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -357,5 +352,53 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
+  }
+
+  Widget _contactButton({
+    required IconData icon,
+    required String tooltip,
+    required bool enabled,
+    required VoidCallback onPressed,
+    String? label,
+  }) {
+    return SizedBox(
+      height: 36,
+      child: OutlinedButton(
+        onPressed: enabled ? onPressed : null,
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          minimumSize: const Size(44, 36),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          foregroundColor: AppColors.cyanAccent,
+          side: const BorderSide(color: AppColors.border),
+        ),
+        child: Tooltip(
+          message: tooltip,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 17),
+              if (label != null) ...[
+                const SizedBox(width: 4),
+                Text(label, style: const TextStyle(fontSize: 11)),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openContact(BuildContext context, Uri uri) async {
+    try {
+      if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
+    } catch (_) {
+      // Show a message below when no installed app can handle the link.
+    }
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể mở liên kết trên thiết bị này.')),
+      );
+    }
   }
 }
