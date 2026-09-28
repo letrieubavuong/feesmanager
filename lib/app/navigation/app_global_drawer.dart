@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
+import '../../features/settings/presentation/center_profile_controller.dart';
 import '../common_widgets/app_page_scaffold.dart';
 import 'app_destination.dart';
 import 'navigation_controller.dart';
@@ -14,6 +15,7 @@ class AppGlobalDrawer extends ConsumerWidget {
     final currentDestId = ref.watch(navigationControllerProvider);
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final profile = ref.watch(centerProfileProvider);
 
     return Drawer(
       key: UiKeys.globalDrawer,
@@ -41,7 +43,9 @@ class AppGlobalDrawer extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Tuition2027',
+                        profile.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleLarge?.copyWith(
                           color: theme.colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.bold,
@@ -49,7 +53,11 @@ class AppGlobalDrawer extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        l10n?.menuSubtitle ?? 'Quản lý trung tâm dạy thêm',
+                        profile.subtitle.isEmpty
+                            ? l10n?.menuSubtitle ?? 'Quản lý trung tâm dạy thêm'
+                            : profile.subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onPrimaryContainer
                               .withValues(alpha: 0.8),
@@ -116,7 +124,7 @@ class AppGlobalDrawer extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'v1.0.0+1 | DB v13',
+                  'v1.0.0+1 | DB v16',
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.outline,
                   ),
