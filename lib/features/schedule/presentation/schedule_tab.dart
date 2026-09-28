@@ -28,36 +28,6 @@ class ScheduleTab extends ConsumerWidget {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          if (!isArchived)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Lịch học định kỳ',
-                    style: TextStyle(
-                      color: AppColors.cyanAccent,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: () =>
-                        showScheduleFormBottomSheet(context, classId: classId),
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text('Thêm lịch học'),
-                  ),
-                ],
-              ),
-            ),
           Expanded(
             child: schedulesAsync.when(
               data: (schedules) {
@@ -72,17 +42,32 @@ class ScheduleTab extends ConsumerWidget {
                     ),
                   );
                 }
+                final ordered = [...schedules]..sort((a, b) {
+                  final weekday = a.thuTrongTuan.compareTo(b.thuTrongTuan);
+                  return weekday != 0 ? weekday : a.gioBatDau.compareTo(b.gioBatDau);
+                });
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,
                   ),
-                  itemCount: schedules.length,
+                  itemCount: ordered.length,
                   itemBuilder: (context, index) {
-                    final s = schedules[index];
+                    final s = ordered[index];
+                    final isLast = index == ordered.length - 1;
                     final isActive = s.isEffectiveOn(DateTime.now());
-                    return AppSectionCard(
-                      margin: const EdgeInsets.only(bottom: 8),
+                    return IntrinsicHeight(child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(width: 18, child: Column(children: [
+                          Container(width: 12, height: 12,
+                            decoration: const BoxDecoration(color: AppColors.cyanAccent,
+                              shape: BoxShape.circle)),
+                          if (!isLast) Expanded(child: Container(width: 2,
+                            color: AppColors.border)),
+                        ])),
+                        Expanded(child: AppSectionCard(
+                      margin: const EdgeInsets.only(bottom: 10),
                       child: Row(
                         children: [
                           Container(
@@ -210,8 +195,8 @@ class ScheduleTab extends ConsumerWidget {
                               ],
                             ),
                         ],
-                      ),
-                    );
+                      ))),
+                      ]));
                   },
                 );
               },
