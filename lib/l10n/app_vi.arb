@@ -1,6 +1,6 @@
 {
   "@@locale": "vi",
-  "appName": "Tuition2027",
+  "appName": "Quản lý học phí",
   "navHome": "Trang chủ",
   "navClasses": "Lớp học",
   "navStudents": "Học sinh",
@@ -65,7 +65,7 @@
   "langVietnamese": "Tiếng Việt",
   "langEnglish": "English",
   "settingsAppInfo": "THÔNG TIN ỨNG DỤNG",
-  "appVersion": "Phiên bản: 1.0.0+1",
+  "appVersion": "2.6",
   "dbVersion": "Cơ sở dữ liệu: v15",
 
   "studentFormTitleAdd": "Thêm học sinh",
