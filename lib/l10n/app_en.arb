@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appName": "Tuition2027",
+  "appName": "Tuition manager",
   "navHome": "Home",
   "navClasses": "Classes",
   "navStudents": "Students",
@@ -65,7 +65,7 @@
   "langVietnamese": "Tiếng Việt",
   "langEnglish": "English",
   "settingsAppInfo": "APPLICATION INFO",
-  "appVersion": "Version: 1.0.0+1",
+  "appVersion": "2.6",
   "dbVersion": "Database: v15",
 
   "studentFormTitleAdd": "Add Student",
