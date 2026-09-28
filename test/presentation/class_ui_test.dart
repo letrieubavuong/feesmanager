@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tuition2027/app/navigation/ui_keys.dart';
 import 'package:tuition2027/features/classes/domain/class.dart';
 import 'package:tuition2027/features/classes/domain/class_filter.dart';
 import 'package:tuition2027/features/classes/presentation/class_controller.dart';
@@ -59,8 +60,8 @@ void main() {
     // Inject archived data for mock
     controller.data = [archivedClass];
 
-    // Tap FilterChip 'Đã lưu trữ'
-    await tester.tap(find.text('Đã lưu trữ'));
+    // Tap Filter 'Ngừng hoạt động'
+    await tester.tap(find.byKey(UiKeys.classArchivedFilter));
     await tester.pumpAndSettle();
 
     expect(find.text('Archived Class'), findsOneWidget);

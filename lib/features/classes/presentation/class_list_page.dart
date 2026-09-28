@@ -109,76 +109,81 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
                   },
                 ),
               ),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+              Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 4,
                 ),
-                child: Row(
-                  children: [
-                    ChoiceChip(
-                      key: UiKeys.classActiveFilter,
-                      label: const Text('Lớp đang hoạt động'),
-                      selected: _filter == ClassFilter.active,
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.surface,
-                      labelStyle: TextStyle(
-                        color: _filter == ClassFilter.active
-                            ? Colors.white
-                            : AppColors.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                child: SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<ClassFilter>(
+                    segments: [
+                      ButtonSegment<ClassFilter>(
+                        value: ClassFilter.active,
+                        icon: const Icon(Icons.class_outlined),
+                        label: Text(
+                          l10n.classFilterActive,
+                          key: UiKeys.classActiveFilter,
+                        ),
                       ),
-                      onSelected: (_) {
-                        setState(() => _filter = ClassFilter.active);
+                      ButtonSegment<ClassFilter>(
+                        value: ClassFilter.archived,
+                        icon: const Icon(Icons.archive_outlined),
+                        label: Text(
+                          l10n.classFilterStopped,
+                          key: UiKeys.classArchivedFilter,
+                        ),
+                      ),
+                    ],
+                    selected: {_filter},
+                    emptySelectionAllowed: false,
+                    multiSelectionEnabled: false,
+                    onSelectionChanged: (newSelection) {
+                      if (newSelection.isNotEmpty) {
+                        final selectedVal = newSelection.first;
+                        setState(() => _filter = selectedVal);
                         ref
                             .read(classListControllerProvider.notifier)
-                            .setFilter(ClassFilter.active);
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      key: UiKeys.classArchivedFilter,
-                      label: const Text('Lớp ngừng hoạt động'),
-                      selected: _filter == ClassFilter.archived,
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.surface,
-                      labelStyle: TextStyle(
-                        color: _filter == ClassFilter.archived
-                            ? Colors.white
-                            : AppColors.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                            .setFilter(selectedVal);
+                      }
+                    },
+                    style: ButtonStyle(
+                      backgroundColor: WidgetStateProperty.resolveWith<Color>((
+                        states,
+                      ) {
+                        if (states.contains(WidgetState.selected)) {
+                          return AppColors.primary;
+                        }
+                        return AppColors.surface;
+                      }),
+                      foregroundColor: WidgetStateProperty.resolveWith<Color>((
+                        states,
+                      ) {
+                        if (states.contains(WidgetState.selected)) {
+                          return Colors.white;
+                        }
+                        return AppColors.textSecondary;
+                      }),
+                      iconColor: WidgetStateProperty.resolveWith<Color>((
+                        states,
+                      ) {
+                        if (states.contains(WidgetState.selected)) {
+                          return Colors.white;
+                        }
+                        return AppColors.textSecondary;
+                      }),
+                      side: WidgetStateProperty.all(
+                        const BorderSide(color: AppColors.border),
                       ),
-                      onSelected: (_) {
-                        setState(() => _filter = ClassFilter.archived);
-                        ref
-                            .read(classListControllerProvider.notifier)
-                            .setFilter(ClassFilter.archived);
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: const Text('Tất cả'),
-                      selected: _filter == ClassFilter.all,
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.surface,
-                      labelStyle: TextStyle(
-                        color: _filter == ClassFilter.all
-                            ? Colors.white
-                            : AppColors.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                      shape: WidgetStateProperty.all(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
-                      onSelected: (_) {
-                        setState(() => _filter = ClassFilter.all);
-                        ref
-                            .read(classListControllerProvider.notifier)
-                            .setFilter(ClassFilter.all);
-                      },
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
                     ),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -188,7 +193,11 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
       body: classListAsync.when(
         data: (classes) {
           if (classes.isEmpty) {
-            return AppEmptyState(title: l10n.searchNoResults);
+            return AppEmptyState(
+              title: _filter == ClassFilter.archived
+                  ? l10n.classEmptyStopped
+                  : l10n.classEmptyActive,
+            );
           }
           return RefreshIndicator(
             onRefresh: () =>

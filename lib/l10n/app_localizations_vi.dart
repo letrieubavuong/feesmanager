@@ -245,6 +245,30 @@ class AppLocalizationsVi extends AppLocalizations {
   String get filterAll => 'Tất cả';
 
   @override
+  String get studentFilterActive => 'Đang học';
+
+  @override
+  String get studentFilterStopped => 'Ngừng học';
+
+  @override
+  String get studentEmptyActive => 'Không có học sinh đang học phù hợp.';
+
+  @override
+  String get studentEmptyStopped => 'Không có học sinh ngừng học phù hợp.';
+
+  @override
+  String get classFilterActive => 'Đang hoạt động';
+
+  @override
+  String get classFilterStopped => 'Ngừng hoạt động';
+
+  @override
+  String get classEmptyActive => 'Không có lớp đang hoạt động phù hợp.';
+
+  @override
+  String get classEmptyStopped => 'Không có lớp ngừng hoạt động phù hợp.';
+
+  @override
   String get membershipTitle => 'Học sinh trong lớp';
 
   @override

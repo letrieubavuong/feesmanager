@@ -284,9 +284,10 @@ class ScheduleFormBottomSheet extends ConsumerStatefulWidget {
 class _ScheduleFormBottomSheetState
     extends ConsumerState<ScheduleFormBottomSheet> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _ghiChuController = TextEditingController();
   int _thu = 1;
-  TimeOfDay _start = const TimeOfDay(hour: 17, minute: 30);
-  TimeOfDay _end = const TimeOfDay(hour: 19, minute: 0);
+  TimeOfDay _start = const TimeOfDay(hour: 14, minute: 0);
+  TimeOfDay _end = const TimeOfDay(hour: 15, minute: 30);
   DateTime _effectiveFrom = DateTime.now();
   bool _isDirty = false;
   bool _isSaving = false;
@@ -308,14 +309,117 @@ class _ScheduleFormBottomSheetState
         hour: int.parse(endParts[0]),
         minute: int.parse(endParts[1]),
       );
-      _effectiveFrom = DateTime.now();
+      _effectiveFrom = DateFormat('yyyy-MM-dd').tryParse(s.hieuLucTu) ?? DateTime.now();
+      _ghiChuController.text = s.ghiChu ?? '';
     }
+  }
+
+  @override
+  void dispose() {
+    _ghiChuController.dispose();
+    super.dispose();
   }
 
   void _onChanged() {
     if (!_isDirty) {
       setState(() => _isDirty = true);
     }
+  }
+
+  String _formatThu(int thu) {
+    switch (thu) {
+      case 1:
+        return 'Thứ Hai';
+      case 2:
+        return 'Thứ Ba';
+      case 3:
+        return 'Thứ Tư';
+      case 4:
+        return 'Thứ Năm';
+      case 5:
+        return 'Thứ Sáu';
+      case 6:
+        return 'Thứ Bảy';
+      case 7:
+        return 'Chủ Nhật';
+      default:
+        return 'Thứ $thu';
+    }
+  }
+
+  String _formatTimeOfDay(TimeOfDay tod) {
+    final h = tod.hour.toString().padLeft(2, '0');
+    final m = tod.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
+  Widget _buildFieldLabel(String label, {bool isRequired = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+          if (isRequired)
+            const Text(
+              ' *',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFDC2626),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomInputContainer({
+    required IconData icon,
+    required Widget child,
+    VoidCallback? onTap,
+    Widget? trailing,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: const Color(0xFFEFF6FF),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFC7DCFB), width: 1),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 48,
+              decoration: const BoxDecoration(
+                color: Color(0xFFE2EDFE),
+                borderRadius: BorderRadius.horizontal(
+                  left: Radius.circular(11),
+                ),
+              ),
+              child: Icon(icon, color: const Color(0xFF1D61E7), size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: child),
+            if (trailing != null) ...[
+              trailing,
+              const SizedBox(width: 8),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -336,179 +440,309 @@ class _ScheduleFormBottomSheetState
       },
       child: DirtyFormScope(
         isDirty: _isDirty,
-        child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              top: 20,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-            ),
-            child: SingleChildScrollView(
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          isEdit
-                              ? 'Sửa lịch học định kỳ'
-                              : 'Thêm lịch học định kỳ',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: SingleChildScrollView(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            isEdit ? 'Chỉnh sửa lịch học' : 'Thêm lịch học',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F2038),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              color: Color(0xFF1E293B),
+                              size: 22,
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () async {
+                              final canLeave =
+                                  await AppPageScaffold.confirmCanLeave(
+                                    context,
+                                    isDirty: _isDirty,
+                                  );
+                              if (canLeave && context.mounted) {
+                                Navigator.of(context).pop();
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      if (_inlineError != null) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            _inlineError!,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onErrorContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () async {
-                            final canLeave =
-                                await AppPageScaffold.confirmCanLeave(
-                                  context,
-                                  isDirty: _isDirty,
-                                );
-                            if (canLeave && context.mounted) {
-                              Navigator.of(context).pop();
-                            }
-                          },
-                        ),
+                        const SizedBox(height: 16),
                       ],
-                    ),
-                    const SizedBox(height: 16),
-                    if (_inlineError != null) ...[
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.errorContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          _inlineError!,
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onErrorContainer,
-                            fontWeight: FontWeight.bold,
+                      _buildFieldLabel('Thứ trong tuần', isRequired: true),
+                      PopupMenuButton<int>(
+                        onSelected: (v) {
+                          _onChanged();
+                          setState(() => _thu = v);
+                        },
+                        itemBuilder: (context) => List.generate(7, (i) => i + 1)
+                            .map(
+                              (t) => PopupMenuItem(
+                                value: t,
+                                child: Text(
+                                  _formatThu(t),
+                                  style: const TextStyle(fontSize: 15),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        child: IgnorePointer(
+                          child: _buildCustomInputContainer(
+                            icon: Icons.calendar_month_rounded,
+                            child: Text(
+                              _formatThu(_thu),
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                            trailing: const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: Color(0xFF1D61E7),
+                              size: 24,
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
-                    ],
-                    DropdownButtonFormField<int>(
-                      initialValue: _thu,
-                      decoration: const InputDecoration(
-                        labelText: 'Thứ',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: List.generate(7, (i) => i + 1)
-                          .map(
-                            (t) => DropdownMenuItem(
-                              value: t,
-                              child: Text('Thứ ${t == 7 ? 'Chủ Nhật' : t + 1}'),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) {
-                        _onChanged();
-                        setState(() => _thu = v!);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Giờ bắt đầu'),
-                      subtitle: Text(_start.format(context)),
-                      trailing: const Icon(Icons.access_time),
-                      onTap: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: _start,
-                        );
-                        if (picked != null) {
-                          _onChanged();
-                          setState(() => _start = picked);
-                        }
-                      },
-                    ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Giờ kết thúc'),
-                      subtitle: Text(_end.format(context)),
-                      trailing: const Icon(Icons.access_time),
-                      onTap: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: _end,
-                        );
-                        if (picked != null) {
-                          _onChanged();
-                          setState(() => _end = picked);
-                        }
-                      },
-                    ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        isEdit
-                            ? 'Áp dụng thay đổi từ ngày'
-                            : 'Hiệu lực từ ngày',
-                      ),
-                      subtitle: Text(
-                        DateFormatter.formatDisplayDate(_effectiveFrom),
-                      ),
-                      trailing: const Icon(Icons.calendar_today),
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _effectiveFrom,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2100),
-                        );
-                        if (picked != null) {
-                          _onChanged();
-                          setState(() => _effectiveFrom = picked);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: _isSaving
-                              ? null
-                              : () async {
-                                  final canLeave =
-                                      await AppPageScaffold.confirmCanLeave(
-                                        context,
-                                        isDirty: _isDirty,
-                                      );
-                                  if (canLeave && context.mounted) {
-                                    Navigator.of(context).pop();
-                                  }
-                                },
-                          child: const Text('Hủy'),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton.icon(
-                          onPressed: _isSaving ? null : _submit,
-                          icon: _isSaving
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildFieldLabel('Giờ bắt đầu', isRequired: true),
+                                _buildCustomInputContainer(
+                                  icon: Icons.access_time_filled_rounded,
+                                  child: Text(
+                                    _formatTimeOfDay(_start),
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF0F172A),
+                                    ),
                                   ),
-                                )
-                              : const Icon(Icons.check),
-                          label: Text(isEdit ? 'Lưu lịch mới' : 'Lưu'),
+                                  onTap: () async {
+                                    final picked = await showTimePicker(
+                                      context: context,
+                                      initialTime: _start,
+                                    );
+                                    if (picked != null) {
+                                      _onChanged();
+                                      setState(() => _start = picked);
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildFieldLabel('Giờ kết thúc', isRequired: true),
+                                _buildCustomInputContainer(
+                                  icon: Icons.access_time_filled_rounded,
+                                  child: Text(
+                                    _formatTimeOfDay(_end),
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  onTap: () async {
+                                    final picked = await showTimePicker(
+                                      context: context,
+                                      initialTime: _end,
+                                    );
+                                    if (picked != null) {
+                                      _onChanged();
+                                      setState(() => _end = picked);
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _buildFieldLabel('Ngày hiệu lực từ', isRequired: true),
+                      _buildCustomInputContainer(
+                        icon: Icons.calendar_month_rounded,
+                        child: Text(
+                          DateFormatter.formatDisplayDate(_effectiveFrom),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF0F172A),
+                          ),
                         ),
-                      ],
-                    ),
-                  ],
+                        trailing: IconButton(
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            size: 18,
+                            color: Color(0xFF64748B),
+                          ),
+                          onPressed: () {
+                            _onChanged();
+                            setState(() => _effectiveFrom = DateTime.now());
+                          },
+                        ),
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _effectiveFrom,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2100),
+                          );
+                          if (picked != null) {
+                            _onChanged();
+                            setState(() => _effectiveFrom = picked);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildFieldLabel('Ghi chú'),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFC7DCFB), width: 1),
+                        ),
+                        child: TextField(
+                          controller: _ghiChuController,
+                          maxLines: 2,
+                          minLines: 1,
+                          onChanged: (_) => _onChanged(),
+                          style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A)),
+                          decoration: const InputDecoration(
+                            hintText: 'Áp dụng từ tuần này.',
+                            hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            border: InputBorder.none,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: _isSaving
+                                  ? null
+                                  : () async {
+                                      final canLeave =
+                                          await AppPageScaffold.confirmCanLeave(
+                                            context,
+                                            isDirty: _isDirty,
+                                          );
+                                      if (canLeave && context.mounted) {
+                                        Navigator.of(context).pop();
+                                      }
+                                    },
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(
+                                  color: Color(0xFF1D61E7),
+                                  width: 1.5,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                backgroundColor: Colors.white,
+                              ),
+                              child: const Text(
+                                'Hủy',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF0F172A),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: _isSaving ? null : _submit,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF0066FF),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              child: _isSaving
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Text(
+                                      isEdit ? 'Lưu thay đổi' : 'Lưu',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -529,6 +763,8 @@ class _ScheduleFormBottomSheetState
           '${_start.hour.toString().padLeft(2, '0')}:${_start.minute.toString().padLeft(2, '0')}';
       final endStr =
           '${_end.hour.toString().padLeft(2, '0')}:${_end.minute.toString().padLeft(2, '0')}';
+      final ghiChu =
+          _ghiChuController.text.trim().isEmpty ? null : _ghiChuController.text.trim();
 
       if (widget.scheduleToEdit != null) {
         final success = await ref
@@ -539,6 +775,7 @@ class _ScheduleFormBottomSheetState
               gioBatDau: startStr,
               gioKetThuc: endStr,
               effectiveDate: _effectiveFrom,
+              ghiChu: ghiChu,
             );
         if (success) {
           ref.invalidate(classScheduleControllerProvider(widget.classId));
@@ -567,6 +804,7 @@ class _ScheduleFormBottomSheetState
           gioBatDau: startStr,
           gioKetThuc: endStr,
           hieuLucTu: DateFormat('yyyy-MM-dd').format(_effectiveFrom),
+          ghiChu: ghiChu,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
@@ -614,6 +852,7 @@ Future<bool?> showScheduleFormBottomSheet(
     isDismissible: false,
     enableDrag: false,
     useSafeArea: true,
+    backgroundColor: Colors.transparent,
     builder: (_) => ScheduleFormBottomSheet(classId: classId),
   );
 }
@@ -629,6 +868,7 @@ Future<bool?> showEditScheduleBottomSheet(
     isDismissible: false,
     enableDrag: false,
     useSafeArea: true,
+    backgroundColor: Colors.transparent,
     builder: (_) =>
         ScheduleFormBottomSheet(classId: classId, scheduleToEdit: schedule),
   );

@@ -104,6 +104,7 @@ class ScheduleDomainService {
     required String gioBatDau,
     required String gioKetThuc,
     required DateTime effectiveDate,
+    String? ghiChu,
   }) async {
     final existing = await _scheduleRepo.getById(scheduleId);
     if (existing == null) throw Exception('Không tìm thấy lịch học');
@@ -120,6 +121,7 @@ class ScheduleDomainService {
         thuTrongTuan: thuTrongTuan,
         gioBatDau: gioBatDau,
         gioKetThuc: gioKetThuc,
+        ghiChu: ghiChu,
         updatedAt: DateTime.now(),
       );
       _validateSchedule(updated);
@@ -145,6 +147,7 @@ class ScheduleDomainService {
       gioKetThuc: gioKetThuc,
       hieuLucTu: effectiveStr,
       hieuLucDen: existing.hieuLucDen,
+      ghiChu: ghiChu,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );

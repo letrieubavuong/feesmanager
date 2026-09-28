@@ -22,7 +22,7 @@ class StudentListPage extends ConsumerStatefulWidget {
 
 class _StudentListPageState extends ConsumerState<StudentListPage> {
   final _searchController = TextEditingController();
-  bool? _filterArchived = false;
+  bool _filterArchived = false;
 
   @override
   void dispose() {
@@ -105,76 +105,81 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                   },
                 ),
               ),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+              Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 4,
                 ),
-                child: Row(
-                  children: [
-                    ChoiceChip(
-                      key: UiKeys.studentActiveFilter,
-                      label: const Text('Học sinh đang hoạt động'),
-                      selected: _filterArchived == false,
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.surface,
-                      labelStyle: TextStyle(
-                        color: _filterArchived == false
-                            ? Colors.white
-                            : AppColors.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                child: SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<bool>(
+                    segments: [
+                      ButtonSegment<bool>(
+                        value: false,
+                        icon: const Icon(Icons.school_outlined),
+                        label: Text(
+                          l10n.studentFilterActive,
+                          key: UiKeys.studentActiveFilter,
+                        ),
                       ),
-                      onSelected: (_) {
-                        setState(() => _filterArchived = false);
+                      ButtonSegment<bool>(
+                        value: true,
+                        icon: const Icon(Icons.person_off_outlined),
+                        label: Text(
+                          l10n.studentFilterStopped,
+                          key: UiKeys.studentArchivedFilter,
+                        ),
+                      ),
+                    ],
+                    selected: {_filterArchived},
+                    emptySelectionAllowed: false,
+                    multiSelectionEnabled: false,
+                    onSelectionChanged: (newSelection) {
+                      if (newSelection.isNotEmpty) {
+                        final selectedVal = newSelection.first;
+                        setState(() => _filterArchived = selectedVal);
                         ref
                             .read(studentListControllerProvider.notifier)
-                            .setFilter(false);
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      key: UiKeys.studentArchivedFilter,
-                      label: const Text('Học sinh ngừng học'),
-                      selected: _filterArchived == true,
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.surface,
-                      labelStyle: TextStyle(
-                        color: _filterArchived == true
-                            ? Colors.white
-                            : AppColors.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                            .setFilter(selectedVal);
+                      }
+                    },
+                    style: ButtonStyle(
+                      backgroundColor: WidgetStateProperty.resolveWith<Color>((
+                        states,
+                      ) {
+                        if (states.contains(WidgetState.selected)) {
+                          return AppColors.primary;
+                        }
+                        return AppColors.surface;
+                      }),
+                      foregroundColor: WidgetStateProperty.resolveWith<Color>((
+                        states,
+                      ) {
+                        if (states.contains(WidgetState.selected)) {
+                          return Colors.white;
+                        }
+                        return AppColors.textSecondary;
+                      }),
+                      iconColor: WidgetStateProperty.resolveWith<Color>((
+                        states,
+                      ) {
+                        if (states.contains(WidgetState.selected)) {
+                          return Colors.white;
+                        }
+                        return AppColors.textSecondary;
+                      }),
+                      side: WidgetStateProperty.all(
+                        const BorderSide(color: AppColors.border),
                       ),
-                      onSelected: (_) {
-                        setState(() => _filterArchived = true);
-                        ref
-                            .read(studentListControllerProvider.notifier)
-                            .setFilter(true);
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: const Text('Tất cả'),
-                      selected: _filterArchived == null,
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.surface,
-                      labelStyle: TextStyle(
-                        color: _filterArchived == null
-                            ? Colors.white
-                            : AppColors.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                      shape: WidgetStateProperty.all(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
-                      onSelected: (_) {
-                        setState(() => _filterArchived = null);
-                        ref
-                            .read(studentListControllerProvider.notifier)
-                            .setFilter(null);
-                      },
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
                     ),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -184,7 +189,11 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
       body: studentListAsync.when(
         data: (students) {
           if (students.isEmpty) {
-            return AppEmptyState(title: l10n.searchNoResults);
+            return AppEmptyState(
+              title: _filterArchived
+                  ? l10n.studentEmptyStopped
+                  : l10n.studentEmptyActive,
+            );
           }
           return RefreshIndicator(
             onRefresh: () =>

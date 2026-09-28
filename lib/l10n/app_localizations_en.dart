@@ -245,6 +245,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get filterAll => 'All';
 
   @override
+  String get studentFilterActive => 'Active';
+
+  @override
+  String get studentFilterStopped => 'Stopped';
+
+  @override
+  String get studentEmptyActive => 'No active students found.';
+
+  @override
+  String get studentEmptyStopped => 'No stopped students found.';
+
+  @override
+  String get classFilterActive => 'Active';
+
+  @override
+  String get classFilterStopped => 'Stopped';
+
+  @override
+  String get classEmptyActive => 'No active classes found.';
+
+  @override
+  String get classEmptyStopped => 'No stopped classes found.';
+
+  @override
   String get membershipTitle => 'Students in Class';
 
   @override

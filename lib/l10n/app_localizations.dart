@@ -566,6 +566,54 @@ abstract class AppLocalizations {
   /// **'Tất cả'**
   String get filterAll;
 
+  /// No description provided for @studentFilterActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang học'**
+  String get studentFilterActive;
+
+  /// No description provided for @studentFilterStopped.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngừng học'**
+  String get studentFilterStopped;
+
+  /// No description provided for @studentEmptyActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có học sinh đang học phù hợp.'**
+  String get studentEmptyActive;
+
+  /// No description provided for @studentEmptyStopped.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có học sinh ngừng học phù hợp.'**
+  String get studentEmptyStopped;
+
+  /// No description provided for @classFilterActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang hoạt động'**
+  String get classFilterActive;
+
+  /// No description provided for @classFilterStopped.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngừng hoạt động'**
+  String get classFilterStopped;
+
+  /// No description provided for @classEmptyActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có lớp đang hoạt động phù hợp.'**
+  String get classEmptyActive;
+
+  /// No description provided for @classEmptyStopped.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có lớp ngừng hoạt động phù hợp.'**
+  String get classEmptyStopped;
+
   /// No description provided for @membershipTitle.
   ///
   /// In vi, this message translates to:
