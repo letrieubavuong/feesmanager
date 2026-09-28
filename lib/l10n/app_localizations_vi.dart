@@ -66,7 +66,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dashboardTitle => 'Trang chủ';
 
   @override
-  String get dashboardGreeting => 'Chào thầy cô!';
+  String get dashboardGreeting => 'Xin chào!';
 
   @override
   String get dashboardGreetingSubtitle => 'Chúc một ngày dạy học hiệu quả!';
