@@ -140,6 +140,12 @@ abstract class AppLocalizations {
   /// **'Cài đặt'**
   String get navSettings;
 
+  /// No description provided for @navGuide.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hướng dẫn sử dụng'**
+  String get navGuide;
+
   /// No description provided for @globalMenu.
   ///
   /// In vi, this message translates to:
