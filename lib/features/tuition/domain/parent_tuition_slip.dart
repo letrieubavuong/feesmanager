@@ -2,16 +2,23 @@ import '../../settings/domain/bank_account_settings.dart';
 
 enum ParentTuitionSlipStatus {
   ready,
-  projectedSessionsNotGenerated,
-  noInvoiceFinalized,
   bankNotConfigured,
+  missingTuitionPolicy,
+  missingSchedule,
+  projectedSessionsNotGenerated,
+  studentNotEnrolled,
+  noInvoiceFinalized,
+  earlyMonthBillingUnsupported,
   error,
 }
 
 class ParentTuitionSlip {
   final int studentId;
   final int classId;
-  final String month; // YYYY-MM
+  final String month; // YYYY-MM (billing month)
+
+  final String billingMonth; // YYYY-MM
+  final String reconciliationMonth; // YYYY-MM
 
   final String studentName;
   final String className;
@@ -33,7 +40,8 @@ class ParentTuitionSlip {
   final int unexcusedAbsenceCount;
   final int makeupCompletedCount;
 
-  final String attendanceAsOfDate; // dd/MM/yyyy
+  final String?
+  reconciliationAsOfDate; // dd/MM/yyyy or null if no attendance data
 
   final int amountDue;
   final int totalPaid;
@@ -47,6 +55,8 @@ class ParentTuitionSlip {
     required this.studentId,
     required this.classId,
     required this.month,
+    String? billingMonth,
+    String? reconciliationMonth,
     required this.studentName,
     required this.className,
     required this.status,
@@ -62,14 +72,15 @@ class ParentTuitionSlip {
     this.excusedAbsenceCount = 0,
     this.unexcusedAbsenceCount = 0,
     this.makeupCompletedCount = 0,
-    this.attendanceAsOfDate = '',
+    this.reconciliationAsOfDate,
     this.amountDue = 0,
     this.totalPaid = 0,
     this.remainingDebt = 0,
     required this.bank,
     this.transferContent = '',
     this.qrPayload = '',
-  });
+  }) : billingMonth = billingMonth ?? month,
+       reconciliationMonth = reconciliationMonth ?? month;
 
   bool get isReady => status == ParentTuitionSlipStatus.ready;
 }

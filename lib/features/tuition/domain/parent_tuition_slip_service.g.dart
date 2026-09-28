@@ -7,7 +7,7 @@ part of 'parent_tuition_slip_service.dart';
 // **************************************************************************
 
 String _$parentTuitionSlipServiceHash() =>
-    r'd2e47014d93c6bdb2054741c0a6b8ac7e77984ef';
+    r'1032bde7a6f192364cd56e9471a41a4df7efd1fb';
 
 /// See also [parentTuitionSlipService].
 @ProviderFor(parentTuitionSlipService)

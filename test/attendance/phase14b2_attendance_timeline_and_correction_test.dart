@@ -149,6 +149,7 @@ void main() {
       creditRepo,
       memberService,
       paymentRepo,
+      sessionService,
       db,
     );
   });

@@ -83,6 +83,32 @@ class AttendanceRepository {
     return result;
   }
 
+  Future<List<AttendanceRecord>> getByStudentAndSessionIds(
+    int studentId,
+    List<int> sessionIds,
+  ) async {
+    if (sessionIds.isEmpty) return [];
+
+    final result = <AttendanceRecord>[];
+    const chunkSize = 500;
+
+    for (var i = 0; i < sessionIds.length; i += chunkSize) {
+      final chunk = sessionIds.sublist(
+        i,
+        i + chunkSize > sessionIds.length ? sessionIds.length : i + chunkSize,
+      );
+      final placeholders = List.filled(chunk.length, '?').join(',');
+      final maps = await _db.query(
+        'diem_danh',
+        where: 'id_hoc_sinh = ? AND id_buoi_hoc IN ($placeholders)',
+        whereArgs: [studentId, ...chunk],
+      );
+      result.addAll(maps.map((map) => AttendanceRecord.fromMap(map)));
+    }
+
+    return result;
+  }
+
   Future<Set<int>> getSessionsWithCorrectionHistory(
     List<int> sessionIds,
   ) async {

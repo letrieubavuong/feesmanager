@@ -323,7 +323,7 @@ void main() {
           excusedAbsenceCount: 1,
           unexcusedAbsenceCount: 0,
           makeupCompletedCount: 1,
-          attendanceAsOfDate: '28/09/2026',
+          reconciliationAsOfDate: '28/09/2026',
           amountDue: 600000,
           totalPaid: 150000,
           remainingDebt: 450000,

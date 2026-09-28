@@ -4,20 +4,20 @@ import '../../../tuition/domain/parent_tuition_slip.dart';
 import 'vietqr_code_widget.dart';
 
 /// Professional parent tuition slip export card.
-/// Light background (360 logical px width -> ~1080px wide when rendered at 3.0x pixelRatio).
+/// Light background (responsive width up to 360 logical px).
 class PaymentQrShareCard extends StatelessWidget {
   final ParentTuitionSlip slip;
 
   const PaymentQrShareCard({super.key, required this.slip});
 
   String get _formattedMonth {
-    if (slip.month.contains('-')) {
+    if (slip.billingMonth.contains('-')) {
       try {
-        final parsed = DateTime.parse('${slip.month}-01');
+        final parsed = DateTime.parse('${slip.billingMonth}-01');
         return DateFormat('MM/yyyy').format(parsed);
       } catch (_) {}
     }
-    return slip.month;
+    return slip.billingMonth;
   }
 
   String _formatCurrency(int amount) {
@@ -26,10 +26,38 @@ class PaymentQrShareCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!slip.isReady) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFFECDD3), width: 1.5),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Color(0xFFE11D48)),
+            const SizedBox(height: 12),
+            Text(
+              slip.errorMessage ?? 'Chưa sẵn sàng tạo phiếu học phí',
+              style: const TextStyle(
+                color: Color(0xFF9F1239),
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
     final isFullyPaid = slip.remainingDebt <= 0;
 
     return Container(
-      width: 360,
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -143,7 +171,7 @@ class PaymentQrShareCard extends StatelessWidget {
           const SizedBox(height: 14),
 
           // SECTION 1: KẾ HOẠCH HỌC TRONG THÁNG
-          _buildSectionHeader('KẾ HOẠCH HỌC TRONG THÁNG'),
+          _buildSectionHeader('KẾ HOẠCH HỌC TRONG THÁNG ${slip.billingMonth}'),
           const SizedBox(height: 8),
           Container(
             width: double.infinity,
@@ -155,30 +183,35 @@ class PaymentQrShareCard extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _buildRowItem(
-                  '📅 Buổi dự kiến',
-                  '${slip.projectedSessionCount} buổi',
+                _buildRowItemWithIcon(
+                  icon: Icons.calendar_month,
+                  label: 'Buổi dự kiến',
+                  value: '${slip.projectedSessionCount} buổi',
                 ),
                 const SizedBox(height: 6),
-                _buildRowItem(
-                  '🎯 Buổi chuẩn',
-                  '${slip.standardSessionLimit} buổi',
+                _buildRowItemWithIcon(
+                  icon: Icons.task_alt,
+                  label: 'Buổi chuẩn',
+                  value: '${slip.standardSessionLimit} buổi',
                 ),
                 const SizedBox(height: 6),
-                _buildRowItem(
-                  '➕ Dự kiến vượt chuẩn',
-                  '${slip.projectedExtraCount} buổi',
+                _buildRowItemWithIcon(
+                  icon: Icons.add_circle_outline,
+                  label: 'Dự kiến vượt chuẩn',
+                  value: '${slip.projectedExtraCount} buổi',
                 ),
                 const SizedBox(height: 6),
-                _buildRowItem(
-                  '💰 Đơn giá',
-                  '${_formatCurrency(slip.feePerSession)} / buổi',
+                _buildRowItemWithIcon(
+                  icon: Icons.sell_outlined,
+                  label: 'Đơn giá',
+                  value: '${_formatCurrency(slip.feePerSession)} / buổi',
                 ),
                 if (slip.monthlyMaxFee != null && slip.monthlyMaxFee! > 0) ...[
                   const SizedBox(height: 6),
-                  _buildRowItem(
-                    '🛡 Học phí tối đa',
-                    _formatCurrency(slip.monthlyMaxFee!),
+                  _buildRowItemWithIcon(
+                    icon: Icons.shield_outlined,
+                    label: 'Học phí tối đa',
+                    value: _formatCurrency(slip.monthlyMaxFee!),
                   ),
                 ],
               ],
@@ -186,8 +219,10 @@ class PaymentQrShareCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
 
-          // SECTION 2: ĐỐI SOÁT HỌC SINH
-          _buildSectionHeader('ĐỐI SOÁT HỌC SINH'),
+          // SECTION 2: ĐỐI SOÁT HỌC SINH THÁNG TRƯỚC
+          _buildSectionHeader(
+            'ĐỐI SOÁT HỌC SINH THÁNG ${slip.reconciliationMonth}',
+          ),
           const SizedBox(height: 8),
           Container(
             width: double.infinity,
@@ -199,27 +234,35 @@ class PaymentQrShareCard extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _buildRowItem(
-                  '🔄 Buổi dư chuyển sang',
-                  '${slip.openingCreditBalance} buổi',
+                _buildRowItemWithIcon(
+                  icon: Icons.swap_horiz,
+                  label: 'Buổi dư chuyển sang',
+                  value: '${slip.openingCreditBalance} buổi',
                   isHighlight: slip.openingCreditBalance > 0,
                 ),
                 const SizedBox(height: 6),
-                _buildRowItem(
-                  '✕ Vắng không phép',
-                  '${slip.unexcusedAbsenceCount} buổi',
+                _buildRowItemWithIcon(
+                  icon: Icons.cancel_outlined,
+                  label: 'Vắng không phép',
+                  value: '${slip.unexcusedAbsenceCount} buổi',
                 ),
                 const SizedBox(height: 6),
-                _buildRowItem(
-                  '🗓 Vắng có phép',
-                  '${slip.excusedAbsenceCount} buổi',
+                _buildRowItemWithIcon(
+                  icon: Icons.event_busy,
+                  label: 'Vắng có phép',
+                  value: '${slip.excusedAbsenceCount} buổi',
                 ),
                 const SizedBox(height: 6),
-                _buildRowItem('⏱ Đi trễ', '${slip.lateCount} buổi'),
+                _buildRowItemWithIcon(
+                  icon: Icons.access_time,
+                  label: 'Đi trễ',
+                  value: '${slip.lateCount} buổi',
+                ),
                 const SizedBox(height: 6),
-                _buildRowItem(
-                  '↻ Học bù đã hoàn thành',
-                  '${slip.makeupCompletedCount} buổi',
+                _buildRowItemWithIcon(
+                  icon: Icons.sync,
+                  label: 'Học bù đã hoàn thành',
+                  value: '${slip.makeupCompletedCount} buổi',
                 ),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 6),
@@ -239,7 +282,9 @@ class PaymentQrShareCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        'Điểm danh tính đến ${slip.attendanceAsOfDate}',
+                        slip.reconciliationAsOfDate != null
+                            ? 'Điểm danh tính đến ${slip.reconciliationAsOfDate}'
+                            : 'Chưa có dữ liệu điểm danh tháng ${slip.reconciliationMonth}',
                         style: const TextStyle(
                           color: Color(0xFF475569),
                           fontSize: 11,
@@ -417,7 +462,7 @@ class PaymentQrShareCard extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  '* Số buổi dự kiến dựa trên lịch học hiện hành. Điểm danh và buổi dư được đối soát theo dữ liệu thực tế.',
+                  '* Số buổi dự kiến dựa trên lịch học hiện hành. Điểm danh và buổi dư được đối soát theo dữ liệu thực tế tháng trước.',
                   style: TextStyle(
                     color: Color(0xFF94A3B8),
                     fontSize: 10,
@@ -445,6 +490,45 @@ class PaymentQrShareCard extends StatelessWidget {
           letterSpacing: 0.8,
         ),
       ),
+    );
+  }
+
+  Widget _buildRowItemWithIcon({
+    required IconData icon,
+    required String label,
+    required String value,
+    bool isHighlight = false,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: const Color(0xFF64748B)),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(width: 8),
+        Text(
+          value,
+          style: TextStyle(
+            color: isHighlight
+                ? const Color(0xFF1E40AF)
+                : const Color(0xFF0F172A),
+            fontSize: 13,
+            fontWeight: isHighlight ? FontWeight.bold : FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 

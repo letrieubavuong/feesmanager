@@ -8,6 +8,8 @@ import '../../session_credits/data/session_credit_repository.dart';
 import '../../session_credits/domain/credit_ledger_entry.dart';
 import '../../session_credits/domain/credit_ledger_reason.dart';
 import '../../session_credits/domain/session_credit_service.dart';
+import '../../sessions/domain/class_session.dart';
+import '../../sessions/domain/session_service.dart';
 import '../data/tuition_repository.dart';
 import 'tuition_invoice.dart';
 import 'tuition_preview.dart';
@@ -22,6 +24,7 @@ class InvoiceService {
   final SessionCreditRepository _creditRepo;
   final MembershipService _membershipService;
   final PaymentRepository _paymentRepo;
+  final SessionService _sessionService;
   final Database _db;
 
   InvoiceService(
@@ -31,6 +34,7 @@ class InvoiceService {
     this._creditRepo,
     this._membershipService,
     this._paymentRepo,
+    this._sessionService,
     this._db,
   );
 
@@ -45,11 +49,35 @@ class InvoiceService {
     String month,
   ) => _tuitionRepo.getInvoicesForClassMonth(classId, month);
 
+  Future<void> _validateEarlyMonthBillingGap(int classId, String month) async {
+    final monthSessions = await _sessionService.getSessionsForMonth(
+      classId,
+      month,
+    );
+    final plannedChinhSessions = monthSessions
+        .where(
+          (s) =>
+              s.loai == SessionType.CHINH &&
+              s.trangThai != SessionStatus.HUY &&
+              s.trangThai != SessionStatus.NGHI_LE,
+        )
+        .toList();
+
+    if (plannedChinhSessions.isEmpty ||
+        plannedChinhSessions.any((s) => s.trangThai != SessionStatus.DA_HOC)) {
+      throw Exception(
+        'EARLY_MONTH_BILLING_ENGINE_GAP: Chưa thể chốt học phí tháng $month khi các buổi học chính trong tháng chưa hoàn thành.',
+      );
+    }
+  }
+
   Future<TuitionInvoice> finalizeStudentInvoice(
     int studentId,
     int classId,
     String month,
   ) async {
+    await _validateEarlyMonthBillingGap(classId, month);
+
     final existingInvoice = await getInvoice(studentId, classId, month);
     if (existingInvoice != null &&
         existingInvoice.trangThai.isFinalizedSnapshot) {
@@ -148,6 +176,8 @@ class InvoiceService {
     int classId,
     String month,
   ) async {
+    await _validateEarlyMonthBillingGap(classId, month);
+
     final existingInvoices = await getInvoicesForClassMonth(classId, month);
     if (existingInvoices.any((i) => i.trangThai.isFinalizedSnapshot)) {
       throw Exception(
@@ -359,6 +389,7 @@ Future<InvoiceService> invoiceService(InvoiceServiceRef ref) async {
   final creditRepo = await ref.watch(sessionCreditRepositoryProvider.future);
   final membershipService = await ref.watch(membershipServiceProvider.future);
   final paymentRepo = await ref.watch(paymentRepositoryProvider.future);
+  final sessionService = await ref.watch(sessionServiceProvider.future);
   final db = await ref.watch(databaseProvider.future);
 
   return InvoiceService(
@@ -368,6 +399,7 @@ Future<InvoiceService> invoiceService(InvoiceServiceRef ref) async {
     creditRepo,
     membershipService,
     paymentRepo,
+    sessionService,
     db,
   );
 }

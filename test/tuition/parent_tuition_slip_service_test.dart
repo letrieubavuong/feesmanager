@@ -4,6 +4,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
 import 'package:tuition2027/core/database/app_database.dart';
 import 'package:tuition2027/features/attendance/data/attendance_repository.dart';
+import 'package:tuition2027/features/attendance/domain/attendance_record.dart';
 import 'package:tuition2027/features/classes/data/class_repository.dart';
 import 'package:tuition2027/features/classes/domain/class_service.dart';
 import 'package:tuition2027/features/memberships/data/membership_repository.dart';
@@ -81,7 +82,9 @@ void main() {
     ];
 
     setUp(() async {
-      final tempDir = await Directory.systemTemp.createTemp('slip_service_test');
+      final tempDir = await Directory.systemTemp.createTemp(
+        'slip_service_test',
+      );
       final dbPath = p.join(tempDir.path, 'slip_service_test.db');
       final appDb = AppDatabase(dbName: dbPath);
       db = await appDb.database;
@@ -168,14 +171,11 @@ void main() {
         creditRepo,
         membershipService,
         paymentRepo,
+        sessionService,
         db,
       );
 
-      paymentService = PaymentService(
-        paymentRepo,
-        tuitionRepo,
-        db,
-      );
+      paymentService = PaymentService(paymentRepo, tuitionRepo, db);
 
       slipService = ParentTuitionSlipService(
         studentService,
@@ -188,6 +188,7 @@ void main() {
         attendanceRepo,
         invoiceService,
         paymentService,
+        membershipService,
       );
 
       // Seed student 1 and class 1
@@ -233,51 +234,63 @@ void main() {
       await db.close();
     });
 
-    test('Test 1: Slip returns projectedSessionsNotGenerated when no month sessions generated', () async {
-      final slip = await slipService.generateSlip(
-        studentId: 1,
-        classId: 1,
-        month: '2026-09',
-        bankSettings: bankSettings,
-      );
+    test(
+      'Test 1: Slip returns projectedSessionsNotGenerated when no month sessions generated',
+      () async {
+        final slip = await slipService.generateSlip(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          bankSettings: bankSettings,
+        );
 
-      expect(slip.status, ParentTuitionSlipStatus.projectedSessionsNotGenerated);
-      expect(slip.studentName, 'Nguyễn Văn Ly');
-      expect(slip.className, 'VẬT LÍ 10');
-    });
+        expect(
+          slip.status,
+          ParentTuitionSlipStatus.projectedSessionsNotGenerated,
+        );
+        expect(slip.studentName, 'Nguyễn Văn Ly');
+        expect(slip.className, 'VẬT LÍ 10');
+      },
+    );
 
-    test('Test 2: Projected session count & projected extra calculation when month sessions exist', () async {
-      for (int i = 0; i < 13; i++) {
-        final dateStr = sep13Dates[i];
-        final weekday = DateTime.parse(dateStr).weekday;
-        await db.insert('buoi_hoc', {
-          'id': i + 1,
-          'id_lop': 1,
-          'id_lich_hoc': weekday,
-          'ngay': dateStr,
-          'gio_bat_dau': '17:30',
-          'gio_ket_thuc': '19:00',
-          'loai': 'CHINH',
-          'trang_thai': 'DU_KIEN',
-          'created_at': '2026-01-01T00:00:00.000',
-          'updated_at': '2026-01-01T00:00:00.000',
-        });
-      }
+    test(
+      'Test 2: Projected session count & projected extra calculation when month sessions exist',
+      () async {
+        for (int i = 0; i < 13; i++) {
+          final dateStr = sep13Dates[i];
+          final weekday = DateTime.parse(dateStr).weekday;
+          await db.insert('buoi_hoc', {
+            'id': i + 1,
+            'id_lop': 1,
+            'id_lich_hoc': weekday,
+            'ngay': dateStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'CHINH',
+            'trang_thai': 'DU_KIEN',
+            'created_at': '2026-01-01T00:00:00.000',
+            'updated_at': '2026-01-01T00:00:00.000',
+          });
+        }
 
-      final slip = await slipService.generateSlip(
-        studentId: 1,
-        classId: 1,
-        month: '2026-09',
-        bankSettings: bankSettings,
-      );
+        final slip = await slipService.generateSlip(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          bankSettings: bankSettings,
+        );
 
-      expect(slip.status, ParentTuitionSlipStatus.noInvoiceFinalized);
-      expect(slip.projectedSessionCount, 13);
-      expect(slip.standardSessionLimit, 12);
-      expect(slip.projectedExtraCount, 1);
-    });
+        expect(slip.status, ParentTuitionSlipStatus.noInvoiceFinalized);
+        expect(slip.projectedSessionCount, 13);
+        expect(slip.standardSessionLimit, 12);
+        expect(slip.projectedExtraCount, 1);
+      },
+    );
 
     test('Test 3: Multi-shift projection counts only student\'s shift', () async {
+      // Remove Thu & Sat schedules so only Tuesday (2) schedules exist for this test
+      await db.delete('lich_hoc', where: 'id IN (4, 6)');
+
       // Add shift 100 on Tuesday 19:30 (student 1 is NOT assigned to shift 100)
       await db.insert('lich_hoc', {
         'id': 100,
@@ -302,7 +315,13 @@ void main() {
       });
 
       // Tuesdays in Sep 2026: Sep 1, 8, 15, 22, 29 (5 Tuesdays)
-      final tuesdays = ['2026-09-01', '2026-09-08', '2026-09-15', '2026-09-22', '2026-09-29'];
+      final tuesdays = [
+        '2026-09-01',
+        '2026-09-08',
+        '2026-09-15',
+        '2026-09-22',
+        '2026-09-29',
+      ];
 
       // 5 sessions for shift 2 (Tue 17:30)
       for (int i = 0; i < 5; i++) {
@@ -346,11 +365,321 @@ void main() {
       expect(slip.projectedSessionCount, 5);
     });
 
-    test('Test 4: Canceled & Holiday sessions excluded from projected count', () async {
+    test(
+      'Test 4: Canceled & Holiday sessions excluded from projected count',
+      () async {
+        for (int i = 0; i < 13; i++) {
+          final dateStr = sep13Dates[i];
+          final weekday = DateTime.parse(dateStr).weekday;
+          final status = i == 0 ? 'HUY' : (i == 1 ? 'NGHI_LE' : 'DU_KIEN');
+          await db.insert('buoi_hoc', {
+            'id': i + 1,
+            'id_lop': 1,
+            'id_lich_hoc': weekday,
+            'ngay': dateStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'CHINH',
+            'trang_thai': status,
+            'created_at': '2026-01-01T00:00:00.000',
+            'updated_at': '2026-01-01T00:00:00.000',
+          });
+        }
+
+        final slip = await slipService.generateSlip(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          bankSettings: bankSettings,
+        );
+
+        expect(slip.projectedSessionCount, 11);
+      },
+    );
+
+    test(
+      'Test 5: Opening credit balance as of day before month start',
+      () async {
+        // Insert all 13 month sessions so generation coverage is complete
+        for (int i = 0; i < 13; i++) {
+          final dateStr = sep13Dates[i];
+          final weekday = DateTime.parse(dateStr).weekday;
+          await db.insert('buoi_hoc', {
+            'id': i + 1,
+            'id_lop': 1,
+            'id_lich_hoc': weekday,
+            'ngay': dateStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'CHINH',
+            'trang_thai': 'DU_KIEN',
+            'created_at': '2026-01-01T00:00:00.000',
+            'updated_at': '2026-01-01T00:00:00.000',
+          });
+        }
+
+        await creditRepo.addLedgerEntry(
+          CreditLedgerEntry(
+            idHocSinh: 1,
+            idLop: 1,
+            idBuoiHoc: null,
+            ngayHieuLuc: '2026-08-15',
+            delta: 3,
+            lyDo: CreditLedgerReason.MIGRATION,
+            ghiChu: 'Carried credit',
+            createdAt: DateTime.now(),
+          ),
+        );
+        await creditRepo.addLedgerEntry(
+          CreditLedgerEntry(
+            idHocSinh: 1,
+            idLop: 1,
+            idBuoiHoc: null,
+            ngayHieuLuc: '2026-08-20',
+            delta: -1,
+            lyDo: CreditLedgerReason.DIEU_CHINH_THU_CONG,
+            ghiChu: 'Used credit',
+            createdAt: DateTime.now(),
+          ),
+        );
+
+        final slip = await slipService.generateSlip(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          bankSettings: bankSettings,
+        );
+
+        expect(slip.openingCreditBalance, 2);
+      },
+    );
+
+    test(
+      'Test 6: Partial session generation returns projectedSessionsNotGenerated',
+      () async {
+        // Generated only 2 out of 13 expected sessions in Sep 2026
+        for (int i = 0; i < 2; i++) {
+          final dateStr = sep13Dates[i];
+          final weekday = DateTime.parse(dateStr).weekday;
+          await db.insert('buoi_hoc', {
+            'id': i + 1,
+            'id_lop': 1,
+            'id_lich_hoc': weekday,
+            'ngay': dateStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'CHINH',
+            'trang_thai': 'DU_KIEN',
+            'created_at': '2026-01-01T00:00:00.000',
+            'updated_at': '2026-01-01T00:00:00.000',
+          });
+        }
+
+        final slip = await slipService.generateSlip(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          bankSettings: bankSettings,
+        );
+
+        expect(
+          slip.status,
+          ParentTuitionSlipStatus.projectedSessionsNotGenerated,
+        );
+        expect(slip.errorMessage, contains('Chưa sinh đủ buổi học'));
+      },
+    );
+
+    test(
+      'Test 7: Future schedule is not active for current billing month',
+      () async {
+        // Clear current schedules and insert one starting in 2027
+        await db.delete('lich_hoc');
+        await db.insert('lich_hoc', {
+          'id': 99,
+          'id_lop': 1,
+          'thu_trong_tuan': 2,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2027-01-01',
+          'created_at': '2026-01-01T00:00:00.000',
+          'updated_at': '2026-01-01T00:00:00.000',
+        });
+
+        final slip = await slipService.generateSlip(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          bankSettings: bankSettings,
+        );
+
+        expect(slip.status, ParentTuitionSlipStatus.missingSchedule);
+      },
+    );
+
+    test(
+      'Test 8: Missing policy returns missingTuitionPolicy without fake defaults',
+      () async {
+        await db.delete('chinh_sach_hoc_phi');
+
+        final slip = await slipService.generateSlip(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          bankSettings: bankSettings,
+        );
+
+        expect(slip.status, ParentTuitionSlipStatus.missingTuitionPolicy);
+      },
+    );
+
+    test(
+      'Test 9: DOI_CA attendance in target session counted in reconciliation summary',
+      () async {
+        // August session (2026-08-04 Tue)
+        await db.insert('buoi_hoc', {
+          'id': 50,
+          'id_lop': 1,
+          'id_lich_hoc': 2,
+          'ngay': '2026-08-04',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': '2026-01-01T00:00:00.000',
+          'updated_at': '2026-01-01T00:00:00.000',
+        });
+
+        await attendanceRepo.upsert(
+          AttendanceRecord(
+            idBuoiHoc: 50,
+            idHocSinh: 1,
+            trangThai: AttendanceStatus.CO_MAT,
+            loaiThamGia: AttendanceParticipationType.DOI_CA,
+            idLopGoc: 1,
+          ),
+        );
+
+        // Add a September session so slip generation reaches reconciliation step
+        for (int i = 0; i < 13; i++) {
+          final dateStr = sep13Dates[i];
+          final weekday = DateTime.parse(dateStr).weekday;
+          await db.insert('buoi_hoc', {
+            'id': i + 1,
+            'id_lop': 1,
+            'id_lich_hoc': weekday,
+            'ngay': dateStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'CHINH',
+            'trang_thai': 'DU_KIEN',
+            'created_at': '2026-01-01T00:00:00.000',
+            'updated_at': '2026-01-01T00:00:00.000',
+          });
+        }
+
+        final slip = await slipService.generateSlip(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          bankSettings: bankSettings,
+        );
+
+        expect(slip.reconciliationMonth, '2026-08');
+        expect(slip.presentCount, 1);
+        expect(slip.reconciliationAsOfDate, '04/08/2026');
+      },
+    );
+
+    test(
+      'Test 10: Completed HOC_BU session & record increment makeupCompletedCount',
+      () async {
+        await db.insert('buoi_hoc', {
+          'id': 60,
+          'id_lop': 1,
+          'id_lich_hoc': 2,
+          'ngay': '2026-08-11',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'HOC_BU',
+          'trang_thai': 'DA_HOC',
+          'created_at': '2026-01-01T00:00:00.000',
+          'updated_at': '2026-01-01T00:00:00.000',
+        });
+
+        await attendanceRepo.upsert(
+          AttendanceRecord(
+            idBuoiHoc: 60,
+            idHocSinh: 1,
+            trangThai: AttendanceStatus.HOC_BU,
+            loaiThamGia: AttendanceParticipationType.HOC_BU,
+            idLopGoc: 1,
+          ),
+        );
+
+        for (int i = 0; i < 13; i++) {
+          final dateStr = sep13Dates[i];
+          final weekday = DateTime.parse(dateStr).weekday;
+          await db.insert('buoi_hoc', {
+            'id': i + 1,
+            'id_lop': 1,
+            'id_lich_hoc': weekday,
+            'ngay': dateStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'CHINH',
+            'trang_thai': 'DU_KIEN',
+            'created_at': '2026-01-01T00:00:00.000',
+            'updated_at': '2026-01-01T00:00:00.000',
+          });
+        }
+
+        final slip = await slipService.generateSlip(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          bankSettings: bankSettings,
+        );
+
+        expect(slip.makeupCompletedCount, 1);
+      },
+    );
+
+    test(
+      'Test 11: No attendance history in reconciliation month returns null reconciliationAsOfDate',
+      () async {
+        for (int i = 0; i < 13; i++) {
+          final dateStr = sep13Dates[i];
+          final weekday = DateTime.parse(dateStr).weekday;
+          await db.insert('buoi_hoc', {
+            'id': i + 1,
+            'id_lop': 1,
+            'id_lich_hoc': weekday,
+            'ngay': dateStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'CHINH',
+            'trang_thai': 'DU_KIEN',
+            'created_at': '2026-01-01T00:00:00.000',
+            'updated_at': '2026-01-01T00:00:00.000',
+          });
+        }
+
+        final slip = await slipService.generateSlip(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          bankSettings: bankSettings,
+        );
+
+        expect(slip.reconciliationAsOfDate, null);
+      },
+    );
+
+    test('Test 12: Early month zero finalization block fails closed', () async {
       for (int i = 0; i < 13; i++) {
         final dateStr = sep13Dates[i];
         final weekday = DateTime.parse(dateStr).weekday;
-        final status = i == 0 ? 'HUY' : (i == 1 ? 'NGHI_LE' : 'DU_KIEN');
         await db.insert('buoi_hoc', {
           'id': i + 1,
           'id_lop': 1,
@@ -359,70 +688,62 @@ void main() {
           'gio_bat_dau': '17:30',
           'gio_ket_thuc': '19:00',
           'loai': 'CHINH',
-          'trang_thai': status,
+          'trang_thai': 'DU_KIEN',
           'created_at': '2026-01-01T00:00:00.000',
           'updated_at': '2026-01-01T00:00:00.000',
         });
       }
 
-      final slip = await slipService.generateSlip(
-        studentId: 1,
-        classId: 1,
-        month: '2026-09',
-        bankSettings: bankSettings,
-      );
-
-      expect(slip.projectedSessionCount, 11);
-    });
-
-    test('Test 5: Opening credit balance as of day before month start', () async {
-      // Insert a month session so slip generation advances past step 2
-      await db.insert('buoi_hoc', {
-        'id': 1,
-        'id_lop': 1,
-        'id_lich_hoc': 2,
-        'ngay': '2026-09-01',
-        'gio_bat_dau': '17:30',
-        'gio_ket_thuc': '19:00',
-        'loai': 'CHINH',
-        'trang_thai': 'DU_KIEN',
-        'created_at': '2026-01-01T00:00:00.000',
-        'updated_at': '2026-01-01T00:00:00.000',
-      });
-
-      await creditRepo.addLedgerEntry(
-        CreditLedgerEntry(
-          idHocSinh: 1,
-          idLop: 1,
-          idBuoiHoc: null,
-          ngayHieuLuc: '2026-08-15',
-          delta: 3,
-          lyDo: CreditLedgerReason.MIGRATION,
-          ghiChu: 'Carried credit',
-          createdAt: DateTime.now(),
-        ),
-      );
-      await creditRepo.addLedgerEntry(
-        CreditLedgerEntry(
-          idHocSinh: 1,
-          idLop: 1,
-          idBuoiHoc: null,
-          ngayHieuLuc: '2026-08-20',
-          delta: -1,
-          lyDo: CreditLedgerReason.DIEU_CHINH_THU_CONG,
-          ghiChu: 'Used credit',
-          createdAt: DateTime.now(),
+      expect(
+        () => invoiceService.finalizeStudentInvoice(1, 1, '2026-09'),
+        throwsA(
+          predicate(
+            (e) => e.toString().contains('EARLY_MONTH_BILLING_ENGINE_GAP'),
+          ),
         ),
       );
 
-      final slip = await slipService.generateSlip(
-        studentId: 1,
-        classId: 1,
-        month: '2026-09',
-        bankSettings: bankSettings,
+      final countMaps = await db.rawQuery(
+        'SELECT COUNT(*) as c FROM hoc_phi_thang',
       );
-
-      expect(slip.openingCreditBalance, 2);
+      expect(countMaps.first['c'], 0);
     });
+
+    test(
+      'Test 13: Partial actual month finalization block fails closed',
+      () async {
+        for (int i = 0; i < 13; i++) {
+          final dateStr = sep13Dates[i];
+          final weekday = DateTime.parse(dateStr).weekday;
+          final status = i < 2 ? 'DA_HOC' : 'DU_KIEN';
+          await db.insert('buoi_hoc', {
+            'id': i + 1,
+            'id_lop': 1,
+            'id_lich_hoc': weekday,
+            'ngay': dateStr,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'CHINH',
+            'trang_thai': status,
+            'created_at': '2026-01-01T00:00:00.000',
+            'updated_at': '2026-01-01T00:00:00.000',
+          });
+        }
+
+        expect(
+          () => invoiceService.finalizeStudentInvoice(1, 1, '2026-09'),
+          throwsA(
+            predicate(
+              (e) => e.toString().contains('EARLY_MONTH_BILLING_ENGINE_GAP'),
+            ),
+          ),
+        );
+
+        final countMaps = await db.rawQuery(
+          'SELECT COUNT(*) as c FROM hoc_phi_thang',
+        );
+        expect(countMaps.first['c'], 0);
+      },
+    );
   });
 }
