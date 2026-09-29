@@ -501,6 +501,54 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
             ),
           ),
         ),
+        if (summary.studentSummaries.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          const AppSectionHeader(title: 'Theo từng học sinh'),
+          AppSectionCard(
+            child: Column(
+              children: summary.studentSummaries
+                  .map(
+                    (student) => ExpansionTile(
+                      tilePadding: EdgeInsets.zero,
+                      title: Text(
+                        student.studentName,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        student.enrolledClassNames.join(' • '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: AppColors.textSecondary),
+                      ),
+                      children: [
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Có mặt ${student.attendance.totalPresent}/${student.attendance.totalEligibleParticipations} lượt • Nghỉ có phép ${student.attendance.totalExcusedAbsence} • Nghỉ không phép ${student.attendance.totalUnexcusedAbsence}',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Học phí ${currencyFormatter.format(student.financial.totalInvoiced)} • Đã thu ${currencyFormatter.format(student.financial.totalPaid)} • Chưa thu ${currencyFormatter.format(student.financial.totalOutstandingDebt)}',
+                            style: const TextStyle(color: AppColors.cyanAccent),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ],
       ],
     );
   }
