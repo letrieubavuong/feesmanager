@@ -47,27 +47,27 @@ class SettingsPage extends ConsumerWidget {
                     alignment: Alignment.centerLeft,
                     fit: BoxFit.scaleDown,
                     child: SegmentedButton<ThemeMode>(
-                  showSelectedIcon: false,
-                  segments: [
-                    ButtonSegment(
-                      value: ThemeMode.system,
-                      label: Text(l10n.themeSystem),
+                      showSelectedIcon: false,
+                      segments: [
+                        ButtonSegment(
+                          value: ThemeMode.system,
+                          label: Text(l10n.themeSystem),
+                        ),
+                        const ButtonSegment(
+                          value: ThemeMode.light,
+                          icon: Icon(Icons.light_mode_outlined),
+                        ),
+                        const ButtonSegment(
+                          value: ThemeMode.dark,
+                          icon: Icon(Icons.dark_mode_outlined),
+                        ),
+                      ],
+                      selected: {themeState.themeMode},
+                      onSelectionChanged: (value) => ref
+                          .read(themeControllerProvider.notifier)
+                          .setThemeMode(value.first),
                     ),
-                    const ButtonSegment(
-                      value: ThemeMode.light,
-                      icon: Icon(Icons.light_mode_outlined),
-                    ),
-                    const ButtonSegment(
-                      value: ThemeMode.dark,
-                      icon: Icon(Icons.dark_mode_outlined),
-                    ),
-                  ],
-                  selected: {themeState.themeMode},
-                  onSelectionChanged: (value) => ref
-                      .read(themeControllerProvider.notifier)
-                      .setThemeMode(value.first),
                   ),
-                ),
                 ),
               ],
             ),
@@ -90,21 +90,27 @@ class SettingsPage extends ConsumerWidget {
                     alignment: Alignment.centerLeft,
                     fit: BoxFit.scaleDown,
                     child: SegmentedButton<AppLocaleMode>(
-                  showSelectedIcon: false,
-                  segments: const [
-                    ButtonSegment(
-                      value: AppLocaleMode.system,
-                      label: Text('Máy'),
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(
+                          value: AppLocaleMode.system,
+                          label: Text('Máy'),
+                        ),
+                        ButtonSegment(
+                          value: AppLocaleMode.vi,
+                          label: Text('VI'),
+                        ),
+                        ButtonSegment(
+                          value: AppLocaleMode.en,
+                          label: Text('EN'),
+                        ),
+                      ],
+                      selected: {localeMode},
+                      onSelectionChanged: (value) => ref
+                          .read(localeControllerProvider.notifier)
+                          .setLocaleMode(value.first),
                     ),
-                    ButtonSegment(value: AppLocaleMode.vi, label: Text('VI')),
-                    ButtonSegment(value: AppLocaleMode.en, label: Text('EN')),
-                  ],
-                  selected: {localeMode},
-                  onSelectionChanged: (value) => ref
-                      .read(localeControllerProvider.notifier)
-                      .setLocaleMode(value.first),
                   ),
-                ),
                 ),
               ],
             ),
