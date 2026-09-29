@@ -77,6 +77,8 @@ Must not contain:
 
 ## 4. `lop`
 
+School name suggestions are stored in `truong_hoc(id, ten UNIQUE COLLATE NOCASE, created_at)` from schema v16. Existing nonempty `hoc_sinh.truong_dang_hoc` values are copied into this catalog on upgrade. The student's school remains a text snapshot so removing a suggestion never erases historical student data.
+
 Purpose: class identity/metadata.
 
 Suggested columns:
