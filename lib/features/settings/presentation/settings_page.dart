@@ -27,7 +27,7 @@ class SettingsPage extends ConsumerWidget {
         title: Text(l10n.settingsTitle),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.fromLTRB(6, 16, 6, 16),
         children: [
           // 1. GIAO DIỆN
           AppSectionHeader(title: l10n.settingsAppearance),
