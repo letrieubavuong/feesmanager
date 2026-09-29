@@ -245,10 +245,12 @@ class ClassMonthTuitionOverviewService {
 
           final eligibleSessions = eligibleSessionsByStudent[sid] ?? [];
           if (eligibleSessions.isEmpty &&
-              classSessions.any((s) =>
-                  s.loai == SessionType.CHINH &&
-                  s.trangThai == SessionStatus.DA_HOC &&
-                  attendanceMap.containsKey('${s.id}_$sid'))) {
+              classSessions.any(
+                (s) =>
+                    s.loai == SessionType.CHINH &&
+                    s.trangThai == SessionStatus.DA_HOC &&
+                    attendanceMap.containsKey('${s.id}_$sid'),
+              )) {
             throw Exception(
               'Đã có điểm danh tháng $month nhưng học sinh không thuộc danh sách buổi học hợp lệ. Kiểm tra ngày tham gia lớp và phân ca.',
             );
