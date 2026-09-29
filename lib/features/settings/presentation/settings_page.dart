@@ -66,8 +66,8 @@ class SettingsPage extends ConsumerWidget {
                   onSelectionChanged: (value) => ref
                       .read(themeControllerProvider.notifier)
                       .setThemeMode(value.first),
-                    ),
                   ),
+                ),
                 ),
               ],
             ),
@@ -103,8 +103,8 @@ class SettingsPage extends ConsumerWidget {
                   onSelectionChanged: (value) => ref
                       .read(localeControllerProvider.notifier)
                       .setLocaleMode(value.first),
-                    ),
                   ),
+                ),
                 ),
               ],
             ),
