@@ -546,14 +546,10 @@ class RosterService {
             isAssignmentValid = false;
           }
 
-          if (isAssignmentValid && a.tuNgay.compareTo(m.tuNgay) < 0) {
-            isAssignmentValid = false;
-          }
-          if (isAssignmentValid && m.denNgay != null) {
-            if (a.denNgay == null || a.denNgay!.compareTo(m.denNgay!) > 0) {
-              isAssignmentValid = false;
-            }
-          }
+          // The student and assignment have already been checked as active
+          // on this session date. An older assignment interval may extend
+          // past a revised membership boundary without admitting the student
+          // outside their actual time in this class.
 
           if (!isAssignmentValid) {
             issues.add(
