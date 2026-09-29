@@ -204,10 +204,7 @@ class DashboardPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildKpiGrid(
-    AppLocalizations l10n,
-    DashboardOverview overview,
-  ) {
+  Widget _buildKpiGrid(AppLocalizations l10n, DashboardOverview overview) {
     final fmt = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
 
     return Row(
