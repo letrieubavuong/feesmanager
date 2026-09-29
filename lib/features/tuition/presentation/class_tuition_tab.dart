@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
 import '../../../app/common_widgets/navy_components.dart';
+import '../../../app/common_widgets/parent_contact_actions.dart';
 import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../app/localization/app_formatter.dart';
@@ -56,16 +57,17 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(children: [
-            Icon(Icons.account_balance_wallet_outlined,
-                color: AppColors.cyanAccent, size: 18),
-            SizedBox(width: 8),
-            Text('Tổng quan học phí', style: TextStyle(
-                color: AppColors.textPrimary, fontSize: 16,
-                fontWeight: FontWeight.bold)),
+          Row(children: [
+            const Icon(Icons.account_balance_wallet_outlined,
+                color: AppColors.cyanAccent, size: 17),
+            const SizedBox(width: 6),
+            const Expanded(child: Text('Tổng quan học phí',
+                maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: AppColors.textPrimary,
+                    fontSize: 14, fontWeight: FontWeight.bold))),
+            const SizedBox(width: 6),
+            _buildMonthSelector(context),
           ]),
-          const SizedBox(height: 12),
-          _buildMonthSelector(context),
           const SizedBox(height: 12),
           overviewAsync.when(
             data: (overview) {
@@ -135,42 +137,45 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
       'MM/yyyy',
     ).format(DateTime.parse('$_selectedMonth-01'));
 
-    return AppSectionCard(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+    return SizedBox(
+      width: 148,
+      child: AppSectionCard(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: const Icon(Icons.chevron_left, color: AppColors.cyanAccent),
+            icon: const Icon(Icons.chevron_left, color: AppColors.cyanAccent, size: 20),
             onPressed: () => _changeMonth(-1),
             padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+            constraints: const BoxConstraints.tightFor(width: 28, height: 30),
           ),
           Row(
             children: [
               const Icon(
                 Icons.calendar_month_outlined,
                 color: AppColors.cyanAccent,
-                size: 18,
+                size: 14,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 3),
               Text(
-                'Tháng $formattedMonth',
+                formattedMonth,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 15,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
           IconButton(
-            icon: const Icon(Icons.chevron_right, color: AppColors.cyanAccent),
+            icon: const Icon(Icons.chevron_right, color: AppColors.cyanAccent, size: 20),
             onPressed: () => _changeMonth(1),
             padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+            constraints: const BoxConstraints.tightFor(width: 28, height: 30),
           ),
         ],
+      ),
       ),
     );
   }
@@ -808,6 +813,10 @@ class _StudentTuitionCard extends ConsumerWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                if (student.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 6),
+                  ParentContactActions(phone: student.sdtPhuHuynh),
+                ],
               ],
             ),
           ),
