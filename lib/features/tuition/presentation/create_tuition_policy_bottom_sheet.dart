@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/app_page_scaffold.dart';
 import '../../../app/common_widgets/dirty_form_scope.dart';
@@ -8,6 +9,7 @@ import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../l10n/app_localizations.dart';
+import '../domain/tuition_policy.dart';
 import 'tuition_controller.dart';
 
 class CreateTuitionPolicyBottomSheet extends ConsumerStatefulWidget {
@@ -37,6 +39,7 @@ class _CreateTuitionPolicyBottomSheetState
   late String _initialStandard;
   bool _isDirty = false;
   bool _isSaving = false;
+  ExcusedAbsenceFeeRule _excusedRule = ExcusedAbsenceFeeRule.buTruBuoiDu;
   String? _inlineError;
 
   void _checkDirty() {
@@ -48,6 +51,7 @@ class _CreateTuitionPolicyBottomSheetState
         _effectiveFromDate != defaultDate ||
         _feeController.text != _initialFee ||
         _standardController.text != _initialStandard ||
+        _excusedRule != ExcusedAbsenceFeeRule.buTruBuoiDu ||
         _capController.text.trim().isNotEmpty ||
         _noteController.text.trim().isNotEmpty;
     if (_isDirty != isChanged) {
@@ -229,9 +233,9 @@ class _CreateTuitionPolicyBottomSheetState
                           child: Text(
                             _inlineError!,
                             style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onErrorContainer,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onErrorContainer,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -348,6 +352,35 @@ class _CreateTuitionPolicyBottomSheetState
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 16),
+                      _buildFieldLabel('Nghỉ học có phép'),
+                      DropdownButtonFormField<ExcusedAbsenceFeeRule>(
+                        initialValue: _excusedRule,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          prefixIcon: Icon(Icons.event_busy_outlined),
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: ExcusedAbsenceFeeRule.buTruBuoiDu,
+                            child: Text('Bù buổi / buổi dư; còn lại không thu'),
+                          ),
+                          DropdownMenuItem(
+                            value: ExcusedAbsenceFeeRule.tinhPhi,
+                            child: Text('Có tính học phí'),
+                          ),
+                          DropdownMenuItem(
+                            value: ExcusedAbsenceFeeRule.khongTinhPhi,
+                            child: Text('Không tính học phí'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setState(() => _excusedRule = value);
+                          _checkDirty();
+                        },
                       ),
                       const SizedBox(height: 16),
                       _buildFieldLabel(
@@ -529,6 +562,7 @@ class _CreateTuitionPolicyBottomSheetState
             feePerSession: fee,
             standardSessionsPerMonth: standard,
             monthlyMaxFee: cap,
+            excusedAbsenceFeeRule: _excusedRule,
             note: _noteController.text.trim(),
           );
 
