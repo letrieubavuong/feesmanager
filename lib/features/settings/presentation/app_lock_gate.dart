@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app_lock_controller.dart';
-import 'lock_screen.dart';
 
 class AppLockGate extends ConsumerStatefulWidget {
   final Widget child;
