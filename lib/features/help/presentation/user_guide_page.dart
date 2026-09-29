@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../app/common_widgets/navy_components.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/app_global_drawer.dart';
@@ -223,7 +224,9 @@ const _vietnameseSections = <_GuideSection>[
     Icons.tune_outlined,
     [
       'Vào Lớp học, tạo lớp và kiểm tra tên lớp, sĩ số tối đa.',
-      'Mở chi tiết lớp → Học phí để thiết lập chính sách học phí theo buổi. Kiểm tra chính sách có hiệu lực trước khi chốt học phí.',
+      'Mở chi tiết lớp → Học phí trong hàng nút truy cập nhanh để thiết lập chính sách. Nếu đã có mức học phí, ứng dụng điền mức cũ và mặc định đề xuất thay đổi từ tháng tiếp theo.',
+      'Chọn tháng hiệu lực, nhập mức mới và xem màn hình xác nhận mức cũ/mới trước khi lưu. Các tháng trước tháng hiệu lực vẫn giữ mức cũ.',
+      'Nếu tháng bị ảnh hưởng đã có hóa đơn chốt, hoặc thời gian hiệu lực trùng chính sách khác, ứng dụng sẽ từ chối và báo rõ trên biểu mẫu. Không sửa trực tiếp hóa đơn hay phiếu thu đã phát.',
       'Vào Cài đặt để chọn ngôn ngữ và giao diện phù hợp.',
     ],
   ),
