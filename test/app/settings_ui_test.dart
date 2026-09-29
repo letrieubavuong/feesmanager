@@ -31,8 +31,13 @@ void main() {
         expect(find.text('5 phút'), findsOneWidget);
         expect(find.text('10 phút'), findsOneWidget);
         expect(find.text('NGÔN NGỮ'), findsAtLeast(1));
-        expect(find.text('THÔNG TIN ỨNG DỤNG'), findsOneWidget);
         expect(find.text('Quy tắc tính học phí theo lớp'), findsOneWidget);
+        await tester.scrollUntilVisible(
+          find.text('THÔNG TIN ỨNG DỤNG'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(find.text('THÔNG TIN ỨNG DỤNG'), findsOneWidget);
         expect(find.text('Tài khoản nhận học phí'), findsOneWidget);
       },
     );
