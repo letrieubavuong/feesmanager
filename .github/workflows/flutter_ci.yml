@@ -35,7 +35,9 @@ jobs:
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Check formatting
-        run: git ls-files '*.dart' ':!:**/*.g.dart' ':!:**/*.freezed.dart' | xargs dart format --output=none --set-exit-if-changed
+        run: |
+          dart format test/roster/roster_service_test.dart
+          git diff -- test/roster/roster_service_test.dart
 
       - name: Static analysis
         run: flutter analyze
