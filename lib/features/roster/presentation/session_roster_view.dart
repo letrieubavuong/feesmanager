@@ -207,7 +207,12 @@ class SessionRosterView extends ConsumerWidget {
                 ),
                 if (member.student.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
                   const SizedBox(height: 6),
-                  ParentContactActions(phone: member.student.sdtPhuHuynh),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ParentContactActions(
+                      phone: member.student.sdtPhuHuynh,
+                    ),
+                  ),
                 ],
               ],
             ),
