@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 import '../../../app/common_widgets/navy_components.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/app_global_drawer.dart';
@@ -461,6 +462,43 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                 ),
               ),
             ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        const AppSectionHeader(title: 'Theo từng lớp'),
+        ...summary.classSummaries.map(
+          (cls) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: AppSectionCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    cls.className,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${cls.studentCountInScope} học sinh • ${cls.attendance.totalSessions} buổi đã học • ${cls.attendance.attendanceRatePercentage.toStringAsFixed(1)}% tham gia',
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Có mặt ${cls.attendance.totalPresent}  •  Nghỉ có phép ${cls.attendance.totalExcusedAbsence}  •  Nghỉ không phép ${cls.attendance.totalUnexcusedAbsence}',
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Học phí ${currencyFormatter.format(cls.financial.totalInvoiced)}  •  Đã thu ${currencyFormatter.format(cls.financial.totalPaid)}  •  Chưa thu ${currencyFormatter.format(cls.financial.totalOutstandingDebt)}',
+                    style: const TextStyle(color: AppColors.cyanAccent),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ],
