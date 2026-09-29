@@ -115,6 +115,14 @@ class ScheduleDomainService {
       effectiveDate.subtract(const Duration(days: 1)),
     );
 
+    if (existing.hieuLucDen != null &&
+        effectiveStr.compareTo(existing.hieuLucDen!) > 0) {
+      throw Exception(
+        'Lịch cũ đã kết thúc ngày ${existing.hieuLucDen}. '
+        'Hãy tạo lịch mới áp dụng từ $effectiveStr.',
+      );
+    }
+
     final assignments = await _assignmentRepo.getBySchedule(scheduleId);
     if (effectiveStr == existing.hieuLucTu && assignments.isEmpty) {
       final updated = existing.copyWith(
@@ -131,7 +139,8 @@ class ScheduleDomainService {
 
     if (dayBeforeStr.compareTo(existing.hieuLucTu) < 0) {
       throw Exception(
-        'Ngày áp dụng lịch mới ($effectiveStr) phải sau ngày bắt đầu lịch cũ (${existing.hieuLucTu})',
+        'Ngày áp dụng lịch mới ($effectiveStr) phải sau ngày bắt đầu lịch cũ (${existing.hieuLucTu}). '
+        'Muốn đổi ngày bắt đầu của lịch cũ cần xử lý buổi học và phân ca đã gắn với lịch.',
       );
     }
 
