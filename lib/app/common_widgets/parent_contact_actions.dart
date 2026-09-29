@@ -48,12 +48,12 @@ class ParentContactActions extends StatelessWidget {
     required Uri uri,
   }) {
     return SizedBox(
-      height: 30,
+      height: 24,
       child: OutlinedButton(
         onPressed: enabled ? () => _open(context, uri) : null,
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 6),
-          minimumSize: const Size(0, 30),
+          minimumSize: const Size(0, 24),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
           foregroundColor: AppColors.cyanAccent,
