@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/navy_components.dart';
+import '../../../app/common_widgets/parent_contact_actions.dart';
 import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/app_global_drawer.dart';
@@ -1065,6 +1066,10 @@ class HistoryItem extends ConsumerWidget {
                     ),
                   ),
                 ],
+                if (studentAsync.valueOrNull?.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 6),
+                  ParentContactActions(phone: studentAsync.valueOrNull?.sdtPhuHuynh),
+                ],
               ],
             ),
           ),
@@ -1171,6 +1176,10 @@ class RosterItem extends ConsumerWidget {
                     fontSize: 12,
                   ),
                 ),
+                if (studentAsync.valueOrNull?.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 6),
+                  ParentContactActions(phone: studentAsync.valueOrNull?.sdtPhuHuynh),
+                ],
               ],
             ),
           ),
