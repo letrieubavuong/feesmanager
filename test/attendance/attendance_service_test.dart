@@ -728,84 +728,87 @@ void main() {
       },
     );
 
-    test('Incomplete finalize default rejects and explicit override preserves missing rows', () async {
-      await db.insert('lop', {
-        'id': 1,
-        'ten_lop': 'C1',
-        'created_at': now,
-        'updated_at': now,
-      });
-      await db.insert('lich_hoc', {
-        'id': 1,
-        'id_lop': 1,
-        'thu_trong_tuan': 1,
-        'gio_bat_dau': '17:30',
-        'gio_ket_thuc': '19:00',
-        'hieu_luc_tu': '2026-01-01',
-        'created_at': now,
-        'updated_at': now,
-      });
-      await db.insert('buoi_hoc', {
-        'id': 1,
-        'id_lop': 1,
-        'id_lich_hoc': 1,
-        'ngay': '2026-09-21',
-        'gio_bat_dau': '17:30',
-        'gio_ket_thuc': '19:00',
-        'loai': 'CHINH',
-        'created_at': now,
-        'updated_at': now,
-      });
-      await db.insert('hoc_sinh', {
-        'id': 101,
-        'ho_ten': 'Student A',
-        'created_at': now,
-        'updated_at': now,
-      });
-      await db.insert('tham_gia_lop', {
-        'id': 1,
-        'id_hoc_sinh': 101,
-        'id_lop': 1,
-        'tu_ngay': '2026-01-01',
-        'created_at': now,
-        'updated_at': now,
-      });
+    test(
+      'Incomplete finalize default rejects and explicit override preserves missing rows',
+      () async {
+        await db.insert('lop', {
+          'id': 1,
+          'ten_lop': 'C1',
+          'created_at': now,
+          'updated_at': now,
+        });
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 1,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': now,
+          'updated_at': now,
+        });
+        await db.insert('buoi_hoc', {
+          'id': 1,
+          'id_lop': 1,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-21',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'created_at': now,
+          'updated_at': now,
+        });
+        await db.insert('hoc_sinh', {
+          'id': 101,
+          'ho_ten': 'Student A',
+          'created_at': now,
+          'updated_at': now,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 1,
+          'id_hoc_sinh': 101,
+          'id_lop': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': now,
+          'updated_at': now,
+        });
 
-      // 1. Finalize without allowIncomplete -> throws
-      expect(
-        () => attendanceService.finalizeSessionAttendance(
+        // 1. Finalize without allowIncomplete -> throws
+        expect(
+          () => attendanceService.finalizeSessionAttendance(
+            1,
+            allowIncomplete: false,
+          ),
+          throwsA(predicate((e) => e.toString().contains('chưa điểm danh'))),
+        );
+
+        var rows = await db.query('diem_danh');
+        expect(rows, isEmpty);
+        var session = (await db.query('buoi_hoc', where: 'id = 1')).first;
+        expect(session['trang_thai'], 'DU_KIEN');
+
+        // 2. Finalize with allowIncomplete -> session becomes DA_HOC, missing row stays missing (no CO_MAT auto-created)
+        await attendanceService.finalizeSessionAttendance(
           1,
-          allowIncomplete: false,
-        ),
-        throwsA(predicate((e) => e.toString().contains('chưa điểm danh'))),
-      );
+          allowIncomplete: true,
+        );
+        rows = await db.query('diem_danh');
+        expect(rows, isEmpty);
 
-      var rows = await db.query('diem_danh');
-      expect(rows, isEmpty);
-      var session = (await db.query('buoi_hoc', where: 'id = 1')).first;
-      expect(session['trang_thai'], 'DU_KIEN');
+        session = (await db.query('buoi_hoc', where: 'id = 1')).first;
+        expect(session['trang_thai'], 'DA_HOC');
+        final sessionUpdatedAt = session['updated_at'];
 
-      // 2. Finalize with allowIncomplete -> session becomes DA_HOC, missing row stays missing (no CO_MAT auto-created)
-      await attendanceService.finalizeSessionAttendance(
-        1,
-        allowIncomplete: true,
-      );
-      rows = await db.query('diem_danh');
-      expect(rows, isEmpty);
-
-      session = (await db.query('buoi_hoc', where: 'id = 1')).first;
-      expect(session['trang_thai'], 'DA_HOC');
-      final sessionUpdatedAt = session['updated_at'];
-
-      // 3. Finalize again -> safe no-op, session updated_at unchanged
-      await attendanceService.finalizeSessionAttendance(
-        1,
-        allowIncomplete: true,
-      );
-      session = (await db.query('buoi_hoc', where: 'id = 1')).first;
-      expect(session['trang_thai'], 'DA_HOC');
-      expect(session['updated_at'], sessionUpdatedAt);
-    });
+        // 3. Finalize again -> safe no-op, session updated_at unchanged
+        await attendanceService.finalizeSessionAttendance(
+          1,
+          allowIncomplete: true,
+        );
+        session = (await db.query('buoi_hoc', where: 'id = 1')).first;
+        expect(session['trang_thai'], 'DA_HOC');
+        expect(session['updated_at'], sessionUpdatedAt);
+      },
+    );
 
     test('Upsert created_at regression', () async {
       await db.insert('lop', {
