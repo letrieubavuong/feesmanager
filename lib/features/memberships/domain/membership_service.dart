@@ -170,7 +170,8 @@ class MembershipService {
     if (membership.id == null) {
       throw Exception('Không tìm thấy thông tin tham gia lớp');
     }
-    if (mienGiamPhanTram != null && (mienGiamPhanTram < 0 || mienGiamPhanTram > 100)) {
+    if (mienGiamPhanTram != null &&
+        (mienGiamPhanTram < 0 || mienGiamPhanTram > 100)) {
       throw Exception('Miễn giảm phải từ 0 đến 100%');
     }
 
