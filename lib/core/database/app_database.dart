@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int schemaVersion = 15;
+  static const int schemaVersion = 16;
   static const int _dbVersion = schemaVersion;
 
   final String dbName;
@@ -82,6 +82,9 @@ class AppDatabase {
     if (version >= 15) {
       await _migrateV14ToV15(db);
     }
+    if (version >= 16) {
+      await _migrateV15ToV16(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -126,6 +129,9 @@ class AppDatabase {
     }
     if (oldVersion < 15) {
       await _migrateV14ToV15(db);
+    }
+    if (oldVersion < 16) {
+      await _migrateV15ToV16(db);
     }
   }
 
@@ -897,6 +903,24 @@ class AppDatabase {
     );
 
     await _verifyAttendanceCorrectionAuditSchema(db);
+  }
+
+  Future<void> _migrateV15ToV16(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS truong_hoc (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ten TEXT NOT NULL COLLATE NOCASE UNIQUE,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    final studentColumns = await db.rawQuery('PRAGMA table_info(hoc_sinh)');
+    if (studentColumns.any((column) => column['name'] == 'truong_dang_hoc')) {
+      await db.execute('''
+        INSERT OR IGNORE INTO truong_hoc(ten, created_at)
+        SELECT DISTINCT TRIM(truong_dang_hoc), CURRENT_TIMESTAMP FROM hoc_sinh
+        WHERE truong_dang_hoc IS NOT NULL AND TRIM(truong_dang_hoc) <> ''
+      ''');
+    }
   }
 
   Future<void> _verifyAttendanceCorrectionAuditSchema(Database db) async {
