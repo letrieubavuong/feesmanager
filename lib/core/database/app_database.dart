@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int schemaVersion = 16;
+  static const int schemaVersion = 17;
   static const int _dbVersion = schemaVersion;
 
   final String dbName;
@@ -85,6 +85,9 @@ class AppDatabase {
     if (version >= 16) {
       await _migrateV15ToV16(db);
     }
+    if (version >= 17) {
+      await _migrateV16ToV17(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -132,6 +135,9 @@ class AppDatabase {
     }
     if (oldVersion < 16) {
       await _migrateV15ToV16(db);
+    }
+    if (oldVersion < 17) {
+      await _migrateV16ToV17(db);
     }
   }
 
@@ -921,6 +927,19 @@ class AppDatabase {
         WHERE truong_dang_hoc IS NOT NULL AND TRIM(truong_dang_hoc) <> ''
       ''');
     }
+  }
+
+  Future<void> _migrateV16ToV17(Database db) async {
+    final table = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'chinh_sach_hoc_phi'",
+    );
+    if (table.isEmpty) return;
+    final columns = await db.rawQuery('PRAGMA table_info(chinh_sach_hoc_phi)');
+    if (columns.any((column) => column['name'] == 'quy_tac_nghi_co_phep')) return;
+    await db.execute('''
+      ALTER TABLE chinh_sach_hoc_phi
+      ADD COLUMN quy_tac_nghi_co_phep TEXT NOT NULL DEFAULT 'buTruBuoiDu'
+    ''');
   }
 
   Future<void> _verifyAttendanceCorrectionAuditSchema(Database db) async {
