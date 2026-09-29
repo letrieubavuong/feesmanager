@@ -715,8 +715,9 @@ class _AddAssignmentBottomSheetState
                 children: [
                   Text(
                     l10n.bulkAssignmentSheetTitle,
-                    style: Theme.of(context).textTheme.titleLarge
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(
@@ -1274,8 +1275,9 @@ class _EditAssignmentBottomSheetState extends State<EditAssignmentBottomSheet> {
                 children: [
                   Text(
                     l10n.editStartDateTitle,
-                    style: Theme.of(context).textTheme.titleLarge
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
