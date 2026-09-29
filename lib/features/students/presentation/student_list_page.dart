@@ -26,6 +26,12 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
   final _searchController = TextEditingController();
   bool _filterArchived = false;
 
+  void _setArchivedFilter(bool archived) {
+    if (_filterArchived == archived) return;
+    setState(() => _filterArchived = archived);
+    ref.read(studentListControllerProvider.notifier).setFilter(archived);
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -43,8 +49,47 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
       appBar: AppBar(
         leading: const GlobalMenuButton(),
         title: Text(l10n.navStudents),
+        titleSpacing: 8,
+        actions: [
+          InkWell(
+            onTap: () => _setArchivedFilter(false),
+            child: Center(
+              child: Text(
+                l10n.studentFilterActive,
+                key: UiKeys.studentActiveFilter,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: !_filterArchived
+                      ? AppColors.cyanAccent
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+          Switch.adaptive(
+            value: _filterArchived,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            onChanged: _setArchivedFilter,
+          ),
+          InkWell(
+            onTap: () => _setArchivedFilter(true),
+            child: Center(
+              child: Text(
+                l10n.studentFilterStopped,
+                key: UiKeys.studentArchivedFilter,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: _filterArchived
+                      ? AppColors.cyanAccent
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+        ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(104),
+          preferredSize: const Size.fromHeight(56),
           child: Column(
             children: [
               Padding(
@@ -104,80 +149,6 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                   },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: SegmentedButton<bool>(
-                    segments: [
-                      ButtonSegment<bool>(
-                        value: false,
-                        icon: const Icon(Icons.school_outlined),
-                        label: Text(
-                          l10n.studentFilterActive,
-                          key: UiKeys.studentActiveFilter,
-                        ),
-                      ),
-                      ButtonSegment<bool>(
-                        value: true,
-                        icon: const Icon(Icons.person_off_outlined),
-                        label: Text(
-                          l10n.studentFilterStopped,
-                          key: UiKeys.studentArchivedFilter,
-                        ),
-                      ),
-                    ],
-                    selected: {_filterArchived},
-                    emptySelectionAllowed: false,
-                    multiSelectionEnabled: false,
-                    onSelectionChanged: (newSelection) {
-                      if (newSelection.isNotEmpty) {
-                        final selectedVal = newSelection.first;
-                        setState(() => _filterArchived = selectedVal);
-                        ref
-                            .read(studentListControllerProvider.notifier)
-                            .setFilter(selectedVal);
-                      }
-                    },
-                    style: ButtonStyle(
-                      backgroundColor: WidgetStateProperty.resolveWith<Color>((
-                        states,
-                      ) {
-                        if (states.contains(WidgetState.selected)) {
-                          return AppColors.primary;
-                        }
-                        return AppColors.surface;
-                      }),
-                      foregroundColor: WidgetStateProperty.resolveWith<Color>((
-                        states,
-                      ) {
-                        if (states.contains(WidgetState.selected)) {
-                          return Colors.white;
-                        }
-                        return AppColors.textSecondary;
-                      }),
-                      iconColor: WidgetStateProperty.resolveWith<Color>((
-                        states,
-                      ) {
-                        if (states.contains(WidgetState.selected)) {
-                          return Colors.white;
-                        }
-                        return AppColors.textSecondary;
-                      }),
-                      side: WidgetStateProperty.all(
-                        const BorderSide(color: AppColors.border),
-                      ),
-                      shape: WidgetStateProperty.all(
-                        RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -195,7 +166,7 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
             onRefresh: () =>
                 ref.read(studentListControllerProvider.notifier).refresh(),
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
               itemCount: students.length,
               itemBuilder: (context, index) {
                 final student = students[index];
