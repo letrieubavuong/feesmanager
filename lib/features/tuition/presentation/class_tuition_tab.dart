@@ -15,6 +15,7 @@ import '../../payments/presentation/record_payment_bottom_sheet.dart';
 import '../../payments/presentation/vietqr_payment_page.dart';
 import '../../students/presentation/student_detail_page.dart';
 import '../domain/class_month_tuition_overview.dart';
+import 'create_tuition_policy_bottom_sheet.dart';
 import 'tuition_controller.dart';
 
 enum TuitionPaymentFilter { outstanding, paid }
@@ -221,6 +222,20 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     BuildContext context,
     ClassMonthTuitionOverview overview,
   ) {
+    if (overview.previewStudentCount == 0 &&
+        overview.finalizedStudentCount == 0) {
+      final reason = overview.studentRows.isEmpty
+          ? 'Không có học sinh tham gia lớp trong tháng $_selectedMonth. Kiểm tra ngày tham gia lớp.'
+          : overview.studentRows.first.pendingReason ??
+              'Tháng này chưa đủ dữ liệu để tính học phí.';
+      return AppSectionCard(
+        padding: const EdgeInsets.all(12),
+        child: Text(
+          reason,
+          style: const TextStyle(color: AppColors.warning, fontSize: 13),
+        ),
+      );
+    }
     return Row(
       children: [
         Expanded(
@@ -288,11 +303,47 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
         .toList();
     if (unfinalizedRows.isEmpty) return const SizedBox.shrink();
 
+    final missingPolicy = unfinalizedRows.any(
+      (r) => r.state == ClassStudentTuitionState.ERROR &&
+          (r.pendingReason?.contains('chính sách học phí') ?? false),
+    );
+    if (missingPolicy) {
+      return AppSectionCard(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tháng $_selectedMonth chưa có chính sách học phí. Điểm danh đã lưu nhưng chưa thể tính tiền.',
+              style: const TextStyle(color: AppColors.warning, fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: () async {
+                final saved = await showCreateTuitionPolicyBottomSheet(
+                  context,
+                  classId: widget.classId,
+                  initialMonth: _selectedMonth,
+                );
+                if (saved == true && mounted) {
+                  ref.invalidate(classMonthTuitionOverviewProvider(
+                    (widget.classId, _selectedMonth),
+                  ));
+                }
+              },
+              icon: const Icon(Icons.edit_calendar_outlined, size: 16),
+              label: const Text('Thiết lập học phí tháng này'),
+            ),
+          ],
+        ),
+      );
+    }
+
     final blockedCount = overview.pendingStudentCount;
     final unfinalizedCount = unfinalizedRows.length;
 
     final String label = blockedCount > 0
-        ? '$unfinalizedCount chưa chốt • $blockedCount chưa đủ dữ liệu'
+        ? '$unfinalizedCount chưa chốt • $blockedCount chưa đủ dữ liệu: ${unfinalizedRows.firstWhere((r) => r.isBlocked).pendingReason ?? "kiểm tra điểm danh"}'
         : '$unfinalizedCount học sinh chưa chốt học phí';
 
     return AppSectionCard(
@@ -313,11 +364,12 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
               ),
+              maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: 8),
-          ElevatedButton(
+          if (overview.previewStudentCount > 0) ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
