@@ -1203,8 +1203,9 @@ class DashboardPage extends ConsumerWidget {
       await pdfExporter.export(summary);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Lỗi xuất PDF: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi xuất PDF: $e')));
       }
     }
   }
@@ -1390,8 +1391,9 @@ class _DashboardRecentActivitiesExpanderState
       );
     }
 
-    final latestStr = DateFormat('HH:mm • dd/MM')
-        .format(activities.first.timestamp);
+    final latestStr = DateFormat(
+      'HH:mm • dd/MM',
+    ).format(activities.first.timestamp);
     final displayedActivities = activities.take(8).toList();
 
     return AppSectionCard(
