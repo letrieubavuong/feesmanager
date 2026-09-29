@@ -293,9 +293,7 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         onPressed: () async {
-          await Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const StudentFormPage()),
-          );
+          await showStudentFormBottomSheet(context);
           ref.read(studentListControllerProvider.notifier).refresh();
         },
         child: const Icon(Icons.add, color: Colors.white),
