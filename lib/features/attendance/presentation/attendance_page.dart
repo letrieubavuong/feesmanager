@@ -1221,7 +1221,6 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
   }
 
   void _enterCorrectionModeDialog(AttendanceSheet sheet) {
-    final controller = TextEditingController();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1261,17 +1260,6 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                 'Việc thay đổi điểm danh có thể ảnh hưởng đến học phí, buổi dư và báo cáo.',
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: const InputDecoration(
-                  labelText: 'Lý do sửa *',
-                  hintText: 'Nhập nhầm trạng thái học sinh...',
-                  border: OutlineInputBorder(),
-                ),
-              ),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -1287,17 +1275,9 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                       foregroundColor: Colors.white,
                     ),
                     onPressed: () {
-                      final reason = controller.text.trim();
-                      if (reason.isEmpty) {
-                        AppFeedback.showErrorSnackBar(
-                          ctx,
-                          'Vui lòng nhập lý do chỉnh sửa.',
-                        );
-                        return;
-                      }
                       Navigator.pop(ctx);
                       setState(() {
-                        _correctionReason = reason;
+                        _correctionReason = '';
                         _isCorrectionMode = true;
                       });
                     },
