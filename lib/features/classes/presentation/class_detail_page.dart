@@ -17,6 +17,7 @@ import '../../attendance/presentation/class_attendance_timeline_controller.dart'
 import '../../leave/presentation/leave_request_page.dart';
 import '../../memberships/domain/membership.dart';
 import '../../memberships/domain/membership_service.dart';
+import '../../memberships/presentation/edit_membership_bottom_sheet.dart';
 import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
 import '../../memberships/presentation/leave_class_bottom_sheet.dart';
 import '../../memberships/presentation/membership_providers.dart';
@@ -1256,8 +1257,13 @@ class HistoryItem extends ConsumerWidget {
           const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.edit_calendar_outlined, size: 20),
-            tooltip: 'Sửa ngày tham gia lớp',
-            onPressed: () => editMembershipJoinDate(context, ref, membership),
+            tooltip: 'Sửa thông tin tham gia lớp',
+            onPressed: () => editMembershipInfo(
+              context,
+              ref,
+              membership,
+              studentAsync.valueOrNull?.hoTen,
+            ),
           ),
           if (!isActive)
             OutlinedButton(
@@ -1359,12 +1365,37 @@ class RosterItem extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  'Tham gia từ: ${DateFormatter.formatDisplayDate(membership.tuNgay)}',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'Tham gia từ: ${DateFormatter.formatDisplayDate(membership.tuNgay)}',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                    if (membership.mienGiamPhanTram > 0) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Giảm ${membership.mienGiamPhanTram}%',
+                          style: const TextStyle(
+                            color: AppColors.success,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 if (studentAsync.valueOrNull?.sdtPhuHuynh?.trim().isNotEmpty ==
                     true) ...[
@@ -1377,9 +1408,14 @@ class RosterItem extends ConsumerWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.edit_calendar_outlined, size: 20),
-            tooltip: 'Sửa ngày tham gia lớp',
-            onPressed: () => editMembershipJoinDate(context, ref, membership),
+            icon: const Icon(Icons.edit_outlined, size: 20),
+            tooltip: 'Sửa thông tin tham gia & miễn giảm học phí',
+            onPressed: () => editMembershipInfo(
+              context,
+              ref,
+              membership,
+              studentAsync.valueOrNull?.hoTen,
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.logout, color: AppColors.error, size: 20),
@@ -1413,37 +1449,20 @@ final classMembershipHistoryProvider =
       return repo.getByClass(classId);
     });
 
-Future<void> editMembershipJoinDate(
+Future<void> editMembershipInfo(
   BuildContext context,
   WidgetRef ref,
   ClassMembership membership,
+  String? studentName,
 ) async {
-  final current = DateTime.parse(membership.tuNgay);
-  final selected = await showDatePicker(
-    context: context,
-    initialDate: current,
-    firstDate: DateTime(2020),
-    lastDate: membership.denNgay == null
-        ? DateTime(2100)
-        : DateTime.parse(membership.denNgay!),
-    helpText: 'Ngày tham gia lớp',
+  final success = await showEditMembershipBottomSheet(
+    context,
+    membership: membership,
+    studentName: studentName,
   );
-  if (!context.mounted || selected == null || selected == current) return;
-  try {
-    final service = await ref.read(membershipServiceProvider.future);
-    await service.changeJoinDate(membership: membership, joinDate: selected);
+  if (success == true) {
     ref.invalidate(classRosterProvider);
     ref.invalidate(classSizeProvider);
     ref.invalidate(classMembershipHistoryProvider);
-    if (context.mounted) {
-      AppFeedback.showSuccessSnackBar(context, 'Đã cập nhật ngày tham gia lớp');
-    }
-  } catch (error) {
-    if (context.mounted) {
-      AppFeedback.showErrorSnackBar(
-        context,
-        error.toString().replaceFirst('Exception: ', ''),
-      );
-    }
   }
 }

@@ -727,7 +727,7 @@ class _ClassMonthTuitionOverviewProviderElement
 }
 
 String _$tuitionPolicyControllerHash() =>
-    r'558472576c855213b6a0d0a601a1f6898c834575';
+    r'23346441c93704bd6a0a46740275613023fca467';
 
 /// See also [TuitionPolicyController].
 @ProviderFor(TuitionPolicyController)

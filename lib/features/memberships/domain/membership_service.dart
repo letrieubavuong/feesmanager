@@ -146,6 +146,36 @@ class MembershipService {
     await _repository.changeJoinDate(membership, newDate);
   }
 
+  Future<void> updateMembership({
+    required ClassMembership membership,
+    DateTime? joinDate,
+    int? mienGiamPhanTram,
+    String? ghiChu,
+  }) async {
+    if (membership.id == null) {
+      throw Exception('Không tìm thấy thông tin tham gia lớp');
+    }
+    if (mienGiamPhanTram != null && (mienGiamPhanTram < 0 || mienGiamPhanTram > 100)) {
+      throw Exception('Miễn giảm phải từ 0 đến 100%');
+    }
+
+    var updated = membership.copyWith(
+      mienGiamPhanTram: mienGiamPhanTram ?? membership.mienGiamPhanTram,
+      ghiChu: ghiChu ?? membership.ghiChu,
+      updatedAt: DateTime.now(),
+    );
+
+    if (joinDate != null) {
+      final newDateStr = DateFormat('yyyy-MM-dd').format(joinDate);
+      if (newDateStr != membership.tuNgay) {
+        await changeJoinDate(membership: membership, joinDate: joinDate);
+        updated = updated.copyWith(tuNgay: newDateStr);
+      }
+    }
+
+    await _repository.update(updated);
+  }
+
   Future<ClassMembership?> getActiveMembership(
     int studentId,
     int classId,

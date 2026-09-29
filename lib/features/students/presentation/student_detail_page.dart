@@ -19,6 +19,7 @@ import '../../attendance/presentation/attendance_page.dart';
 import '../../classes/domain/class_service.dart';
 import '../../classes/presentation/class_controller.dart';
 import '../../classes/presentation/class_detail_page.dart';
+import '../../memberships/presentation/edit_membership_bottom_sheet.dart';
 import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
 import '../../payments/domain/payment_service.dart';
 import '../../payments/presentation/record_payment_bottom_sheet.dart';
@@ -153,7 +154,7 @@ class StudentDetailPage extends ConsumerWidget {
                   const SizedBox(height: 20),
 
                   // 4. LỚP ĐANG THAM GIA
-                  _buildActiveClassesSection(context, l10n, overview),
+                  _buildActiveClassesSection(context, ref, l10n, overview),
 
                   const SizedBox(height: 20),
 
@@ -527,6 +528,7 @@ class StudentDetailPage extends ConsumerWidget {
 
   Widget _buildActiveClassesSection(
     BuildContext context,
+    WidgetRef ref,
     AppLocalizations l10n,
     StudentDetailOverview overview,
   ) {
@@ -583,13 +585,39 @@ class StudentDetailPage extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            item.classEntity.tenLop,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                item.classEntity.tenLop,
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              if (item.membership.mienGiamPhanTram > 0) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.success
+                                        .withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'Giảm ${item.membership.mienGiamPhanTram}%',
+                                    style: const TextStyle(
+                                      color: AppColors.success,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                           if (item.shiftText.isNotEmpty) ...[
                             const SizedBox(height: 2),
@@ -603,6 +631,23 @@ class StudentDetailPage extends ConsumerWidget {
                           ],
                         ],
                       ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      tooltip: 'Sửa miễn giảm & tham gia lớp',
+                      onPressed: () async {
+                        final success = await showEditMembershipBottomSheet(
+                          context,
+                          membership: item.membership,
+                          studentName: overview.student.hoTen,
+                          className: item.classEntity.tenLop,
+                        );
+                        if (success == true) {
+                          ref.invalidate(
+                            studentDetailOverviewProvider(studentId),
+                          );
+                        }
+                      },
                     ),
                     const Icon(
                       Icons.check_circle,
