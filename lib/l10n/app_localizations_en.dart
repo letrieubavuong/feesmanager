@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appName => 'Tuition2027';
+  String get appName => 'Tuition manager';
 
   @override
   String get navHome => 'Home';
@@ -66,7 +66,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardTitle => 'Home';
 
   @override
-  String get dashboardGreeting => 'Welcome Teacher!';
+  String get dashboardGreeting => 'Hello!';
 
   @override
   String get dashboardGreetingSubtitle => 'Have a productive teaching day!';
@@ -205,10 +205,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAppInfo => 'APPLICATION INFO';
 
   @override
-  String get appVersion => 'Version: 1.0.0+1';
+  String get appVersion => 'Version: 2.6';
 
   @override
-  String get dbVersion => 'Database: v15';
+  String get dbVersion => 'Database: v16';
 
   @override
   String get studentFormTitleAdd => 'Add Student';

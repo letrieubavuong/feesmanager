@@ -583,3 +583,19 @@ Every schema change requires:
 - updated schema document
 
 Never patch production schema ad hoc from a screen/service.
+
+## 23. `truong_hoc` (Database Version 16)
+
+Danh mục tên trường học quanh khu vực do người dùng quản lý. Học sinh vẫn lưu
+`truong_dang_hoc TEXT` như trước để giữ nguyên thông tin lịch sử và cho phép
+nhập một trường chưa có trong danh mục.
+
+- `id INTEGER PRIMARY KEY AUTOINCREMENT`
+- `ten TEXT NOT NULL COLLATE NOCASE UNIQUE`
+- `da_luu_tru INTEGER NOT NULL DEFAULT 0 CHECK (da_luu_tru IN (0, 1))`
+- `created_at TEXT NOT NULL`
+- Index: `idx_truong_hoc_active_name (da_luu_tru, ten)`
+
+Migration 15 → 16 nhập các tên trường không rỗng đã có trong `hoc_sinh`,
+loại khoảng trắng đầu/cuối và trùng tên (không phân biệt chữ hoa/thường).
+Ẩn một trường khỏi danh mục không sửa hoặc xóa tên trường trong hồ sơ học sinh.

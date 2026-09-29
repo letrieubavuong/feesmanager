@@ -8,7 +8,7 @@ import 'package:tuition2027/l10n/app_localizations.dart';
 
 void main() {
   group('Compact Settings Page Dropdown Tests', () {
-    testWidgets('Renders Theme, Palette and Language Dropdowns', (
+    testWidgets('Renders theme segments and inline language selector', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -29,12 +29,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Verify compact dropdown form fields exist for Theme and Language (Palette dropdown is intentionally omitted for unified Physics Navy identity)
-      expect(find.byType(DropdownButtonFormField<ThemeMode>), findsOneWidget);
-      expect(
-        find.byType(DropdownButtonFormField<AppLocaleMode>),
-        findsOneWidget,
-      );
+      expect(find.byType(SegmentedButton<ThemeMode>), findsOneWidget);
+      expect(find.byType(DropdownButton<AppLocaleMode>), findsOneWidget);
+      expect(find.byType(DropdownButtonFormField<AppLocaleMode>), findsNothing);
     });
   });
 }

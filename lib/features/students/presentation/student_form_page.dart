@@ -6,6 +6,7 @@ import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../settings/data/school_repository.dart';
 import '../domain/student.dart';
 import 'student_controller.dart';
 import 'student_detail_page.dart';
@@ -90,6 +91,8 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final schools =
+        ref.watch(schoolsProvider).asData?.value ?? const <School>[];
 
     return DirtyFormScope(
       isDirty: _isDirty,
@@ -224,12 +227,22 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                DropdownMenu<String>(
                   controller: _truongController,
-                  decoration: InputDecoration(
-                    labelText: l10n.studentSchool,
-                    border: const OutlineInputBorder(),
-                  ),
+                  width: MediaQuery.sizeOf(context).width - 32,
+                  enableFilter: true,
+                  enableSearch: true,
+                  label: Text(l10n.studentSchool),
+                  helperText: 'Chọn trường đã lưu hoặc nhập tên trường mới',
+                  dropdownMenuEntries: schools
+                      .map(
+                        (school) => DropdownMenuEntry<String>(
+                          value: school.name,
+                          label: school.name,
+                        ),
+                      )
+                      .toList(),
+                  onSelected: (value) => _onChanged(),
                 ),
                 const SizedBox(height: 16),
                 const Divider(),

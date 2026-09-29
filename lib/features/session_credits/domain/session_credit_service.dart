@@ -112,8 +112,7 @@ class SessionCreditService {
     return eligibleSessions;
   }
 
-  Future<Map<int, List<ClassSession>>>
-  getEligibleSessionsForStudentsClassMonth(
+  Future<Map<int, List<ClassSession>>> getEligibleSessionsForStudentsClassMonth(
     Set<int> studentIds,
     int classId,
     String month,

@@ -7,6 +7,7 @@ import 'app/design_system/theme_controller.dart';
 import 'app/localization/locale_controller.dart';
 import 'app/navigation/app_shell.dart';
 import 'dev/demo_seed_bootstrap.dart';
+import 'features/settings/presentation/app_lock_gate.dart';
 import 'l10n/app_localizations.dart';
 
 void main() async {
@@ -59,7 +60,7 @@ class TuitionApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: const AppShell(),
+      home: const AppLockGate(child: AppShell()),
     );
   }
 }

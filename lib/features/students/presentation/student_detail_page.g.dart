@@ -39,21 +39,15 @@ class StudentDetailFamily extends Family<AsyncValue<Student?>> {
   const StudentDetailFamily();
 
   /// See also [studentDetail].
-  StudentDetailProvider call(
-    int id,
-  ) {
-    return StudentDetailProvider(
-      id,
-    );
+  StudentDetailProvider call(int id) {
+    return StudentDetailProvider(id);
   }
 
   @override
   StudentDetailProvider getProviderOverride(
     covariant StudentDetailProvider provider,
   ) {
-    return call(
-      provider.id,
-    );
+    return call(provider.id);
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -74,24 +68,19 @@ class StudentDetailFamily extends Family<AsyncValue<Student?>> {
 /// See also [studentDetail].
 class StudentDetailProvider extends AutoDisposeFutureProvider<Student?> {
   /// See also [studentDetail].
-  StudentDetailProvider(
-    int id,
-  ) : this._internal(
-          (ref) => studentDetail(
-            ref as StudentDetailRef,
-            id,
-          ),
-          from: studentDetailProvider,
-          name: r'studentDetailProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$studentDetailHash,
-          dependencies: StudentDetailFamily._dependencies,
-          allTransitiveDependencies:
-              StudentDetailFamily._allTransitiveDependencies,
-          id: id,
-        );
+  StudentDetailProvider(int id)
+    : this._internal(
+        (ref) => studentDetail(ref as StudentDetailRef, id),
+        from: studentDetailProvider,
+        name: r'studentDetailProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$studentDetailHash,
+        dependencies: StudentDetailFamily._dependencies,
+        allTransitiveDependencies:
+            StudentDetailFamily._allTransitiveDependencies,
+        id: id,
+      );
 
   StudentDetailProvider._internal(
     super._createNotifier, {
@@ -148,7 +137,8 @@ mixin StudentDetailRef on AutoDisposeFutureProviderRef<Student?> {
 }
 
 class _StudentDetailProviderElement
-    extends AutoDisposeFutureProviderElement<Student?> with StudentDetailRef {
+    extends AutoDisposeFutureProviderElement<Student?>
+    with StudentDetailRef {
   _StudentDetailProviderElement(super.provider);
 
   @override

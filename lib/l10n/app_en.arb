@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appName": "Tuition2027",
+  "appName": "Tuition manager",
   "navHome": "Home",
   "navClasses": "Classes",
   "navStudents": "Students",
@@ -19,7 +19,7 @@
   "paletteBurgundy": "Burgundy Rose",
   "paletteHighContrast": "High Contrast",
   "dashboardTitle": "Home",
-  "dashboardGreeting": "Welcome Teacher!",
+  "dashboardGreeting": "Hello!",
   "dashboardGreetingSubtitle": "Have a productive teaching day!",
   "dashboardTodaySessions": "Today's Sessions",
   "dashboardPendingAttendance": "Needs Attendance",
@@ -65,8 +65,8 @@
   "langVietnamese": "Tiếng Việt",
   "langEnglish": "English",
   "settingsAppInfo": "APPLICATION INFO",
-  "appVersion": "Version: 1.0.0+1",
-  "dbVersion": "Database: v15",
+  "appVersion": "Version: 2.6",
+  "dbVersion": "Database: v16",
 
   "studentFormTitleAdd": "Add Student",
   "studentFormTitleEdit": "Edit Student",

@@ -28,36 +28,6 @@ class ScheduleTab extends ConsumerWidget {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          if (!isArchived)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Lịch học định kỳ',
-                    style: TextStyle(
-                      color: AppColors.cyanAccent,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: () =>
-                        showScheduleFormBottomSheet(context, classId: classId),
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text('Thêm lịch học'),
-                  ),
-                ],
-              ),
-            ),
           Expanded(
             child: schedulesAsync.when(
               data: (schedules) {
@@ -72,143 +42,193 @@ class ScheduleTab extends ConsumerWidget {
                     ),
                   );
                 }
+                final ordered = [...schedules]
+                  ..sort((a, b) {
+                    final weekday = a.thuTrongTuan.compareTo(b.thuTrongTuan);
+                    return weekday != 0
+                        ? weekday
+                        : a.gioBatDau.compareTo(b.gioBatDau);
+                  });
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,
                   ),
-                  itemCount: schedules.length,
+                  itemCount: ordered.length,
                   itemBuilder: (context, index) {
-                    final s = schedules[index];
+                    final s = ordered[index];
+                    final isLast = index == ordered.length - 1;
                     final isActive = s.isEffectiveOn(DateTime.now());
-                    return AppSectionCard(
-                      margin: const EdgeInsets.only(bottom: 8),
+                    return IntrinsicHeight(
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: isActive
-                                  ? AppColors.primary.withValues(alpha: 0.2)
-                                  : AppColors.textMuted.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Center(
-                              child: Text(
-                                s.thuTrongTuan == 7
-                                    ? 'CN'
-                                    : 'T${s.thuTrongTuan + 1}',
-                                style: TextStyle(
-                                  color: isActive
-                                      ? AppColors.cyanAccent
-                                      : AppColors.textMuted,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
+                          SizedBox(
+                            width: 18,
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      '${DateFormatter.formatVietnameseWeekday(s.thuTrongTuan)}: ${s.gioBatDau} - ${s.gioKetThuc}',
-                                      style: TextStyle(
-                                        color: AppColors.textPrimary,
-                                        fontWeight: isActive
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    AppStatusChip(
-                                      label: isActive
-                                          ? 'Đang áp dụng'
-                                          : 'Đã kết thúc',
-                                      color: isActive
-                                          ? AppColors.success
-                                          : AppColors.textMuted,
-                                      compact: true,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Hiệu lực: ${DateFormatter.formatDisplayDate(s.hieuLucTu)}${s.hieuLucDen != null ? ' đến ${DateFormatter.formatDisplayDate(s.hieuLucDen!)}' : ''}',
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 12,
+                                Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.cyanAccent,
+                                    shape: BoxShape.circle,
                                   ),
                                 ),
+                                if (!isLast)
+                                  Expanded(
+                                    child: Container(
+                                      width: 2,
+                                      color: AppColors.border,
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
-                          if (isActive && !isArchived)
-                            PopupMenuButton<String>(
-                              icon: const Icon(
-                                Icons.more_vert,
-                                color: AppColors.textSecondary,
+                          Expanded(
+                            child: AppSectionCard(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: isActive
+                                          ? AppColors.primary.withValues(
+                                              alpha: 0.2,
+                                            )
+                                          : AppColors.textMuted.withValues(
+                                              alpha: 0.15,
+                                            ),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        s.thuTrongTuan == 7
+                                            ? 'CN'
+                                            : 'T${s.thuTrongTuan + 1}',
+                                        style: TextStyle(
+                                          color: isActive
+                                              ? AppColors.cyanAccent
+                                              : AppColors.textMuted,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 4,
+                                          crossAxisAlignment:
+                                              WrapCrossAlignment.center,
+                                          children: [
+                                            Text(
+                                              '${DateFormatter.formatVietnameseWeekday(s.thuTrongTuan)}: ${s.gioBatDau} - ${s.gioKetThuc}',
+                                              style: TextStyle(
+                                                color: AppColors.textPrimary,
+                                                fontWeight: isActive
+                                                    ? FontWeight.bold
+                                                    : FontWeight.normal,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            AppStatusChip(
+                                              label: isActive
+                                                  ? 'Đang áp dụng'
+                                                  : 'Đã kết thúc',
+                                              color: isActive
+                                                  ? AppColors.success
+                                                  : AppColors.textMuted,
+                                              compact: true,
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Hiệu lực: ${DateFormatter.formatDisplayDate(s.hieuLucTu)}${s.hieuLucDen != null ? ' đến ${DateFormatter.formatDisplayDate(s.hieuLucDen!)}' : ''}',
+                                          style: const TextStyle(
+                                            color: AppColors.textSecondary,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (isActive && !isArchived)
+                                    PopupMenuButton<String>(
+                                      icon: const Icon(
+                                        Icons.more_vert,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      color: AppColors.surfaceHigh,
+                                      onSelected: (value) {
+                                        if (value == 'edit') {
+                                          showEditScheduleBottomSheet(
+                                            context,
+                                            classId: classId,
+                                            schedule: s,
+                                          );
+                                        } else if (value == 'close') {
+                                          _showCloseScheduleDialog(
+                                            context,
+                                            ref,
+                                            s,
+                                          );
+                                        }
+                                      },
+                                      itemBuilder: (context) => [
+                                        const PopupMenuItem(
+                                          value: 'edit',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.edit_outlined,
+                                                size: 18,
+                                                color: AppColors.cyanAccent,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                'Sửa lịch học',
+                                                style: TextStyle(
+                                                  color: AppColors.textPrimary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'close',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.event_busy,
+                                                size: 18,
+                                                color: AppColors.error,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                'Kết thúc lịch',
+                                                style: TextStyle(
+                                                  color: AppColors.error,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                ],
                               ),
-                              color: AppColors.surfaceHigh,
-                              onSelected: (value) {
-                                if (value == 'edit') {
-                                  showEditScheduleBottomSheet(
-                                    context,
-                                    classId: classId,
-                                    schedule: s,
-                                  );
-                                } else if (value == 'close') {
-                                  _showCloseScheduleDialog(context, ref, s);
-                                }
-                              },
-                              itemBuilder: (context) => [
-                                const PopupMenuItem(
-                                  value: 'edit',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.edit_outlined,
-                                        size: 18,
-                                        color: AppColors.cyanAccent,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Sửa lịch học',
-                                        style: TextStyle(
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'close',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.event_busy,
-                                        size: 18,
-                                        color: AppColors.error,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Kết thúc lịch',
-                                        style: TextStyle(
-                                          color: AppColors.error,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
                             ),
+                          ),
                         ],
                       ),
                     );
