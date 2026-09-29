@@ -112,7 +112,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.fromLTRB(6, 16, 6, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -137,7 +137,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
               ),
               error: (err, stack) => AppSectionCard(
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.fromLTRB(6, 16, 6, 16),
                   child: Row(
                     children: [
                       const Icon(Icons.error_outline, color: AppColors.error),
