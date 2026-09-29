@@ -38,6 +38,7 @@ jobs:
         run: |
           dart format test/roster/roster_service_test.dart
           git diff -- test/roster/roster_service_test.dart
+          exit 1
 
       - name: Static analysis
         run: flutter analyze
