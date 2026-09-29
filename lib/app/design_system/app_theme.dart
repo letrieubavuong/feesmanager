@@ -5,13 +5,6 @@ import 'app_radius.dart';
 import 'app_semantic_colors.dart';
 import 'app_typography.dart';
 
-class AppSpacing {
-  AppSpacing._();
-  static const double cardGap = 8;
-  static const double sectionGap = 12;
-  static const double screenInset = 6;
-}
-
 class AppTheme {
   AppTheme._();
 
