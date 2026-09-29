@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+
 import '../domain/membership.dart';
 
 class MembershipRepository {
@@ -65,8 +66,7 @@ class MembershipRepository {
         final existing = await txn.query(
           'tham_gia_lop',
           columns: ['id'],
-          where:
-              'id_hoc_sinh = ? AND id_lop = ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+          where: 'id_hoc_sinh = ? AND id_lop = ? AND (den_ngay IS NULL OR den_ngay >= ?)',
           whereArgs: [membership.idHocSinh, first.idLop, first.tuNgay],
           limit: 1,
         );
@@ -89,6 +89,23 @@ class MembershipRepository {
       where: 'id = ?',
       whereArgs: [membership.id],
     );
+  }
+
+  Future<bool> hasFinalizedInvoiceSince(ClassMembership membership) async {
+    final rows = await _db.query(
+      'hoc_phi_thang',
+      columns: ['id'],
+      where:
+          'id_hoc_sinh = ? AND id_lop = ? AND thang >= ? AND trang_thai != ?',
+      whereArgs: [
+        membership.idHocSinh,
+        membership.idLop,
+        membership.tuNgay.substring(0, 7),
+        'NHAP',
+      ],
+      limit: 1,
+    );
+    return rows.isNotEmpty;
   }
 
   Future<void> changeJoinDate(
@@ -196,8 +213,7 @@ class MembershipRepository {
   ) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'tham_gia_lop',
-      where:
-          'id_hoc_sinh = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+      where: 'id_hoc_sinh = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
       whereArgs: [studentId, dateStr, dateStr],
       orderBy: 'tu_ngay DESC',
     );
@@ -264,8 +280,7 @@ class MembershipRepository {
   ) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'tham_gia_lop',
-      where:
-          'id_hoc_sinh = ? AND id_lop = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+      where: 'id_hoc_sinh = ? AND id_lop = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
       whereArgs: [studentId, classId, dateStr, dateStr],
     );
 
