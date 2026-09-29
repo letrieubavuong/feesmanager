@@ -211,7 +211,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appVersion => '2.6';
 
   @override
-  String get dbVersion => 'Database: v15';
+  String get dbVersion => 'Database: v16';
 
   @override
   String get studentFormTitleAdd => 'Add Student';
