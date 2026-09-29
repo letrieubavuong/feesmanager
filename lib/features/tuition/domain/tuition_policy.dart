@@ -2,6 +2,8 @@ class TuitionPolicyDefaults {
   static const int standardSessionsPerMonth = 12;
 }
 
+enum ExcusedAbsenceFeeRule { buTruBuoiDu, tinhPhi, khongTinhPhi }
+
 class TuitionPolicy {
   final int? id;
   final int idLop;
@@ -10,6 +12,7 @@ class TuitionPolicy {
   final int soBuoiChuanThang;
   final int hocPhiMoiBuoi;
   final int? hocPhiThangToiDa;
+  final ExcusedAbsenceFeeRule quyTacNghiCoPhep;
   final String? ghiChu;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -22,6 +25,7 @@ class TuitionPolicy {
     this.soBuoiChuanThang = TuitionPolicyDefaults.standardSessionsPerMonth,
     required this.hocPhiMoiBuoi,
     this.hocPhiThangToiDa,
+    this.quyTacNghiCoPhep = ExcusedAbsenceFeeRule.buTruBuoiDu,
     this.ghiChu,
     required this.createdAt,
     required this.updatedAt,
@@ -35,6 +39,7 @@ class TuitionPolicy {
     'so_buoi_chuan_thang': soBuoiChuanThang,
     'hoc_phi_moi_buoi': hocPhiMoiBuoi,
     'hoc_phi_thang_toi_da': hocPhiThangToiDa,
+    'quy_tac_nghi_co_phep': quyTacNghiCoPhep.name,
     'ghi_chu': ghiChu,
     'created_at': createdAt.toIso8601String(),
     'updated_at': updatedAt.toIso8601String(),
@@ -50,6 +55,9 @@ class TuitionPolicy {
         TuitionPolicyDefaults.standardSessionsPerMonth,
     hocPhiMoiBuoi: map['hoc_phi_moi_buoi'] as int? ?? 0,
     hocPhiThangToiDa: map['hoc_phi_thang_toi_da'] as int?,
+    quyTacNghiCoPhep: ExcusedAbsenceFeeRule.values.byName(
+      map['quy_tac_nghi_co_phep'] as String? ?? 'buTruBuoiDu',
+    ),
     ghiChu: map['ghi_chu'] as String?,
     createdAt: DateTime.parse(map['created_at'] as String),
     updatedAt: DateTime.parse(map['updated_at'] as String),
