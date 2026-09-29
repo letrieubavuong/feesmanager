@@ -239,6 +239,13 @@ void main() {
         expect(find.text('Student B'), findsOneWidget);
         expect(find.text('Student C'), findsNothing);
 
+        await tester.tap(find.byKey(const Key('tuition_student_menu_1')));
+        await tester.pumpAndSettle();
+        expect(find.text('Thu tiền'), findsOneWidget);
+        expect(find.text('Tạo mã QR'), findsOneWidget);
+        await tester.tapAt(const Offset(2, 2));
+        await tester.pumpAndSettle();
+
         // Unfinalized banner present
         expect(
           find.textContaining('1 học sinh chưa chốt học phí'),
