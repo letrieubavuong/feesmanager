@@ -6,9 +6,9 @@ import '../../../app/design_system/app_theme.dart';
 import '../../../app/design_system/theme_controller.dart';
 import '../../../app/localization/locale_controller.dart';
 import '../../../app/navigation/app_global_drawer.dart';
-import '../../../app/navigation/ui_keys.dart';
 import '../../../l10n/app_localizations.dart';
 import 'bank_account_settings_page.dart';
+import '../domain/class_reminder_service.dart';
 import 'school_catalog_provider.dart';
 import 'tuition_policy_settings_page.dart';
 
@@ -35,49 +35,30 @@ class SettingsPage extends ConsumerWidget {
           // 1. GIAO DIỆN
           AppSectionHeader(title: l10n.settingsAppearance),
           AppSectionCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.all(8),
+            child: Row(
               children: [
-                DropdownButtonFormField<ThemeMode>(
-                  initialValue: themeState.themeMode,
-                  dropdownColor: AppColors.surfaceHigh,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: InputDecoration(
-                    labelText: l10n.settingsThemeMode,
-                    border: const OutlineInputBorder(),
-                  ),
-                  items: [
-                    DropdownMenuItem(
+                Expanded(child: Text(l10n.settingsThemeMode)),
+                SegmentedButton<ThemeMode>(
+                  showSelectedIcon: false,
+                  segments: [
+                    ButtonSegment(
                       value: ThemeMode.system,
-                      key: UiKeys.settingsThemeModeSystem,
-                      child: Text(l10n.themeSystem),
+                      label: Text(l10n.themeSystem),
                     ),
-                    DropdownMenuItem(
+                    ButtonSegment(
                       value: ThemeMode.light,
-                      key: UiKeys.settingsThemeModeLight,
-                      child: Text(l10n.themeLight),
+                      icon: const Icon(Icons.light_mode_outlined),
                     ),
-                    DropdownMenuItem(
+                    ButtonSegment(
                       value: ThemeMode.dark,
-                      key: UiKeys.settingsThemeModeDark,
-                      child: Text(l10n.themeDark),
+                      icon: const Icon(Icons.dark_mode_outlined),
                     ),
                   ],
-                  onChanged: (val) {
-                    if (val != null) {
-                      ref
-                          .read(themeControllerProvider.notifier)
-                          .setThemeMode(val);
-                    }
-                  },
-                ),
-                const SizedBox(height: 8),
-                const Padding(
-                  padding: EdgeInsets.only(left: 4),
-                  child: Text(
-                    'Bộ nhận diện mặc định: Xanh Vật Lý (Physics Navy)',
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 12),
-                  ),
+                  selected: {themeState.themeMode},
+                  onSelectionChanged: (value) => ref
+                      .read(themeControllerProvider.notifier)
+                      .setThemeMode(value.first),
                 ),
               ],
             ),
@@ -88,50 +69,92 @@ class SettingsPage extends ConsumerWidget {
           // 2. NGÔN NGỮ
           AppSectionHeader(title: l10n.settingsLanguage),
           AppSectionCard(
-            child: DropdownButtonFormField<AppLocaleMode>(
-              initialValue: localeMode,
-              dropdownColor: AppColors.surfaceHigh,
-              style: const TextStyle(color: AppColors.textPrimary),
-              decoration: InputDecoration(
-                labelText: l10n.settingsLanguage,
-                border: const OutlineInputBorder(),
-              ),
-              items: [
-                DropdownMenuItem(
-                  value: AppLocaleMode.system,
-                  key: UiKeys.settingsLanguageSystem,
-                  child: Text(l10n.langSystem),
-                ),
-                DropdownMenuItem(
-                  value: AppLocaleMode.vi,
-                  key: UiKeys.settingsLanguageVi,
-                  child: Text(l10n.langVietnamese),
-                ),
-                DropdownMenuItem(
-                  value: AppLocaleMode.en,
-                  key: UiKeys.settingsLanguageEn,
-                  child: Text(l10n.langEnglish),
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Expanded(child: Text(l10n.settingsLanguage)),
+                SegmentedButton<AppLocaleMode>(
+                  showSelectedIcon: false,
+                  segments: const [
+                    ButtonSegment(
+                      value: AppLocaleMode.system,
+                      label: Text('Máy'),
+                    ),
+                    ButtonSegment(value: AppLocaleMode.vi, label: Text('VI')),
+                    ButtonSegment(value: AppLocaleMode.en, label: Text('EN')),
+                  ],
+                  selected: {localeMode},
+                  onSelectionChanged: (value) => ref
+                      .read(localeControllerProvider.notifier)
+                      .setLocaleMode(value.first),
                 ),
               ],
-              onChanged: (val) {
-                if (val != null) {
-                  ref
-                      .read(localeControllerProvider.notifier)
-                      .setLocaleMode(val);
-                }
-              },
             ),
           ),
 
           const SizedBox(height: 16),
 
+          const AppSectionHeader(title: 'NHẮC GIỜ DẠY'),
+          AppSectionCard(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Thông báo trước buổi học đã lên lịch'),
+                const SizedBox(height: 8),
+                ref
+                    .watch(reminderMinutesProvider)
+                    .when(
+                      data: (minutes) => SegmentedButton<int>(
+                        showSelectedIcon: false,
+                        segments: const [
+                          ButtonSegment(value: 0, label: Text('Tắt')),
+                          ButtonSegment(value: 5, label: Text('5 phút')),
+                          ButtonSegment(value: 10, label: Text('10 phút')),
+                        ],
+                        selected: {minutes},
+                        onSelectionChanged: (selected) async {
+                          try {
+                            await ref
+                                .read(classReminderServiceProvider)
+                                .setMinutes(selected.first);
+                          } catch (error) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  error.toString().replaceFirst(
+                                    'Exception: ',
+                                    '',
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      loading: () => const LinearProgressIndicator(),
+                      error: (error, _) =>
+                          Text('Không tải được cài đặt: $error'),
+                    ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Nhắc theo các buổi đã sinh trong 30 ngày tới. Mở ứng dụng sau khi sửa lịch để cập nhật thông báo.',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
           const AppSectionHeader(title: 'CHÍNH SÁCH HỌC PHÍ'),
           AppSectionCard(
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const TuitionPolicySettingsPage(),
-              ),
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            onTap: () =>
+                _openSettingsSheet(context, const TuitionPolicySettingsPage()),
             child: const ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Icon(Icons.rule_outlined),
@@ -145,13 +168,9 @@ class SettingsPage extends ConsumerWidget {
           // 3. THANH TOÁN & QR
           const AppSectionHeader(title: 'THANH TOÁN & QR'),
           AppSectionCard(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const BankAccountSettingsPage(),
-                ),
-              );
-            },
+            padding: const EdgeInsets.all(8),
+            onTap: () =>
+                _openSettingsSheet(context, const BankAccountSettingsPage()),
             child: const Row(
               key: Key('bank_account_settings_tile'),
               children: [
@@ -193,6 +212,7 @@ class SettingsPage extends ConsumerWidget {
 
           const AppSectionHeader(title: 'TRƯỜNG HỌC'),
           AppSectionCard(
+            padding: const EdgeInsets.all(8),
             child: Column(
               children: [
                 ...ref
@@ -236,6 +256,7 @@ class SettingsPage extends ConsumerWidget {
           // 4. THÔNG TIN ỨNG DỤNG
           AppSectionHeader(title: l10n.settingsAppInfo),
           AppSectionCard(
+            padding: const EdgeInsets.all(8),
             child: Column(
               children: [
                 CompactInfoRow(
@@ -259,6 +280,21 @@ class SettingsPage extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _openSettingsSheet(BuildContext context, Widget page) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => SizedBox(
+        height: MediaQuery.sizeOf(sheetContext).height * .9,
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          child: page,
+        ),
       ),
     );
   }
