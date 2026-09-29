@@ -11,6 +11,7 @@ import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../attendance/domain/class_attendance_timeline_item.dart';
+import '../../attendance/domain/attendance_service.dart';
 import '../../attendance/presentation/attendance_page.dart';
 import '../../attendance/presentation/class_attendance_timeline_controller.dart';
 import '../../leave/presentation/leave_request_page.dart';
@@ -48,6 +49,111 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
     1,
   );
   String _attendanceFilter = 'DU_KIEN';
+
+  Future<void> _showHistoricalAttendanceSheet() async {
+    final month = DateTime(_timelineMonth.year, _timelineMonth.month);
+    final start = DateFormat('yyyy-MM-dd').format(month);
+    final end = DateFormat('yyyy-MM-dd')
+        .format(DateTime(month.year, month.month + 1, 0));
+    final service = await ref.read(attendanceServiceProvider.future);
+    if (!mounted) return;
+    HistoricalAttendancePreview? preview;
+    String? error;
+    try {
+      preview = await service.backfillHistoricalAttendance(
+        classId: widget.classId,
+        fromDate: start,
+        toDate: end,
+      );
+    } catch (e) {
+      error = e.toString().replaceFirst('Invalid argument(s): ', '');
+    }
+    if (!mounted) return;
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Điểm danh bù',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Tháng ${DateFormat('MM/yyyy').format(month)}',
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                error ??
+                    '${preview!.sessionCount} buổi, ${preview.studentCount} lượt học sinh chưa điểm danh; ${preview.excusedCount} lượt nghỉ có phép đã duyệt. Bỏ qua ${preview.skippedCount} buổi hủy, nghỉ lễ, đã hoàn tất hoặc dữ liệu chưa hợp lệ.',
+                style: const TextStyle(color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Các lượt còn thiếu sẽ được đánh dấu Có mặt, riêng đơn nghỉ đã duyệt là Nghỉ có phép. Điểm danh đã lưu được giữ nguyên. Hãy kiểm tra và sửa từng buổi nếu thực tế khác.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(sheetContext, false),
+                    child: const Text('Đóng'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: error != null || preview!.studentCount == 0
+                        ? null
+                        : () => Navigator.pop(sheetContext, true),
+                    child: const Text('Lưu điểm danh bù'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      final result = await service.backfillHistoricalAttendance(
+        classId: widget.classId,
+        fromDate: start,
+        toDate: end,
+        save: true,
+      );
+      if (!mounted) return;
+      ref.invalidate(
+        classAttendanceTimelineProvider(
+          classId: widget.classId,
+          yearMonth: DateFormat('yyyy-MM').format(month),
+        ),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Đã cập nhật ${result.studentCount} lượt trong ${result.sessionCount} buổi.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Không thể điểm danh bù: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -522,6 +628,15 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
               const Text(
                 'Đã hoàn tất',
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+              ),
+              const Spacer(),
+              IconButton(
+                tooltip: 'Điểm danh bù tháng đang xem',
+                icon: const Icon(
+                  Icons.fact_check_outlined,
+                  color: AppColors.cyanAccent,
+                ),
+                onPressed: _showHistoricalAttendanceSheet,
               ),
             ],
           ),
