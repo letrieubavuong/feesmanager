@@ -81,7 +81,7 @@ class _SessionCreditPageState extends ConsumerState<SessionCreditPage> {
               classAsync.value?.tenLop ?? l10n?.creditsHeaderClass ?? 'Lớp học';
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(6, 16, 6, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
