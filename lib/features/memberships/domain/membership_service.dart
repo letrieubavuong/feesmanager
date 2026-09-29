@@ -119,6 +119,32 @@ class MembershipService {
     await _repository.update(updated);
   }
 
+  Future<void> changeJoinDate({
+    required ClassMembership membership,
+    required DateTime joinDate,
+  }) async {
+    if (membership.id == null)
+      throw Exception('Không tìm thấy lần tham gia lớp');
+    final newDate = DateFormat('yyyy-MM-dd').format(joinDate);
+    if (newDate == membership.tuNgay) return;
+    if (membership.denNgay != null &&
+        newDate.compareTo(membership.denNgay!) > 0) {
+      throw Exception(
+        'Ngày tham gia phải trước hoặc bằng ngày nghỉ lớp (${membership.denNgay})',
+      );
+    }
+    if (await _repository.hasOverlappingMembership(
+      membership.idHocSinh,
+      membership.idLop,
+      newDate,
+      membership.denNgay,
+      excludeId: membership.id,
+    )) {
+      throw Exception('Ngày tham gia trùng khoảng thời gian học sinh đã ở lớp');
+    }
+    await _repository.changeJoinDate(membership, newDate);
+  }
+
   Future<ClassMembership?> getActiveMembership(
     int studentId,
     int classId,
