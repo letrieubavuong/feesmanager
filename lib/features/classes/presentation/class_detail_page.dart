@@ -1102,6 +1102,11 @@ class HistoryItem extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.edit_calendar_outlined, size: 20),
+            tooltip: 'Sửa ngày tham gia lớp',
+            onPressed: () => editMembershipJoinDate(context, ref, membership),
+          ),
           if (!isActive)
             OutlinedButton(
               style: OutlinedButton.styleFrom(
@@ -1215,6 +1220,11 @@ class RosterItem extends ConsumerWidget {
             ),
           ),
           IconButton(
+            icon: const Icon(Icons.edit_calendar_outlined, size: 20),
+            tooltip: 'Sửa ngày tham gia lớp',
+            onPressed: () => editMembershipJoinDate(context, ref, membership),
+          ),
+          IconButton(
             icon: const Icon(Icons.logout, color: AppColors.error, size: 20),
             tooltip: 'Cho nghỉ lớp',
             onPressed: () => _showLeaveDialog(context, ref),
@@ -1245,3 +1255,38 @@ final classMembershipHistoryProvider =
       final repo = await ref.watch(membershipRepositoryProvider.future);
       return repo.getByClass(classId);
     });
+
+Future<void> editMembershipJoinDate(
+  BuildContext context,
+  WidgetRef ref,
+  ClassMembership membership,
+) async {
+  final current = DateTime.parse(membership.tuNgay);
+  final selected = await showDatePicker(
+    context: context,
+    initialDate: current,
+    firstDate: DateTime(2020),
+    lastDate: membership.denNgay == null
+        ? DateTime(2100)
+        : DateTime.parse(membership.denNgay!),
+    helpText: 'Ngày tham gia lớp',
+  );
+  if (selected == null || selected == current) return;
+  try {
+    final service = await ref.read(membershipServiceProvider.future);
+    await service.changeJoinDate(membership: membership, joinDate: selected);
+    ref.invalidate(classRosterProvider);
+    ref.invalidate(classSizeProvider);
+    ref.invalidate(classMembershipHistoryProvider);
+    if (context.mounted) {
+      AppFeedback.showSuccessSnackBar(context, 'Đã cập nhật ngày tham gia lớp');
+    }
+  } catch (error) {
+    if (context.mounted) {
+      AppFeedback.showErrorSnackBar(
+        context,
+        error.toString().replaceFirst('Exception: ', ''),
+      );
+    }
+  }
+}
