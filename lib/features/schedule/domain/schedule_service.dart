@@ -754,7 +754,8 @@ class ScheduleDomainService {
 
     final sessionsInAffectedRange = await db.query(
       'buoi_hoc',
-      where: 'id_lop = ? AND (id_lich_hoc = ? OR id_lich_hoc IS NULL) AND ngay >= ? AND ngay <= ?',
+      where:
+          'id_lop = ? AND (id_lich_hoc = ? OR id_lich_hoc IS NULL) AND ngay >= ? AND ngay <= ?',
       whereArgs: [existing.idLop, existing.idLichHoc, affectedFrom, affectedTo],
     );
 
