@@ -10,6 +10,78 @@ class MembershipRepository {
     return await _db.insert('tham_gia_lop', membership.toMap());
   }
 
+  /// Validates the whole selection before inserting, so a failed enrollment
+  /// never leaves only some students in the class.
+  Future<void> createBatch(List<ClassMembership> memberships) async {
+    if (memberships.isEmpty) return;
+    await _db.transaction((txn) async {
+      final first = memberships.first;
+      final classRows = await txn.query(
+        'lop',
+        columns: ['si_so_toi_da', 'da_luu_tru'],
+        where: 'id = ?',
+        whereArgs: [first.idLop],
+        limit: 1,
+      );
+      if (classRows.isEmpty || classRows.first['da_luu_tru'] == 1) {
+        throw Exception('Lớp không tồn tại hoặc đã ngừng hoạt động');
+      }
+      final capacity = classRows.first['si_so_toi_da'] as int?;
+      if (capacity != null) {
+        final count =
+            Sqflite.firstIntValue(
+              await txn.rawQuery(
+                'SELECT COUNT(DISTINCT id_hoc_sinh) FROM tham_gia_lop '
+                'WHERE id_lop = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+                [first.idLop, first.tuNgay, first.tuNgay],
+              ),
+            ) ??
+            0;
+        if (count + memberships.length > capacity) {
+          throw Exception(
+            'Sĩ số tối đa $capacity; chỉ còn ${capacity - count} chỗ',
+          );
+        }
+      }
+      final ids = <int>{};
+      for (final membership in memberships) {
+        if (membership.idLop != first.idLop ||
+            membership.tuNgay != first.tuNgay ||
+            !ids.add(membership.idHocSinh)) {
+          throw Exception('Danh sách học sinh không hợp lệ hoặc bị trùng');
+        }
+        final student = await txn.query(
+          'hoc_sinh',
+          columns: ['da_luu_tru'],
+          where: 'id = ?',
+          whereArgs: [membership.idHocSinh],
+          limit: 1,
+        );
+        if (student.isEmpty || student.first['da_luu_tru'] == 1) {
+          throw Exception(
+            'Học sinh #${membership.idHocSinh} không còn hoạt động',
+          );
+        }
+        final existing = await txn.query(
+          'tham_gia_lop',
+          columns: ['id'],
+          where:
+              'id_hoc_sinh = ? AND id_lop = ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+          whereArgs: [membership.idHocSinh, first.idLop, first.tuNgay],
+          limit: 1,
+        );
+        if (existing.isNotEmpty) {
+          throw Exception(
+            'Học sinh #${membership.idHocSinh} đã tham gia lớp trong khoảng thời gian này',
+          );
+        }
+      }
+      for (final membership in memberships) {
+        await txn.insert('tham_gia_lop', membership.toMap());
+      }
+    });
+  }
+
   Future<int> update(ClassMembership membership) async {
     return await _db.update(
       'tham_gia_lop',
