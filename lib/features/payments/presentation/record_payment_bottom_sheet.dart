@@ -123,7 +123,7 @@ class _RecordPaymentBottomSheetState
                       children: [
                         Text(
                           widget.isEditMode
-                              ? 'Sửa khoản thu'
+                              ? 'Sửa phiếu thu'
                               : 'Ghi nhận thanh toán',
                           style: const TextStyle(
                             color: AppColors.textPrimary,
@@ -173,7 +173,7 @@ class _RecordPaymentBottomSheetState
                       keyboardType: TextInputType.number,
                       style: const TextStyle(color: AppColors.textPrimary),
                       decoration: const InputDecoration(
-                        labelText: 'Số tiền thanh toán (đ) *',
+                        labelText: 'Số tiền thu (đ) *',
                         border: OutlineInputBorder(),
                       ),
                       validator: (value) {
@@ -188,7 +188,7 @@ class _RecordPaymentBottomSheetState
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text(
-                        'Ngày thanh toán',
+                        'Ngày thu tiền',
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 13,
