@@ -107,6 +107,27 @@ class TuitionPolicyService {
       throw Exception('Mức học phí tối đa tháng phải lớn hơn hoặc bằng 0');
     }
 
+    // A historical gap may precede an existing policy. End it before the
+    // next policy so later tuition keeps its configured rate.
+    final existingPolicies = await _repo.getPoliciesForClass(classId);
+    final laterPolicies = existingPolicies
+        .where((p) => p.hieuLucTu.compareTo(effectiveFrom) > 0)
+        .toList()
+      ..sort((a, b) => a.hieuLucTu.compareTo(b.hieuLucTu));
+    if (laterPolicies.isNotEmpty) {
+      final dayBeforeNext = DateFormat('yyyy-MM-dd').format(
+        DateTime.parse(laterPolicies.first.hieuLucTu)
+            .subtract(const Duration(days: 1)),
+      );
+      if (effectiveTo == null) {
+        effectiveTo = dayBeforeNext;
+      } else if (effectiveTo.compareTo(dayBeforeNext) > 0) {
+        throw Exception(
+          'Chính sách tháng cũ phải kết thúc trước ${laterPolicies.first.hieuLucTu}',
+        );
+      }
+    }
+
     // Safety check 1: Block creating/editing policy if a finalized invoice exists in affected month range
     final fromMonth = effectiveFrom.substring(0, 7);
     final toMonth = effectiveTo?.substring(0, 7);
@@ -168,7 +189,7 @@ class TuitionPolicyService {
     }
 
     // Check existing policies for overlap
-    final existingPolicies = await _repo.getPoliciesForClass(classId);
+
     String? closeDateStr;
 
     for (final p in existingPolicies) {
