@@ -31,7 +31,7 @@ void main() {
         expect(find.text('NGÔN NGỮ'), findsAtLeast(1));
         expect(find.text('THÔNG TIN ỨNG DỤNG'), findsOneWidget);
         expect(find.text('Phiên bản: 1.0.0+1'), findsOneWidget);
-        expect(find.text('Cơ sở dữ liệu: v15'), findsOneWidget);
+        expect(find.text('Cơ sở dữ liệu: v16'), findsOneWidget);
       },
     );
 
