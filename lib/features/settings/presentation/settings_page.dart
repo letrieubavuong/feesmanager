@@ -36,10 +36,17 @@ class SettingsPage extends ConsumerWidget {
           AppSectionHeader(title: l10n.settingsAppearance),
           AppSectionCard(
             padding: const EdgeInsets.all(8),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: Text(l10n.settingsThemeMode)),
-                SegmentedButton<ThemeMode>(
+                Text(l10n.settingsThemeMode),
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: double.infinity,
+                  child: FittedBox(
+                    alignment: Alignment.centerLeft,
+                    fit: BoxFit.scaleDown,
+                    child: SegmentedButton<ThemeMode>(
                   showSelectedIcon: false,
                   segments: [
                     ButtonSegment(
@@ -59,6 +66,8 @@ class SettingsPage extends ConsumerWidget {
                   onSelectionChanged: (value) => ref
                       .read(themeControllerProvider.notifier)
                       .setThemeMode(value.first),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -70,10 +79,17 @@ class SettingsPage extends ConsumerWidget {
           AppSectionHeader(title: l10n.settingsLanguage),
           AppSectionCard(
             padding: const EdgeInsets.all(8),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: Text(l10n.settingsLanguage)),
-                SegmentedButton<AppLocaleMode>(
+                Text(l10n.settingsLanguage),
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: double.infinity,
+                  child: FittedBox(
+                    alignment: Alignment.centerLeft,
+                    fit: BoxFit.scaleDown,
+                    child: SegmentedButton<AppLocaleMode>(
                   showSelectedIcon: false,
                   segments: const [
                     ButtonSegment(
@@ -87,6 +103,8 @@ class SettingsPage extends ConsumerWidget {
                   onSelectionChanged: (value) => ref
                       .read(localeControllerProvider.notifier)
                       .setLocaleMode(value.first),
+                    ),
+                  ),
                 ),
               ],
             ),
