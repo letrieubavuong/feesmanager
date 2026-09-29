@@ -55,7 +55,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     );
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(8, 12, 8, 28),
+      padding: const EdgeInsets.fromLTRB(6, 12, 6, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -366,7 +366,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     if (targetRows.isEmpty) {
       String emptyText;
       if (activeFilter == TuitionPaymentFilter.outstanding) {
-        emptyText = 'Không có khoản tạm tính hoặc còn nợ.';
+        emptyText = 'Không có khoản tạm tính hoặc chưa thanh toán.';
       } else {
         emptyText = 'Chưa có học sinh đã nộp đủ.';
       }
@@ -738,7 +738,7 @@ class _StudentTuitionCard extends ConsumerWidget {
                     const SizedBox(height: 8),
                     _buildDetailRow(
                       context,
-                      'Còn nợ:',
+                      'Chưa thanh toán:',
                       AppFormatter.formatCurrency(
                         remainingDebt,
                         context: context,
@@ -832,9 +832,9 @@ class _StudentTuitionCard extends ConsumerWidget {
                 if (isUnpaid)
                   Text(
                     amountPaid > 0
-                        ? 'Đã thu ${AppFormatter.formatCurrency(amountPaid, context: context)} • Còn ${AppFormatter.formatCurrency(remainingDebt, context: context)}'
+                        ? 'Đã thu ${AppFormatter.formatCurrency(amountPaid, context: context)} • Chưa thanh toán ${AppFormatter.formatCurrency(remainingDebt, context: context)}'
                         : row.isFinalized
-                        ? 'Còn nợ ${AppFormatter.formatCurrency(remainingDebt, context: context)}'
+                        ? 'Chưa thanh toán ${AppFormatter.formatCurrency(remainingDebt, context: context)}'
                         : 'Tạm tính ${AppFormatter.formatCurrency(remainingDebt, context: context)}',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -859,10 +859,8 @@ class _StudentTuitionCard extends ConsumerWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                if (student.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
-                  const SizedBox(height: 6),
-                  ParentContactActions(phone: student.sdtPhuHuynh),
-                ],
+                const SizedBox(height: 4),
+                ParentContactActions(phone: student.sdtPhuHuynh),
               ],
             ),
           ),
