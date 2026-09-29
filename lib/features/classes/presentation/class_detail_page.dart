@@ -28,6 +28,8 @@ import '../../sessions/presentation/session_tab.dart';
 import '../../students/presentation/student_detail_page.dart';
 import '../../tuition/presentation/class_tuition_tab.dart';
 import '../../tuition/presentation/create_tuition_policy_bottom_sheet.dart';
+import '../../tuition/domain/tuition_policy_service.dart';
+import '../../tuition/presentation/tuition_controller.dart';
 import '../domain/class.dart';
 import '../domain/class_service.dart';
 import 'class_controller.dart';
@@ -42,6 +44,38 @@ class ClassDetailPage extends ConsumerStatefulWidget {
 }
 
 class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
+  Future<void> _changeClassTuitionPolicy() async {
+    try {
+      final service = await ref.read(tuitionPolicyServiceProvider.future);
+      final policies = await service.getPoliciesForClass(widget.classId);
+      if (!mounted) return;
+      final latest = policies.isEmpty ? null : policies.first;
+      final now = DateTime.now();
+      final latestStart = latest == null
+          ? now
+          : DateTime.parse(latest.hieuLucTu);
+      final baseMonth = latestStart.isAfter(now) ? latestStart : now;
+      final start = latest == null
+          ? DateTime(now.year, now.month, 1)
+          : DateTime(baseMonth.year, baseMonth.month + 1, 1);
+      final saved = await showCreateTuitionPolicyBottomSheet(
+        context,
+        classId: widget.classId,
+        initialMonth: DateFormat('yyyy-MM').format(start),
+        previousPolicy: latest,
+      );
+      if (saved == true) {
+        ref.invalidate(classTuitionPoliciesProvider(widget.classId));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      AppFeedback.showErrorSnackBar(
+        context,
+        e.toString().replaceFirst('Exception: ', ''),
+      );
+    }
+  }
+
   DateTime _referenceDate = DateTime.now();
   DateTime _timelineMonth = DateTime(
     DateTime.now().year,
@@ -373,10 +407,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
               _headerAction(
                 Icons.request_quote_outlined,
                 'Học phí',
-                () => showCreateTuitionPolicyBottomSheet(
-                  context,
-                  classId: widget.classId,
-                ),
+                _changeClassTuitionPolicy,
               ),
               _headerAction(
                 Icons.event_note_outlined,
