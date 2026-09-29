@@ -583,6 +583,14 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                   ],
                 ),
                 IconButton(
+                  tooltip: 'Điểm danh bù tháng đang xem',
+                  icon: const Icon(
+                    Icons.fact_check_outlined,
+                    color: AppColors.cyanAccent,
+                  ),
+                  onPressed: _showHistoricalAttendanceSheet,
+                ),
+                IconButton(
                   icon: const Icon(
                     Icons.chevron_right,
                     color: AppColors.cyanAccent,
@@ -628,15 +636,6 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
               const Text(
                 'Đã hoàn tất',
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
-              ),
-              const Spacer(),
-              IconButton(
-                tooltip: 'Điểm danh bù tháng đang xem',
-                icon: const Icon(
-                  Icons.fact_check_outlined,
-                  color: AppColors.cyanAccent,
-                ),
-                onPressed: _showHistoricalAttendanceSheet,
               ),
             ],
           ),
