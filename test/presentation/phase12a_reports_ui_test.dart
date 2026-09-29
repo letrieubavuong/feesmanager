@@ -259,7 +259,7 @@ void main() {
         expect(find.text('Tỷ lệ đi học'), findsAtLeast(1));
         expect(find.text('Học phí đã chốt'), findsAtLeast(1));
         expect(find.text('Thực nhận'), findsAtLeast(1));
-        expect(find.text('Còn nợ'), findsAtLeast(1));
+        expect(find.text('Chưa thanh toán'), findsAtLeast(1));
 
         expect(find.text('A. ĐIỂM DANH THỐNG KÊ'), findsOneWidget);
         expect(find.text('B. TỔNG HỢP HỌC PHÍ'), findsOneWidget);
