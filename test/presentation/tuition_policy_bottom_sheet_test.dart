@@ -31,6 +31,8 @@ class _MockTuitionPolicyController extends TuitionPolicyController {
     required int feePerSession,
     int? monthlyMaxFee,
     String? note,
+    ExcusedAbsenceFeeRule excusedAbsenceFeeRule =
+        ExcusedAbsenceFeeRule.buTruBuoiDu,
   }) async {
     return await onCreate(
       classId: classId,
