@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../app/common_widgets/app_empty_state.dart';
 import '../../../app/common_widgets/app_error_state.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
@@ -37,6 +38,37 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
         leading: const GlobalMenuButton(),
         title: Text(l10n.navClasses),
         actions: [
+          Tooltip(
+            message: _filter == ClassFilter.active
+                ? l10n.classFilterActive
+                : l10n.classFilterStopped,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _filter == ClassFilter.active
+                      ? l10n.classFilterActive
+                      : l10n.classFilterStopped,
+                  style: const TextStyle(fontSize: 11),
+                ),
+                Switch.adaptive(
+                  key: _filter == ClassFilter.active
+                      ? UiKeys.classActiveFilter
+                      : UiKeys.classArchivedFilter,
+                  value: _filter == ClassFilter.active,
+                  onChanged: (active) {
+                    final next = active
+                        ? ClassFilter.active
+                        : ClassFilter.archived;
+                    setState(() => _filter = next);
+                    ref
+                        .read(classListOverviewControllerProvider.notifier)
+                        .setFilter(next);
+                  },
+                ),
+              ],
+            ),
+          ),
           IconButton(
             key: UiKeys.classAddButton,
             icon: const Icon(Icons.add_rounded),
@@ -85,8 +117,6 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 1. 2-State Filter Toggle
-                _buildFilterToggle(l10n),
-                const SizedBox(height: 16),
 
                 // 2. Active Mode KPIs or Archived Mode Header
                 if (_filter == ClassFilter.active) ...[
