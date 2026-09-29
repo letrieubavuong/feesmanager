@@ -157,7 +157,7 @@ void main() {
       );
     });
 
-    test('Phân ca có hiệu lực lọc sĩ số dù ngày đó chỉ có một lịch', () async {
+    test('Lọc ca đã phân dù chỉ một lịch trong ngày', () async {
       await db.insert('lop', {
         'id': 1,
         'ten_lop': 'Lớp A',
