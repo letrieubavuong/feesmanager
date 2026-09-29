@@ -639,6 +639,16 @@ class _ScheduleFormBottomSheetState
                       ),
                       const SizedBox(height: 16),
                       _buildFieldLabel('Ngày hiệu lực từ', isRequired: true),
+                      if (isEdit) ...[
+                        const Text(
+                          'Chọn ngày áp dụng lịch mới. Lịch cũ giữ nguyên đến ngày trước đó; các buổi dự kiến từ ngày này sẽ được tạo lại.',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       _buildCustomInputContainer(
                         icon: Icons.calendar_month_rounded,
                         child: Text(
@@ -832,8 +842,11 @@ class _ScheduleFormBottomSheetState
           if (mounted) {
             setState(() {
               _isSaving = false;
-              _inlineError =
-                  'Thay đổi lịch học thất bại. Kiểm tra xung đột lịch.';
+              _inlineError = ref
+                  .read(classScheduleControllerProvider(widget.classId))
+                  .error
+                  .toString()
+                  .replaceFirst('Exception: ', '');
             });
           }
         }
@@ -865,8 +878,11 @@ class _ScheduleFormBottomSheetState
           if (mounted) {
             setState(() {
               _isSaving = false;
-              _inlineError =
-                  'Tạo lịch học thất bại. Vui lòng kiểm tra xung đột lịch.';
+              _inlineError = ref
+                  .read(classScheduleControllerProvider(widget.classId))
+                  .error
+                  .toString()
+                  .replaceFirst('Exception: ', '');
             });
           }
         }
