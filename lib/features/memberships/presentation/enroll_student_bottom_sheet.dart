@@ -4,6 +4,7 @@ import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/app_page_scaffold.dart';
 import '../../../app/common_widgets/dirty_form_scope.dart';
 import '../../../app/common_widgets/searchable_selectors.dart';
+import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../l10n/app_localizations.dart';
@@ -14,14 +15,123 @@ import '../domain/membership_service.dart';
 
 enum EnrollMode { existing, newStudent }
 
+Future<List<Student>?> _showMultiStudentSelector(
+  BuildContext context,
+  List<Student> candidates,
+  Set<int> initiallySelected,
+) async {
+  final search = TextEditingController();
+  final selected = {...initiallySelected};
+  var query = '';
+  try {
+    return await showModalBottomSheet<List<Student>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => FractionallySizedBox(
+        heightFactor: 0.75,
+        child: StatefulBuilder(
+          builder: (context, setSheetState) {
+            final filtered = candidates
+                .where(
+                  (student) =>
+                      student.hoTen.toLowerCase().contains(query) ||
+                      (student.sdtPhuHuynh?.contains(query) ?? false),
+                )
+                .toList();
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                child: Column(
+                  children: [
+                    Text(
+                      'Chọn học sinh (${selected.length})',
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: search,
+                      decoration: const InputDecoration(
+                        hintText: 'Tìm tên hoặc số điện thoại phụ huynh',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (value) => setSheetState(
+                        () => query = value.trim().toLowerCase(),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: filtered.isEmpty
+                          ? const Center(
+                              child: Text('Không có học sinh phù hợp'),
+                            )
+                          : ListView.builder(
+                              itemCount: filtered.length,
+                              itemBuilder: (context, index) {
+                                final student = filtered[index];
+                                final id = student.id!;
+                                return CheckboxListTile(
+                                  value: selected.contains(id),
+                                  title: Text(student.hoTen),
+                                  subtitle: student.sdtPhuHuynh == null
+                                      ? null
+                                      : Text(student.sdtPhuHuynh!),
+                                  controlAffinity:
+                                      ListTileControlAffinity.leading,
+                                  onChanged: (checked) => setSheetState(() {
+                                    if (checked == true) {
+                                      selected.add(id);
+                                    } else {
+                                      selected.remove(id);
+                                    }
+                                  }),
+                                );
+                              },
+                            ),
+                    ),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: selected.isEmpty
+                            ? null
+                            : () {
+                                Navigator.pop(
+                                  sheetContext,
+                                  candidates
+                                      .where((s) => selected.contains(s.id))
+                                      .toList(),
+                                );
+                              },
+                        child: Text('Xong • ${selected.length} học sinh'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  } finally {
+    search.dispose();
+  }
+}
+
 class EnrollStudentBottomSheet extends ConsumerStatefulWidget {
   final int classId;
   final int? initialStudentId;
+  final bool allowMultiple;
 
   const EnrollStudentBottomSheet({
     super.key,
     required this.classId,
     this.initialStudentId,
+    this.allowMultiple = false,
   });
 
   @override
@@ -34,6 +144,7 @@ class _EnrollStudentBottomSheetState
   final _formKey = GlobalKey<FormState>();
   EnrollMode _mode = EnrollMode.existing;
   Student? _selectedStudent;
+  final Map<int, Student> _selectedStudents = {};
   DateTime _joinDate = DateTime.now();
   late TextEditingController _mienGiamController;
   late TextEditingController _ghiChuController;
@@ -73,7 +184,10 @@ class _EnrollStudentBottomSheetState
     final service = await ref.read(studentServiceProvider.future);
     final s = await service.getStudentById(widget.initialStudentId!);
     if (mounted && s != null) {
-      setState(() => _selectedStudent = s);
+      setState(() {
+        _selectedStudent = s;
+        if (s.id != null) _selectedStudents[s.id!] = s;
+      });
     }
   }
 
@@ -195,13 +309,31 @@ class _EnrollStudentBottomSheetState
                         data: (candidates) => InkWell(
                           key: UiKeys.enrollStudentSelector,
                           onTap: () async {
-                            final picked = await showStudentSelectorDialog(
-                              context,
-                              students: candidates,
-                            );
-                            if (picked != null) {
-                              _onChanged();
-                              setState(() => _selectedStudent = picked);
+                            if (widget.allowMultiple) {
+                              final picked = await _showMultiStudentSelector(
+                                context,
+                                candidates,
+                                _selectedStudents.keys.toSet(),
+                              );
+                              if (picked != null) {
+                                _onChanged();
+                                setState(() {
+                                  _selectedStudents
+                                    ..clear()
+                                    ..addEntries(
+                                      picked.map((s) => MapEntry(s.id!, s)),
+                                    );
+                                });
+                              }
+                            } else {
+                              final picked = await showStudentSelectorDialog(
+                                context,
+                                students: candidates,
+                              );
+                              if (picked != null) {
+                                _onChanged();
+                                setState(() => _selectedStudent = picked);
+                              }
                             }
                           },
                           child: InputDecorator(
@@ -211,13 +343,22 @@ class _EnrollStudentBottomSheetState
                               suffixIcon: const Icon(Icons.search),
                             ),
                             child: Text(
-                              _selectedStudent?.hoTen ??
-                                  l10n.studentSearchPlaceholder,
+                              widget.allowMultiple &&
+                                      _selectedStudents.isNotEmpty
+                                  ? 'Đã chọn ${_selectedStudents.length} học sinh: ${_selectedStudents.values.map((s) => s.hoTen).join(', ')}'
+                                  : _selectedStudent?.hoTen ??
+                                        l10n.studentSearchPlaceholder,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: _selectedStudent == null
+                                color:
+                                    _selectedStudent == null &&
+                                        _selectedStudents.isEmpty
                                     ? Theme.of(context).hintColor
                                     : null,
-                                fontWeight: _selectedStudent != null
+                                fontWeight:
+                                    _selectedStudent != null ||
+                                        _selectedStudents.isNotEmpty
                                     ? FontWeight.bold
                                     : FontWeight.normal,
                               ),
@@ -374,7 +515,11 @@ class _EnrollStudentBottomSheetState
                                   ),
                                 )
                               : const Icon(Icons.check),
-                          label: Text(l10n.commonSave),
+                          label: Text(
+                            widget.allowMultiple && _mode == EnrollMode.existing
+                                ? 'Thêm ${_selectedStudents.length} học sinh'
+                                : l10n.commonSave,
+                          ),
                         ),
                       ],
                     ),
@@ -403,6 +548,41 @@ class _EnrollStudentBottomSheetState
       int studentIdToEnroll;
 
       if (_mode == EnrollMode.existing) {
+        if (widget.allowMultiple) {
+          if (_selectedStudents.isEmpty) {
+            setState(() {
+              _isSaving = false;
+              _inlineError = 'Vui lòng chọn ít nhất một học sinh';
+            });
+            return;
+          }
+          await membershipService.enrollStudents(
+            studentIds: _selectedStudents.keys.toList(),
+            classId: widget.classId,
+            joinDate: _joinDate,
+            mienGiam: int.tryParse(_mienGiamController.text.trim()) ?? 0,
+            ghiChu: _ghiChuController.text.trim(),
+          );
+          ref.invalidate(
+            enrollmentCandidatesProvider((
+              classId: widget.classId,
+              joinDate: _joinDate,
+            )),
+          );
+          ref.invalidate(studentListProvider);
+          if (mounted) {
+            setState(() {
+              _isSaving = false;
+              _isDirty = false;
+            });
+            AppFeedback.showSuccessSnackBar(
+              context,
+              'Đã thêm ${_selectedStudents.length} học sinh vào lớp',
+            );
+            Navigator.of(context).pop(true);
+          }
+          return;
+        }
         if (_selectedStudent == null) {
           setState(() {
             _isSaving = false;
@@ -472,6 +652,7 @@ Future<bool?> showEnrollStudentBottomSheet(
   BuildContext context, {
   required int classId,
   int? initialStudentId,
+  bool allowMultiple = false,
 }) {
   return showModalBottomSheet<bool>(
     context: context,
@@ -482,6 +663,7 @@ Future<bool?> showEnrollStudentBottomSheet(
     builder: (_) => EnrollStudentBottomSheet(
       classId: classId,
       initialStudentId: initialStudentId,
+      allowMultiple: allowMultiple,
     ),
   );
 }
