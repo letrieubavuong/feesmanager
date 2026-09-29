@@ -598,6 +598,18 @@ class _CreateTuitionPolicyBottomSheetState
       return;
     }
     final dateStr = DateFormatter.formatCanonicalDate(_effectiveFromDate);
+    final previous = widget.previousPolicy;
+    if (previous != null &&
+        previous.hocPhiMoiBuoi == fee &&
+        previous.soBuoiChuanThang == standard &&
+        previous.hocPhiThangToiDa == cap &&
+        previous.quyTacNghiCoPhep == _excusedRule &&
+        (previous.ghiChu ?? '') == _noteController.text.trim()) {
+      setState(
+        () => _inlineError = 'Mức học phí và quy tắc vẫn giống chính sách đang áp dụng. Hãy nhập giá trị cần thay đổi.',
+      );
+      return;
+    }
     if (widget.previousPolicy != null &&
         dateStr.compareTo(widget.previousPolicy!.hieuLucTu) <= 0) {
       setState(
