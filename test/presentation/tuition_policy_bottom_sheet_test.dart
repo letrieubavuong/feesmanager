@@ -65,6 +65,53 @@ Widget buildTestApp(Widget child, {List<Override> overrides = const []}) {
 
 void main() {
   group('Tuition Policy Bottom Sheet Contract Tests', () {
+    testWidgets(
+      'fee change shows previous rate and asks for confirmation before saving',
+      (tester) async {
+        final oldPolicy = TuitionPolicy(
+          id: 4,
+          idLop: 1,
+          hieuLucTu: '2026-09-01',
+          hocPhiMoiBuoi: 50000,
+          soBuoiChuanThang: 12,
+          hocPhiThangToiDa: 600000,
+          createdAt: DateTime(2026, 9),
+          updatedAt: DateTime(2026, 9),
+        );
+        await tester.pumpWidget(
+          buildTestApp(
+            Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => showCreateTuitionPolicyBottomSheet(
+                  context,
+                  classId: 1,
+                  initialMonth: '2026-10',
+                  previousPolicy: oldPolicy,
+                ),
+                child: const Text('Đổi mức'),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('Đổi mức'));
+        await tester.pumpAndSettle();
+        expect(find.text('Thay đổi mức học phí'), findsOneWidget);
+        expect(find.textContaining('50,000đ/buổi'), findsOneWidget);
+        expect(
+          tester
+              .widgetList<TextFormField>(find.byType(TextFormField))
+              .any((field) => field.controller?.text == '600000'),
+          isTrue,
+        );
+        await tester.ensureVisible(find.byKey(UiKeys.tuitionPolicySave));
+        await tester.tap(find.byKey(UiKeys.tuitionPolicySave));
+        await tester.pumpAndSettle();
+        expect(find.text('Xác nhận thay đổi học phí'), findsOneWidget);
+        await tester.tap(find.text('Xem lại'));
+        await tester.pumpAndSettle();
+        expect(find.byType(CreateTuitionPolicyBottomSheet), findsOneWidget);
+      },
+    );
     testWidgets('Contract A: clean sheet + X closes immediately', (
       tester,
     ) async {
