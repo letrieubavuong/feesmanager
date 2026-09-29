@@ -51,7 +51,7 @@ class ScheduleTab extends ConsumerWidget {
                   });
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
+                    horizontal: 6,
                     vertical: 8,
                   ),
                   itemCount: ordered.length,
