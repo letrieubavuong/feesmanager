@@ -168,8 +168,9 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
   }
 
   Widget _buildMonthSelector(BuildContext context) {
-    final formattedMonth = DateFormat('MM/yyyy')
-        .format(DateTime.parse('$_selectedMonth-01'));
+    final formattedMonth = DateFormat(
+      'MM/yyyy',
+    ).format(DateTime.parse('$_selectedMonth-01'));
 
     return SizedBox(
       width: 128,
