@@ -8,6 +8,7 @@ import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../l10n/app_localizations.dart';
 import 'bank_account_settings_page.dart';
+import 'school_catalog_provider.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -171,6 +172,48 @@ class SettingsPage extends ConsumerWidget {
 
           const SizedBox(height: 16),
 
+          const AppSectionHeader(title: 'TRƯỜNG HỌC'),
+          AppSectionCard(
+            child: Column(
+              children: [
+                ...ref
+                    .watch(schoolCatalogProvider)
+                    .when(
+                      data: (schools) => schools
+                          .map(
+                            (name) => ListTile(
+                              dense: true,
+                              leading: const Icon(Icons.school_outlined),
+                              title: Text(name),
+                              trailing: IconButton(
+                                tooltip: 'Xóa khỏi danh sách trường',
+                                icon: const Icon(Icons.close),
+                                onPressed: () async {
+                                  final service = await ref.read(
+                                    schoolCatalogServiceProvider.future,
+                                  );
+                                  await service.remove(name);
+                                  ref.invalidate(schoolCatalogProvider);
+                                },
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      loading: () => [const CircularProgressIndicator()],
+                      error: (error, _) => [
+                        Text('Không tải được trường học: $error'),
+                      ],
+                    ),
+                TextButton.icon(
+                  onPressed: () => _addSchool(context, ref),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Thêm trường học'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // 4. THÔNG TIN ỨNG DỤNG
           AppSectionHeader(title: l10n.settingsAppInfo),
           AppSectionCard(
@@ -199,5 +242,57 @@ class SettingsPage extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _addSchool(BuildContext context, WidgetRef ref) async {
+    final controller = TextEditingController();
+    final name = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            20,
+            16,
+            MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Thêm trường học'),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.school_outlined),
+                  labelText: 'Tên trường',
+                ),
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () => Navigator.pop(sheetContext, controller.text),
+                child: const Text('Lưu'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    controller.dispose();
+    if (name == null || !context.mounted) return;
+    try {
+      final service = await ref.read(schoolCatalogServiceProvider.future);
+      await service.add(name);
+      ref.invalidate(schoolCatalogProvider);
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+      }
+    }
   }
 }
