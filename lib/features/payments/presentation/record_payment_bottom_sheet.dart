@@ -38,7 +38,6 @@ class _RecordPaymentBottomSheetState
   late TextEditingController _amountController;
   late TextEditingController _txIdController;
   late TextEditingController _noteController;
-  late TextEditingController _reasonController;
   late DateTime _paymentDate;
   late PaymentMethod _selectedMethod;
   bool _isDirty = false;
@@ -69,7 +68,6 @@ class _RecordPaymentBottomSheetState
       _paymentDate = DateTime.now();
       _selectedMethod = PaymentMethod.TIEN_MAT;
     }
-    _reasonController = TextEditingController()..addListener(_onChanged);
   }
 
   void _onChanged() {
@@ -83,7 +81,6 @@ class _RecordPaymentBottomSheetState
     _amountController.dispose();
     _txIdController.dispose();
     _noteController.dispose();
-    _reasonController.dispose();
     super.dispose();
   }
 
@@ -262,24 +259,6 @@ class _RecordPaymentBottomSheetState
                       ),
                       maxLines: 2,
                     ),
-                    if (widget.isEditMode) ...[
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _reasonController,
-                        style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: const InputDecoration(
-                          labelText: 'Lý do sửa *',
-                          border: OutlineInputBorder(),
-                        ),
-                        maxLines: 2,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Vui lòng nhập lý do sửa khoản thu';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
                     const SizedBox(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -357,7 +336,7 @@ class _RecordPaymentBottomSheetState
               note: _noteController.text.trim().isNotEmpty
                   ? _noteController.text.trim()
                   : null,
-              correctionReason: _reasonController.text.trim(),
+              correctionReason: '',
             );
       } else {
         await ref
