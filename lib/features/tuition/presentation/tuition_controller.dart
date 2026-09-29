@@ -76,6 +76,7 @@ class TuitionPolicyController extends _$TuitionPolicyController {
       ref.invalidate(classTuitionPoliciesProvider(classId));
       ref.invalidate(effectiveTuitionPolicyProvider);
       ref.invalidate(tuitionPreviewControllerProvider);
+      ref.invalidate(classMonthTuitionOverviewProvider);
     });
     if (state.hasError) {
       throw state.error!;
