@@ -1241,7 +1241,7 @@ abstract class AppLocalizations {
   /// No description provided for @reportsKpiOutstanding.
   ///
   /// In vi, this message translates to:
-  /// **'Còn nợ'**
+  /// **'Chưa thanh toán'**
   String get reportsKpiOutstanding;
 
   /// No description provided for @reportsSectionAttendance.
@@ -2039,7 +2039,7 @@ abstract class AppLocalizations {
   /// No description provided for @tuitionKpiDebt.
   ///
   /// In vi, this message translates to:
-  /// **'Còn nợ'**
+  /// **'Chưa thanh toán'**
   String get tuitionKpiDebt;
 
   /// No description provided for @tuitionFinalizeMonth.
@@ -2171,7 +2171,7 @@ abstract class AppLocalizations {
   /// No description provided for @studentOutstandingDebt.
   ///
   /// In vi, this message translates to:
-  /// **'Còn nợ: {amount}'**
+  /// **'Chưa thanh toán: {amount}'**
   String studentOutstandingDebt(Object amount);
 
   /// No description provided for @studentEditProfile.
@@ -2225,7 +2225,7 @@ abstract class AppLocalizations {
   /// No description provided for @studentDebt.
   ///
   /// In vi, this message translates to:
-  /// **'Còn nợ'**
+  /// **'Chưa thanh toán'**
   String get studentDebt;
 
   /// No description provided for @studentTuitionPartiallyPaid.
@@ -2375,7 +2375,7 @@ abstract class AppLocalizations {
   /// No description provided for @classStatusDebt.
   ///
   /// In vi, this message translates to:
-  /// **'Còn nợ'**
+  /// **'Chưa thanh toán'**
   String get classStatusDebt;
 
   /// No description provided for @classNeedsAction.
@@ -2471,7 +2471,7 @@ abstract class AppLocalizations {
   /// No description provided for @tuitionRemainingDebt.
   ///
   /// In vi, this message translates to:
-  /// **'Còn nợ'**
+  /// **'Chưa thanh toán'**
   String get tuitionRemainingDebt;
 
   /// No description provided for @tuitionUnfinalizedStudents.
