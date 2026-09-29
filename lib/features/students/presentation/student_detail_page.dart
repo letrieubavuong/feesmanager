@@ -23,7 +23,6 @@ import '../../classes/presentation/class_detail_page.dart';
 import '../../memberships/presentation/edit_membership_bottom_sheet.dart';
 import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
 import '../../memberships/presentation/leave_class_bottom_sheet.dart';
-import '../../memberships/domain/membership_service.dart';
 import '../../payments/domain/payment_service.dart';
 import '../../payments/presentation/record_payment_bottom_sheet.dart';
 import '../../schedule_conflicts/domain/schedule_constraint.dart';
