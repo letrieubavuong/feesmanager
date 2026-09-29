@@ -15,11 +15,13 @@ import 'tuition_controller.dart';
 class CreateTuitionPolicyBottomSheet extends ConsumerStatefulWidget {
   final int classId;
   final String? initialMonth;
+  final TuitionPolicy? previousPolicy;
 
   const CreateTuitionPolicyBottomSheet({
     super.key,
     required this.classId,
     this.initialMonth,
+    this.previousPolicy,
   });
 
   @override
@@ -37,6 +39,8 @@ class _CreateTuitionPolicyBottomSheetState
   late DateTime _effectiveFromDate;
   late String _initialFee;
   late String _initialStandard;
+  late String _initialCap;
+  late String _initialNote;
   bool _isDirty = false;
   bool _isSaving = false;
   ExcusedAbsenceFeeRule _excusedRule = ExcusedAbsenceFeeRule.buTruBuoiDu;
@@ -51,9 +55,11 @@ class _CreateTuitionPolicyBottomSheetState
         _effectiveFromDate != defaultDate ||
         _feeController.text != _initialFee ||
         _standardController.text != _initialStandard ||
-        _excusedRule != ExcusedAbsenceFeeRule.buTruBuoiDu ||
-        _capController.text.trim().isNotEmpty ||
-        _noteController.text.trim().isNotEmpty;
+        _excusedRule !=
+            (widget.previousPolicy?.quyTacNghiCoPhep ??
+                ExcusedAbsenceFeeRule.buTruBuoiDu) ||
+        _capController.text != _initialCap ||
+        _noteController.text != _initialNote;
     if (_isDirty != isChanged) {
       setState(() => _isDirty = isChanged);
     }
@@ -65,15 +71,23 @@ class _CreateTuitionPolicyBottomSheetState
     final monthStr =
         widget.initialMonth ?? DateFormat('yyyy-MM').format(DateTime.now());
     _effectiveFromDate = DateTime.tryParse('$monthStr-01') ?? DateTime.now();
-    _initialFee = '50000';
-    _initialStandard = '12';
+    _initialFee = (widget.previousPolicy?.hocPhiMoiBuoi ?? 50000).toString();
+    _initialStandard = (widget.previousPolicy?.soBuoiChuanThang ?? 12)
+        .toString();
+    _initialCap = widget.previousPolicy?.hocPhiThangToiDa?.toString() ?? '';
+    _initialNote = widget.previousPolicy?.ghiChu ?? '';
+    _excusedRule =
+        widget.previousPolicy?.quyTacNghiCoPhep ??
+        ExcusedAbsenceFeeRule.buTruBuoiDu;
 
     _feeController = TextEditingController(text: _initialFee)
       ..addListener(_checkDirty);
     _standardController = TextEditingController(text: _initialStandard)
       ..addListener(_checkDirty);
-    _capController = TextEditingController()..addListener(_checkDirty);
-    _noteController = TextEditingController()..addListener(_checkDirty);
+    _capController = TextEditingController(text: _initialCap)
+      ..addListener(_checkDirty);
+    _noteController = TextEditingController(text: _initialNote)
+      ..addListener(_checkDirty);
   }
 
   @override
@@ -193,7 +207,9 @@ class _CreateTuitionPolicyBottomSheetState
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            l10n.actionCreatePolicy,
+                            widget.previousPolicy == null
+                                ? l10n.actionCreatePolicy
+                                : 'Thay đổi mức học phí',
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -222,6 +238,23 @@ class _CreateTuitionPolicyBottomSheetState
                         ],
                       ),
                       const SizedBox(height: 16),
+                      if (widget.previousPolicy != null) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceHigh,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'Đang áp dụng: ${NumberFormat('#,###').format(widget.previousPolicy!.hocPhiMoiBuoi)}đ/buổi • ${widget.previousPolicy!.soBuoiChuanThang} buổi chuẩn. Chính sách mới bắt đầu từ tháng được chọn; tháng trước đó giữ nguyên.',
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       if (_inlineError != null) ...[
                         Container(
                           width: double.infinity,
@@ -404,7 +437,13 @@ class _CreateTuitionPolicyBottomSheetState
                             color: AppColors.textSecondary,
                           ),
                           onPressed: () {
-                            setState(() => _effectiveFromDate = DateTime.now());
+                            setState(
+                              () => _effectiveFromDate = DateTime(
+                                DateTime.now().year,
+                                DateTime.now().month,
+                                1,
+                              ),
+                            );
                             _checkDirty();
                           },
                         ),
@@ -416,7 +455,13 @@ class _CreateTuitionPolicyBottomSheetState
                             lastDate: DateTime(2100),
                           );
                           if (picked != null) {
-                            setState(() => _effectiveFromDate = picked);
+                            setState(
+                              () => _effectiveFromDate = DateTime(
+                                picked.year,
+                                picked.month,
+                                1,
+                              ),
+                            );
                             _checkDirty();
                           }
                         },
@@ -542,18 +587,82 @@ class _CreateTuitionPolicyBottomSheetState
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final fee = int.parse(_feeController.text.trim());
+    final standard = int.parse(_standardController.text.trim());
+    final capStr = _capController.text.trim();
+    final cap = capStr.isNotEmpty ? int.tryParse(capStr) : null;
+    if (capStr.isNotEmpty && (cap == null || cap < 0)) {
+      setState(
+        () => _inlineError = 'Trần học phí phải là một số tiền không âm.',
+      );
+      return;
+    }
+    final dateStr = DateFormatter.formatCanonicalDate(_effectiveFromDate);
+    if (widget.previousPolicy != null &&
+        dateStr.compareTo(widget.previousPolicy!.hieuLucTu) <= 0) {
+      setState(
+        () => _inlineError =
+            'Mức cũ bắt đầu từ ${DateFormatter.formatDisplayDate(widget.previousPolicy!.hieuLucTu)}. Để giữ lịch sử, hãy chọn tháng sau tháng bắt đầu của chính sách này.',
+      );
+      return;
+    }
+    if (widget.previousPolicy != null) {
+      final confirmed = await showModalBottomSheet<bool>(
+        context: context,
+        backgroundColor: AppColors.surface,
+        builder: (sheetContext) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Xác nhận thay đổi học phí',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Mức cũ: ${NumberFormat('#,###').format(widget.previousPolicy!.hocPhiMoiBuoi)}đ/buổi. Mức mới: ${NumberFormat('#,###').format(fee)}đ/buổi. Hiệu lực từ tháng ${DateFormat('MM/yyyy').format(_effectiveFromDate)}.',
+                  style: const TextStyle(color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Các tháng trước giữ nguyên. Nếu khoảng thời gian này đã có hóa đơn chốt hoặc xung đột chính sách, ứng dụng sẽ từ chối và giải thích ngay trên biểu mẫu.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(sheetContext, false),
+                      child: const Text('Xem lại'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(sheetContext, true),
+                      child: const Text('Xác nhận lưu'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+
     setState(() {
       _isSaving = true;
       _inlineError = null;
     });
 
     try {
-      final fee = int.parse(_feeController.text.trim());
-      final standard = int.parse(_standardController.text.trim());
-      final capStr = _capController.text.trim();
-      final cap = capStr.isNotEmpty ? int.tryParse(capStr) : null;
-      final dateStr = DateFormatter.formatCanonicalDate(_effectiveFromDate);
-
       await ref
           .read(tuitionPolicyControllerProvider.notifier)
           .createPolicy(
@@ -569,9 +678,13 @@ class _CreateTuitionPolicyBottomSheetState
       if (mounted) {
         setState(() => _isSaving = false);
         _isDirty = false;
+        await WidgetsBinding.instance.endOfFrame;
+        if (!mounted) return;
         AppFeedback.showSuccessSnackBar(
           context,
-          'Đã tạo chính sách học phí thành công',
+          widget.previousPolicy == null
+              ? 'Đã tạo chính sách học phí thành công'
+              : 'Đã cập nhật mức học phí từ tháng ${DateFormat('MM/yyyy').format(_effectiveFromDate)}',
         );
         Navigator.of(context).pop(true);
       }
@@ -590,6 +703,7 @@ Future<bool?> showCreateTuitionPolicyBottomSheet(
   BuildContext context, {
   required int classId,
   String? initialMonth,
+  TuitionPolicy? previousPolicy,
 }) {
   return showModalBottomSheet<bool>(
     context: context,
@@ -601,6 +715,7 @@ Future<bool?> showCreateTuitionPolicyBottomSheet(
     builder: (_) => CreateTuitionPolicyBottomSheet(
       classId: classId,
       initialMonth: initialMonth,
+      previousPolicy: previousPolicy,
     ),
   );
 }
