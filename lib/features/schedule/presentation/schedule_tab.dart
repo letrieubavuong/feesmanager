@@ -385,7 +385,7 @@ class _ScheduleFormBottomSheetState
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1E293B),
+              color: AppColors.textPrimary,
             ),
           ),
           if (isRequired)
@@ -394,7 +394,7 @@ class _ScheduleFormBottomSheetState
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFFDC2626),
+                color: AppColors.error,
               ),
             ),
         ],
@@ -414,9 +414,9 @@ class _ScheduleFormBottomSheetState
       child: Container(
         height: 48,
         decoration: BoxDecoration(
-          color: const Color(0xFFEFF6FF),
+          color: AppColors.surfaceHigh,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFC7DCFB), width: 1),
+          border: Border.all(color: AppColors.border, width: 1),
         ),
         child: Row(
           children: [
@@ -424,12 +424,12 @@ class _ScheduleFormBottomSheetState
               width: 44,
               height: 48,
               decoration: const BoxDecoration(
-                color: Color(0xFFE2EDFE),
+                color: AppColors.surfaceSelected,
                 borderRadius: BorderRadius.horizontal(
                   left: Radius.circular(11),
                 ),
               ),
-              child: Icon(icon, color: const Color(0xFF1D61E7), size: 20),
+              child: Icon(icon, color: AppColors.cyanAccent, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(child: child),
@@ -460,7 +460,7 @@ class _ScheduleFormBottomSheetState
         isDirty: _isDirty,
         child: Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: SafeArea(
@@ -486,13 +486,13 @@ class _ScheduleFormBottomSheetState
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF0F2038),
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           IconButton(
                             icon: const Icon(
                               Icons.close_rounded,
-                              color: Color(0xFF1E293B),
+                              color: AppColors.textPrimary,
                               size: 22,
                             ),
                             padding: EdgeInsets.zero,
@@ -556,12 +556,12 @@ class _ScheduleFormBottomSheetState
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xFF0F172A),
+                                color: AppColors.textPrimary,
                               ),
                             ),
                             trailing: const Icon(
                               Icons.keyboard_arrow_down_rounded,
-                              color: Color(0xFF1D61E7),
+                              color: AppColors.cyanAccent,
                               size: 24,
                             ),
                           ),
@@ -585,7 +585,7 @@ class _ScheduleFormBottomSheetState
                                     style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w500,
-                                      color: Color(0xFF0F172A),
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                   onTap: () async {
@@ -618,7 +618,7 @@ class _ScheduleFormBottomSheetState
                                     style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w500,
-                                      color: Color(0xFF0F172A),
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                   onTap: () async {
@@ -646,14 +646,14 @@ class _ScheduleFormBottomSheetState
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF0F172A),
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         trailing: IconButton(
                           icon: const Icon(
                             Icons.close_rounded,
                             size: 18,
-                            color: Color(0xFF64748B),
+                            color: AppColors.textSecondary,
                           ),
                           onPressed: () {
                             _onChanged();
@@ -677,12 +677,9 @@ class _ScheduleFormBottomSheetState
                       _buildFieldLabel('Ghi chú'),
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
+                          color: AppColors.surfaceHigh,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0xFFC7DCFB),
-                            width: 1,
-                          ),
+                          border: Border.all(color: AppColors.border, width: 1),
                         ),
                         child: TextField(
                           controller: _ghiChuController,
@@ -691,12 +688,12 @@ class _ScheduleFormBottomSheetState
                           onChanged: (_) => _onChanged(),
                           style: const TextStyle(
                             fontSize: 14,
-                            color: Color(0xFF0F172A),
+                            color: AppColors.textPrimary,
                           ),
                           decoration: const InputDecoration(
                             hintText: 'Áp dụng từ tuần này.',
                             hintStyle: TextStyle(
-                              color: Color(0xFF94A3B8),
+                              color: AppColors.textMuted,
                               fontSize: 14,
                             ),
                             contentPadding: EdgeInsets.symmetric(
@@ -726,7 +723,7 @@ class _ScheduleFormBottomSheetState
                                     },
                               style: OutlinedButton.styleFrom(
                                 side: const BorderSide(
-                                  color: Color(0xFF1D61E7),
+                                  color: AppColors.cyanAccent,
                                   width: 1.5,
                                 ),
                                 shape: RoundedRectangleBorder(
@@ -735,14 +732,14 @@ class _ScheduleFormBottomSheetState
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
                                 ),
-                                backgroundColor: Colors.white,
+                                backgroundColor: AppColors.surface,
                               ),
                               child: const Text(
                                 'Hủy',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0F172A),
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
                             ),
@@ -752,7 +749,7 @@ class _ScheduleFormBottomSheetState
                             child: ElevatedButton(
                               onPressed: _isSaving ? null : _submit,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0066FF),
+                                backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
