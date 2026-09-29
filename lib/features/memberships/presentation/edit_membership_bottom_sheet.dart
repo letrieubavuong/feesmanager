@@ -124,9 +124,9 @@ class _EditMembershipBottomSheetState
                           onPressed: () async {
                             final canLeave =
                                 await AppPageScaffold.confirmCanLeave(
-                              context,
-                              isDirty: _isDirty,
-                            );
+                                  context,
+                                  isDirty: _isDirty,
+                                );
                             if (canLeave && context.mounted) {
                               Navigator.of(context).pop();
                             }
@@ -146,7 +146,9 @@ class _EditMembershipBottomSheetState
                         child: Text(
                           _inlineError!,
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.onErrorContainer,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onErrorContainer,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -260,9 +262,9 @@ class _EditMembershipBottomSheetState
                                 : () async {
                                     final canLeave =
                                         await AppPageScaffold.confirmCanLeave(
-                                      context,
-                                      isDirty: _isDirty,
-                                    );
+                                          context,
+                                          isDirty: _isDirty,
+                                        );
                                     if (canLeave && context.mounted) {
                                       Navigator.of(context).pop();
                                     }
