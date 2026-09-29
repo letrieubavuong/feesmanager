@@ -157,12 +157,17 @@ class InvoiceController extends _$InvoiceController {
   Future<List<TuitionInvoice>> finalizeClassInvoices({
     required int classId,
     required String month,
+    Set<int>? studentIdsToFinalize,
   }) async {
     state = const AsyncLoading();
     late List<TuitionInvoice> result;
     state = await AsyncValue.guard(() async {
       final service = await ref.read(invoiceServiceProvider.future);
-      result = await service.finalizeClassInvoices(classId, month);
+      result = await service.finalizeClassInvoices(
+        classId,
+        month,
+        studentIdsToFinalize: studentIdsToFinalize,
+      );
 
       for (final invoice in result) {
         ref.invalidate(
