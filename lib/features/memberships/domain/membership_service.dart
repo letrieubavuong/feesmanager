@@ -58,6 +58,35 @@ class MembershipService {
     await _repository.create(membership);
   }
 
+  Future<void> enrollStudents({
+    required List<int> studentIds,
+    required int classId,
+    required DateTime joinDate,
+    int mienGiam = 0,
+    String? ghiChu,
+  }) async {
+    if (studentIds.isEmpty || studentIds.toSet().length != studentIds.length) {
+      throw Exception('Vui lòng chọn học sinh không trùng lặp');
+    }
+    if (mienGiam < 0 || mienGiam > 100) {
+      throw Exception('Miễn giảm phải từ 0 đến 100%');
+    }
+    final date = DateFormat('yyyy-MM-dd').format(joinDate);
+    final now = DateTime.now();
+    await _repository.createBatch([
+      for (final id in studentIds)
+        ClassMembership(
+          idHocSinh: id,
+          idLop: classId,
+          tuNgay: date,
+          mienGiamPhanTram: mienGiam,
+          ghiChu: ghiChu,
+          createdAt: now,
+          updatedAt: now,
+        ),
+    ]);
+  }
+
   Future<void> leaveClass({
     required int studentId,
     required int classId,
