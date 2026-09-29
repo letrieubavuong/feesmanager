@@ -66,7 +66,8 @@ class MembershipRepository {
         final existing = await txn.query(
           'tham_gia_lop',
           columns: ['id'],
-          where: 'id_hoc_sinh = ? AND id_lop = ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+          where:
+              'id_hoc_sinh = ? AND id_lop = ? AND (den_ngay IS NULL OR den_ngay >= ?)',
           whereArgs: [membership.idHocSinh, first.idLop, first.tuNgay],
           limit: 1,
         );
@@ -213,7 +214,8 @@ class MembershipRepository {
   ) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'tham_gia_lop',
-      where: 'id_hoc_sinh = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+      where:
+          'id_hoc_sinh = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
       whereArgs: [studentId, dateStr, dateStr],
       orderBy: 'tu_ngay DESC',
     );
@@ -280,7 +282,8 @@ class MembershipRepository {
   ) async {
     final List<Map<String, dynamic>> maps = await _db.query(
       'tham_gia_lop',
-      where: 'id_hoc_sinh = ? AND id_lop = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+      where:
+          'id_hoc_sinh = ? AND id_lop = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
       whereArgs: [studentId, classId, dateStr, dateStr],
     );
 
