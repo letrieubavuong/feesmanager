@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../../memberships/presentation/membership_providers.dart';
 import '../../payments/presentation/payment_controller.dart';
 import '../domain/class_month_tuition_overview.dart';
@@ -53,6 +54,8 @@ class TuitionPolicyController extends _$TuitionPolicyController {
         TuitionPolicyDefaults.standardSessionsPerMonth,
     required int feePerSession,
     int? monthlyMaxFee,
+    ExcusedAbsenceFeeRule excusedAbsenceFeeRule =
+        ExcusedAbsenceFeeRule.buTruBuoiDu,
     String? note,
   }) async {
     state = const AsyncLoading();
@@ -66,6 +69,7 @@ class TuitionPolicyController extends _$TuitionPolicyController {
         standardSessionsPerMonth: standardSessionsPerMonth,
         feePerSession: feePerSession,
         monthlyMaxFee: monthlyMaxFee,
+        excusedAbsenceFeeRule: excusedAbsenceFeeRule,
         note: note,
       );
 
