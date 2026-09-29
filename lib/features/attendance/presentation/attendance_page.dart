@@ -190,7 +190,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
         if (isEditable) _buildActionToolbar(sheet),
         if (_isCorrectionMode)
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.warning.withValues(alpha: 0.12),
@@ -224,7 +224,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
         if (sheet.session.loai == SessionType.PHAT_SINH &&
             _canEditRosterStructure(sheet))
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.12),
@@ -282,7 +282,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
         if (sheet.session.loai == SessionType.HOC_BU &&
             sheet.requiresOneOffAdjustments)
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.warning.withValues(alpha: 0.12),
@@ -369,7 +369,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
     final isFinalized = session.trangThai == SessionStatus.DA_HOC;
 
     return AppSectionCard(
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      margin: const EdgeInsets.fromLTRB(6, 8, 6, 4),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -527,7 +527,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
 
   Widget _buildRosterIssuesWidget(AttendanceSheet sheet) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.error.withValues(alpha: 0.12),
