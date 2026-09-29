@@ -66,7 +66,17 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: const BackButton(),
-        title: const Text('Chi tiết lớp học'),
+        title: classAsync.when(
+          data: (cls) => Text(
+            cls == null
+                ? 'Chi tiết lớp học'
+                : '${cls.tenLop} - Sĩ số: ${sizeAsync.valueOrNull ?? '…'}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          loading: () => const Text('Đang tải lớp học'),
+          error: (_, __) => const Text('Chi tiết lớp học'),
+        ),
         actions: const [GlobalMenuButton()],
       ),
       body: classAsync.when(
@@ -239,86 +249,12 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
     AsyncValue<int> sizeAsync,
   ) {
     return AppSectionCard(
-      margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: cls.daLuuTru
-                      ? const Color(0x26FF5964)
-                      : const Color(0x260A84FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    cls.tenLop[0].toUpperCase(),
-                    style: TextStyle(
-                      color: cls.daLuuTru
-                          ? AppColors.error
-                          : AppColors.cyanAccent,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            cls.tenLop,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        AppActiveStatusBadge(isActive: !cls.daLuuTru),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    sizeAsync.when(
-                      data: (size) => Text(
-                        'Sĩ số hiện tại: $size / ${cls.siSoToiDa ?? '∞'}',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                      loading: () => const Text(
-                        'Đang tải sĩ số...',
-                        style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 13,
-                        ),
-                      ),
-                      error: (_, __) => const Text(
-                        'Chưa tải được sĩ số',
-                        style: TextStyle(color: AppColors.error, fontSize: 13),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Divider(color: AppColors.border, height: 1),
-          const SizedBox(height: 8),
+          const SizedBox(height: 2),
           Row(
             children: [
               _headerAction(Icons.edit_outlined, 'Sửa lớp', () async {
@@ -462,10 +398,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                 );
               }
               return ListView.builder(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 itemCount: memberships.length,
                 itemBuilder: (context, index) {
                   final m = memberships[index];
