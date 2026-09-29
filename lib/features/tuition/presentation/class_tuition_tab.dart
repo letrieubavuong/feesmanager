@@ -20,8 +20,9 @@ enum TuitionPaymentFilter { outstanding, paid }
 
 class ClassTuitionTab extends ConsumerStatefulWidget {
   final int classId;
+  final Widget? classSelector;
 
-  const ClassTuitionTab({super.key, required this.classId});
+  const ClassTuitionTab({super.key, required this.classId, this.classSelector});
 
   @override
   ConsumerState<ClassTuitionTab> createState() => _ClassTuitionTabState();
@@ -54,7 +55,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     );
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+      padding: const EdgeInsets.fromLTRB(8, 12, 8, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -78,7 +79,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               _buildMonthSelector(context),
             ],
           ),
@@ -108,11 +109,19 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                 children: [
                   _buildKpiSummary(context, overview),
                   const SizedBox(height: 12),
-                  _buildFilterToggle(
-                    context,
-                    effectiveFilter,
-                    outstandingCount,
-                    paidCount,
+                  Row(
+                    children: [
+                      if (widget.classSelector != null) ...[
+                        Expanded(child: widget.classSelector!),
+                        const SizedBox(width: 6),
+                      ],
+                      _buildFilterToggle(
+                        context,
+                        effectiveFilter,
+                        outstandingCount,
+                        paidCount,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   _buildUnfinalizedBanner(context, overview),
@@ -163,7 +172,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     ).format(DateTime.parse('$_selectedMonth-01'));
 
     return SizedBox(
-      width: 148,
+      width: 134,
       child: AppSectionCard(
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
         child: Row(
@@ -254,17 +263,12 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
   ) {
     return Row(
       children: [
-        const Expanded(
-          child: Text(
-            'Tạm tính / còn thu',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-          ),
-        ),
-        Text(
-          '$outstandingCount',
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+        const Text(
+          'Còn thu',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
         ),
         Switch.adaptive(
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           value: activeFilter == TuitionPaymentFilter.paid,
           onChanged: (paid) => setState(
             () => _userFilter = paid
@@ -272,9 +276,9 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                 : TuitionPaymentFilter.outstanding,
           ),
         ),
-        Text(
-          'Đã thu đủ ($paidCount)',
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+        const Text(
+          'Đã thu',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
         ),
       ],
     );
