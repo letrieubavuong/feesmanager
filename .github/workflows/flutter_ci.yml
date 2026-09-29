@@ -35,18 +35,16 @@ jobs:
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Check formatting
-        run: |
-          git ls-files '*.dart' ':!:**/*.g.dart' ':!:**/*.freezed.dart' | xargs dart format
-          git diff -- lib/features/classes/presentation/class_detail_page.dart lib/features/schedule/domain/schedule_service.dart lib/features/schedule/domain/bulk_assignment_result.dart lib/features/roster/domain/roster_service.dart test/schedule/bulk_assignment_test.dart test/roster/roster_service_test.dart
+        run: git ls-files '*.dart' ':!:**/*.g.dart' ':!:**/*.freezed.dart' | xargs dart format --output=none --set-exit-if-changed
 
       - name: Static analysis
         run: flutter analyze
 
       - name: Run unit & widget tests
-        run: flutter test test/roster/roster_service_test.dart test/schedule/bulk_assignment_test.dart test/attendance/attendance_service_test.dart test/session_credits/session_credit_service_test.dart
+        run: flutter test
 
       - name: Build Debug APK
-        run: exit 1
+        run: flutter build apk --debug
 
   android-integration-test:
     runs-on: ubuntu-latest
