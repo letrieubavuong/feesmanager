@@ -170,7 +170,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
         }
 
-        expect(find.text('Còn nợ (300,000đ)'), findsOneWidget);
+        expect(find.text('Chưa thanh toán (300,000đ)'), findsOneWidget);
         expect(find.textContaining('Phải thu: 600,000đ'), findsOneWidget);
         expect(find.textContaining('Đã trả: 300,000đ'), findsOneWidget);
         expect(find.text('Thanh toán'), findsOneWidget);
