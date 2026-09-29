@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../app/common_widgets/app_empty_state.dart';
 import '../../../app/common_widgets/app_error_state.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
 import '../../../app/common_widgets/navy_components.dart';
+import '../../../app/common_widgets/parent_contact_actions.dart';
 import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/app_global_drawer.dart';
@@ -201,7 +201,6 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                 final isStopped = student.daLuuTru;
 
                 final parentPhone = student.sdtPhuHuynh?.trim();
-                final hasPhone = parentPhone != null && parentPhone.isNotEmpty;
                 final parentName = student.tenPhuHuynh?.trim();
                 final contactLabel = parentName == null || parentName.isEmpty
                     ? 'PH • ${parentPhone ?? "Chưa có SĐT"}'
@@ -293,29 +292,7 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                                   ),
                                 ),
                                 const SizedBox(width: 6),
-                                _contactButton(
-                                  icon: Icons.call_outlined,
-                                  tooltip: 'Gọi phụ huynh',
-                                  enabled: hasPhone,
-                                  onPressed: () => _openContact(
-                                    context,
-                                    Uri(scheme: 'tel', path: parentPhone),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                _contactButton(
-                                  icon: Icons.chat_bubble_outline,
-                                  label: 'Zalo',
-                                  tooltip: 'Mở Zalo phụ huynh',
-                                  enabled: hasPhone,
-                                  onPressed: () => _openContact(
-                                    context,
-                                    Uri.https(
-                                      'zalo.me',
-                                      '/${parentPhone!.replaceAll(RegExp(r'[^0-9]'), '')}',
-                                    ),
-                                  ),
-                                ),
+                                ParentContactActions(phone: parentPhone),
                               ],
                             ),
                           ],
@@ -354,51 +331,4 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
     );
   }
 
-  Widget _contactButton({
-    required IconData icon,
-    required String tooltip,
-    required bool enabled,
-    required VoidCallback onPressed,
-    String? label,
-  }) {
-    return SizedBox(
-      height: 36,
-      child: OutlinedButton(
-        onPressed: enabled ? onPressed : null,
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          minimumSize: const Size(44, 36),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          foregroundColor: AppColors.cyanAccent,
-          side: const BorderSide(color: AppColors.border),
-        ),
-        child: Tooltip(
-          message: tooltip,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 17),
-              if (label != null) ...[
-                const SizedBox(width: 4),
-                Text(label, style: const TextStyle(fontSize: 11)),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openContact(BuildContext context, Uri uri) async {
-    try {
-      if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
-    } catch (_) {
-      // Show a message below when no installed app can handle the link.
-    }
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không thể mở liên kết trên thiết bị này.')),
-      );
-    }
-  }
 }
