@@ -935,8 +935,9 @@ class AppDatabase {
     );
     if (table.isEmpty) return;
     final columns = await db.rawQuery('PRAGMA table_info(chinh_sach_hoc_phi)');
-    if (columns.any((column) => column['name'] == 'quy_tac_nghi_co_phep'))
+    if (columns.any((column) => column['name'] == 'quy_tac_nghi_co_phep')) {
       return;
+    }
     await db.execute('''
       ALTER TABLE chinh_sach_hoc_phi
       ADD COLUMN quy_tac_nghi_co_phep TEXT NOT NULL DEFAULT 'buTruBuoiDu'
