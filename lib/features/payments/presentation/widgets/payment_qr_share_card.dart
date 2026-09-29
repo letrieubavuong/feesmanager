@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import '../../../tuition/domain/parent_tuition_slip.dart';
 import 'vietqr_code_widget.dart';
 
@@ -11,13 +12,16 @@ class PaymentQrShareCard extends StatelessWidget {
 
   String get _month {
     try {
-      return DateFormat('MM/yyyy').format(DateTime.parse('${slip.billingMonth}-01'));
+      return DateFormat(
+        'MM/yyyy',
+      ).format(DateTime.parse('${slip.billingMonth}-01'));
     } catch (_) {
       return slip.billingMonth;
     }
   }
 
-  String _money(int amount) => '${NumberFormat('#,###', 'vi_VN').format(amount)}đ';
+  String _money(int amount) =>
+      '${NumberFormat('#,###', 'vi_VN').format(amount)}đ';
 
   @override
   Widget build(BuildContext context) {
@@ -41,12 +45,24 @@ class PaymentQrShareCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.school_outlined, color: Color(0xFF087B9A), size: 26),
+            const Icon(
+              Icons.school_outlined,
+              color: Color(0xFF087B9A),
+              size: 26,
+            ),
             const SizedBox(height: 4),
-            const Text('HỌC PHÍ', style: TextStyle(
-              color: Color(0xFF12324B), fontSize: 17, fontWeight: FontWeight.w800)),
-            Text('Tháng $_month', style: const TextStyle(
-              color: Color(0xFF64748B), fontSize: 12)),
+            const Text(
+              'HỌC PHÍ',
+              style: TextStyle(
+                color: Color(0xFF12324B),
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            Text(
+              'Tháng $_month',
+              style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+            ),
             const SizedBox(height: 14),
             _row('Học sinh', slip.studentName, bold: true),
             const SizedBox(height: 5),
@@ -60,14 +76,18 @@ class PaymentQrShareCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: fullyPaid ? const Color(0xFFF0FDF4) : const Color(0xFFEFF6FF),
+                color: fullyPaid
+                    ? const Color(0xFFF0FDF4)
+                    : const Color(0xFFEFF6FF),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: _row(
                 fullyPaid ? 'Trạng thái' : 'Còn cần thanh toán',
                 fullyPaid ? 'ĐÃ THANH TOÁN ĐỦ' : _money(slip.remainingDebt),
                 bold: true,
-                color: fullyPaid ? const Color(0xFF15803D) : const Color(0xFF1D4ED8),
+                color: fullyPaid
+                    ? const Color(0xFF15803D)
+                    : const Color(0xFF1D4ED8),
               ),
             ),
             if (!fullyPaid) ...[
@@ -117,14 +137,22 @@ class PaymentQrShareCard extends StatelessWidget {
       children: [
         SizedBox(
           width: 112,
-          child: Text(label, style: const TextStyle(
-            color: Color(0xFF64748B), fontSize: 12)),
+          child: Text(
+            label,
+            style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+          ),
         ),
         const SizedBox(width: 6),
         Expanded(
-          child: Text(value, textAlign: TextAlign.end,
-            style: TextStyle(color: color ?? const Color(0xFF0F172A),
-              fontSize: 12, fontWeight: bold ? FontWeight.bold : FontWeight.w500)),
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              color: color ?? const Color(0xFF0F172A),
+              fontSize: 12,
+              fontWeight: bold ? FontWeight.bold : FontWeight.w500,
+            ),
+          ),
         ),
       ],
     );
