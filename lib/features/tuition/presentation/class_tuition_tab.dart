@@ -614,6 +614,88 @@ class _StudentTuitionCard extends ConsumerWidget {
     required this.month,
   });
 
+  Future<void> _finalizeStudent(BuildContext context, WidgetRef ref) async {
+    final confirm = await showModalBottomSheet<bool>(
+      context: context,
+      useSafeArea: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Chốt học phí học sinh',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '${row.student.hoTen} • Tháng $month',
+                style: const TextStyle(color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Tạm tính: ${AppFormatter.formatCurrency(row.amountDue, context: context)}',
+                style: const TextStyle(
+                  color: AppColors.cyanAccent,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Chốt sẽ lưu cố định số buổi và học phí của học sinh này.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(sheetContext, false),
+                    child: const Text('Hủy'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(sheetContext, true),
+                    child: const Text('Xác nhận chốt'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (confirm != true || !context.mounted) return;
+    try {
+      await ref
+          .read(invoiceControllerProvider.notifier)
+          .finalizeStudentInvoice(
+            studentId: row.student.id!,
+            classId: classId,
+            month: month,
+          );
+      if (context.mounted) {
+        AppFeedback.showSuccessSnackBar(
+          context,
+          'Đã chốt học phí cho ${row.student.hoTen}',
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        AppFeedback.showErrorSnackBar(
+          context,
+          error.toString().replaceAll('Exception: ', ''),
+        );
+      }
+    }
+  }
+
   void _showStudentTuitionDetailBottomSheet(
     BuildContext context,
     ClassMonthTuitionStudentRow row,
@@ -876,7 +958,9 @@ class _StudentTuitionCard extends ConsumerWidget {
             ),
             color: AppColors.surfaceHigh,
             onSelected: (value) async {
-              if (value == 'payment') {
+              if (value == 'finalize') {
+                await _finalizeStudent(context, ref);
+              } else if (value == 'payment') {
                 await showRecordPaymentBottomSheet(
                   context,
                   studentId: student.id!,
@@ -921,6 +1005,16 @@ class _StudentTuitionCard extends ConsumerWidget {
               }
             },
             itemBuilder: (context) => [
+              if (row.state == ClassStudentTuitionState.PREVIEW_READY)
+                const PopupMenuItem(
+                  value: 'finalize',
+                  child: ListTile(
+                    dense: true,
+                    leading: Icon(Icons.verified_outlined),
+                    title: Text('Chốt học phí em này'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
               if (isUnpaid) ...[
                 const PopupMenuItem(
                   value: 'payment',
