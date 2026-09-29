@@ -128,6 +128,15 @@ class InvoiceService {
     TuitionInvoice? createdInvoice;
 
     await _db.transaction((txn) async {
+      final currentInvoice = await _tuitionRepo.getInvoiceInTxn(
+        txn,
+        studentId,
+        classId,
+        month,
+      );
+      if (currentInvoice?.trangThai.isFinalizedSnapshot == true) {
+        throw Exception('Học phí tháng $month của học sinh đã được chốt.');
+      }
       // 4a. Apply extra earned credits
       if (missingEarnedEntries.isNotEmpty) {
         await _creditRepo.addLedgerEntriesInTxn(txn, missingEarnedEntries);
@@ -157,11 +166,17 @@ class InvoiceService {
         trangThai: TuitionInvoiceStatus.DA_CHOT,
         chotLuc: now,
         ghiChu: 'Chốt học phí tự động tháng $month',
-        createdAt: now,
+        id: currentInvoice?.id,
+        createdAt: currentInvoice?.createdAt ?? now,
         updatedAt: now,
       );
 
-      final id = await _tuitionRepo.insertInvoiceInTxn(txn, invoice);
+      final id = currentInvoice == null
+          ? await _tuitionRepo.insertInvoiceInTxn(txn, invoice)
+          : currentInvoice.id!;
+      if (currentInvoice != null) {
+        await _tuitionRepo.updateInvoiceInTxn(txn, invoice);
+      }
       final maps = await txn.query(
         'hoc_phi_thang',
         where: 'id = ?',
@@ -230,6 +245,17 @@ class InvoiceService {
       final now = DateTime.now();
 
       for (final plan in studentPlans) {
+        final currentInvoice = await _tuitionRepo.getInvoiceInTxn(
+          txn,
+          plan.studentId,
+          classId,
+          month,
+        );
+        if (currentInvoice?.trangThai.isFinalizedSnapshot == true) {
+          throw Exception(
+            'Học phí tháng $month của học sinh ${plan.studentId} đã được chốt. Vui lòng tải lại.',
+          );
+        }
         if (plan.missingEarnedEntries.isNotEmpty) {
           await _creditRepo.addLedgerEntriesInTxn(
             txn,
@@ -282,11 +308,17 @@ class InvoiceService {
           trangThai: TuitionInvoiceStatus.DA_CHOT,
           chotLuc: now,
           ghiChu: 'Chốt học phí cả lớp tháng $month',
-          createdAt: now,
+          id: currentInvoice?.id,
+          createdAt: currentInvoice?.createdAt ?? now,
           updatedAt: now,
         );
 
-        final id = await _tuitionRepo.insertInvoiceInTxn(txn, invoice);
+        final id = currentInvoice == null
+            ? await _tuitionRepo.insertInvoiceInTxn(txn, invoice)
+            : currentInvoice.id!;
+        if (currentInvoice != null) {
+          await _tuitionRepo.updateInvoiceInTxn(txn, invoice);
+        }
         final maps = await txn.query(
           'hoc_phi_thang',
           where: 'id = ?',
