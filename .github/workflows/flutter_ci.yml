@@ -35,15 +35,13 @@ jobs:
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Check formatting
-        run: |
-          git ls-files '*.dart' ':!:**/*.g.dart' ':!:**/*.freezed.dart' | xargs dart format
-          git diff -- lib/features/settings/presentation/settings_page.dart lib/features/tuition/domain/invoice_service.dart test/tuition/invoice_service_test.dart test/app/settings_ui_test.dart
+        run: git ls-files '*.dart' ':!:**/*.g.dart' ':!:**/*.freezed.dart' | xargs dart format --output=none --set-exit-if-changed
 
       - name: Static analysis
         run: flutter analyze
 
       - name: Run unit & widget tests
-        run: flutter test test/app/settings_ui_test.dart test/tuition/tuition_policy_service_test.dart test/tuition/invoice_service_test.dart
+        run: flutter test
 
       - name: Build Debug APK
         run: flutter build apk --debug
