@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 import '../../classes/presentation/class_controller.dart';
 import '../../tuition/presentation/create_tuition_policy_bottom_sheet.dart';
 import '../../tuition/presentation/tuition_controller.dart';
+import '../../tuition/domain/tuition_policy.dart';
 
 class TuitionPolicySettingsPage extends ConsumerStatefulWidget {
   final int? initialClassId;
@@ -166,6 +168,13 @@ class _TuitionPolicySettingsPageState
                                       ),
                                     Text(
                                       'Hiệu lực từ: ${currentPolicy.hieuLucTu}${currentPolicy.hieuLucDen != null ? ' đến ${currentPolicy.hieuLucDen}' : ''}',
+                                    ),
+                                    Text(
+                                      'Nghỉ có phép: ${switch (currentPolicy.quyTacNghiCoPhep) {
+                                        ExcusedAbsenceFeeRule.buTruBuoiDu => 'Bù buổi / buổi dư',
+                                        ExcusedAbsenceFeeRule.tinhPhi => 'Có tính học phí',
+                                        ExcusedAbsenceFeeRule.khongTinhPhi => 'Không tính học phí',
+                                      }}',
                                     ),
                                   ],
                                 ],
