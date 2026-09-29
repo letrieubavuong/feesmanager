@@ -134,7 +134,7 @@ class StudentDetailPage extends ConsumerWidget {
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -393,7 +393,7 @@ class StudentDetailPage extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Còn nợ: ${fmt.format(debt)}',
+                        'Chưa thanh toán: ${fmt.format(debt)}',
                         style: TextStyle(
                           color: debt > 0 ? AppColors.error : AppColors.success,
                           fontSize: 13,
@@ -1267,7 +1267,7 @@ class StudentDetailPage extends ConsumerWidget {
                       ),
                     ),
                     subtitle: Text(
-                      'Còn nợ: ${NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(due)}',
+                      'Chưa thanh toán: ${NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(due)}',
                     ),
                     onTap: () async {
                       Navigator.pop(context);
