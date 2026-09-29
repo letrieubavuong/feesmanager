@@ -401,6 +401,10 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     final blockedCount = overview.pendingStudentCount;
 
     final blockedRows = overview.studentRows.where((r) => r.isBlocked).toList();
+    final readyStudentIds = overview.studentRows
+        .where((r) => r.state == ClassStudentTuitionState.PREVIEW_READY)
+        .map((r) => r.student.id!)
+        .toSet();
 
     final confirm = await showModalBottomSheet<bool>(
       context: context,
@@ -563,7 +567,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                     ),
-                    onPressed: readyCount > 0
+                    onPressed: readyStudentIds.isNotEmpty
                         ? () => Navigator.pop(context, true)
                         : null,
                     icon: const Icon(Icons.check),
@@ -585,6 +589,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
           .finalizeClassInvoices(
             classId: widget.classId,
             month: _selectedMonth,
+            studentIdsToFinalize: readyStudentIds,
           );
 
       if (context.mounted) {

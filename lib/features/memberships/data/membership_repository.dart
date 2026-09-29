@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+
 import '../domain/membership.dart';
 
 class MembershipRepository {
@@ -89,6 +90,23 @@ class MembershipRepository {
       where: 'id = ?',
       whereArgs: [membership.id],
     );
+  }
+
+  Future<bool> hasFinalizedInvoiceSince(ClassMembership membership) async {
+    final rows = await _db.query(
+      'hoc_phi_thang',
+      columns: ['id'],
+      where:
+          'id_hoc_sinh = ? AND id_lop = ? AND thang >= ? AND trang_thai != ?',
+      whereArgs: [
+        membership.idHocSinh,
+        membership.idLop,
+        membership.tuNgay.substring(0, 7),
+        'NHAP',
+      ],
+      limit: 1,
+    );
+    return rows.isNotEmpty;
   }
 
   Future<void> changeJoinDate(

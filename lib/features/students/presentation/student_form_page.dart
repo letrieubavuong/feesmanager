@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/app_page_scaffold.dart';
 import '../../../app/common_widgets/dirty_form_scope.dart';
@@ -215,25 +216,30 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
         ),
         const SizedBox(height: 12),
         Text(l10n.studentGender),
-        Wrap(
-          spacing: 8,
-          children:
-              [
-                    ('NAM', l10n.studentGenderMale),
-                    ('NU', l10n.studentGenderFemale),
-                    ('KHAC', l10n.studentGenderOther),
-                  ]
-                  .map(
-                    (option) => ChoiceChip(
-                      label: Text(option.$2),
-                      selected: _gioiTinh == option.$1,
-                      onSelected: (_) {
-                        _onChanged();
-                        setState(() => _gioiTinh = option.$1);
-                      },
-                    ),
-                  )
-                  .toList(),
+        Row(
+          children: [
+            Text(l10n.studentGenderFemale),
+            Switch.adaptive(
+              value: _gioiTinh == 'NAM',
+              onChanged: (male) {
+                _onChanged();
+                setState(() => _gioiTinh = male ? 'NAM' : 'NU');
+              },
+            ),
+            Text(l10n.studentGenderMale),
+            const Spacer(),
+            TextButton(
+              onPressed: () {
+                _onChanged();
+                setState(() => _gioiTinh = 'KHAC');
+              },
+              child: Text(
+                _gioiTinh == 'KHAC'
+                    ? '✓ ${l10n.studentGenderOther}'
+                    : l10n.studentGenderOther,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         InkWell(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../app/common_widgets/app_empty_state.dart';
 import '../../../app/common_widgets/app_error_state.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
@@ -37,6 +38,37 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
         leading: const GlobalMenuButton(),
         title: Text(l10n.navClasses),
         actions: [
+          Tooltip(
+            message: _filter == ClassFilter.active
+                ? l10n.classFilterActive
+                : l10n.classFilterStopped,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _filter == ClassFilter.active
+                      ? l10n.classFilterActive
+                      : l10n.classFilterStopped,
+                  style: const TextStyle(fontSize: 11),
+                ),
+                Switch.adaptive(
+                  key: _filter == ClassFilter.active
+                      ? UiKeys.classActiveFilter
+                      : UiKeys.classArchivedFilter,
+                  value: _filter == ClassFilter.active,
+                  onChanged: (active) {
+                    final next = active
+                        ? ClassFilter.active
+                        : ClassFilter.archived;
+                    setState(() => _filter = next);
+                    ref
+                        .read(classListOverviewControllerProvider.notifier)
+                        .setFilter(next);
+                  },
+                ),
+              ],
+            ),
+          ),
           IconButton(
             key: UiKeys.classAddButton,
             icon: const Icon(Icons.add_rounded),
@@ -85,8 +117,6 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 1. 2-State Filter Toggle
-                _buildFilterToggle(l10n),
-                const SizedBox(height: 16),
 
                 // 2. Active Mode KPIs or Archived Mode Header
                 if (_filter == ClassFilter.active) ...[
@@ -170,74 +200,6 @@ class _ClassListPageState extends ConsumerState<ClassListPage> {
           error: error.toString(),
           onRetry: () =>
               ref.read(classListOverviewControllerProvider.notifier).refresh(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilterToggle(AppLocalizations l10n) {
-    return SizedBox(
-      width: double.infinity,
-      child: SegmentedButton<ClassFilter>(
-        segments: [
-          ButtonSegment<ClassFilter>(
-            value: ClassFilter.active,
-            icon: const Icon(Icons.class_outlined, size: 18),
-            label: Text(
-              l10n.classFilterActive,
-              key: UiKeys.classActiveFilter,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          ButtonSegment<ClassFilter>(
-            value: ClassFilter.archived,
-            icon: const Icon(Icons.archive_outlined, size: 18),
-            label: Text(
-              l10n.classFilterStopped,
-              key: UiKeys.classArchivedFilter,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-        selected: {_filter},
-        emptySelectionAllowed: false,
-        multiSelectionEnabled: false,
-        onSelectionChanged: (newSelection) {
-          if (newSelection.isNotEmpty) {
-            final selectedVal = newSelection.first;
-            setState(() => _filter = selectedVal);
-            ref
-                .read(classListOverviewControllerProvider.notifier)
-                .setFilter(selectedVal);
-          }
-        },
-        style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-            if (states.contains(WidgetState.selected)) {
-              return AppColors.primary;
-            }
-            return AppColors.surface;
-          }),
-          foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-            if (states.contains(WidgetState.selected)) {
-              return Colors.white;
-            }
-            return AppColors.textSecondary;
-          }),
-          iconColor: WidgetStateProperty.resolveWith<Color>((states) {
-            if (states.contains(WidgetState.selected)) {
-              return Colors.white;
-            }
-            return AppColors.textSecondary;
-          }),
-          side: WidgetStateProperty.all(
-            const BorderSide(color: AppColors.border),
-          ),
-          shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          visualDensity: VisualDensity.compact,
         ),
       ),
     );

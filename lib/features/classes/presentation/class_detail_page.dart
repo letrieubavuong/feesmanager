@@ -23,6 +23,12 @@ import '../../memberships/presentation/leave_class_bottom_sheet.dart';
 import '../../memberships/presentation/membership_providers.dart';
 import '../../memberships/presentation/re_enroll_student_bottom_sheet.dart';
 import '../../schedule/presentation/assignment_tab.dart';
+import '../../session_credits/domain/session_credit_service.dart';
+import '../../session_credits/presentation/session_credit_controller.dart';
+import '../../tuition/domain/invoice_service.dart';
+import '../../tuition/domain/tuition_invoice.dart';
+import '../../dashboard/presentation/dashboard_controller.dart';
+import '../../reports/presentation/report_controller.dart';
 import '../../schedule/presentation/schedule_tab.dart';
 import '../../sessions/domain/class_session.dart';
 import '../../sessions/presentation/session_tab.dart';
@@ -164,23 +170,54 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
     );
     if (confirmed != true) return;
     try {
+      final monthKey = DateFormat('yyyy-MM').format(month);
+      final invoices = await (await ref.read(
+        invoiceServiceProvider.future,
+      )).getInvoicesForClassMonth(widget.classId, monthKey);
+      final hasFinalizedInvoice = invoices.any(
+        (invoice) => invoice.trangThai.isFinalizedSnapshot,
+      );
       final result = await service.backfillHistoricalAttendance(
         classId: widget.classId,
         fromDate: start,
         toDate: end,
         save: true,
       );
+      String? reconciliationError;
+      if (!hasFinalizedInvoice && result.sessionCount > 0) {
+        try {
+          final credits = await ref.read(sessionCreditServiceProvider.future);
+          await credits.reconcileEarnedCreditsForClassMonth(
+            widget.classId,
+            monthKey,
+          );
+        } catch (error) {
+          reconciliationError = error.toString().replaceFirst(
+            'Exception: ',
+            '',
+          );
+        }
+      }
       if (!mounted) return;
+      ref.invalidate(classMonthTuitionOverviewProvider);
+      ref.invalidate(tuitionPreviewControllerProvider);
+      ref.invalidate(sessionCreditControllerProvider);
+      ref.invalidate(dashboardControllerProvider);
+      ref.invalidate(reportSummaryProvider);
       ref.invalidate(
         classAttendanceTimelineProvider(
           classId: widget.classId,
-          yearMonth: DateFormat('yyyy-MM').format(month),
+          yearMonth: monthKey,
         ),
       );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Đã cập nhật ${result.studentCount} lượt trong ${result.sessionCount} buổi.',
+            reconciliationError != null
+                ? 'Đã lưu điểm danh, nhưng chưa đối soát được buổi dư: $reconciliationError'
+                : hasFinalizedInvoice
+                ? 'Đã cập nhật ${result.studentCount} lượt. Tháng này có hóa đơn đã chốt: học phí và buổi dư cần đối soát thủ công trước khi điều chỉnh.'
+                : 'Đã cập nhật ${result.studentCount} lượt trong ${result.sessionCount} buổi và đối soát buổi dư.',
           ),
         ),
       );
@@ -1247,8 +1284,11 @@ class HistoryItem extends ConsumerWidget {
                 if (studentAsync.valueOrNull?.sdtPhuHuynh?.trim().isNotEmpty ==
                     true) ...[
                   const SizedBox(height: 6),
-                  ParentContactActions(
-                    phone: studentAsync.valueOrNull?.sdtPhuHuynh,
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ParentContactActions(
+                      phone: studentAsync.valueOrNull?.sdtPhuHuynh,
+                    ),
                   ),
                 ],
               ],
@@ -1400,8 +1440,11 @@ class RosterItem extends ConsumerWidget {
                 if (studentAsync.valueOrNull?.sdtPhuHuynh?.trim().isNotEmpty ==
                     true) ...[
                   const SizedBox(height: 6),
-                  ParentContactActions(
-                    phone: studentAsync.valueOrNull?.sdtPhuHuynh,
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ParentContactActions(
+                      phone: studentAsync.valueOrNull?.sdtPhuHuynh,
+                    ),
                   ),
                 ],
               ],

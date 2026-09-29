@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../../../core/database/database_provider.dart';
 import '../../memberships/domain/membership_service.dart';
 import '../../payments/data/payment_repository.dart';
@@ -174,8 +175,9 @@ class InvoiceService {
 
   Future<List<TuitionInvoice>> finalizeClassInvoices(
     int classId,
-    String month,
-  ) async {
+    String month, {
+    Set<int>? studentIdsToFinalize,
+  }) async {
     await _validateEarlyMonthBillingGap(classId, month);
 
     final existingInvoices = await getInvoicesForClassMonth(classId, month);
@@ -188,10 +190,17 @@ class InvoiceService {
     final classMonthMemberships = await _membershipService
         .getMembershipsForClassMonth(classId, month);
 
-    final studentIds = classMonthMemberships
+    final eligibleStudentIds = classMonthMemberships
         .map((m) => m.idHocSinh)
         .toSet()
         .difference(finalizedStudentIds);
+    if (studentIdsToFinalize != null &&
+        !eligibleStudentIds.containsAll(studentIdsToFinalize)) {
+      throw Exception(
+        'Danh sách học sinh cần chốt đã thay đổi. Vui lòng tải lại tháng học phí.',
+      );
+    }
+    final studentIds = studentIdsToFinalize ?? eligibleStudentIds;
 
     final studentPlans = <_StudentFinalizationPlan>[];
 

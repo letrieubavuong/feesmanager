@@ -11,6 +11,7 @@ import '../../../app/common_widgets/navy_components.dart';
 import '../../../app/common_widgets/parent_contact_actions.dart';
 import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/design_system/app_theme.dart';
+import '../../../app/design_system/app_spacing.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../core/utils/date_formatter.dart';
@@ -21,11 +22,14 @@ import '../../classes/presentation/class_controller.dart';
 import '../../classes/presentation/class_detail_page.dart';
 import '../../memberships/presentation/edit_membership_bottom_sheet.dart';
 import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
+import '../../memberships/presentation/leave_class_bottom_sheet.dart';
+import '../../memberships/domain/membership_service.dart';
 import '../../payments/domain/payment_service.dart';
 import '../../payments/presentation/record_payment_bottom_sheet.dart';
 import '../../schedule_conflicts/domain/schedule_constraint.dart';
 import '../../schedule_conflicts/presentation/schedule_constraint_dialogs.dart';
 import '../../tuition/domain/tuition_service.dart';
+import '../../tuition/presentation/tuition_controller.dart';
 import '../domain/student.dart';
 import '../domain/student_detail_overview.dart';
 import '../domain/student_detail_overview_service.dart';
@@ -141,27 +145,27 @@ class StudentDetailPage extends ConsumerWidget {
                   // 1. STUDENT IDENTITY HEADER
                   _buildHeader(context, overview),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: AppSpacing.sectionGap),
 
                   // 2. 2 KPI CARDS
                   _buildKpiSection(context, l10n, overview),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.sectionGap),
 
                   // 3. 4 BUSINESS ACTIONS
                   _buildBusinessActions(context, ref, l10n, overview),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.sectionGap),
 
                   // 4. LỚP ĐANG THAM GIA
                   _buildActiveClassesSection(context, ref, l10n, overview),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.sectionGap),
 
                   // 5. HỌC PHÍ THÁNG
                   _buildTuitionSection(context, ref, l10n, overview),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.sectionGap),
 
                   // 6. ĐIỂM DANH GẦN ĐÂY & GIỜ BẬN
                   _buildAttendanceAndBusyTimesSection(
@@ -278,7 +282,10 @@ class StudentDetailPage extends ConsumerWidget {
                 ),
                 if (s.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
                   const SizedBox(height: 6),
-                  ParentContactActions(phone: s.sdtPhuHuynh),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ParentContactActions(phone: s.sdtPhuHuynh),
+                  ),
                 ],
                 if (overview.firstActiveMembershipDate != null) ...[
                   const SizedBox(height: 4),
@@ -632,27 +639,69 @@ class StudentDetailPage extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      tooltip: 'Sửa miễn giảm & tham gia lớp',
-                      onPressed: () async {
-                        final success = await showEditMembershipBottomSheet(
-                          context,
-                          membership: item.membership,
-                          studentName: overview.student.hoTen,
-                          className: item.classEntity.tenLop,
-                        );
-                        if (success == true) {
-                          ref.invalidate(
-                            studentDetailOverviewProvider(studentId),
+                    PopupMenuButton<String>(
+                      tooltip: 'Tùy chọn tham gia lớp',
+                      onSelected: (action) async {
+                        if (action == 'leave') {
+                          await showModalBottomSheet<void>(
+                            context: context,
+                            isScrollControlled: true,
+                            builder: (_) => LeaveClassBottomSheet(
+                              studentId: overview.student.id!,
+                              classId: item.classEntity.id!,
+                              studentName: overview.student.hoTen,
+                            ),
                           );
+                          ref.invalidate(
+                            studentDetailOverviewProvider(overview.student.id!),
+                          );
+                        } else if (action == 'edit') {
+                          final success = await showEditMembershipBottomSheet(
+                            context,
+                            membership: item.membership,
+                            studentName: overview.student.hoTen,
+                            className: item.classEntity.tenLop,
+                          );
+                          if (success == true) {
+                            ref.invalidate(
+                              studentDetailOverviewProvider(overview.student.id!),
+                            );
+                            ref.invalidate(
+                              classMonthTuitionOverviewProvider((
+                                item.classEntity.id!,
+                                DateFormat('yyyy-MM').format(DateTime.now()),
+                              )),
+                            );
+                          }
                         }
                       },
-                    ),
-                    const Icon(
-                      Icons.check_circle,
-                      color: AppColors.success,
-                      size: 18,
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.edit_outlined, size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Sửa miễn giảm (${item.membership.mienGiamPhanTram}%) & tham gia',
+                              ),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'leave',
+                          child: Row(
+                            children: [
+                              Icon(Icons.logout, size: 18, color: AppColors.error),
+                              SizedBox(width: 8),
+                              Text(
+                                'Cho nghỉ lớp',
+                                style: TextStyle(color: AppColors.error),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(width: 6),
                     const Icon(

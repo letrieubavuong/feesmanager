@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../../sessions/domain/session_service.dart';
 import '../../memberships/domain/membership_service.dart';
 import '../../schedule/domain/schedule_service.dart';
@@ -465,7 +466,20 @@ class RosterService {
     final schedulesForSessionDay = effectiveSchedules
         .where((s) => s.thuTrongTuan == referenceDate.weekday)
         .toList();
-    final isMultiShift = schedulesForSessionDay.length >= 2;
+    final scheduleIdsForDay = schedulesForSessionDay.map((s) => s.id).toSet();
+    final classAssignments = await _scheduleService.getAssignmentsForClass(
+      session.idLop,
+    );
+    final assignmentsForDay = classAssignments
+        .where(
+          (a) =>
+              scheduleIdsForDay.contains(a.idLichHoc) &&
+              a.tuNgay.compareTo(session.ngay) <= 0 &&
+              (a.denNgay == null || a.denNgay!.compareTo(session.ngay) >= 0),
+        )
+        .toList();
+    final isMultiShift =
+        schedulesForSessionDay.length >= 2 || assignmentsForDay.isNotEmpty;
 
     final activeMemberships = await _membershipService.getRoster(
       session.idLop,
@@ -473,10 +487,6 @@ class RosterService {
     );
     final students = await _studentService.getStudents(includeArchived: true);
     final studentMap = {for (var s in students) s.id: s};
-
-    final assignments = isMultiShift
-        ? await _scheduleService.getAssignmentsForClass(session.idLop)
-        : null;
 
     for (final m in activeMemberships) {
       final student = studentMap[m.idHocSinh];
@@ -500,12 +510,8 @@ class RosterService {
           ),
         );
       } else {
-        final activeAssignments = assignments!.where((a) {
+        final activeAssignments = assignmentsForDay.where((a) {
           if (a.idHocSinh != m.idHocSinh) return false;
-          if (session.ngay.compareTo(a.tuNgay) < 0) return false;
-          if (a.denNgay != null && session.ngay.compareTo(a.denNgay!) > 0) {
-            return false;
-          }
           return true;
         }).toList();
 
@@ -540,14 +546,10 @@ class RosterService {
             isAssignmentValid = false;
           }
 
-          if (isAssignmentValid && a.tuNgay.compareTo(m.tuNgay) < 0) {
-            isAssignmentValid = false;
-          }
-          if (isAssignmentValid && m.denNgay != null) {
-            if (a.denNgay == null || a.denNgay!.compareTo(m.denNgay!) > 0) {
-              isAssignmentValid = false;
-            }
-          }
+          // The student and assignment have already been checked as active
+          // on this session date. An older assignment interval may extend
+          // past a revised membership boundary without admitting the student
+          // outside their actual time in this class.
 
           if (!isAssignmentValid) {
             issues.add(

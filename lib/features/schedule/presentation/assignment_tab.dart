@@ -426,8 +426,11 @@ class _AssignmentRowItem extends ConsumerWidget {
                 if (studentAsync.valueOrNull?.sdtPhuHuynh?.trim().isNotEmpty ==
                     true) ...[
                   const SizedBox(height: 6),
-                  ParentContactActions(
-                    phone: studentAsync.valueOrNull?.sdtPhuHuynh,
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ParentContactActions(
+                      phone: studentAsync.valueOrNull?.sdtPhuHuynh,
+                    ),
                   ),
                 ],
               ],

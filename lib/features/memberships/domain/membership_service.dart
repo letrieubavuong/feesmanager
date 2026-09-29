@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:intl/intl.dart';
+
 import '../../../core/database/database_provider.dart';
 import '../data/membership_repository.dart';
 import 'membership.dart';
@@ -117,6 +118,20 @@ class MembershipService {
     );
 
     await _repository.update(updated);
+  }
+
+  Future<void> updateDiscount(ClassMembership membership, int percent) async {
+    if (membership.id == null || percent < 0 || percent > 100) {
+      throw Exception('Mức giảm học phí phải từ 0 đến 100%');
+    }
+    if (await _repository.hasFinalizedInvoiceSince(membership)) {
+      throw Exception(
+        'Lớp này đã có học phí được chốt. Không thể sửa mức giảm của cả giai đoạn; hãy tạo chính sách hiệu lực mới để bảo toàn hóa đơn cũ.',
+      );
+    }
+    await _repository.update(
+      membership.copyWith(mienGiamPhanTram: percent, updatedAt: DateTime.now()),
+    );
   }
 
   Future<void> changeJoinDate({

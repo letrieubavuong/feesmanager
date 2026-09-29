@@ -248,6 +248,7 @@ const _vietnameseSections = <_GuideSection>[
     [
       'Mở chi tiết lớp → Lịch học → nút + để thêm lịch định kỳ theo thứ và giờ.',
       'Nếu lớp có nhiều ca, vào Phân ca để kiểm tra số lượng và danh sách học sinh của từng ca.',
+      'Khi phân ca hàng loạt, chọn ngày chung; nếu một em vào lớp muộn hơn, màn hình xem trước báo ngày phân ca thực tế của em. Điểm danh chỉ lấy học sinh thuộc ca và đang tham gia lớp vào ngày buổi học.',
       'Vào Buổi học để xem các buổi theo ngày. Lịch định kỳ là quy tắc; buổi học là buổi thực tế dùng cho điểm danh.',
     ],
   ),
@@ -259,6 +260,7 @@ const _vietnameseSections = <_GuideSection>[
       'Mở chi tiết lớp → Điểm danh, chọn tháng và lọc buổi chưa hoàn tất hoặc đã hoàn tất.',
       'Chọn một buổi, kiểm tra danh sách học sinh và cập nhật trạng thái điểm danh cho từng em.',
       'Lưu nháp khi chưa xong; chỉ hoàn tất sau khi đã kiểm tra đầy đủ. Học sinh chưa được điểm danh không được xem là có mặt.',
+      'Điểm danh bù cho tháng cũ trong chi tiết lớp sẽ đối soát buổi dư và làm mới tạm tính. Nếu đã chốt hóa đơn tháng đó, ứng dụng giữ số tiền đã chốt và báo cần đối soát thủ công.',
     ],
   ),
   _GuideSection(
@@ -279,6 +281,7 @@ const _vietnameseSections = <_GuideSection>[
       'Mở chi tiết lớp → Học phí và chọn đúng tháng. Tạm tính là số tiền dự kiến, chưa phải hóa đơn đã chốt.',
       'Kiểm tra điểm danh, chính sách học phí và các học sinh bị chặn vì thiếu dữ liệu trước khi chọn Chốt học phí.',
       'Dự kiến còn thu gồm tiền tạm tính chưa chốt cộng với tiền chưa thanh toán của hóa đơn đã chốt. Chỉ hóa đơn đã chốt mới là căn cứ thu tiền.',
+      'Buổi nghỉ lễ trùng lịch không tính phí và không tiêu buổi dư. Buổi dư phát sinh khi học vượt số buổi chuẩn tháng; việc dùng buổi dư cho nghỉ có phép tùy chính sách lớp và ngày buổi dư có hiệu lực.',
     ],
   ),
   _GuideSection(
@@ -329,6 +332,7 @@ const _englishSections = <_GuideSection>[
     [
       'Open a class → Schedule → + to set a recurring weekday and time.',
       'For classes with multiple shifts, use Shift assignment to check students in each shift.',
+      'For bulk assignment, choose a common date. A student who joined later begins on their enrollment date, shown in the preview. Attendance uses the effective shift and membership on the session date.',
       'Open Sessions to review dated sessions. A recurring schedule is a rule; a session is used for attendance.',
     ],
   ),
@@ -340,6 +344,7 @@ const _englishSections = <_GuideSection>[
       'Open a class → Attendance, select a month and choose incomplete or completed sessions.',
       'Open a session, check its roster and set each student’s attendance status.',
       'Save a draft if unfinished. Finalize only after review; missing attendance does not mean present.',
+      'Historical attendance backfill reconciles earned session credits and refreshes tuition previews. Finalized invoices remain frozen and require manual review.',
     ],
   ),
   _GuideSection(
@@ -360,6 +365,7 @@ const _englishSections = <_GuideSection>[
       'Open a class → Tuition and select the month. An estimate is not a finalized invoice.',
       'Check attendance, tuition policy and students blocked by missing data before finalizing.',
       'Projected amount to collect includes unfinalized estimates plus remaining finalized debt. Collect against finalized invoices.',
+      'A holiday on a scheduled day is not charged and does not consume a session credit. Attended sessions beyond the monthly standard earn credits; using credits for excused absence depends on the class policy and the credit date.',
     ],
   ),
   _GuideSection(

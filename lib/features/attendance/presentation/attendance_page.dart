@@ -984,7 +984,10 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
           ),
           if (student.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
             const SizedBox(height: 6),
-            ParentContactActions(phone: student.sdtPhuHuynh),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ParentContactActions(phone: student.sdtPhuHuynh),
+            ),
           ],
           if (isEditable) ...[
             const SizedBox(height: 6),
