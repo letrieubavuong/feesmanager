@@ -48,11 +48,11 @@ class SettingsPage extends ConsumerWidget {
                     ),
                     const ButtonSegment(
                       value: ThemeMode.light,
-                      icon: const Icon(Icons.light_mode_outlined),
+                      icon: Icon(Icons.light_mode_outlined),
                     ),
                     const ButtonSegment(
                       value: ThemeMode.dark,
-                      icon: const Icon(Icons.dark_mode_outlined),
+                      icon: Icon(Icons.dark_mode_outlined),
                     ),
                   ],
                   selected: {themeState.themeMode},
