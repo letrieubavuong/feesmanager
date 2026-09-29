@@ -144,11 +144,8 @@ class ClassMonthTuitionOverviewService {
     };
 
     // 12. Load credit ledger for all students ONCE
-    final ledgerEntries = await _creditRepo.getLedgerForClassStudentsThroughDate(
-      classId,
-      studentIds,
-      monthEndStr,
-    );
+    final ledgerEntries = await _creditRepo
+        .getLedgerForClassStudentsThroughDate(classId, studentIds, monthEndStr);
     final ledgerByStudent = <int, List<CreditLedgerEntry>>{};
     for (final entry in ledgerEntries) {
       ledgerByStudent.putIfAbsent(entry.idHocSinh, () => []).add(entry);
@@ -204,8 +201,7 @@ class ClassMonthTuitionOverviewService {
         finalizedStudentCount++;
         finalizedTotalDue += invoice.soTienPhaiThu;
         final pPaid = summary?.totalPaid ?? 0;
-        final rDebt =
-            summary?.remainingDebt ?? (invoice.soTienPhaiThu - pPaid);
+        final rDebt = summary?.remainingDebt ?? (invoice.soTienPhaiThu - pPaid);
         totalPaid += pPaid;
         remainingDebt += rDebt;
 
@@ -311,7 +307,10 @@ class ClassMonthTuitionOverviewService {
                 e.ngayHieuLuc.compareTo(monthStartStr) >= 0 &&
                 e.ngayHieuLuc.compareTo(monthEndStr) <= 0,
           );
-          final monthDelta = monthLedger.fold<int>(0, (sum, e) => sum + e.delta);
+          final monthDelta = monthLedger.fold<int>(
+            0,
+            (sum, e) => sum + e.delta,
+          );
 
           final closingBalance = studentLedgerEntries
               .where((e) => e.ngayHieuLuc.compareTo(monthEndStr) <= 0)
@@ -340,10 +339,12 @@ class ClassMonthTuitionOverviewService {
             if (candidate.isStandard &&
                 candidate.attendanceState == AttendanceState.NGHI_CO_PHEP) {
               final origSessionId = candidate.session.id!;
-              final adj = studentAdjustments.cast<SessionAdjustment?>().firstWhere(
-                (a) => a != null && a.idBuoiHocGoc == origSessionId,
-                orElse: () => null,
-              );
+              final adj = studentAdjustments
+                  .cast<SessionAdjustment?>()
+                  .firstWhere(
+                    (a) => a != null && a.idBuoiHocGoc == origSessionId,
+                    orElse: () => null,
+                  );
 
               bool isValidMakeup = false;
               if (adj != null &&
