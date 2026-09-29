@@ -132,6 +132,7 @@ class InvoiceController extends _$InvoiceController {
         tuitionPreviewControllerProvider(studentId, classId, month),
       );
       ref.invalidate(classMonthInvoicesProvider((classId, month)));
+      ref.invalidate(classMonthTuitionOverviewProvider((classId, month)));
       ref.invalidate(classMonthPaymentSummariesProvider((classId, month)));
       ref.invalidate(
         invoicePaymentSummaryProvider((studentId, classId, month)),
