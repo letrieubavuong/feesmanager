@@ -144,6 +144,7 @@ Suggested columns:
 - `so_buoi_chuan_thang INTEGER NOT NULL DEFAULT 12`
 - `hoc_phi_moi_buoi INTEGER NOT NULL DEFAULT 0`
 - `hoc_phi_thang_toi_da INTEGER NULL`
+- `quy_tac_nghi_co_phep TEXT NOT NULL DEFAULT 'buTruBuoiDu'` (v17: `buTruBuoiDu`, `tinhPhi`, `khongTinhPhi`; existing policies retain the old default)
 - `ghi_chu TEXT NULL`
 - `created_at TEXT NOT NULL`
 - `updated_at TEXT NOT NULL`
