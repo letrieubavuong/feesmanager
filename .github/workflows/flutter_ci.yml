@@ -41,7 +41,7 @@ jobs:
         run: flutter analyze
 
       - name: Run unit & widget tests
-        run: flutter test test/app/settings_ui_test.dart test/tuition/tuition_policy_service_test.dart
+        run: flutter test test/app/settings_ui_test.dart test/tuition/tuition_policy_service_test.dart test/tuition/invoice_service_test.dart
 
       - name: Build Debug APK
         run: flutter build apk --debug
