@@ -1,9 +1,9 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../tuition/domain/tuition_policy.dart';
-import '../../tuition/domain/tuition_policy_service.dart';
+
 import '../domain/class.dart';
-import '../domain/class_filter.dart';
 import '../domain/class_service.dart';
+
+import '../domain/class_filter.dart';
 
 part 'class_controller.g.dart';
 
@@ -55,24 +55,8 @@ class ClassFormController extends _$ClassFormController {
   void build() {}
 
   Future<int> save(ClassEntity classEntity) async {
-    final isNew = classEntity.id == null;
     final service = await ref.read(classServiceProvider.future);
-    final id = await service.saveClass(classEntity);
-    if (isNew) {
-      final policyService =
-          await ref.read(tuitionPolicyServiceProvider.future);
-      final now = DateTime.now();
-      final effectiveFrom =
-          '${now.year}-${now.month.toString().padLeft(2, '0')}-01';
-      await policyService.createPolicy(
-        classId: id,
-        effectiveFrom: effectiveFrom,
-        feePerSession: TuitionPolicyDefaults.defaultFeePerSession,
-        standardSessionsPerMonth:
-            TuitionPolicyDefaults.standardSessionsPerMonth,
-      );
-    }
-    return id;
+    return await service.saveClass(classEntity);
   }
 }
 
