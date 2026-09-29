@@ -178,6 +178,48 @@ void main() {
       await db.close();
     });
 
+    test('Chốt cả lớp sau khi chốt một em chỉ xử lý các em còn lại', () async {
+      await db.execute('''
+        INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at)
+        VALUES (2, 'Student 2', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+      await membershipService.enrollStudent(
+        studentId: 2,
+        classId: 1,
+        joinDate: DateTime.parse('2026-01-01'),
+      );
+      await db.insert('buoi_hoc', {
+        'id': 101,
+        'id_lop': 1,
+        'id_lich_hoc': 2,
+        'ngay': '2026-09-01',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'trang_thai': 'DA_HOC',
+        'created_at': '2026-01-01T00:00:00.000',
+        'updated_at': '2026-01-01T00:00:00.000',
+      });
+      for (final id in [1, 2]) {
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 101,
+          'id_hoc_sinh': id,
+          'id_lop_goc': 1,
+          'trang_thai': 'CO_MAT',
+          'created_at': '2026-01-01T00:00:00.000',
+          'updated_at': '2026-01-01T00:00:00.000',
+        });
+      }
+      final first = await invoiceService.finalizeStudentInvoice(
+        1,
+        1,
+        '2026-09',
+      );
+      final rest = await invoiceService.finalizeClassInvoices(1, '2026-09');
+      expect(rest.map((i) => i.idHocSinh), [2]);
+      expect((await invoiceService.getInvoice(1, 1, '2026-09'))!.id, first.id);
+    });
+
     test(
       'Finalize student invoice creates snapshot and consumes credit atomically',
       () async {
