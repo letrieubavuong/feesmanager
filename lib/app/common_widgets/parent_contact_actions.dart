@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../design_system/app_theme.dart';
 
 /// Compact actions shared by student cards. Only the parent phone is used.
@@ -81,7 +82,9 @@ class ParentContactActions extends StatelessWidget {
     }
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không thể mở liên kết trên thiết bị này.')),
+        const SnackBar(
+          content: Text('Không thể mở liên kết trên thiết bị này.'),
+        ),
       );
     }
   }
