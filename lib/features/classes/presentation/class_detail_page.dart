@@ -1008,6 +1008,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
     final success = await showEnrollStudentBottomSheet(
       context,
       classId: widget.classId,
+      allowMultiple: true,
     );
     if (success == true) {
       ref.invalidate(classRosterProvider);
