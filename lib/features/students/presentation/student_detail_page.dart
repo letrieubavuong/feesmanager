@@ -68,10 +68,9 @@ class StudentDetailPage extends ConsumerWidget {
                     icon: const Icon(Icons.edit_outlined),
                     tooltip: l10n.studentEditProfile,
                     onPressed: () async {
-                      await Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => StudentFormPage(student: student),
-                        ),
+                      await showStudentFormBottomSheet(
+                        context,
+                        student: student,
                       );
                       ref.invalidate(studentDetailOverviewProvider(studentId));
                     },
@@ -435,10 +434,9 @@ class StudentDetailPage extends ConsumerWidget {
           icon: Icons.edit_note_outlined,
           color: AppColors.primary,
           onTap: () async {
-            await Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => StudentFormPage(student: overview.student),
-              ),
+            await showStudentFormBottomSheet(
+              context,
+              student: overview.student,
             );
             ref.invalidate(studentDetailOverviewProvider(studentId));
           },
