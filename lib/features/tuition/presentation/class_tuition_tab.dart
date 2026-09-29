@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
 import '../../../app/common_widgets/navy_components.dart';
+import '../../../app/common_widgets/parent_contact_actions.dart';
 import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../app/localization/app_formatter.dart';
@@ -11,15 +13,18 @@ import '../../classes/presentation/class_controller.dart';
 import '../../payments/presentation/payment_history_bottom_sheet.dart';
 import '../../payments/presentation/record_payment_bottom_sheet.dart';
 import '../../payments/presentation/vietqr_payment_page.dart';
+import '../../students/presentation/student_detail_page.dart';
 import '../domain/class_month_tuition_overview.dart';
+import 'create_tuition_policy_bottom_sheet.dart';
 import 'tuition_controller.dart';
 
-enum TuitionPaymentFilter { preview, unpaid, paid }
+enum TuitionPaymentFilter { outstanding, paid }
 
 class ClassTuitionTab extends ConsumerStatefulWidget {
   final int classId;
+  final Widget? classSelector;
 
-  const ClassTuitionTab({super.key, required this.classId});
+  const ClassTuitionTab({super.key, required this.classId, this.classSelector});
 
   @override
   ConsumerState<ClassTuitionTab> createState() => _ClassTuitionTabState();
@@ -52,19 +57,39 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     );
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(6, 12, 6, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildMonthSelector(context),
+          Row(
+            children: [
+              const Icon(
+                Icons.account_balance_wallet_outlined,
+                color: AppColors.cyanAccent,
+                size: 17,
+              ),
+              const SizedBox(width: 6),
+              const Expanded(
+                child: Text(
+                  'Tổng quan học phí',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              _buildMonthSelector(context),
+            ],
+          ),
           const SizedBox(height: 12),
           overviewAsync.when(
             data: (overview) {
-              final previewCount = overview.studentRows
-                  .where((r) => !r.isFinalized)
-                  .length;
-              final unpaidCount = overview.studentRows
-                  .where((r) => r.isFinalized && r.remainingDebt > 0)
+              final outstandingCount = overview.studentRows
+                  .where((r) => !r.isFinalized || r.remainingDebt > 0)
                   .length;
               final paidCount = overview.studentRows
                   .where((r) => r.isFinalized && r.remainingDebt <= 0)
@@ -75,26 +100,53 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                 _userFilter = null;
               }
 
-              final effectiveFilter = _userFilter ??
-                  (previewCount > 0
-                      ? TuitionPaymentFilter.preview
-                      : TuitionPaymentFilter.unpaid);
+              final effectiveFilter =
+                  _userFilter ??
+                  (outstandingCount > 0
+                      ? TuitionPaymentFilter.outstanding
+                      : TuitionPaymentFilter.paid);
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildKpiSummary(context, overview),
                   const SizedBox(height: 12),
-                  _buildFilterToggle(
-                    context,
-                    effectiveFilter,
-                    previewCount,
-                    unpaidCount,
-                    paidCount,
+                  Row(
+                    children: [
+                      if (widget.classSelector != null) ...[
+                        Expanded(child: widget.classSelector!),
+                        const SizedBox(width: 6),
+                      ],
+                      _buildFilterToggle(
+                        context,
+                        effectiveFilter,
+                        outstandingCount,
+                        paidCount,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   _buildUnfinalizedBanner(context, overview),
                   const SizedBox(height: 12),
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.people_outline,
+                        color: AppColors.cyanAccent,
+                        size: 18,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Danh sách học sinh',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
                   _buildStudentTuitionList(context, overview, effectiveFilter),
                 ],
               );
@@ -121,42 +173,47 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
       'MM/yyyy',
     ).format(DateTime.parse('$_selectedMonth-01'));
 
-    return AppSectionCard(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left, color: AppColors.cyanAccent),
-            onPressed: () => _changeMonth(-1),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-          Row(
-            children: [
-              const Icon(
-                Icons.calendar_month_outlined,
+    return SizedBox(
+      width: 128,
+      child: AppSectionCard(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(
+                Icons.chevron_left,
                 color: AppColors.cyanAccent,
-                size: 18,
+                size: 20,
               ),
-              const SizedBox(width: 6),
-              Text(
-                'Tháng $formattedMonth',
+              onPressed: () => _changeMonth(-1),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 24, height: 28),
+            ),
+            Expanded(
+              child: Text(
+                formattedMonth,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 15,
+                  fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right, color: AppColors.cyanAccent),
-            onPressed: () => _changeMonth(1),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ],
+            ),
+            IconButton(
+              icon: const Icon(
+                Icons.chevron_right,
+                color: AppColors.cyanAccent,
+                size: 20,
+              ),
+              onPressed: () => _changeMonth(1),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 24, height: 28),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -165,6 +222,20 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     BuildContext context,
     ClassMonthTuitionOverview overview,
   ) {
+    if (overview.previewStudentCount == 0 &&
+        overview.finalizedStudentCount == 0) {
+      final reason = overview.studentRows.isEmpty
+          ? 'Không có học sinh tham gia lớp trong tháng $_selectedMonth. Kiểm tra ngày tham gia lớp.'
+          : overview.studentRows.first.pendingReason ??
+                'Tháng này chưa đủ dữ liệu để tính học phí.';
+      return AppSectionCard(
+        padding: const EdgeInsets.all(12),
+        child: Text(
+          reason,
+          style: const TextStyle(color: AppColors.warning, fontSize: 13),
+        ),
+      );
+    }
     return Row(
       children: [
         Expanded(
@@ -181,9 +252,9 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
         const SizedBox(width: 10),
         Expanded(
           child: AppMetricCard(
-            title: 'Còn nợ',
+            title: 'Dự kiến còn thu',
             value: AppFormatter.formatCurrency(
-              overview.remainingDebt,
+              overview.previewTotalDue + overview.remainingDebt,
               context: context,
             ),
             valueColor: AppColors.error,
@@ -197,53 +268,29 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
   Widget _buildFilterToggle(
     BuildContext context,
     TuitionPaymentFilter activeFilter,
-    int previewCount,
-    int unpaidCount,
+    int outstandingCount,
     int paidCount,
   ) {
-    return SizedBox(
-      width: double.infinity,
-      child: SegmentedButton<TuitionPaymentFilter>(
-        segments: [
-          ButtonSegment<TuitionPaymentFilter>(
-            value: TuitionPaymentFilter.preview,
-            label: Text('Tạm tính ($previewCount)'),
-            icon: const Icon(Icons.preview_outlined, size: 16),
-          ),
-          ButtonSegment<TuitionPaymentFilter>(
-            value: TuitionPaymentFilter.unpaid,
-            label: Text('Còn nợ ($unpaidCount)'),
-            icon: const Icon(Icons.pending_actions, size: 16),
-          ),
-          ButtonSegment<TuitionPaymentFilter>(
-            value: TuitionPaymentFilter.paid,
-            label: Text('Đã nộp ($paidCount)'),
-            icon: const Icon(Icons.check_circle_outline, size: 16),
-          ),
-        ],
-        selected: {activeFilter},
-        onSelectionChanged: (newSelection) {
-          setState(() {
-            _userFilter = newSelection.first;
-          });
-        },
-        style: ButtonStyle(
-          visualDensity: VisualDensity.compact,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-            if (states.contains(WidgetState.selected)) {
-              return AppColors.primary;
-            }
-            return AppColors.surfaceHigh;
-          }),
-          foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-            if (states.contains(WidgetState.selected)) {
-              return Colors.white;
-            }
-            return AppColors.textSecondary;
-          }),
+    return Row(
+      children: [
+        const Text(
+          'Còn thu',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
         ),
-      ),
+        Switch.adaptive(
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          value: activeFilter == TuitionPaymentFilter.paid,
+          onChanged: (paid) => setState(
+            () => _userFilter = paid
+                ? TuitionPaymentFilter.paid
+                : TuitionPaymentFilter.outstanding,
+          ),
+        ),
+        const Text(
+          'Đã thu',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+        ),
+      ],
     );
   }
 
@@ -256,11 +303,51 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
         .toList();
     if (unfinalizedRows.isEmpty) return const SizedBox.shrink();
 
+    final missingPolicy = unfinalizedRows.any(
+      (r) =>
+          r.state == ClassStudentTuitionState.ERROR &&
+          (r.pendingReason?.contains('chính sách học phí') ?? false),
+    );
+    if (missingPolicy) {
+      return AppSectionCard(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tháng $_selectedMonth chưa có chính sách học phí. Điểm danh đã lưu nhưng chưa thể tính tiền.',
+              style: const TextStyle(color: AppColors.warning, fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: () async {
+                final saved = await showCreateTuitionPolicyBottomSheet(
+                  context,
+                  classId: widget.classId,
+                  initialMonth: _selectedMonth,
+                );
+                if (saved == true && mounted) {
+                  ref.invalidate(
+                    classMonthTuitionOverviewProvider((
+                      widget.classId,
+                      _selectedMonth,
+                    )),
+                  );
+                }
+              },
+              icon: const Icon(Icons.edit_calendar_outlined, size: 16),
+              label: const Text('Thiết lập học phí tháng này'),
+            ),
+          ],
+        ),
+      );
+    }
+
     final blockedCount = overview.pendingStudentCount;
     final unfinalizedCount = unfinalizedRows.length;
 
     final String label = blockedCount > 0
-        ? '$unfinalizedCount chưa chốt • $blockedCount chưa đủ dữ liệu'
+        ? '$unfinalizedCount chưa chốt • $blockedCount chưa đủ dữ liệu: ${unfinalizedRows.firstWhere((r) => r.isBlocked).pendingReason ?? "kiểm tra điểm danh"}'
         : '$unfinalizedCount học sinh chưa chốt học phí';
 
     return AppSectionCard(
@@ -281,24 +368,29 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
               ),
+              maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: 8),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              minimumSize: const Size(0, 32),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          if (overview.previewStudentCount > 0)
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                minimumSize: const Size(0, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed: () => _handlePreflightAndFinalize(context, overview),
+              child: const Text(
+                'Chốt học phí',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
             ),
-            onPressed: () => _handlePreflightAndFinalize(context, overview),
-            child: const Text(
-              'Chốt học phí',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-            ),
-          ),
         ],
       ),
     );
@@ -310,11 +402,9 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     TuitionPaymentFilter activeFilter,
   ) {
     List<ClassMonthTuitionStudentRow> targetRows;
-    if (activeFilter == TuitionPaymentFilter.preview) {
-      targetRows = overview.studentRows.where((r) => !r.isFinalized).toList();
-    } else if (activeFilter == TuitionPaymentFilter.unpaid) {
+    if (activeFilter == TuitionPaymentFilter.outstanding) {
       targetRows = overview.studentRows
-          .where((r) => r.isFinalized && r.remainingDebt > 0)
+          .where((r) => !r.isFinalized || r.remainingDebt > 0)
           .toList();
     } else {
       targetRows = overview.studentRows
@@ -330,10 +420,8 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
 
     if (targetRows.isEmpty) {
       String emptyText;
-      if (activeFilter == TuitionPaymentFilter.preview) {
-        emptyText = 'Không có học sinh trong danh sách tạm tính.';
-      } else if (activeFilter == TuitionPaymentFilter.unpaid) {
-        emptyText = 'Không có học sinh còn nợ học phí.';
+      if (activeFilter == TuitionPaymentFilter.outstanding) {
+        emptyText = 'Không có khoản tạm tính hoặc chưa thanh toán.';
       } else {
         emptyText = 'Chưa có học sinh đã nộp đủ.';
       }
@@ -373,6 +461,10 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     final blockedCount = overview.pendingStudentCount;
 
     final blockedRows = overview.studentRows.where((r) => r.isBlocked).toList();
+    final readyStudentIds = overview.studentRows
+        .where((r) => r.state == ClassStudentTuitionState.PREVIEW_READY)
+        .map((r) => r.student.id!)
+        .toSet();
 
     final confirm = await showModalBottomSheet<bool>(
       context: context,
@@ -535,7 +627,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                     ),
-                    onPressed: readyCount > 0
+                    onPressed: readyStudentIds.isNotEmpty
                         ? () => Navigator.pop(context, true)
                         : null,
                     icon: const Icon(Icons.check),
@@ -557,6 +649,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
           .finalizeClassInvoices(
             classId: widget.classId,
             month: _selectedMonth,
+            studentIdsToFinalize: readyStudentIds,
           );
 
       if (context.mounted) {
@@ -586,6 +679,88 @@ class _StudentTuitionCard extends ConsumerWidget {
     required this.classId,
     required this.month,
   });
+
+  Future<void> _finalizeStudent(BuildContext context, WidgetRef ref) async {
+    final confirm = await showModalBottomSheet<bool>(
+      context: context,
+      useSafeArea: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Chốt học phí học sinh',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '${row.student.hoTen} • Tháng $month',
+                style: const TextStyle(color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Tạm tính: ${AppFormatter.formatCurrency(row.amountDue, context: context)}',
+                style: const TextStyle(
+                  color: AppColors.cyanAccent,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Chốt sẽ lưu cố định số buổi và học phí của học sinh này.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(sheetContext, false),
+                    child: const Text('Hủy'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(sheetContext, true),
+                    child: const Text('Xác nhận chốt'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (confirm != true || !context.mounted) return;
+    try {
+      await ref
+          .read(invoiceControllerProvider.notifier)
+          .finalizeStudentInvoice(
+            studentId: row.student.id!,
+            classId: classId,
+            month: month,
+          );
+      if (context.mounted) {
+        AppFeedback.showSuccessSnackBar(
+          context,
+          'Đã chốt học phí cho ${row.student.hoTen}',
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        AppFeedback.showErrorSnackBar(
+          context,
+          error.toString().replaceAll('Exception: ', ''),
+        );
+      }
+    }
+  }
 
   void _showStudentTuitionDetailBottomSheet(
     BuildContext context,
@@ -705,7 +880,7 @@ class _StudentTuitionCard extends ConsumerWidget {
                     const SizedBox(height: 8),
                     _buildDetailRow(
                       context,
-                      'Còn nợ:',
+                      'Chưa thanh toán:',
                       AppFormatter.formatCurrency(
                         remainingDebt,
                         context: context,
@@ -772,253 +947,196 @@ class _StudentTuitionCard extends ConsumerWidget {
 
     return AppSectionCard(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => StudentDetailPage(studentId: student.id!),
+        ),
+      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           StudentAvatar(
             gioiTinh: student.gioiTinh,
             studentName: student.hoTen,
             radius: 20,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  student.hoTen,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        student.hoTen,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      AppFormatter.formatCurrency(
+                        isUnpaid ? remainingDebt : amountPaid,
+                        context: context,
+                      ),
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: isUnpaid ? AppColors.error : AppColors.success,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                if (isUnpaid) ...[
-                  if (amountPaid > 0)
-                    Text(
-                      'Đã thu ${AppFormatter.formatCurrency(amountPaid, context: context)} • Còn ${AppFormatter.formatCurrency(remainingDebt, context: context)}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        isUnpaid
+                            ? row.isFinalized
+                                  ? 'Chưa thanh toán'
+                                  : 'Tạm tính'
+                            : 'Đã thu',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                        ),
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    )
-                  else
-                    Text(
-                      'Còn nợ ${AppFormatter.formatCurrency(remainingDebt, context: context)}',
-                      style: const TextStyle(
-                        color: AppColors.error,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                ] else ...[
-                  Text(
-                    'Đã nộp ${AppFormatter.formatCurrency(row.amountDue, context: context)}',
-                    style: const TextStyle(
-                      color: AppColors.success,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                    ParentContactActions(phone: student.sdtPhuHuynh),
+                  ],
+                ),
               ],
             ),
           ),
-          const SizedBox(width: 6),
-          if (isUnpaid) ...[
-            // Actions for UNPAID student: [Thu tiền] [QR] [⋮]
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    minimumSize: const Size(0, 32),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  onPressed: () async {
-                    await showRecordPaymentBottomSheet(
-                      context,
+          PopupMenuButton<String>(
+            key: Key('tuition_student_menu_${student.id}'),
+            tooltip: 'Tùy chọn học phí',
+            color: AppColors.surfaceHigh,
+            onSelected: (value) async {
+              if (value == 'finalize') {
+                await _finalizeStudent(context, ref);
+              } else if (value == 'payment') {
+                await showRecordPaymentBottomSheet(
+                  context,
+                  studentId: student.id!,
+                  classId: classId,
+                  month: month,
+                  suggestedAmount: remainingDebt,
+                );
+                if (context.mounted) {
+                  ref.invalidate(
+                    classMonthTuitionOverviewProvider((classId, month)),
+                  );
+                }
+              } else if (value == 'qr') {
+                final cls = ref.read(classDetailProvider(classId)).value;
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => VietQrPaymentPage(
                       studentId: student.id!,
                       classId: classId,
                       month: month,
-                      suggestedAmount: remainingDebt,
-                    );
-                    ref.invalidate(
-                      classMonthTuitionOverviewProvider((classId, month)),
-                    );
-                  },
-                  child: const Text(
-                    'Thu tiền',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: const Icon(
-                    Icons.qr_code_2,
-                    color: AppColors.cyanAccent,
-                    size: 22,
-                  ),
-                  tooltip: 'Tạo mã QR',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  onPressed: () {
-                    final clsAsync = ref
-                        .read(classDetailProvider(classId))
-                        .value;
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => VietQrPaymentPage(
-                          studentId: student.id!,
-                          classId: classId,
-                          month: month,
-                          studentName: student.hoTen,
-                          className: clsAsync?.tenLop ?? '',
-                          remainingAmount: remainingDebt,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                PopupMenuButton<String>(
-                  icon: const Icon(
-                    Icons.more_vert,
-                    color: AppColors.textSecondary,
-                    size: 20,
-                  ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  color: AppColors.surfaceHigh,
-                  onSelected: (val) {
-                    if (val == 'history') {
-                      showPaymentHistoryBottomSheet(
-                        context,
-                        studentId: student.id!,
-                        classId: classId,
-                        month: month,
-                        studentName: student.hoTen,
-                      );
-                    } else if (val == 'detail') {
-                      _showStudentTuitionDetailBottomSheet(context, row);
-                    } else if (val == 'recalc') {
-                      _handleRecalculateInvoice(context, ref);
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    if (row.isFinalized || amountPaid > 0)
-                      const PopupMenuItem(
-                        value: 'history',
-                        child: Text(
-                          'Lịch sử thu',
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    const PopupMenuItem(
-                      value: 'detail',
-                      child: Text(
-                        'Chi tiết học phí',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 13,
-                        ),
-                      ),
+                      studentName: student.hoTen,
+                      className: cls?.tenLop ?? '',
+                      remainingAmount: remainingDebt,
                     ),
-                    if (row.isFinalized && amountPaid == 0)
-                      const PopupMenuItem(
-                        value: 'recalc',
-                        child: Text(
-                          'Tính lại học phí',
-                          style: TextStyle(
-                            color: AppColors.warning,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                  ],
+                  ),
+                );
+              } else if (value == 'history') {
+                await showPaymentHistoryBottomSheet(
+                  context,
+                  studentId: student.id!,
+                  classId: classId,
+                  month: month,
+                  studentName: student.hoTen,
+                );
+                ref.invalidate(
+                  classMonthTuitionOverviewProvider((classId, month)),
+                );
+              } else if (value == 'detail') {
+                _showStudentTuitionDetailBottomSheet(context, row);
+              } else if (value == 'recalc') {
+                _handleRecalculateInvoice(context, ref);
+              }
+            },
+            itemBuilder: (context) => [
+              if (row.state == ClassStudentTuitionState.PREVIEW_READY)
+                const PopupMenuItem(
+                  value: 'finalize',
+                  child: ListTile(
+                    dense: true,
+                    leading: Icon(Icons.verified_outlined),
+                    title: Text('Chốt học phí em này'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              if (isUnpaid) ...[
+                const PopupMenuItem(
+                  value: 'payment',
+                  child: ListTile(
+                    dense: true,
+                    leading: Icon(Icons.payments_outlined),
+                    title: Text('Thu tiền'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'qr',
+                  child: ListTile(
+                    dense: true,
+                    leading: Icon(Icons.qr_code_2),
+                    title: Text('Tạo mã QR'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ),
               ],
-            ),
-          ] else ...[
-            // Actions for PAID student: Checkmark + Menu
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.check_circle,
-                  color: AppColors.success,
-                  size: 20,
-                ),
-                PopupMenuButton<String>(
-                  icon: const Icon(
-                    Icons.more_vert,
-                    color: AppColors.textSecondary,
-                    size: 20,
+              if (row.isFinalized || amountPaid > 0)
+                const PopupMenuItem(
+                  value: 'history',
+                  child: ListTile(
+                    dense: true,
+                    leading: Icon(Icons.history),
+                    title: Text('Xem / sửa phiếu thu'),
+                    contentPadding: EdgeInsets.zero,
                   ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  color: AppColors.surfaceHigh,
-                  onSelected: (val) {
-                    if (val == 'history') {
-                      showPaymentHistoryBottomSheet(
-                        context,
-                        studentId: student.id!,
-                        classId: classId,
-                        month: month,
-                        studentName: student.hoTen,
-                      );
-                    } else if (val == 'detail') {
-                      _showStudentTuitionDetailBottomSheet(context, row);
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'history',
-                      child: Text(
-                        'Lịch sử thu',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'detail',
-                      child: Text(
-                        'Chi tiết học phí',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
-              ],
+              const PopupMenuItem(
+                value: 'detail',
+                child: ListTile(
+                  dense: true,
+                  leading: Icon(Icons.receipt_long_outlined),
+                  title: Text('Chi tiết học phí'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              if (row.isFinalized && amountPaid == 0 && isUnpaid)
+                const PopupMenuItem(
+                  value: 'recalc',
+                  child: ListTile(
+                    dense: true,
+                    leading: Icon(Icons.calculate_outlined),
+                    title: Text('Tính lại học phí'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+            ],
+            child: const SizedBox(
+              width: 48,
+              height: 48,
+              child: Center(
+                child: Icon(Icons.more_vert, color: AppColors.textSecondary),
+              ),
             ),
-          ],
+          ),
         ],
       ),
     );

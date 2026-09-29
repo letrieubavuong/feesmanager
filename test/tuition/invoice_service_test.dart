@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
@@ -177,6 +178,151 @@ void main() {
     tearDown(() async {
       await db.close();
     });
+
+    Future<int> seedDraftInvoice() async {
+      await db.insert('buoi_hoc', {
+        'id': 101,
+        'id_lop': 1,
+        'id_lich_hoc': 2,
+        'ngay': '2026-09-01',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'trang_thai': 'DA_HOC',
+        'created_at': '2026-01-01',
+        'updated_at': '2026-01-01',
+      });
+      await db.insert('diem_danh', {
+        'id_buoi_hoc': 101,
+        'id_hoc_sinh': 1,
+        'id_lop_goc': 1,
+        'trang_thai': 'CO_MAT',
+        'created_at': '2026-01-01',
+        'updated_at': '2026-01-01',
+      });
+      return db.insert('hoc_phi_thang', {
+        'id_hoc_sinh': 1,
+        'id_lop': 1,
+        'thang': '2026-09',
+        'id_chinh_sach_hoc_phi': 1,
+        'so_buoi_eligible': 0,
+        'so_buoi_tinh_phi': 0,
+        'credit_opening': 0,
+        'credit_earned': 0,
+        'credit_used': 0,
+        'credit_closing': 0,
+        'tong_truoc_giam': 0,
+        'so_tien_phai_thu': 0,
+        'trang_thai': 'NHAP',
+        'created_at': '2026-01-01',
+        'updated_at': '2026-01-01',
+      });
+    }
+
+    test('Chốt từng em cập nhật hóa đơn nháp hiện có', () async {
+      final draftId = await seedDraftInvoice();
+      final invoice = await invoiceService.finalizeStudentInvoice(
+        1,
+        1,
+        '2026-09',
+      );
+      expect(invoice.id, draftId);
+      expect(invoice.soTienPhaiThu, 50000);
+      expect(invoice.trangThai, TuitionInvoiceStatus.DA_CHOT);
+      expect((await db.query('hoc_phi_thang')).length, 1);
+    });
+
+    test('Chốt cả lớp cập nhật hóa đơn nháp hiện có', () async {
+      final draftId = await seedDraftInvoice();
+      final invoices = await invoiceService.finalizeClassInvoices(1, '2026-09');
+      expect(invoices.single.id, draftId);
+      expect(invoices.single.soTienPhaiThu, 50000);
+      expect((await db.query('hoc_phi_thang')).length, 1);
+    });
+
+    test('Chốt cả lớp sau khi chốt một em chỉ xử lý các em còn lại', () async {
+      await db.execute('''
+        INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at)
+        VALUES (2, 'Student 2', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+      await membershipService.enrollStudent(
+        studentId: 2,
+        classId: 1,
+        joinDate: DateTime.parse('2026-01-01'),
+      );
+      await db.insert('buoi_hoc', {
+        'id': 101,
+        'id_lop': 1,
+        'id_lich_hoc': 2,
+        'ngay': '2026-09-01',
+        'gio_bat_dau': '17:30',
+        'gio_ket_thuc': '19:00',
+        'loai': 'CHINH',
+        'trang_thai': 'DA_HOC',
+        'created_at': '2026-01-01T00:00:00.000',
+        'updated_at': '2026-01-01T00:00:00.000',
+      });
+      for (final id in [1, 2]) {
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 101,
+          'id_hoc_sinh': id,
+          'id_lop_goc': 1,
+          'trang_thai': 'CO_MAT',
+          'created_at': '2026-01-01T00:00:00.000',
+          'updated_at': '2026-01-01T00:00:00.000',
+        });
+      }
+      final first = await invoiceService.finalizeStudentInvoice(
+        1,
+        1,
+        '2026-09',
+      );
+      final rest = await invoiceService.finalizeClassInvoices(1, '2026-09');
+      expect(rest.map((i) => i.idHocSinh), [2]);
+      expect((await invoiceService.getInvoice(1, 1, '2026-09'))!.id, first.id);
+    });
+
+    test(
+      'Chốt cả lớp theo danh sách sẵn sàng, không kéo học sinh thiếu điểm danh vào',
+      () async {
+        await db.execute('''
+        INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at)
+        VALUES (2, 'Student 2', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
+      ''');
+        await membershipService.enrollStudent(
+          studentId: 2,
+          classId: 1,
+          joinDate: DateTime.parse('2026-01-01'),
+        );
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 1,
+          'id_lich_hoc': 2,
+          'ngay': '2026-09-01',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': '2026-01-01T00:00:00.000',
+          'updated_at': '2026-01-01T00:00:00.000',
+        });
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 101,
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 1,
+          'trang_thai': 'CO_MAT',
+          'created_at': '2026-01-01T00:00:00.000',
+          'updated_at': '2026-01-01T00:00:00.000',
+        });
+        final result = await invoiceService.finalizeClassInvoices(
+          1,
+          '2026-09',
+          studentIdsToFinalize: {1},
+        );
+        expect(result.map((i) => i.idHocSinh), [1]);
+        expect(await invoiceService.getInvoice(2, 1, '2026-09'), isNull);
+      },
+    );
 
     test(
       'Finalize student invoice creates snapshot and consumes credit atomically',

@@ -9,7 +9,7 @@ class AppLocalizationsVi extends AppLocalizations {
   AppLocalizationsVi([String locale = 'vi']) : super(locale);
 
   @override
-  String get appName => 'Tuition2027';
+  String get appName => 'Quản lý học phí';
 
   @override
   String get navHome => 'Trang chủ';
@@ -28,6 +28,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get navSettings => 'Cài đặt';
+
+  @override
+  String get navGuide => 'Hướng dẫn sử dụng';
 
   @override
   String get globalMenu => 'Menu điều hướng';
@@ -66,7 +69,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dashboardTitle => 'Trang chủ';
 
   @override
-  String get dashboardGreeting => 'Chào thầy cô!';
+  String get dashboardGreeting => 'Xin chào!';
 
   @override
   String get dashboardGreetingSubtitle => 'Chúc một ngày dạy học hiệu quả!';
@@ -205,10 +208,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsAppInfo => 'THÔNG TIN ỨNG DỤNG';
 
   @override
-  String get appVersion => 'Phiên bản: 1.0.0+1';
+  String get appVersion => '2.6';
 
   @override
-  String get dbVersion => 'Cơ sở dữ liệu: v15';
+  String get dbVersion => 'Cơ sở dữ liệu: v17';
 
   @override
   String get studentFormTitleAdd => 'Thêm học sinh';
@@ -592,7 +595,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get reportsKpiPaid => 'Thực nhận';
 
   @override
-  String get reportsKpiOutstanding => 'Còn nợ';
+  String get reportsKpiOutstanding => 'Chưa thanh toán';
 
   @override
   String get reportsSectionAttendance => 'A. ĐIỂM DANH';
@@ -1013,7 +1016,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get tuitionKpiPaid => 'Đã thu';
 
   @override
-  String get tuitionKpiDebt => 'Còn nợ';
+  String get tuitionKpiDebt => 'Chưa thanh toán';
 
   @override
   String get tuitionFinalizeMonth => 'Chốt học phí tháng';
@@ -1084,7 +1087,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String studentOutstandingDebt(Object amount) {
-    return 'Còn nợ: $amount';
+    return 'Chưa thanh toán: $amount';
   }
 
   @override
@@ -1114,7 +1117,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get studentPaid => 'Đã thu';
 
   @override
-  String get studentDebt => 'Còn nợ';
+  String get studentDebt => 'Chưa thanh toán';
 
   @override
   String get studentTuitionPartiallyPaid => 'Đã thanh toán một phần';
@@ -1194,7 +1197,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get classStatusMissingTuition => 'Chưa có học phí';
 
   @override
-  String get classStatusDebt => 'Còn nợ';
+  String get classStatusDebt => 'Chưa thanh toán';
 
   @override
   String get classNeedsAction => 'Cần xử lý';
@@ -1260,7 +1263,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get tuitionCollected => 'Đã thu';
 
   @override
-  String get tuitionRemainingDebt => 'Còn nợ';
+  String get tuitionRemainingDebt => 'Chưa thanh toán';
 
   @override
   String tuitionUnfinalizedStudents(Object unfinalizedCount) {

@@ -28,36 +28,6 @@ class ScheduleTab extends ConsumerWidget {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          if (!isArchived)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Lịch học định kỳ',
-                    style: TextStyle(
-                      color: AppColors.cyanAccent,
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: () =>
-                        showScheduleFormBottomSheet(context, classId: classId),
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text('Thêm lịch học'),
-                  ),
-                ],
-              ),
-            ),
           Expanded(
             child: schedulesAsync.when(
               data: (schedules) {
@@ -72,143 +42,193 @@ class ScheduleTab extends ConsumerWidget {
                     ),
                   );
                 }
+                final ordered = [...schedules]
+                  ..sort((a, b) {
+                    final weekday = a.thuTrongTuan.compareTo(b.thuTrongTuan);
+                    return weekday != 0
+                        ? weekday
+                        : a.gioBatDau.compareTo(b.gioBatDau);
+                  });
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
+                    horizontal: 6,
                     vertical: 8,
                   ),
-                  itemCount: schedules.length,
+                  itemCount: ordered.length,
                   itemBuilder: (context, index) {
-                    final s = schedules[index];
+                    final s = ordered[index];
+                    final isLast = index == ordered.length - 1;
                     final isActive = s.isEffectiveOn(DateTime.now());
-                    return AppSectionCard(
-                      margin: const EdgeInsets.only(bottom: 8),
+                    return IntrinsicHeight(
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: isActive
-                                  ? AppColors.primary.withValues(alpha: 0.2)
-                                  : AppColors.textMuted.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Center(
-                              child: Text(
-                                s.thuTrongTuan == 7
-                                    ? 'CN'
-                                    : 'T${s.thuTrongTuan + 1}',
-                                style: TextStyle(
-                                  color: isActive
-                                      ? AppColors.cyanAccent
-                                      : AppColors.textMuted,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
+                          SizedBox(
+                            width: 18,
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      '${DateFormatter.formatVietnameseWeekday(s.thuTrongTuan)}: ${s.gioBatDau} - ${s.gioKetThuc}',
-                                      style: TextStyle(
-                                        color: AppColors.textPrimary,
-                                        fontWeight: isActive
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    AppStatusChip(
-                                      label: isActive
-                                          ? 'Đang áp dụng'
-                                          : 'Đã kết thúc',
-                                      color: isActive
-                                          ? AppColors.success
-                                          : AppColors.textMuted,
-                                      compact: true,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Hiệu lực: ${DateFormatter.formatDisplayDate(s.hieuLucTu)}${s.hieuLucDen != null ? ' đến ${DateFormatter.formatDisplayDate(s.hieuLucDen!)}' : ''}',
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 12,
+                                Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.cyanAccent,
+                                    shape: BoxShape.circle,
                                   ),
                                 ),
+                                if (!isLast)
+                                  Expanded(
+                                    child: Container(
+                                      width: 2,
+                                      color: AppColors.border,
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
-                          if (isActive && !isArchived)
-                            PopupMenuButton<String>(
-                              icon: const Icon(
-                                Icons.more_vert,
-                                color: AppColors.textSecondary,
+                          Expanded(
+                            child: AppSectionCard(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: isActive
+                                          ? AppColors.primary.withValues(
+                                              alpha: 0.2,
+                                            )
+                                          : AppColors.textMuted.withValues(
+                                              alpha: 0.15,
+                                            ),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        s.thuTrongTuan == 7
+                                            ? 'CN'
+                                            : 'T${s.thuTrongTuan + 1}',
+                                        style: TextStyle(
+                                          color: isActive
+                                              ? AppColors.cyanAccent
+                                              : AppColors.textMuted,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 4,
+                                          crossAxisAlignment:
+                                              WrapCrossAlignment.center,
+                                          children: [
+                                            Text(
+                                              '${DateFormatter.formatVietnameseWeekday(s.thuTrongTuan)}: ${s.gioBatDau} - ${s.gioKetThuc}',
+                                              style: TextStyle(
+                                                color: AppColors.textPrimary,
+                                                fontWeight: isActive
+                                                    ? FontWeight.bold
+                                                    : FontWeight.normal,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            AppStatusChip(
+                                              label: isActive
+                                                  ? 'Đang áp dụng'
+                                                  : 'Đã kết thúc',
+                                              color: isActive
+                                                  ? AppColors.success
+                                                  : AppColors.textMuted,
+                                              compact: true,
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Hiệu lực: ${DateFormatter.formatDisplayDate(s.hieuLucTu)}${s.hieuLucDen != null ? ' đến ${DateFormatter.formatDisplayDate(s.hieuLucDen!)}' : ''}',
+                                          style: const TextStyle(
+                                            color: AppColors.textSecondary,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (isActive && !isArchived)
+                                    PopupMenuButton<String>(
+                                      icon: const Icon(
+                                        Icons.more_vert,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      color: AppColors.surfaceHigh,
+                                      onSelected: (value) {
+                                        if (value == 'edit') {
+                                          showEditScheduleBottomSheet(
+                                            context,
+                                            classId: classId,
+                                            schedule: s,
+                                          );
+                                        } else if (value == 'close') {
+                                          _showCloseScheduleDialog(
+                                            context,
+                                            ref,
+                                            s,
+                                          );
+                                        }
+                                      },
+                                      itemBuilder: (context) => [
+                                        const PopupMenuItem(
+                                          value: 'edit',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.edit_outlined,
+                                                size: 18,
+                                                color: AppColors.cyanAccent,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                'Sửa lịch học',
+                                                style: TextStyle(
+                                                  color: AppColors.textPrimary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'close',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.event_busy,
+                                                size: 18,
+                                                color: AppColors.error,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                'Kết thúc lịch',
+                                                style: TextStyle(
+                                                  color: AppColors.error,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                ],
                               ),
-                              color: AppColors.surfaceHigh,
-                              onSelected: (value) {
-                                if (value == 'edit') {
-                                  showEditScheduleBottomSheet(
-                                    context,
-                                    classId: classId,
-                                    schedule: s,
-                                  );
-                                } else if (value == 'close') {
-                                  _showCloseScheduleDialog(context, ref, s);
-                                }
-                              },
-                              itemBuilder: (context) => [
-                                const PopupMenuItem(
-                                  value: 'edit',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.edit_outlined,
-                                        size: 18,
-                                        color: AppColors.cyanAccent,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Sửa lịch học',
-                                        style: TextStyle(
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'close',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.event_busy,
-                                        size: 18,
-                                        color: AppColors.error,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Kết thúc lịch',
-                                        style: TextStyle(
-                                          color: AppColors.error,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
                             ),
+                          ),
                         ],
                       ),
                     );
@@ -365,7 +385,7 @@ class _ScheduleFormBottomSheetState
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1E293B),
+              color: AppColors.textPrimary,
             ),
           ),
           if (isRequired)
@@ -374,7 +394,7 @@ class _ScheduleFormBottomSheetState
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFFDC2626),
+                color: AppColors.error,
               ),
             ),
         ],
@@ -394,9 +414,9 @@ class _ScheduleFormBottomSheetState
       child: Container(
         height: 48,
         decoration: BoxDecoration(
-          color: const Color(0xFFEFF6FF),
+          color: AppColors.surfaceHigh,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFC7DCFB), width: 1),
+          border: Border.all(color: AppColors.border, width: 1),
         ),
         child: Row(
           children: [
@@ -404,12 +424,12 @@ class _ScheduleFormBottomSheetState
               width: 44,
               height: 48,
               decoration: const BoxDecoration(
-                color: Color(0xFFE2EDFE),
+                color: AppColors.surfaceSelected,
                 borderRadius: BorderRadius.horizontal(
                   left: Radius.circular(11),
                 ),
               ),
-              child: Icon(icon, color: const Color(0xFF1D61E7), size: 20),
+              child: Icon(icon, color: AppColors.cyanAccent, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(child: child),
@@ -440,7 +460,7 @@ class _ScheduleFormBottomSheetState
         isDirty: _isDirty,
         child: Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: SafeArea(
@@ -466,13 +486,13 @@ class _ScheduleFormBottomSheetState
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF0F2038),
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           IconButton(
                             icon: const Icon(
                               Icons.close_rounded,
-                              color: Color(0xFF1E293B),
+                              color: AppColors.textPrimary,
                               size: 22,
                             ),
                             padding: EdgeInsets.zero,
@@ -536,12 +556,12 @@ class _ScheduleFormBottomSheetState
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xFF0F172A),
+                                color: AppColors.textPrimary,
                               ),
                             ),
                             trailing: const Icon(
                               Icons.keyboard_arrow_down_rounded,
-                              color: Color(0xFF1D61E7),
+                              color: AppColors.cyanAccent,
                               size: 24,
                             ),
                           ),
@@ -565,7 +585,7 @@ class _ScheduleFormBottomSheetState
                                     style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w500,
-                                      color: Color(0xFF0F172A),
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                   onTap: () async {
@@ -598,7 +618,7 @@ class _ScheduleFormBottomSheetState
                                     style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w500,
-                                      color: Color(0xFF0F172A),
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                   onTap: () async {
@@ -619,6 +639,16 @@ class _ScheduleFormBottomSheetState
                       ),
                       const SizedBox(height: 16),
                       _buildFieldLabel('Ngày hiệu lực từ', isRequired: true),
+                      if (isEdit) ...[
+                        const Text(
+                          'Chọn ngày áp dụng lịch mới. Lịch cũ giữ nguyên đến ngày trước đó; các buổi dự kiến từ ngày này sẽ được tạo lại.',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       _buildCustomInputContainer(
                         icon: Icons.calendar_month_rounded,
                         child: Text(
@@ -626,14 +656,14 @@ class _ScheduleFormBottomSheetState
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF0F172A),
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         trailing: IconButton(
                           icon: const Icon(
                             Icons.close_rounded,
                             size: 18,
-                            color: Color(0xFF64748B),
+                            color: AppColors.textSecondary,
                           ),
                           onPressed: () {
                             _onChanged();
@@ -657,12 +687,9 @@ class _ScheduleFormBottomSheetState
                       _buildFieldLabel('Ghi chú'),
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
+                          color: AppColors.surfaceHigh,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0xFFC7DCFB),
-                            width: 1,
-                          ),
+                          border: Border.all(color: AppColors.border, width: 1),
                         ),
                         child: TextField(
                           controller: _ghiChuController,
@@ -671,12 +698,12 @@ class _ScheduleFormBottomSheetState
                           onChanged: (_) => _onChanged(),
                           style: const TextStyle(
                             fontSize: 14,
-                            color: Color(0xFF0F172A),
+                            color: AppColors.textPrimary,
                           ),
                           decoration: const InputDecoration(
                             hintText: 'Áp dụng từ tuần này.',
                             hintStyle: TextStyle(
-                              color: Color(0xFF94A3B8),
+                              color: AppColors.textMuted,
                               fontSize: 14,
                             ),
                             contentPadding: EdgeInsets.symmetric(
@@ -706,7 +733,7 @@ class _ScheduleFormBottomSheetState
                                     },
                               style: OutlinedButton.styleFrom(
                                 side: const BorderSide(
-                                  color: Color(0xFF1D61E7),
+                                  color: AppColors.cyanAccent,
                                   width: 1.5,
                                 ),
                                 shape: RoundedRectangleBorder(
@@ -715,14 +742,14 @@ class _ScheduleFormBottomSheetState
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
                                 ),
-                                backgroundColor: Colors.white,
+                                backgroundColor: AppColors.surface,
                               ),
                               child: const Text(
                                 'Hủy',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0F172A),
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
                             ),
@@ -732,7 +759,7 @@ class _ScheduleFormBottomSheetState
                             child: ElevatedButton(
                               onPressed: _isSaving ? null : _submit,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0066FF),
+                                backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
@@ -815,8 +842,11 @@ class _ScheduleFormBottomSheetState
           if (mounted) {
             setState(() {
               _isSaving = false;
-              _inlineError =
-                  'Thay đổi lịch học thất bại. Kiểm tra xung đột lịch.';
+              _inlineError = ref
+                  .read(classScheduleControllerProvider(widget.classId))
+                  .error
+                  .toString()
+                  .replaceFirst('Exception: ', '');
             });
           }
         }
@@ -848,8 +878,11 @@ class _ScheduleFormBottomSheetState
           if (mounted) {
             setState(() {
               _isSaving = false;
-              _inlineError =
-                  'Tạo lịch học thất bại. Vui lòng kiểm tra xung đột lịch.';
+              _inlineError = ref
+                  .read(classScheduleControllerProvider(widget.classId))
+                  .error
+                  .toString()
+                  .replaceFirst('Exception: ', '');
             });
           }
         }

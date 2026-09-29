@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../app/common_widgets/app_empty_state.dart';
 import '../../../app/common_widgets/app_error_state.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
 import '../../../app/common_widgets/navy_components.dart';
+import '../../../app/common_widgets/parent_contact_actions.dart';
 import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/app_global_drawer.dart';
@@ -24,6 +26,12 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
   final _searchController = TextEditingController();
   bool _filterArchived = false;
 
+  void _setArchivedFilter(bool archived) {
+    if (_filterArchived == archived) return;
+    setState(() => _filterArchived = archived);
+    ref.read(studentListControllerProvider.notifier).setFilter(archived);
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -41,8 +49,47 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
       appBar: AppBar(
         leading: const GlobalMenuButton(),
         title: Text(l10n.navStudents),
+        titleSpacing: 8,
+        actions: [
+          InkWell(
+            onTap: () => _setArchivedFilter(false),
+            child: Center(
+              child: Text(
+                l10n.studentFilterActive,
+                key: UiKeys.studentActiveFilter,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: !_filterArchived
+                      ? AppColors.cyanAccent
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+          Switch.adaptive(
+            value: _filterArchived,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            onChanged: _setArchivedFilter,
+          ),
+          InkWell(
+            onTap: () => _setArchivedFilter(true),
+            child: Center(
+              child: Text(
+                l10n.studentFilterStopped,
+                key: UiKeys.studentArchivedFilter,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: _filterArchived
+                      ? AppColors.cyanAccent
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+        ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(104),
+          preferredSize: const Size.fromHeight(56),
           child: Column(
             children: [
               Padding(
@@ -102,80 +149,6 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                   },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: SegmentedButton<bool>(
-                    segments: [
-                      ButtonSegment<bool>(
-                        value: false,
-                        icon: const Icon(Icons.school_outlined),
-                        label: Text(
-                          l10n.studentFilterActive,
-                          key: UiKeys.studentActiveFilter,
-                        ),
-                      ),
-                      ButtonSegment<bool>(
-                        value: true,
-                        icon: const Icon(Icons.person_off_outlined),
-                        label: Text(
-                          l10n.studentFilterStopped,
-                          key: UiKeys.studentArchivedFilter,
-                        ),
-                      ),
-                    ],
-                    selected: {_filterArchived},
-                    emptySelectionAllowed: false,
-                    multiSelectionEnabled: false,
-                    onSelectionChanged: (newSelection) {
-                      if (newSelection.isNotEmpty) {
-                        final selectedVal = newSelection.first;
-                        setState(() => _filterArchived = selectedVal);
-                        ref
-                            .read(studentListControllerProvider.notifier)
-                            .setFilter(selectedVal);
-                      }
-                    },
-                    style: ButtonStyle(
-                      backgroundColor: WidgetStateProperty.resolveWith<Color>((
-                        states,
-                      ) {
-                        if (states.contains(WidgetState.selected)) {
-                          return AppColors.primary;
-                        }
-                        return AppColors.surface;
-                      }),
-                      foregroundColor: WidgetStateProperty.resolveWith<Color>((
-                        states,
-                      ) {
-                        if (states.contains(WidgetState.selected)) {
-                          return Colors.white;
-                        }
-                        return AppColors.textSecondary;
-                      }),
-                      iconColor: WidgetStateProperty.resolveWith<Color>((
-                        states,
-                      ) {
-                        if (states.contains(WidgetState.selected)) {
-                          return Colors.white;
-                        }
-                        return AppColors.textSecondary;
-                      }),
-                      side: WidgetStateProperty.all(
-                        const BorderSide(color: AppColors.border),
-                      ),
-                      shape: WidgetStateProperty.all(
-                        RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -193,41 +166,17 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
             onRefresh: () =>
                 ref.read(studentListControllerProvider.notifier).refresh(),
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
               itemCount: students.length,
               itemBuilder: (context, index) {
                 final student = students[index];
                 final isStopped = student.daLuuTru;
 
-                final hasGrade = student.khoi != null;
-                final hasSchool =
-                    student.truongDangHoc != null &&
-                    student.truongDangHoc!.trim().isNotEmpty;
-                String? schoolGradeText;
-                if (hasGrade && hasSchool) {
-                  schoolGradeText =
-                      'Khối ${student.khoi} • ${student.truongDangHoc!.trim()}';
-                } else if (hasGrade) {
-                  schoolGradeText = 'Khối ${student.khoi}';
-                } else if (hasSchool) {
-                  schoolGradeText = student.truongDangHoc!.trim();
-                }
-
-                final hasPhone =
-                    student.sdtPhuHuynh != null &&
-                    student.sdtPhuHuynh!.trim().isNotEmpty;
-                final hasParentName =
-                    student.tenPhuHuynh != null &&
-                    student.tenPhuHuynh!.trim().isNotEmpty;
-                String? parentContactText;
-                if (hasPhone) {
-                  if (hasParentName) {
-                    parentContactText =
-                        '☎ ${student.tenPhuHuynh!.trim()} • ${student.sdtPhuHuynh!.trim()}';
-                  } else {
-                    parentContactText = '☎ PH • ${student.sdtPhuHuynh!.trim()}';
-                  }
-                }
+                final parentPhone = student.sdtPhuHuynh?.trim();
+                final parentName = student.tenPhuHuynh?.trim();
+                final contactLabel = parentName == null || parentName.isEmpty
+                    ? 'PH • ${parentPhone ?? "Chưa có SĐT"}'
+                    : '$parentName • ${parentPhone ?? "Chưa có SĐT"}';
 
                 return AppSectionCard(
                   margin: const EdgeInsets.only(bottom: 8),
@@ -300,29 +249,24 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
                                   ),
                               ],
                             ),
-                            if (schoolGradeText != null) ...[
-                              const SizedBox(height: 3),
-                              Text(
-                                schoolGradeText,
-                                style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 12,
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    contactLabel,
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                            if (parentContactText != null) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                parentContactText,
-                                style: const TextStyle(
-                                  color: AppColors.cyanAccent,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                                const SizedBox(width: 6),
+                                ParentContactActions(phone: parentPhone),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -349,9 +293,7 @@ class _StudentListPageState extends ConsumerState<StudentListPage> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
         onPressed: () async {
-          await Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const StudentFormPage()),
-          );
+          await showStudentFormBottomSheet(context);
           ref.read(studentListControllerProvider.notifier).refresh();
         },
         child: const Icon(Icons.add, color: Colors.white),

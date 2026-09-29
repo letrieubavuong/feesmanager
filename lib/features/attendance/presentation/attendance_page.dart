@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/attendance_status_icon.dart';
 import '../../../app/common_widgets/navy_components.dart';
+import '../../../app/common_widgets/parent_contact_actions.dart';
 import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../app/localization/app_formatter.dart';
@@ -185,12 +187,10 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
     return Column(
       children: [
         _buildCompactHeaderAndSummary(sheet, summary),
-
         if (isEditable) _buildActionToolbar(sheet),
-
         if (_isCorrectionMode)
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.warning.withValues(alpha: 0.12),
@@ -221,11 +221,10 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
               ],
             ),
           ),
-
         if (sheet.session.loai == SessionType.PHAT_SINH &&
             _canEditRosterStructure(sheet))
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.12),
@@ -280,11 +279,10 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
               ],
             ),
           ),
-
         if (sheet.session.loai == SessionType.HOC_BU &&
             sheet.requiresOneOffAdjustments)
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.warning.withValues(alpha: 0.12),
@@ -309,11 +307,8 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
               ],
             ),
           ),
-
         if (!sheet.isRosterValid) _buildRosterIssuesWidget(sheet),
-
         _buildSectionHeader(summary.total),
-
         Expanded(
           child: sheet.members.isEmpty
               ? Center(
@@ -374,7 +369,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
     final isFinalized = session.trangThai == SessionStatus.DA_HOC;
 
     return AppSectionCard(
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      margin: const EdgeInsets.fromLTRB(6, 8, 6, 4),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -532,7 +527,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
 
   Widget _buildRosterIssuesWidget(AttendanceSheet sheet) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.error.withValues(alpha: 0.12),
@@ -987,7 +982,13 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                 ),
             ],
           ),
-
+          if (student.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ParentContactActions(phone: student.sdtPhuHuynh),
+            ),
+          ],
           if (isEditable) ...[
             const SizedBox(height: 6),
             AttendanceStateSelector(
@@ -1003,7 +1004,6 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
               },
             ),
           ],
-
           if (member.suggestedState != null &&
               effectiveState == AttendanceState.CHUA_DIEM_DANH)
             Container(
@@ -1224,7 +1224,6 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
   }
 
   void _enterCorrectionModeDialog(AttendanceSheet sheet) {
-    final controller = TextEditingController();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1264,17 +1263,6 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                 'Việc thay đổi điểm danh có thể ảnh hưởng đến học phí, buổi dư và báo cáo.',
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: const InputDecoration(
-                  labelText: 'Lý do sửa *',
-                  hintText: 'Nhập nhầm trạng thái học sinh...',
-                  border: OutlineInputBorder(),
-                ),
-              ),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -1290,17 +1278,9 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                       foregroundColor: Colors.white,
                     ),
                     onPressed: () {
-                      final reason = controller.text.trim();
-                      if (reason.isEmpty) {
-                        AppFeedback.showErrorSnackBar(
-                          ctx,
-                          'Vui lòng nhập lý do chỉnh sửa.',
-                        );
-                        return;
-                      }
                       Navigator.pop(ctx);
                       setState(() {
-                        _correctionReason = reason;
+                        _correctionReason = '';
                         _isCorrectionMode = true;
                       });
                     },

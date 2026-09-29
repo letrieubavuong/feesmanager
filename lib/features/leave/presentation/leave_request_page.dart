@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../app/navigation/app_global_drawer.dart';
+import '../../../app/design_system/app_theme.dart';
 import '../../memberships/domain/membership_service.dart';
 import '../../students/domain/student_service.dart';
 import '../domain/leave_request.dart';
@@ -61,7 +63,7 @@ class _LeaveRequestPageState extends ConsumerState<LeaveRequestPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateDialog(context),
+        onPressed: () => _showCreateBottomSheet(context),
         icon: const Icon(Icons.add),
         label: const Text('Tạo đơn nghỉ'),
       ),
@@ -228,7 +230,7 @@ class _LeaveRequestPageState extends ConsumerState<LeaveRequestPage> {
     }
   }
 
-  void _showCreateDialog(BuildContext context) async {
+  void _showCreateBottomSheet(BuildContext context) async {
     final membershipService = await ref.read(membershipServiceProvider.future);
     final studentService = await ref.read(studentServiceProvider.future);
 
@@ -257,15 +259,29 @@ class _LeaveRequestPageState extends ConsumerState<LeaveRequestPage> {
     );
     final lyDoController = TextEditingController();
 
-    showDialog(
+    await showModalBottomSheet<void>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Tạo đơn nghỉ học'),
-          content: SingleChildScrollView(
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: AppColors.surface,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            20,
+            16,
+            MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+          ),
+          child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  'Tạo đơn nghỉ học',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
                 DropdownButtonFormField<int>(
                   initialValue: selectedStudentId,
                   decoration: const InputDecoration(labelText: 'Học sinh'),
@@ -276,7 +292,7 @@ class _LeaveRequestPageState extends ConsumerState<LeaveRequestPage> {
                     );
                   }).toList(),
                   onChanged: (val) =>
-                      setDialogState(() => selectedStudentId = val),
+                      setSheetState(() => selectedStudentId = val),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -299,50 +315,61 @@ class _LeaveRequestPageState extends ConsumerState<LeaveRequestPage> {
                     labelText: 'Lý do xin nghỉ',
                   ),
                 ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(sheetContext),
+                        child: const Text('Hủy'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: selectedStudentId == null
+                            ? null
+                            : () async {
+                                try {
+                                  final req = LeaveRequest(
+                                    idHocSinh: selectedStudentId!,
+                                    idLop: widget.classId,
+                                    tuNgay: tuNgayController.text.trim(),
+                                    denNgay: denNgayController.text.trim(),
+                                    lyDo: lyDoController.text.trim(),
+                                    createdAt: DateTime.now(),
+                                    updatedAt: DateTime.now(),
+                                  );
+                                  await ref
+                                      .read(
+                                        leaveRequestControllerProvider(
+                                          widget.classId,
+                                        ).notifier,
+                                      )
+                                      .createLeaveRequest(req);
+                                  if (sheetContext.mounted) {
+                                    Navigator.pop(sheetContext);
+                                  }
+                                } catch (e) {
+                                  if (sheetContext.mounted) {
+                                    _showError(e.toString());
+                                  }
+                                }
+                              },
+                        child: const Text('Tạo đơn'),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Hủy'),
-            ),
-            ElevatedButton(
-              onPressed: selectedStudentId == null
-                  ? null
-                  : () async {
-                      try {
-                        final req = LeaveRequest(
-                          idHocSinh: selectedStudentId!,
-                          idLop: widget.classId,
-                          tuNgay: tuNgayController.text.trim(),
-                          denNgay: denNgayController.text.trim(),
-                          lyDo: lyDoController.text.trim(),
-                          createdAt: DateTime.now(),
-                          updatedAt: DateTime.now(),
-                        );
-                        await ref
-                            .read(
-                              leaveRequestControllerProvider(
-                                widget.classId,
-                              ).notifier,
-                            )
-                            .createLeaveRequest(req);
-                        if (dialogContext.mounted) {
-                          Navigator.pop(dialogContext);
-                        }
-                      } catch (e) {
-                        if (dialogContext.mounted) {
-                          _showError(e.toString());
-                        }
-                      }
-                    },
-              child: const Text('Tạo đơn'),
-            ),
-          ],
         ),
       ),
     );
+    tuNgayController.dispose();
+    denNgayController.dispose();
+    lyDoController.dispose();
   }
 
   void _showError(String message) {

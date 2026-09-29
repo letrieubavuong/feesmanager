@@ -18,6 +18,8 @@ class UiKeys {
   static const Key drawerTuition = Key('drawer_tuition');
   static const Key drawerReports = Key('drawer_reports');
   static const Key drawerSettings = Key('drawer_settings');
+  static const Key drawerGuide = Key('drawer_guide');
+  static const Key guideSearch = Key('guide_search');
 
   // Dashboard
   static const Key dashboardSearchInput = Key('dashboard_search_input');

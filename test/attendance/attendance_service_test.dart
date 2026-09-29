@@ -19,6 +19,7 @@ import 'package:tuition2027/features/classes/data/class_repository.dart';
 import 'package:tuition2027/features/leave/domain/leave_request_service.dart';
 import 'package:tuition2027/features/leave/data/leave_request_repository.dart';
 import 'package:tuition2027/features/session_adjustments/data/session_adjustment_repository.dart';
+
 import '../sessions/test_db_helper_v6.dart';
 
 import 'package:tuition2027/features/schedule_conflicts/data/schedule_constraint_repository.dart';
@@ -102,6 +103,99 @@ void main() {
   tearDown(() async => await db.close());
 
   group('AttendanceService Domain Tests', () {
+    test(
+      'historical backfill preserves saved records and skips canceled sessions',
+      () async {
+        await db.insert('lop', {
+          'id': 1,
+          'ten_lop': 'C1',
+          'created_at': now,
+          'updated_at': now,
+        });
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 1,
+          'thu_trong_tuan': 1,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': now,
+          'updated_at': now,
+        });
+        for (final entry in [
+          (1, '2026-06-01', 'DU_KIEN'),
+          (2, '2026-06-08', 'NGHI_LE'),
+        ]) {
+          await db.insert('buoi_hoc', {
+            'id': entry.$1,
+            'id_lop': 1,
+            'id_lich_hoc': 1,
+            'ngay': entry.$2,
+            'gio_bat_dau': '17:30',
+            'gio_ket_thuc': '19:00',
+            'loai': 'CHINH',
+            'trang_thai': entry.$3,
+            'created_at': now,
+            'updated_at': now,
+          });
+        }
+        for (final id in [101, 102]) {
+          await db.insert('hoc_sinh', {
+            'id': id,
+            'ho_ten': 'Student $id',
+            'created_at': now,
+            'updated_at': now,
+          });
+          await db.insert('tham_gia_lop', {
+            'id': id,
+            'id_hoc_sinh': id,
+            'id_lop': 1,
+            'tu_ngay': '2026-01-01',
+            'created_at': now,
+            'updated_at': now,
+          });
+        }
+        await attendanceService.saveDraft(1, {
+          101: AttendanceState.NGHI_KHONG_PHEP,
+        });
+        final preview = await attendanceService.backfillHistoricalAttendance(
+          classId: 1,
+          fromDate: '2026-06-01',
+          toDate: '2026-06-30',
+        );
+        expect(preview.sessionCount, 1);
+        expect(preview.studentCount, 1);
+        expect(preview.skippedCount, 1);
+        await attendanceService.backfillHistoricalAttendance(
+          classId: 1,
+          fromDate: '2026-06-01',
+          toDate: '2026-06-30',
+          save: true,
+        );
+        final sheet = await attendanceService.getAttendanceForSession(1);
+        expect(
+          sheet.members
+              .firstWhere((m) => m.rosterMember.student.id == 101)
+              .state,
+          AttendanceState.NGHI_KHONG_PHEP,
+        );
+        expect(
+          sheet.members
+              .firstWhere((m) => m.rosterMember.student.id == 102)
+              .state,
+          AttendanceState.CO_MAT,
+        );
+        expect(sheet.session.trangThai, SessionStatus.DA_HOC);
+        expect(
+          (await attendanceService.backfillHistoricalAttendance(
+            classId: 1,
+            fromDate: '2026-06-01',
+            toDate: '2026-06-30',
+          )).studentCount,
+          0,
+        );
+      },
+    );
     test(
       'getAttendanceForSession returns members with CHUA_DIEM_DANH by default',
       () async {

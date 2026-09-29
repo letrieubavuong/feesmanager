@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/classes/presentation/class_list_page.dart';
 import '../../features/dashboard/presentation/dashboard_page.dart';
+import '../../features/help/presentation/user_guide_page.dart';
 import '../../features/reports/presentation/reports_page.dart';
 import '../../features/settings/presentation/settings_page.dart';
 import '../../features/students/presentation/student_list_page.dart';
@@ -46,6 +47,9 @@ class AppShell extends ConsumerWidget {
         break;
       case AppDestinationId.settings:
         content = const SettingsPage();
+        break;
+      case AppDestinationId.guide:
+        content = const UserGuidePage();
         break;
     }
 

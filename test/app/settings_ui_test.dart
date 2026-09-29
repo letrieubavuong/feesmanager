@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tuition2027/app/localization/locale_controller.dart';
-import 'package:tuition2027/app/navigation/ui_keys.dart';
 import 'package:tuition2027/features/settings/presentation/settings_page.dart';
+
 import '../test_helper.dart';
 
 void main() {
@@ -14,7 +14,7 @@ void main() {
 
   group('Phase 13A Settings Page Widget Tests', () {
     testWidgets(
-      'SettingsPage displays theme, palette, language and info sections',
+      'SettingsPage displays compact controls and teaching reminder options',
       (tester) async {
         tester.view.physicalSize = const Size(600, 1200);
         tester.view.devicePixelRatio = 1.0;
@@ -27,11 +27,18 @@ void main() {
         expect(find.text('Cài đặt'), findsOneWidget);
         expect(find.text('GIAO DIỆN & CHỦ ĐỀ'), findsOneWidget);
         expect(find.text('Chế độ hiển thị'), findsOneWidget);
-        expect(find.text('Tông màu ứng dụng'), findsOneWidget);
+        expect(find.text('NHẮC GIỜ DẠY'), findsOneWidget);
+        expect(find.text('5 phút'), findsOneWidget);
+        expect(find.text('10 phút'), findsOneWidget);
         expect(find.text('NGÔN NGỮ'), findsAtLeast(1));
+        expect(find.text('Quy tắc tính học phí theo lớp'), findsOneWidget);
+        await tester.scrollUntilVisible(
+          find.text('THÔNG TIN ỨNG DỤNG'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
         expect(find.text('THÔNG TIN ỨNG DỤNG'), findsOneWidget);
-        expect(find.text('Phiên bản: 1.0.0+1'), findsOneWidget);
-        expect(find.text('Cơ sở dữ liệu: v15'), findsOneWidget);
+        expect(find.text('Tài khoản nhận học phí'), findsOneWidget);
       },
     );
 
@@ -48,7 +55,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(UiKeys.settingsLanguageEn));
+      await tester.tap(find.text('EN'));
       await tester.pumpAndSettle();
 
       expect(

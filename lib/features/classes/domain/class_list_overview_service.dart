@@ -257,7 +257,7 @@ class ClassListOverviewService {
           secondaryText = 'Thiếu chính sách tháng $currentMonthStr';
         } else if (debt > 0) {
           status = ClassOperationalStatus.hasDebt;
-          secondaryText = 'Còn nợ ${currencyFmt.format(debt)}đ';
+          secondaryText = 'Chưa thanh toán ${currencyFmt.format(debt)}đ';
         } else {
           status = ClassOperationalStatus.normal;
           secondaryText = scheduleText.isNotEmpty

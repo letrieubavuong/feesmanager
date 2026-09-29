@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../../../core/database/database_provider.dart';
 import '../../leave/domain/leave_request_service.dart';
 import '../../roster/domain/roster_member.dart';
@@ -13,6 +14,19 @@ import 'attendance_state.dart';
 import 'class_attendance_timeline_item.dart';
 
 part 'attendance_service.g.dart';
+
+class HistoricalAttendancePreview {
+  final int sessionCount;
+  final int studentCount;
+  final int excusedCount;
+  final int skippedCount;
+  const HistoricalAttendancePreview({
+    required this.sessionCount,
+    required this.studentCount,
+    required this.excusedCount,
+    required this.skippedCount,
+  });
+}
 
 @Riverpod(keepAlive: true)
 Future<AttendanceRepository> attendanceRepository(
@@ -34,6 +48,68 @@ class AttendanceService {
     this._sessionService,
     this._leaveRequestService,
   );
+
+  Future<HistoricalAttendancePreview> backfillHistoricalAttendance({
+    required int classId,
+    required String fromDate,
+    required String toDate,
+    bool save = false,
+  }) async {
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    if (fromDate.compareTo(toDate) > 0 || toDate.compareTo(today) >= 0) {
+      throw ArgumentError('Chỉ điểm danh bù cho khoảng ngày trong quá khứ.');
+    }
+    final sessions = await _sessionService.getSessionsInDateRange(
+      fromDate: fromDate,
+      toDate: toDate,
+      classId: classId,
+    );
+    var eligible = 0;
+    var students = 0;
+    var excused = 0;
+    var skipped = 0;
+    for (final session in sessions) {
+      if (session.loai != SessionType.CHINH ||
+          session.trangThai != SessionStatus.DU_KIEN) {
+        skipped++;
+        continue;
+      }
+      final sheet = await getAttendanceForSession(session.id!);
+      if (!sheet.isOperationallyValid ||
+          sheet.requiresOneOffAdjustments ||
+          sheet.members.isEmpty) {
+        skipped++;
+        continue;
+      }
+      final missing = <int, AttendanceState>{};
+      for (final member in sheet.members) {
+        if (member.state != AttendanceState.CHUA_DIEM_DANH) continue;
+        final id = member.rosterMember.student.id!;
+        final state = member.suggestedState == AttendanceState.NGHI_CO_PHEP
+            ? AttendanceState.NGHI_CO_PHEP
+            : AttendanceState.CO_MAT;
+        missing[id] = state;
+        if (state == AttendanceState.NGHI_CO_PHEP) excused++;
+      }
+      if (missing.isEmpty) {
+        skipped++;
+        continue;
+      }
+      eligible++;
+      students += missing.length;
+      if (save) {
+        // saveDraft validates roster again and upserts only missing records.
+        await saveDraft(session.id!, missing);
+        await finalizeSessionAttendance(session.id!);
+      }
+    }
+    return HistoricalAttendancePreview(
+      sessionCount: eligible,
+      studentCount: students,
+      excusedCount: excused,
+      skippedCount: skipped,
+    );
+  }
 
   Future<AttendanceSheet> getAttendanceForSession(int sessionId) async {
     final session = await _sessionService.getSessionById(sessionId);
@@ -316,9 +392,6 @@ class AttendanceService {
     required String reason,
   }) async {
     final trimmedReason = reason.trim();
-    if (trimmedReason.isEmpty) {
-      throw Exception('Vui lòng nhập lý do chỉnh sửa điểm danh.');
-    }
 
     final sheet = await getAttendanceForSession(sessionId);
 
@@ -455,7 +528,9 @@ class AttendanceService {
           idHocSinh: studentId,
           trangThaiCu: oldStatus?.name,
           trangThaiMoi: newStatus.name,
-          lyDo: trimmedReason,
+          lyDo: trimmedReason.isEmpty
+              ? 'Điều chỉnh trạng thái điểm danh'
+              : trimmedReason,
           changedAt: now,
         );
         await txn.insert('diem_danh_chinh_sua', audit.toMap());

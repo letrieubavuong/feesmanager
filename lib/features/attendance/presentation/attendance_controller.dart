@@ -1,5 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../../payments/presentation/payment_controller.dart';
+import '../../dashboard/presentation/dashboard_controller.dart';
 import '../../tuition/presentation/tuition_controller.dart';
 import '../../roster/domain/roster_member.dart';
 import '../domain/attendance_service.dart';
@@ -102,6 +104,7 @@ class AttendanceController extends _$AttendanceController {
       _draft = null;
       final newSheet = await service.getAttendanceForSession(sessionId);
       state = AsyncValue.data(newSheet);
+      ref.invalidate(dashboardControllerProvider);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
       if (prevState.hasValue) {
@@ -128,6 +131,7 @@ class AttendanceController extends _$AttendanceController {
       );
       final newSheet = await service.getAttendanceForSession(sessionId);
       state = AsyncValue.data(newSheet);
+      ref.invalidate(dashboardControllerProvider);
 
       // Invalidate tuition & read-model providers for affected class-month
       final classId = newSheet.session.idLop;
@@ -143,6 +147,7 @@ class AttendanceController extends _$AttendanceController {
       ref.invalidate(classMonthTuitionOverviewProvider((classId, month)));
       ref.invalidate(classMonthInvoicesProvider((classId, month)));
       ref.invalidate(classMonthPaymentSummariesProvider((classId, month)));
+      ref.invalidate(dashboardControllerProvider);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
       if (prevState.hasValue) {
@@ -181,6 +186,7 @@ class AttendanceController extends _$AttendanceController {
       ref.invalidate(classMonthTuitionOverviewProvider((classId, month)));
       ref.invalidate(classMonthInvoicesProvider((classId, month)));
       ref.invalidate(classMonthPaymentSummariesProvider((classId, month)));
+      ref.invalidate(dashboardControllerProvider);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
       if (prevState.hasValue) {

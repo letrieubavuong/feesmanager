@@ -4,6 +4,7 @@ import '../../../app/common_widgets/app_loading_state.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../app/localization/app_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../tuition/presentation/tuition_controller.dart';
 import '../domain/payment_method.dart';
 import 'payment_controller.dart';
 import 'record_payment_bottom_sheet.dart';
@@ -48,7 +49,7 @@ class PaymentHistoryBottomSheet extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Lịch sử thu tiền',
+                        'Phiếu thu đã ghi nhận',
                         style: TextStyle(
                           color: AppColors.textPrimary,
                           fontSize: 18,
@@ -74,6 +75,11 @@ class PaymentHistoryBottomSheet extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
+            const Text(
+              'Chọn ⋮ trên từng phiếu để sửa ngày thu hoặc số tiền.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            ),
+            const SizedBox(height: 10),
             paymentsAsync.when(
               loading: () => const AppLoadingState(),
               error: (err, stack) => Center(
@@ -200,6 +206,12 @@ class PaymentHistoryBottomSheet extends ConsumerWidget {
                                       month,
                                     )),
                                   );
+                                  ref.invalidate(
+                                    classMonthTuitionOverviewProvider((
+                                      classId,
+                                      month,
+                                    )),
+                                  );
                                 }
                               }
                             },
@@ -215,7 +227,7 @@ class PaymentHistoryBottomSheet extends ConsumerWidget {
                                     ),
                                     SizedBox(width: 8),
                                     Text(
-                                      'Sửa khoản thu',
+                                      'Sửa phiếu thu',
                                       style: TextStyle(
                                         color: AppColors.textPrimary,
                                       ),

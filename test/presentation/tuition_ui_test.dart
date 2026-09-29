@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -238,6 +239,13 @@ void main() {
         expect(find.text('Student B'), findsOneWidget);
         expect(find.text('Student C'), findsNothing);
 
+        await tester.tap(find.byKey(const Key('tuition_student_menu_1')));
+        await tester.pumpAndSettle();
+        expect(find.text('Thu tiền'), findsOneWidget);
+        expect(find.text('Tạo mã QR'), findsOneWidget);
+        await tester.tapAt(const Offset(2, 2));
+        await tester.pumpAndSettle();
+
         // Unfinalized banner present
         expect(
           find.textContaining('1 học sinh chưa chốt học phí'),
@@ -305,7 +313,7 @@ void main() {
 
     // TEST 48: QR Share Card widget contains required payment details
     testWidgets(
-      'Test 48 - PaymentQrShareCard displays complete export information',
+      'Test 48 - PaymentQrShareCard shows parent payment essentials',
       (tester) async {
         const slip = ParentTuitionSlip(
           studentId: 125,
@@ -349,8 +357,8 @@ void main() {
           ),
         );
 
-        expect(find.text('PHIẾU HỌC PHÍ'), findsOneWidget);
-        expect(find.text('NGUYỄN VĂN LY'), findsOneWidget);
+        expect(find.text('HỌC PHÍ'), findsOneWidget);
+        expect(find.text('Nguyễn Văn Ly'), findsOneWidget);
         expect(find.text('VẬT LÍ 10'), findsOneWidget);
         expect(find.text('450.000đ'), findsOneWidget);
         expect(find.text('MBBank'), findsOneWidget);
@@ -358,6 +366,8 @@ void main() {
         expect(find.text('TRAN VAN A'), findsOneWidget);
         expect(find.text('HP 125 VATLI10 092026'), findsOneWidget);
         expect(find.byType(VietQrCodeWidget), findsOneWidget);
+        expect(find.text('Buổi dự kiến'), findsNothing);
+        expect(find.text('Buổi dư chuyển sang'), findsNothing);
       },
     );
   });

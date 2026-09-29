@@ -15,6 +15,7 @@ import 'package:tuition2027/features/students/data/student_repository.dart';
 import 'package:tuition2027/features/classes/domain/class_service.dart';
 import 'package:tuition2027/features/classes/data/class_repository.dart';
 import 'package:tuition2027/features/session_adjustments/data/session_adjustment_repository.dart';
+
 import '../sessions/test_db_helper_v6.dart';
 
 import 'package:tuition2027/features/schedule_conflicts/data/schedule_constraint_repository.dart';
@@ -158,6 +159,75 @@ void main() {
         );
       },
     );
+
+    test('Lọc ca đã phân dù chỉ một lịch trong ngày', () async {
+      await db.insert('lop', {
+        'id': 1,
+        'ten_lop': 'Lớp A',
+        'created_at': now,
+        'updated_at': now,
+      });
+      for (final schedule in [(1, 1), (2, 3)]) {
+        await db.insert('lich_hoc', {
+          'id': schedule.$1,
+          'id_lop': 1,
+          'thu_trong_tuan': schedule.$2,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': now,
+          'updated_at': now,
+        });
+      }
+      for (final studentId in [1, 2]) {
+        await db.insert('hoc_sinh', {
+          'id': studentId,
+          'ho_ten': 'Em $studentId',
+          'created_at': now,
+          'updated_at': now,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': studentId,
+          'id_hoc_sinh': studentId,
+          'id_lop': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': now,
+          'updated_at': now,
+        });
+      }
+      await db.insert('phan_ca_hoc_sinh', {
+        'id': 1,
+        'id_hoc_sinh': 1,
+        'id_lop': 1,
+        'id_lich_hoc': 1,
+        'tu_ngay': '2026-01-01',
+        'created_at': now,
+        'updated_at': now,
+      });
+      for (final session in [(10, 1, '2026-09-07'), (11, 2, '2026-09-09')]) {
+        await db.insert('buoi_hoc', {
+          'id': session.$1,
+          'id_lop': 1,
+          'id_lich_hoc': session.$2,
+          'ngay': session.$3,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'created_at': now,
+          'updated_at': now,
+        });
+      }
+
+      final monday = await rosterService.getRosterForSession(10);
+      expect(monday.participants.map((m) => m.student.id), [1]);
+      expect(monday.unassignedMembers.map((s) => s.id), [2]);
+      expect(
+        monday.participants.single.source,
+        RosterInclusionSource.EXPLICIT_ASSIGNMENT,
+      );
+      final wednesday = await rosterService.getRosterForSession(11);
+      expect(wednesday.participants.map((m) => m.student.id), [1, 2]);
+    });
 
     test('Multi-shift split logic (same weekday)', () async {
       await db.insert('lop', {

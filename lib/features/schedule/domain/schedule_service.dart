@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:intl/intl.dart';
+
 import '../../../core/database/database_provider.dart';
 import '../../../core/utils/date_and_time_validators.dart';
 import '../data/schedule_repository.dart';
@@ -115,6 +116,14 @@ class ScheduleDomainService {
       effectiveDate.subtract(const Duration(days: 1)),
     );
 
+    if (existing.hieuLucDen != null &&
+        effectiveStr.compareTo(existing.hieuLucDen!) > 0) {
+      throw Exception(
+        'Lịch cũ đã kết thúc ngày ${existing.hieuLucDen}. '
+        'Hãy tạo lịch mới áp dụng từ $effectiveStr.',
+      );
+    }
+
     final assignments = await _assignmentRepo.getBySchedule(scheduleId);
     if (effectiveStr == existing.hieuLucTu && assignments.isEmpty) {
       final updated = existing.copyWith(
@@ -131,7 +140,8 @@ class ScheduleDomainService {
 
     if (dayBeforeStr.compareTo(existing.hieuLucTu) < 0) {
       throw Exception(
-        'Ngày áp dụng lịch mới ($effectiveStr) phải sau ngày bắt đầu lịch cũ (${existing.hieuLucTu})',
+        'Ngày áp dụng lịch mới ($effectiveStr) phải sau ngày bắt đầu lịch cũ (${existing.hieuLucTu}). '
+        'Muốn đổi ngày bắt đầu của lịch cũ cần xử lý buổi học và phân ca đã gắn với lịch.',
       );
     }
 
@@ -310,9 +320,14 @@ class ScheduleDomainService {
       );
     }
 
-    // 1. Get active student IDs in class at startDate
-    final activeStudentIds = await _membershipService
-        .getActiveStudentIdsInClass(classId, startDate);
+    // Include students joining after the chosen class-wide start date.
+    final memberships = await _membershipService
+        .getMembershipsOverlappingDateRange(
+          fromDate: startStr,
+          toDate: schedule.hieuLucDen ?? '9999-12-31',
+          classId: classId,
+        );
+    final eligibleStudentIds = memberships.map((m) => m.idHocSinh).toSet();
 
     // 2. Query overlapping assignments for this schedule
     final overlappingAssignments = await _assignmentRepo
@@ -327,7 +342,7 @@ class ScheduleDomainService {
     // 4. Filter candidates: active membership, NOT in alreadyAssignedStudentIds, not archived
     final candidates = allStudents.where((s) {
       if (s.id == null || s.daLuuTru) return false;
-      if (!activeStudentIds.contains(s.id)) return false;
+      if (!eligibleStudentIds.contains(s.id)) return false;
       if (alreadyAssignedStudentIds.contains(s.id)) return false;
       return true;
     }).toList();
@@ -363,8 +378,13 @@ class ScheduleDomainService {
     }
 
     final dateFormat = DateFormat('yyyy-MM-dd');
-    final startStr = dateFormat.format(startDate);
+    final requestedStartStr = dateFormat.format(startDate);
     final endStr = endDate != null ? dateFormat.format(endDate) : null;
+    final startStr = await _effectiveAssignmentStart(
+      studentId,
+      classId,
+      requestedStartStr,
+    );
 
     // 1. Boundary Check
     await _validateAssignmentInterval(
@@ -423,11 +443,27 @@ class ScheduleDomainService {
     String? endStr,
     int? excludeAssignmentId,
   }) async {
+    String effectiveStart;
+    try {
+      effectiveStart = await _effectiveAssignmentStart(
+        studentId,
+        classId,
+        startStr,
+      );
+    } catch (e) {
+      return BulkAssignmentItemResult(
+        studentId: studentId,
+        studentName: studentName,
+        status: BulkAssignmentStatus.invalidBoundary,
+        message: e.toString().replaceAll('Exception: ', ''),
+      );
+    }
+
     // 1. Check duplicate/overlap for same student & schedule
     final isOverlapping = await _assignmentRepo.hasOverlappingStudentAssignment(
       studentId: studentId,
       scheduleId: scheduleId,
-      startDate: startStr,
+      startDate: effectiveStart,
       endDate: endStr,
       excludeAssignmentId: excludeAssignmentId,
     );
@@ -446,7 +482,7 @@ class ScheduleDomainService {
         studentId,
         classId,
         schedule,
-        startStr,
+        effectiveStart,
         endStr,
       );
     } catch (e) {
@@ -462,7 +498,7 @@ class ScheduleDomainService {
     final conflictResult = await _conflictService.evaluateCandidateAssignment(
       studentId: studentId,
       targetScheduleId: scheduleId,
-      startDate: startStr,
+      startDate: effectiveStart,
       endDate: endStr,
       excludeAssignmentId: excludeAssignmentId,
     );
@@ -484,6 +520,9 @@ class ScheduleDomainService {
       studentName: studentName,
       status: BulkAssignmentStatus.ready,
       conflictResult: conflictResult,
+      message: effectiveStart == startStr
+          ? null
+          : 'Bắt đầu từ ngày tham gia lớp $effectiveStart',
     );
   }
 
@@ -593,6 +632,14 @@ class ScheduleDomainService {
 
     // Execute ONE SQLite transaction for all valid ready students
     final validStudents = preview.readyStudents;
+    final effectiveStarts = <int, String>{};
+    for (final student in validStudents) {
+      effectiveStarts[student.id!] = await _effectiveAssignmentStart(
+        student.id!,
+        classId,
+        startStr,
+      );
+    }
     await _assignmentRepo.db.transaction((txn) async {
       for (final student in validStudents) {
         await _assignmentRepo.createInTxn(
@@ -601,7 +648,7 @@ class ScheduleDomainService {
             idHocSinh: student.id!,
             idLop: classId,
             idLichHoc: scheduleId,
-            tuNgay: startStr,
+            tuNgay: effectiveStarts[student.id!]!,
             denNgay: null,
             ghiChu: note,
             createdAt: now,
@@ -849,6 +896,33 @@ class ScheduleDomainService {
         ),
       );
     });
+  }
+
+  Future<String> _effectiveAssignmentStart(
+    int studentId,
+    int classId,
+    String requestedStart,
+  ) async {
+    final memberships = await _membershipService.getMembershipHistory(
+      studentId,
+      classId: classId,
+    );
+    final candidates =
+        memberships
+            .where(
+              (m) =>
+                  m.denNgay == null ||
+                  m.denNgay!.compareTo(requestedStart) >= 0,
+            )
+            .toList()
+          ..sort((a, b) => a.tuNgay.compareTo(b.tuNgay));
+    if (candidates.isEmpty) {
+      throw Exception(
+        'Học sinh không có thời gian tham gia lớp từ ngày $requestedStart',
+      );
+    }
+    final joinDate = candidates.first.tuNgay;
+    return requestedStart.compareTo(joinDate) < 0 ? joinDate : requestedStart;
   }
 
   Future<void> _validateAssignmentInterval(

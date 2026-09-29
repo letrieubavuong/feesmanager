@@ -171,10 +171,6 @@ class PaymentService {
       throw Exception('Số tiền thanh toán phải lớn hơn 0');
     }
 
-    if (correctionReason.trim().isEmpty) {
-      throw Exception('Vui lòng nhập lý do điều chỉnh khoản thu');
-    }
-
     final trimmedTxId = transactionId?.trim().isEmpty == true
         ? null
         : transactionId?.trim();
@@ -271,7 +267,9 @@ class PaymentService {
         'ma_giao_dich_moi': trimmedTxId,
         'ghi_chu_cu': oldPayment.note,
         'ghi_chu_moi': note?.trim().isEmpty == true ? null : note?.trim(),
-        'ly_do_chinh_sua': correctionReason.trim(),
+        'ly_do_chinh_sua': correctionReason.trim().isEmpty
+            ? 'Cập nhật phiếu thu'
+            : correctionReason.trim(),
         'changed_at': now.toIso8601String(),
       });
 

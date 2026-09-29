@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqflite/sqflite.dart';
+
 import '../../../core/database/database_provider.dart';
 import '../../classes/domain/class_service.dart';
 import '../../session_credits/data/session_credit_repository.dart';
@@ -40,7 +41,7 @@ class TuitionPolicyService {
 
   Future<TuitionPolicy?> getEffectivePolicy(int classId, DateTime date) {
     final dateStr = DateFormat('yyyy-MM-dd').format(date);
-    return _repo.getEffectivePolicy(classId, dateStr);
+    return getEffectivePolicyForDateStr(classId, dateStr);
   }
 
   Future<TuitionPolicy?> getEffectivePolicyForDateStr(
@@ -62,6 +63,8 @@ class TuitionPolicyService {
         TuitionPolicyDefaults.standardSessionsPerMonth,
     required int feePerSession,
     int? monthlyMaxFee,
+    ExcusedAbsenceFeeRule excusedAbsenceFeeRule =
+        ExcusedAbsenceFeeRule.buTruBuoiDu,
     String? note,
   }) async {
     final cls = await _classService.getClassById(classId);
@@ -102,6 +105,29 @@ class TuitionPolicyService {
 
     if (monthlyMaxFee != null && monthlyMaxFee < 0) {
       throw Exception('Mức học phí tối đa tháng phải lớn hơn hoặc bằng 0');
+    }
+
+    // A historical gap may precede an existing policy. End it before the
+    // next policy so later tuition keeps its configured rate.
+    final existingPolicies = await _repo.getPoliciesForClass(classId);
+    final laterPolicies =
+        existingPolicies
+            .where((p) => p.hieuLucTu.compareTo(effectiveFrom) > 0)
+            .toList()
+          ..sort((a, b) => a.hieuLucTu.compareTo(b.hieuLucTu));
+    if (laterPolicies.isNotEmpty) {
+      final dayBeforeNext = DateFormat('yyyy-MM-dd').format(
+        DateTime.parse(
+          laterPolicies.first.hieuLucTu,
+        ).subtract(const Duration(days: 1)),
+      );
+      if (effectiveTo == null) {
+        effectiveTo = dayBeforeNext;
+      } else if (effectiveTo.compareTo(dayBeforeNext) > 0) {
+        throw Exception(
+          'Chính sách tháng cũ phải kết thúc trước ${laterPolicies.first.hieuLucTu}',
+        );
+      }
     }
 
     // Safety check 1: Block creating/editing policy if a finalized invoice exists in affected month range
@@ -165,7 +191,7 @@ class TuitionPolicyService {
     }
 
     // Check existing policies for overlap
-    final existingPolicies = await _repo.getPoliciesForClass(classId);
+
     String? closeDateStr;
 
     for (final p in existingPolicies) {
@@ -205,6 +231,7 @@ class TuitionPolicyService {
       soBuoiChuanThang: standardSessionsPerMonth,
       hocPhiMoiBuoi: feePerSession,
       hocPhiThangToiDa: monthlyMaxFee,
+      quyTacNghiCoPhep: excusedAbsenceFeeRule,
       ghiChu: note?.trim().isEmpty == true ? null : note?.trim(),
       createdAt: now,
       updatedAt: now,

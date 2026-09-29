@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import 'tuition_invoice.dart';
 import '../../../core/database/database_provider.dart';
 import '../../attendance/data/attendance_repository.dart';
@@ -177,35 +178,50 @@ class TuitionService {
           isCharged = true;
           fee = policy.hocPhiMoiBuoi;
         } else if (attState == AttendanceState.NGHI_CO_PHEP) {
-          final hasValidMakeup =
-              validMakeupByOriginalSessionId[session.id!] ?? false;
-
-          if (hasValidMakeup) {
+          if (policy.quyTacNghiCoPhep == ExcusedAbsenceFeeRule.tinhPhi) {
             chargeType =
-                TuitionCandidateChargeType.CHARGEABLE_EXCUSED_WITH_MAKEUP;
+                TuitionCandidateChargeType.CHARGEABLE_EXCUSED_BY_POLICY;
             isCharged = true;
             fee = policy.hocPhiMoiBuoi;
+          } else if (policy.quyTacNghiCoPhep ==
+              ExcusedAbsenceFeeRule.khongTinhPhi) {
+            chargeType =
+                TuitionCandidateChargeType.NON_CHARGEABLE_EXCUSED_UNCOMPENSATED;
+            isCharged = false;
+            fee = 0;
           } else {
-            final rawBalanceAsOf = studentLedgerEntries.isEmpty
-                ? creditSummary.openingBalance
-                : studentLedgerEntries
-                    .where((e) => e.ngayHieuLuc.compareTo(session.ngay) <= 0)
-                    .fold<int>(0, (sum, e) => sum + e.delta);
+            final hasValidMakeup =
+                validMakeupByOriginalSessionId[session.id!] ?? false;
 
-            final usableCreditAtDate = rawBalanceAsOf - proposedCreditUsed;
-
-            if (usableCreditAtDate > 0) {
+            if (hasValidMakeup) {
               chargeType =
-                  TuitionCandidateChargeType.CHARGEABLE_EXCUSED_WITH_CREDIT;
+                  TuitionCandidateChargeType.CHARGEABLE_EXCUSED_WITH_MAKEUP;
               isCharged = true;
-              usesCredit = true;
-              proposedCreditUsed++;
               fee = policy.hocPhiMoiBuoi;
             } else {
-              chargeType = TuitionCandidateChargeType
-                  .NON_CHARGEABLE_EXCUSED_UNCOMPENSATED;
-              isCharged = false;
-              fee = 0;
+              final rawBalanceAsOf = studentLedgerEntries.isEmpty
+                  ? creditSummary.openingBalance
+                  : studentLedgerEntries
+                        .where(
+                          (e) => e.ngayHieuLuc.compareTo(session.ngay) <= 0,
+                        )
+                        .fold<int>(0, (sum, e) => sum + e.delta);
+
+              final usableCreditAtDate = rawBalanceAsOf - proposedCreditUsed;
+
+              if (usableCreditAtDate > 0) {
+                chargeType =
+                    TuitionCandidateChargeType.CHARGEABLE_EXCUSED_WITH_CREDIT;
+                isCharged = true;
+                usesCredit = true;
+                proposedCreditUsed++;
+                fee = policy.hocPhiMoiBuoi;
+              } else {
+                chargeType = TuitionCandidateChargeType
+                    .NON_CHARGEABLE_EXCUSED_UNCOMPENSATED;
+                isCharged = false;
+                fee = 0;
+              }
             }
           }
         } else {

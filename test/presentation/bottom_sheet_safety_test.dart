@@ -49,6 +49,50 @@ Widget buildTestApp(Widget child) {
 void main() {
   group('Editable Bottom Sheets Safety & Dirty Form Tests', () {
     testWidgets(
+      'Creating a class opens tuition policy after class sheet closes',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              classFormControllerProvider.overrideWith(
+                () => _MockClassFormController(onSave: (_) async {}),
+              ),
+              classListControllerProvider.overrideWith(
+                () => _MockClassListController(),
+              ),
+            ],
+            child: MaterialApp(
+              locale: const Locale('vi'),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () => showClassFormBottomSheet(context),
+                    child: const Text('Tạo lớp'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('Tạo lớp'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(UiKeys.classFormNameInput), 'Toán 9');
+        await tester.tap(find.byKey(UiKeys.classFormSave));
+        await tester.pumpAndSettle();
+        expect(find.byType(ClassFormBottomSheet), findsNothing);
+        expect(find.byType(CreateTuitionPolicyBottomSheet), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
       'ClassFormBottomSheet dirty state protection: Keep Editing vs Discard',
       (tester) async {
         await tester.pumpWidget(

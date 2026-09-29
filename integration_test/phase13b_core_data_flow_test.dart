@@ -144,6 +144,9 @@ void main() {
         await tester.tap(find.text('Nguyễn Văn A Prime'));
         await tester.pumpAndSettle();
 
+        await tester.tap(find.text('Xong • 1 học sinh'));
+        await tester.pumpAndSettle();
+
         await tester.tap(find.byKey(UiKeys.studentRestoreAction));
         await tester.pumpAndSettle();
 
@@ -303,7 +306,7 @@ void main() {
         // Enrolled student must NOT appear in candidate selector
         expect(
           find.descendant(
-            of: find.byType(AlertDialog),
+            of: find.byType(CheckboxListTile),
             matching: find.text('Nguyễn Văn A Prime'),
           ),
           findsNothing,

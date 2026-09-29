@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +10,7 @@ import 'app/localization/locale_controller.dart';
 import 'app/navigation/app_shell.dart';
 import 'dev/demo_seed_bootstrap.dart';
 import 'l10n/app_localizations.dart';
+import 'features/settings/domain/class_reminder_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +18,12 @@ void main() async {
   await runDemoSeedIfEnabled(container);
   runApp(
     UncontrolledProviderScope(container: container, child: const TuitionApp()),
+  );
+  unawaited(
+    container
+        .read(classReminderServiceProvider)
+        .refresh()
+        .catchError((Object _) {}),
   );
 }
 

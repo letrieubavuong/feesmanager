@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/app_page_scaffold.dart';
 import '../../../app/common_widgets/dirty_form_scope.dart';
@@ -265,25 +266,9 @@ class _ClassFormBottomSheetState extends ConsumerState<ClassFormBottomSheet> {
 
       if (mounted) {
         setState(() => _isSaving = false);
-        Navigator.of(context).pop(true);
-
-        if (isNewClass) {
-          AppFeedback.showSuccessSnackBar(
-            context,
-            'Tạo lớp học thành công. Vui lòng thiết lập học phí lớp.',
-          );
-          final policySuccess = await showCreateTuitionPolicyBottomSheet(
-            context,
-            classId: savedClassId,
-          );
-          if (policySuccess != true && mounted) {
-            AppFeedback.showErrorSnackBar(
-              context,
-              'Lớp đã được tạo nhưng thiết lập học phí chưa hoàn tất.',
-            );
-          }
-        } else {
-          AppFeedback.showSuccessSnackBar(context, 'Đã lưu thông tin lớp học');
+        await WidgetsBinding.instance.endOfFrame;
+        if (mounted) {
+          Navigator.of(context).pop(isNewClass ? savedClassId : true);
         }
       }
     } catch (e) {
@@ -302,7 +287,14 @@ Future<bool?> showClassFormBottomSheet(
   BuildContext context, {
   ClassEntity? cls,
 }) {
-  return showModalBottomSheet<bool>(
+  return _showClassFormAndPolicy(context, cls);
+}
+
+Future<bool?> _showClassFormAndPolicy(
+  BuildContext context,
+  ClassEntity? cls,
+) async {
+  final result = await showModalBottomSheet<Object>(
     context: context,
     isScrollControlled: true,
     isDismissible: false,
@@ -310,4 +302,26 @@ Future<bool?> showClassFormBottomSheet(
     useSafeArea: true,
     builder: (_) => ClassFormBottomSheet(cls: cls),
   );
+  if (!context.mounted) return result != null;
+  if (result is int) {
+    AppFeedback.showSuccessSnackBar(
+      context,
+      'Tạo lớp học thành công. Vui lòng thiết lập học phí lớp.',
+    );
+    final policySuccess = await showCreateTuitionPolicyBottomSheet(
+      context,
+      classId: result,
+    );
+    if (policySuccess != true && context.mounted) {
+      AppFeedback.showErrorSnackBar(
+        context,
+        'Lớp đã được tạo nhưng thiết lập học phí chưa hoàn tất.',
+      );
+    }
+    return true;
+  }
+  if (result == true) {
+    AppFeedback.showSuccessSnackBar(context, 'Đã lưu thông tin lớp học');
+  }
+  return result == true;
 }

@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../../memberships/presentation/membership_providers.dart';
 import '../../payments/presentation/payment_controller.dart';
 import '../domain/class_month_tuition_overview.dart';
@@ -53,6 +54,8 @@ class TuitionPolicyController extends _$TuitionPolicyController {
         TuitionPolicyDefaults.standardSessionsPerMonth,
     required int feePerSession,
     int? monthlyMaxFee,
+    ExcusedAbsenceFeeRule excusedAbsenceFeeRule =
+        ExcusedAbsenceFeeRule.buTruBuoiDu,
     String? note,
   }) async {
     state = const AsyncLoading();
@@ -66,12 +69,14 @@ class TuitionPolicyController extends _$TuitionPolicyController {
         standardSessionsPerMonth: standardSessionsPerMonth,
         feePerSession: feePerSession,
         monthlyMaxFee: monthlyMaxFee,
+        excusedAbsenceFeeRule: excusedAbsenceFeeRule,
         note: note,
       );
 
       ref.invalidate(classTuitionPoliciesProvider(classId));
       ref.invalidate(effectiveTuitionPolicyProvider);
       ref.invalidate(tuitionPreviewControllerProvider);
+      ref.invalidate(classMonthTuitionOverviewProvider);
     });
     if (state.hasError) {
       throw state.error!;
@@ -132,6 +137,7 @@ class InvoiceController extends _$InvoiceController {
         tuitionPreviewControllerProvider(studentId, classId, month),
       );
       ref.invalidate(classMonthInvoicesProvider((classId, month)));
+      ref.invalidate(classMonthTuitionOverviewProvider((classId, month)));
       ref.invalidate(classMonthPaymentSummariesProvider((classId, month)));
       ref.invalidate(
         invoicePaymentSummaryProvider((studentId, classId, month)),
@@ -151,12 +157,17 @@ class InvoiceController extends _$InvoiceController {
   Future<List<TuitionInvoice>> finalizeClassInvoices({
     required int classId,
     required String month,
+    Set<int>? studentIdsToFinalize,
   }) async {
     state = const AsyncLoading();
     late List<TuitionInvoice> result;
     state = await AsyncValue.guard(() async {
       final service = await ref.read(invoiceServiceProvider.future);
-      result = await service.finalizeClassInvoices(classId, month);
+      result = await service.finalizeClassInvoices(
+        classId,
+        month,
+        studentIdsToFinalize: studentIdsToFinalize,
+      );
 
       for (final invoice in result) {
         ref.invalidate(

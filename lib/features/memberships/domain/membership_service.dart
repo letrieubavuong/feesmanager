@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:intl/intl.dart';
+
 import '../../../core/database/database_provider.dart';
 import '../data/membership_repository.dart';
 import 'membership.dart';
@@ -58,6 +59,35 @@ class MembershipService {
     await _repository.create(membership);
   }
 
+  Future<void> enrollStudents({
+    required List<int> studentIds,
+    required int classId,
+    required DateTime joinDate,
+    int mienGiam = 0,
+    String? ghiChu,
+  }) async {
+    if (studentIds.isEmpty || studentIds.toSet().length != studentIds.length) {
+      throw Exception('Vui lòng chọn học sinh không trùng lặp');
+    }
+    if (mienGiam < 0 || mienGiam > 100) {
+      throw Exception('Miễn giảm phải từ 0 đến 100%');
+    }
+    final date = DateFormat('yyyy-MM-dd').format(joinDate);
+    final now = DateTime.now();
+    await _repository.createBatch([
+      for (final id in studentIds)
+        ClassMembership(
+          idHocSinh: id,
+          idLop: classId,
+          tuNgay: date,
+          mienGiamPhanTram: mienGiam,
+          ghiChu: ghiChu,
+          createdAt: now,
+          updatedAt: now,
+        ),
+    ]);
+  }
+
   Future<void> leaveClass({
     required int studentId,
     required int classId,
@@ -86,6 +116,78 @@ class MembershipService {
       lyDoKetThuc: reason,
       updatedAt: DateTime.now(),
     );
+
+    await _repository.update(updated);
+  }
+
+  Future<void> updateDiscount(ClassMembership membership, int percent) async {
+    if (membership.id == null || percent < 0 || percent > 100) {
+      throw Exception('Mức giảm học phí phải từ 0 đến 100%');
+    }
+    if (await _repository.hasFinalizedInvoiceSince(membership)) {
+      throw Exception(
+        'Lớp này đã có học phí được chốt. Không thể sửa mức giảm của cả giai đoạn; hãy tạo chính sách hiệu lực mới để bảo toàn hóa đơn cũ.',
+      );
+    }
+    await _repository.update(
+      membership.copyWith(mienGiamPhanTram: percent, updatedAt: DateTime.now()),
+    );
+  }
+
+  Future<void> changeJoinDate({
+    required ClassMembership membership,
+    required DateTime joinDate,
+  }) async {
+    if (membership.id == null) {
+      throw Exception('Không tìm thấy lần tham gia lớp');
+    }
+    final newDate = DateFormat('yyyy-MM-dd').format(joinDate);
+    if (newDate == membership.tuNgay) return;
+    if (membership.denNgay != null &&
+        newDate.compareTo(membership.denNgay!) > 0) {
+      throw Exception(
+        'Ngày tham gia phải trước hoặc bằng ngày nghỉ lớp (${membership.denNgay})',
+      );
+    }
+    if (await _repository.hasOverlappingMembership(
+      membership.idHocSinh,
+      membership.idLop,
+      newDate,
+      membership.denNgay,
+      excludeId: membership.id,
+    )) {
+      throw Exception('Ngày tham gia trùng khoảng thời gian học sinh đã ở lớp');
+    }
+    await _repository.changeJoinDate(membership, newDate);
+  }
+
+  Future<void> updateMembership({
+    required ClassMembership membership,
+    DateTime? joinDate,
+    int? mienGiamPhanTram,
+    String? ghiChu,
+  }) async {
+    if (membership.id == null) {
+      throw Exception('Không tìm thấy thông tin tham gia lớp');
+    }
+    if (mienGiamPhanTram != null &&
+        (mienGiamPhanTram < 0 || mienGiamPhanTram > 100)) {
+      throw Exception('Miễn giảm phải từ 0 đến 100%');
+    }
+
+    var updated = membership.copyWith(
+      mienGiamPhanTram: mienGiamPhanTram ?? membership.mienGiamPhanTram,
+      ghiChu: ghiChu ?? membership.ghiChu,
+      updatedAt: DateTime.now(),
+    );
+
+    if (joinDate != null) {
+      final newDateStr = DateFormat('yyyy-MM-dd').format(joinDate);
+      if (newDateStr != membership.tuNgay) {
+        await changeJoinDate(membership: membership, joinDate: joinDate);
+        updated = updated.copyWith(tuNgay: newDateStr);
+      }
+    }
 
     await _repository.update(updated);
   }

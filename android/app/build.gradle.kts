@@ -1,8 +1,24 @@
+import java.util.Base64
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// Restore the exact user-supplied icon before Android merges resources.
+val iconSource = layout.projectDirectory.file("icon/teacher_notebook.webp.base64")
+val iconOutput = layout.projectDirectory.file("src/main/res/drawable-nodpi/teacher_notebook.webp")
+val generateTeacherNotebookIcon = tasks.register("generateTeacherNotebookIcon") {
+    inputs.file(iconSource)
+    outputs.file(iconOutput)
+    doLast {
+        val image = Base64.getMimeDecoder().decode(iconSource.asFile.readText())
+        iconOutput.asFile.parentFile.mkdirs()
+        iconOutput.asFile.writeBytes(image)
+    }
+}
+tasks.named("preBuild").configure { dependsOn(generateTeacherNotebookIcon) }
 
 android {
     namespace = "com.example.tuition2027"
@@ -10,6 +26,7 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -22,7 +39,7 @@ android {
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionName = "2.6" // User-facing Android version; pubspec uses semantic 2.6.0.
     }
 
     buildTypes {
@@ -32,6 +49,10 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 kotlin {

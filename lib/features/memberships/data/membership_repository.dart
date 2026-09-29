@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+
 import '../domain/membership.dart';
 
 class MembershipRepository {
@@ -10,6 +11,78 @@ class MembershipRepository {
     return await _db.insert('tham_gia_lop', membership.toMap());
   }
 
+  /// Validates the whole selection before inserting, so a failed enrollment
+  /// never leaves only some students in the class.
+  Future<void> createBatch(List<ClassMembership> memberships) async {
+    if (memberships.isEmpty) return;
+    await _db.transaction((txn) async {
+      final first = memberships.first;
+      final classRows = await txn.query(
+        'lop',
+        columns: ['si_so_toi_da', 'da_luu_tru'],
+        where: 'id = ?',
+        whereArgs: [first.idLop],
+        limit: 1,
+      );
+      if (classRows.isEmpty || classRows.first['da_luu_tru'] == 1) {
+        throw Exception('Lớp không tồn tại hoặc đã ngừng hoạt động');
+      }
+      final capacity = classRows.first['si_so_toi_da'] as int?;
+      if (capacity != null) {
+        final count =
+            Sqflite.firstIntValue(
+              await txn.rawQuery(
+                'SELECT COUNT(DISTINCT id_hoc_sinh) FROM tham_gia_lop '
+                'WHERE id_lop = ? AND tu_ngay <= ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+                [first.idLop, first.tuNgay, first.tuNgay],
+              ),
+            ) ??
+            0;
+        if (count + memberships.length > capacity) {
+          throw Exception(
+            'Sĩ số tối đa $capacity; chỉ còn ${capacity - count} chỗ',
+          );
+        }
+      }
+      final ids = <int>{};
+      for (final membership in memberships) {
+        if (membership.idLop != first.idLop ||
+            membership.tuNgay != first.tuNgay ||
+            !ids.add(membership.idHocSinh)) {
+          throw Exception('Danh sách học sinh không hợp lệ hoặc bị trùng');
+        }
+        final student = await txn.query(
+          'hoc_sinh',
+          columns: ['da_luu_tru'],
+          where: 'id = ?',
+          whereArgs: [membership.idHocSinh],
+          limit: 1,
+        );
+        if (student.isEmpty || student.first['da_luu_tru'] == 1) {
+          throw Exception(
+            'Học sinh #${membership.idHocSinh} không còn hoạt động',
+          );
+        }
+        final existing = await txn.query(
+          'tham_gia_lop',
+          columns: ['id'],
+          where:
+              'id_hoc_sinh = ? AND id_lop = ? AND (den_ngay IS NULL OR den_ngay >= ?)',
+          whereArgs: [membership.idHocSinh, first.idLop, first.tuNgay],
+          limit: 1,
+        );
+        if (existing.isNotEmpty) {
+          throw Exception(
+            'Học sinh #${membership.idHocSinh} đã tham gia lớp trong khoảng thời gian này',
+          );
+        }
+      }
+      for (final membership in memberships) {
+        await txn.insert('tham_gia_lop', membership.toMap());
+      }
+    });
+  }
+
   Future<int> update(ClassMembership membership) async {
     return await _db.update(
       'tham_gia_lop',
@@ -17,6 +90,85 @@ class MembershipRepository {
       where: 'id = ?',
       whereArgs: [membership.id],
     );
+  }
+
+  Future<bool> hasFinalizedInvoiceSince(ClassMembership membership) async {
+    final rows = await _db.query(
+      'hoc_phi_thang',
+      columns: ['id'],
+      where:
+          'id_hoc_sinh = ? AND id_lop = ? AND thang >= ? AND trang_thai != ?',
+      whereArgs: [
+        membership.idHocSinh,
+        membership.idLop,
+        membership.tuNgay.substring(0, 7),
+        'NHAP',
+      ],
+      limit: 1,
+    );
+    return rows.isNotEmpty;
+  }
+
+  Future<void> changeJoinDate(
+    ClassMembership membership,
+    String newDate,
+  ) async {
+    await _db.transaction((txn) async {
+      final recorded =
+          Sqflite.firstIntValue(
+            await txn.rawQuery(
+              'SELECT COUNT(*) FROM diem_danh d JOIN buoi_hoc b ON b.id = d.id_buoi_hoc '
+              'WHERE d.id_hoc_sinh = ? AND b.id_lop = ? AND b.ngay >= ? AND b.ngay < ?',
+              [
+                membership.idHocSinh,
+                membership.idLop,
+                newDate.compareTo(membership.tuNgay) < 0
+                    ? newDate
+                    : membership.tuNgay,
+                newDate.compareTo(membership.tuNgay) > 0
+                    ? newDate
+                    : membership.tuNgay,
+              ],
+            ),
+          ) ??
+          0;
+      if (recorded > 0) {
+        throw Exception(
+          'Đã có điểm danh trong khoảng ngày bỏ đi; hãy xử lý điểm danh trước',
+        );
+      }
+      final invoices =
+          Sqflite.firstIntValue(
+            await txn.rawQuery(
+              'SELECT COUNT(*) FROM hoc_phi_thang WHERE id_hoc_sinh = ? AND id_lop = ? '
+              'AND thang >= ? AND thang <= ?',
+              [
+                membership.idHocSinh,
+                membership.idLop,
+                (newDate.compareTo(membership.tuNgay) < 0
+                        ? newDate
+                        : membership.tuNgay)
+                    .substring(0, 7),
+                (newDate.compareTo(membership.tuNgay) > 0
+                        ? newDate
+                        : membership.tuNgay)
+                    .substring(0, 7),
+              ],
+            ),
+          ) ??
+          0;
+      if (invoices > 0) {
+        throw Exception(
+          'Khoảng ngày thay đổi đã có hóa đơn học phí; hãy xử lý hóa đơn trước',
+        );
+      }
+      await txn.update(
+        'tham_gia_lop',
+        {'tu_ngay': newDate, 'updated_at': DateTime.now().toIso8601String()},
+        where: 'id = ?',
+        whereArgs: [membership.id],
+      );
+    });
   }
 
   Future<List<ClassMembership>> getByStudent(int studentId) async {

@@ -221,7 +221,9 @@ void main() {
             'id_buoi_hoc': sId,
             'id_hoc_sinh': studentId,
             'id_lop_goc': classId,
-            'trang_thai': i == 1 ? 'CO_MAT' : (i == 2 ? 'TRE' : 'NGHI_KHONG_PHEP'),
+            'trang_thai': i == 1
+                ? 'CO_MAT'
+                : (i == 2 ? 'TRE' : 'NGHI_KHONG_PHEP'),
             'created_at': nowStr,
             'updated_at': nowStr,
           });
@@ -240,168 +242,188 @@ void main() {
       },
     );
 
-    test('Class overview calculates overview with single roster call per candidate session', () async {
-      final nowStr = DateTime.now().toIso8601String();
-      final classId = await db.insert('lop', {
-        'ten_lop': 'Physics 12',
-        'da_luu_tru': 0,
-        'created_at': nowStr,
-        'updated_at': nowStr,
-      });
-
-      for (int w = 1; w <= 7; w++) {
-        await db.insert('lich_hoc', {
-          'id_lop': classId,
-          'thu_trong_tuan': w,
-          'gio_bat_dau': '08:00',
-          'gio_ket_thuc': '09:30',
-          'hieu_luc_tu': '2026-01-01',
+    test(
+      'Class overview calculates overview with single roster call per candidate session',
+      () async {
+        final nowStr = DateTime.now().toIso8601String();
+        final classId = await db.insert('lop', {
+          'ten_lop': 'Physics 12',
+          'da_luu_tru': 0,
           'created_at': nowStr,
           'updated_at': nowStr,
         });
-      }
 
-      await policyService.createPolicy(
-        classId: classId,
-        effectiveFrom: '2026-09-01',
-        feePerSession: 150000,
-        standardSessionsPerMonth: 4,
-      );
+        for (int w = 1; w <= 7; w++) {
+          await db.insert('lich_hoc', {
+            'id_lop': classId,
+            'thu_trong_tuan': w,
+            'gio_bat_dau': '08:00',
+            'gio_ket_thuc': '09:30',
+            'hieu_luc_tu': '2026-01-01',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        }
 
-      final s1 = await db.insert('hoc_sinh', {
-        'ho_ten': 'S1',
-        'sdt_phu_huynh': '0123456789',
-        'zalo_link_status': 'CHUA_LIEN_KET',
-        'da_luu_tru': 0,
-        'created_at': nowStr,
-        'updated_at': nowStr,
-      });
-      final s2 = await db.insert('hoc_sinh', {
-        'ho_ten': 'S2',
-        'sdt_phu_huynh': '0987654321',
-        'zalo_link_status': 'CHUA_LIEN_KET',
-        'da_luu_tru': 0,
-        'created_at': nowStr,
-        'updated_at': nowStr,
-      });
+        await policyService.createPolicy(
+          classId: classId,
+          effectiveFrom: '2026-09-01',
+          feePerSession: 150000,
+          standardSessionsPerMonth: 4,
+        );
 
-      await membershipService.enrollStudent(
-        studentId: s1,
-        classId: classId,
-        joinDate: DateTime.parse('2026-09-01'),
-      );
-      await membershipService.enrollStudent(
-        studentId: s2,
-        classId: classId,
-        joinDate: DateTime.parse('2026-09-01'),
-      );
-
-      final sessId = await db.insert('buoi_hoc', {
-        'id_lop': classId,
-        'id_lich_hoc': 6,
-        'ngay': '2026-09-05',
-        'gio_bat_dau': '08:00',
-        'gio_ket_thuc': '09:30',
-        'loai': 'CHINH',
-        'trang_thai': 'DA_HOC',
-        'created_at': nowStr,
-        'updated_at': nowStr,
-      });
-
-      await db.insert('diem_danh', {'id_buoi_hoc': sessId, 'id_hoc_sinh': s1, 'id_lop_goc': classId, 'trang_thai': 'CO_MAT', 'created_at': nowStr, 'updated_at': nowStr});
-      await db.insert('diem_danh', {'id_buoi_hoc': sessId, 'id_hoc_sinh': s2, 'id_lop_goc': classId, 'trang_thai': 'CO_MAT', 'created_at': nowStr, 'updated_at': nowStr});
-
-      final overview = await overviewService.getOverview(classId, '2026-09');
-      expect(overview.studentRows.length, 2);
-    });
-
-    testWidgets('ClassTuitionTab renders 3 filter segments (Tạm tính, Còn nợ, Đã nộp)', (tester) async {
-      final nowStr = DateTime.now().toIso8601String();
-      final classId = await db.insert('lop', {
-        'ten_lop': 'Chemistry 11',
-        'da_luu_tru': 0,
-        'created_at': nowStr,
-        'updated_at': nowStr,
-      });
-
-      for (int w = 1; w <= 7; w++) {
-        await db.insert('lich_hoc', {
-          'id_lop': classId,
-          'thu_trong_tuan': w,
-          'gio_bat_dau': '08:00',
-          'gio_ket_thuc': '09:30',
-          'hieu_luc_tu': '2026-01-01',
+        final s1 = await db.insert('hoc_sinh', {
+          'ho_ten': 'S1',
+          'sdt_phu_huynh': '0123456789',
+          'zalo_link_status': 'CHUA_LIEN_KET',
+          'da_luu_tru': 0,
           'created_at': nowStr,
           'updated_at': nowStr,
         });
-      }
+        final s2 = await db.insert('hoc_sinh', {
+          'ho_ten': 'S2',
+          'sdt_phu_huynh': '0987654321',
+          'zalo_link_status': 'CHUA_LIEN_KET',
+          'da_luu_tru': 0,
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
 
-      final studentId = await db.insert('hoc_sinh', {
-        'ho_ten': 'Phạm Hoàng Ân',
-        'sdt_phu_huynh': '0912345678',
-        'zalo_link_status': 'CHUA_LIEN_KET',
-        'da_luu_tru': 0,
-        'created_at': nowStr,
-        'updated_at': nowStr,
-      });
+        await membershipService.enrollStudent(
+          studentId: s1,
+          classId: classId,
+          joinDate: DateTime.parse('2026-09-01'),
+        );
+        await membershipService.enrollStudent(
+          studentId: s2,
+          classId: classId,
+          joinDate: DateTime.parse('2026-09-01'),
+        );
 
-      await membershipService.enrollStudent(
-        studentId: studentId,
-        classId: classId,
-        joinDate: DateTime.parse('2026-09-01'),
-      );
+        final sessId = await db.insert('buoi_hoc', {
+          'id_lop': classId,
+          'id_lich_hoc': 6,
+          'ngay': '2026-09-05',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
 
-      await policyService.createPolicy(
-        classId: classId,
-        effectiveFrom: '2026-09-01',
-        feePerSession: 100000,
-        standardSessionsPerMonth: 4,
-      );
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': sessId,
+          'id_hoc_sinh': s1,
+          'id_lop_goc': classId,
+          'trang_thai': 'CO_MAT',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': sessId,
+          'id_hoc_sinh': s2,
+          'id_lop_goc': classId,
+          'trang_thai': 'CO_MAT',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
 
-      final sessId = await db.insert('buoi_hoc', {
-        'id_lop': classId,
-        'id_lich_hoc': 6,
-        'ngay': '2026-09-05',
-        'gio_bat_dau': '08:00',
-        'gio_ket_thuc': '09:30',
-        'loai': 'CHINH',
-        'trang_thai': 'DA_HOC',
-        'created_at': nowStr,
-        'updated_at': nowStr,
-      });
+        final overview = await overviewService.getOverview(classId, '2026-09');
+        expect(overview.studentRows.length, 2);
+      },
+    );
 
-      await db.insert('diem_danh', {
-        'id_buoi_hoc': sessId,
-        'id_hoc_sinh': studentId,
-        'id_lop_goc': classId,
-        'trang_thai': 'CO_MAT',
-        'created_at': nowStr,
-        'updated_at': nowStr,
-      });
+    testWidgets(
+      'ClassTuitionTab renders 3 filter segments (Tạm tính, Chưa thanh toán, Đã nộp)',
+      (tester) async {
+        final nowStr = DateTime.now().toIso8601String();
+        final classId = await db.insert('lop', {
+          'ten_lop': 'Chemistry 11',
+          'da_luu_tru': 0,
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
 
-      final container = ProviderContainer(
-        overrides: [
-          classMonthTuitionOverviewServiceProvider.overrideWith((ref) async => overviewService),
-        ],
-      );
+        for (int w = 1; w <= 7; w++) {
+          await db.insert('lich_hoc', {
+            'id_lop': classId,
+            'thu_trong_tuan': w,
+            'gio_bat_dau': '08:00',
+            'gio_ket_thuc': '09:30',
+            'hieu_luc_tu': '2026-01-01',
+            'created_at': nowStr,
+            'updated_at': nowStr,
+          });
+        }
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            home: Scaffold(
-              body: ClassTuitionTab(classId: classId),
+        final studentId = await db.insert('hoc_sinh', {
+          'ho_ten': 'Phạm Hoàng Ân',
+          'sdt_phu_huynh': '0912345678',
+          'zalo_link_status': 'CHUA_LIEN_KET',
+          'da_luu_tru': 0,
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await membershipService.enrollStudent(
+          studentId: studentId,
+          classId: classId,
+          joinDate: DateTime.parse('2026-09-01'),
+        );
+
+        await policyService.createPolicy(
+          classId: classId,
+          effectiveFrom: '2026-09-01',
+          feePerSession: 100000,
+          standardSessionsPerMonth: 4,
+        );
+
+        final sessId = await db.insert('buoi_hoc', {
+          'id_lop': classId,
+          'id_lich_hoc': 6,
+          'ngay': '2026-09-05',
+          'gio_bat_dau': '08:00',
+          'gio_ket_thuc': '09:30',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': sessId,
+          'id_hoc_sinh': studentId,
+          'id_lop_goc': classId,
+          'trang_thai': 'CO_MAT',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+
+        final container = ProviderContainer(
+          overrides: [
+            classMonthTuitionOverviewServiceProvider.overrideWith(
+              (ref) async => overviewService,
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              home: Scaffold(body: ClassTuitionTab(classId: classId)),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      expect(find.textContaining('Tạm tính'), findsOneWidget);
-      expect(find.textContaining('Còn nợ'), findsOneWidget);
-      expect(find.textContaining('Đã nộp'), findsOneWidget);
-      expect(find.text('Phạm Hoàng Ân'), findsOneWidget);
-    });
+        expect(find.textContaining('Tạm tính'), findsOneWidget);
+        expect(find.textContaining('Chưa thanh toán'), findsOneWidget);
+        expect(find.textContaining('Đã nộp'), findsOneWidget);
+        expect(find.text('Phạm Hoàng Ân'), findsOneWidget);
+      },
+    );
   });
 }

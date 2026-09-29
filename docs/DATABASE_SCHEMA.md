@@ -77,6 +77,8 @@ Must not contain:
 
 ## 4. `lop`
 
+School name suggestions are stored in `truong_hoc(id, ten UNIQUE COLLATE NOCASE, created_at)` from schema v16. Existing nonempty `hoc_sinh.truong_dang_hoc` values are copied into this catalog on upgrade. The student's school remains a text snapshot so removing a suggestion never erases historical student data.
+
 Purpose: class identity/metadata.
 
 Suggested columns:
@@ -142,6 +144,7 @@ Suggested columns:
 - `so_buoi_chuan_thang INTEGER NOT NULL DEFAULT 12`
 - `hoc_phi_moi_buoi INTEGER NOT NULL DEFAULT 0`
 - `hoc_phi_thang_toi_da INTEGER NULL`
+- `quy_tac_nghi_co_phep TEXT NOT NULL DEFAULT 'buTruBuoiDu'` (v17: `buTruBuoiDu`, `tinhPhi`, `khongTinhPhi`; existing policies retain the old default)
 - `ghi_chu TEXT NULL`
 - `created_at TEXT NOT NULL`
 - `updated_at TEXT NOT NULL`

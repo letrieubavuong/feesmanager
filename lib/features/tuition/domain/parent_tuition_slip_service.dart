@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../../attendance/data/attendance_repository.dart';
 import '../../attendance/domain/attendance_record.dart';
 import '../../attendance/domain/attendance_service.dart';
@@ -113,6 +114,53 @@ class ParentTuitionSlipService {
         status: ParentTuitionSlipStatus.bankNotConfigured,
         errorMessage: 'Chưa thiết lập tài khoản nhận học phí',
         bank: bankSettings,
+      );
+    }
+
+    // A finalized invoice is the immutable billing source. Its payment slip
+    // must remain available even if the recurring schedule or policy changes.
+    final finalizedInvoice = await _invoiceService.getInvoice(
+      studentId,
+      classId,
+      month,
+    );
+    if (finalizedInvoice != null &&
+        finalizedInvoice.trangThai.isFinalizedSnapshot) {
+      final summary = await _paymentService.getPaymentSummary(
+        studentId,
+        classId,
+        month,
+      );
+      final amountDue = summary?.amountDue ?? finalizedInvoice.soTienPhaiThu;
+      final totalPaid = summary?.totalPaid ?? 0;
+      final remainingDebt = summary?.remainingDebt ?? (amountDue - totalPaid);
+      final transferContent = VietQrGenerator.formatTransferContent(
+        template: bankSettings.transferTemplate,
+        studentCode: studentId.toString(),
+        studentName: student.hoTen,
+        className: cls.tenLop,
+        month: month,
+      );
+      final qrPayload = remainingDebt > 0
+          ? VietQrGenerator.generateEmvCoPayload(
+              settings: bankSettings,
+              amount: remainingDebt,
+              transferContent: transferContent,
+            )
+          : '';
+      return ParentTuitionSlip(
+        studentId: studentId,
+        classId: classId,
+        month: month,
+        studentName: student.hoTen,
+        className: cls.tenLop,
+        status: ParentTuitionSlipStatus.ready,
+        amountDue: amountDue,
+        totalPaid: totalPaid,
+        remainingDebt: remainingDebt,
+        bank: bankSettings,
+        transferContent: transferContent,
+        qrPayload: qrPayload,
       );
     }
 
@@ -349,62 +397,8 @@ class ParentTuitionSlipService {
       }
     }
 
-    // 5. Finalized Invoice & Payment Status Check
-    final invoice = await _invoiceService.getInvoice(studentId, classId, month);
-    if (invoice == null || !invoice.trangThai.isFinalizedSnapshot) {
-      return ParentTuitionSlip(
-        studentId: studentId,
-        classId: classId,
-        month: month,
-        billingMonth: month,
-        reconciliationMonth: recMonth,
-        studentName: student.hoTen,
-        className: cls.tenLop,
-        status: ParentTuitionSlipStatus.noInvoiceFinalized,
-        errorMessage: 'Chưa chốt học phí tháng $month cho học sinh này',
-        projectedSessionCount: projectedSessionCount,
-        standardSessionLimit: standardSessionLimit,
-        projectedExtraCount: projectedExtraCount,
-        feePerSession: feePerSession,
-        monthlyMaxFee: monthlyMaxFee,
-        openingCreditBalance: openingCreditBalance,
-        presentCount: presentCount,
-        lateCount: lateCount,
-        excusedAbsenceCount: excusedAbsenceCount,
-        unexcusedAbsenceCount: unexcusedAbsenceCount,
-        makeupCompletedCount: makeupCompletedCount,
-        reconciliationAsOfDate: reconciliationAsOfDate,
-        bank: bankSettings,
-      );
-    }
-
-    final summary = await _paymentService.getPaymentSummary(
-      studentId,
-      classId,
-      month,
-    );
-
-    final amountDue = summary?.amountDue ?? invoice.soTienPhaiThu;
-    final totalPaid = summary?.totalPaid ?? 0;
-    final remainingDebt = summary?.remainingDebt ?? (amountDue - totalPaid);
-
-    // 6. Transfer Content & QR
-    final transferContent = VietQrGenerator.formatTransferContent(
-      template: bankSettings.transferTemplate,
-      studentCode: studentId.toString(),
-      studentName: student.hoTen,
-      className: cls.tenLop,
-      month: month,
-    );
-
-    final qrPayload = remainingDebt > 0
-        ? VietQrGenerator.generateEmvCoPayload(
-            settings: bankSettings,
-            amount: remainingDebt,
-            transferContent: transferContent,
-          )
-        : '';
-
+    // No finalized invoice: keep the projection for the in-app explanation,
+    // but never issue a payment QR from a provisional amount.
     return ParentTuitionSlip(
       studentId: studentId,
       classId: classId,
@@ -413,7 +407,8 @@ class ParentTuitionSlipService {
       reconciliationMonth: recMonth,
       studentName: student.hoTen,
       className: cls.tenLop,
-      status: ParentTuitionSlipStatus.ready,
+      status: ParentTuitionSlipStatus.noInvoiceFinalized,
+      errorMessage: 'Chưa chốt học phí tháng $month cho học sinh này',
       projectedSessionCount: projectedSessionCount,
       standardSessionLimit: standardSessionLimit,
       projectedExtraCount: projectedExtraCount,
@@ -426,12 +421,7 @@ class ParentTuitionSlipService {
       unexcusedAbsenceCount: unexcusedAbsenceCount,
       makeupCompletedCount: makeupCompletedCount,
       reconciliationAsOfDate: reconciliationAsOfDate,
-      amountDue: amountDue,
-      totalPaid: totalPaid,
-      remainingDebt: remainingDebt,
       bank: bankSettings,
-      transferContent: transferContent,
-      qrPayload: qrPayload,
     );
   }
 }

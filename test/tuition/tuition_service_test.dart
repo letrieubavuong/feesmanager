@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
@@ -159,6 +160,48 @@ void main() {
     tearDown(() async {
       await db.close();
     });
+
+    test(
+      'Excused absence fee follows effective policy and does not use credit',
+      () async {
+        await db.insert('buoi_hoc', {
+          'id': 1,
+          'id_lop': 1,
+          'id_lich_hoc': DateTime(2026, 9, 1).weekday,
+          'ngay': '2026-09-01',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': '2026-01-01T00:00:00.000',
+          'updated_at': '2026-01-01T00:00:00.000',
+        });
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 1,
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 1,
+          'trang_thai': 'NGHI_CO_PHEP',
+          'created_at': '2026-01-01T00:00:00.000',
+          'updated_at': '2026-01-01T00:00:00.000',
+        });
+
+        await db.update('chinh_sach_hoc_phi', {
+          'quy_tac_nghi_co_phep': 'tinhPhi',
+        });
+        final charged = await service.previewTuition(1, 1, '2026-09');
+        expect(charged.soBuoiTinhPhi, 1);
+        expect(charged.soTienPhaiThu, 45000); // 50,000 less 10% class discount
+        expect(charged.creditUsed, 0);
+
+        await db.update('chinh_sach_hoc_phi', {
+          'quy_tac_nghi_co_phep': 'khongTinhPhi',
+        });
+        final waived = await service.previewTuition(1, 1, '2026-09');
+        expect(waived.soBuoiTinhPhi, 0);
+        expect(waived.soTienPhaiThu, 0);
+        expect(waived.creditUsed, 0);
+      },
+    );
 
     test('Standard 12 sessions attended preview', () async {
       for (int i = 1; i <= 12; i++) {

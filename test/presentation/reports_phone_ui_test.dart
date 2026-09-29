@@ -115,7 +115,7 @@ void main() {
         expect(find.text('90.0%'), findsAtLeast(1)); // 36/40 = 90%
         expect(find.text('Học phí đã chốt'), findsAtLeast(1));
         expect(find.text('Thực nhận'), findsAtLeast(1));
-        expect(find.text('Còn nợ'), findsAtLeast(1));
+        expect(find.text('Chưa thanh toán'), findsAtLeast(1));
 
         // Verify Structured Sections
         expect(find.textContaining('A. ĐIỂM DANH'), findsOneWidget);

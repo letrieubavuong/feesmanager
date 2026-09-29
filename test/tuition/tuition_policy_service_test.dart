@@ -81,6 +81,36 @@ void main() {
     });
 
     test(
+      'Historical policy fills July and August without changing September',
+      () async {
+        final september = await service.createPolicy(
+          classId: 1,
+          effectiveFrom: '2026-09-01',
+          feePerSession: 60000,
+        );
+        final july = await service.createPolicy(
+          classId: 1,
+          effectiveFrom: '2026-07-01',
+          feePerSession: 50000,
+        );
+
+        expect(july.hieuLucDen, '2026-08-31');
+        expect(
+          (await service.getEffectivePolicyForDateStr(1, '2026-07-20'))?.id,
+          july.id,
+        );
+        expect(
+          (await service.getEffectivePolicyForDateStr(1, '2026-08-20'))?.id,
+          july.id,
+        );
+        expect(
+          (await service.getEffectivePolicyForDateStr(1, '2026-09-20'))?.id,
+          september.id,
+        );
+      },
+    );
+
+    test(
       'Creating a new open policy automatically closes previous open policy',
       () async {
         final p1 = await service.createPolicy(

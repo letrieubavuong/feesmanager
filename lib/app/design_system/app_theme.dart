@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'app_palettes.dart';
 import 'app_radius.dart';
 import 'app_semantic_colors.dart';
@@ -100,6 +101,12 @@ class AppTheme {
         backgroundColor: colorScheme.surface,
         foregroundColor: colorScheme.onSurface,
         iconTheme: IconThemeData(color: colorScheme.onSurface),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: isDark ? AppColors.surface : colorScheme.surface,
+        modalBackgroundColor: isDark ? AppColors.surface : colorScheme.surface,
+        dragHandleColor: isDark ? AppColors.textMuted : colorScheme.outline,
+        surfaceTintColor: Colors.transparent,
       ),
       cardTheme: CardThemeData(
         elevation: 1,

@@ -53,20 +53,19 @@ class _GlobalTuitionPageState extends ConsumerState<GlobalTuitionPage> {
             );
           }
 
-          _selectedClassId ??= classes.first.id;
+          if (!classes.any((c) => c.id == _selectedClassId)) {
+            _selectedClassId = classes.first.id;
+          }
 
           return Column(
             children: [
-              AppSectionCard(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 4,
-                ),
-                child: Row(
-                  children: [
-                    const Text('🎓 ', style: TextStyle(fontSize: 16)),
-                    Expanded(
+              if (_selectedClassId != null)
+                Expanded(
+                  child: ClassTuitionTab(
+                    classId: _selectedClassId!,
+                    classSelector: AppSectionCard(
+                      margin: EdgeInsets.zero,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<int>(
                           value: _selectedClassId,
@@ -80,7 +79,11 @@ class _GlobalTuitionPageState extends ConsumerState<GlobalTuitionPage> {
                           items: classes.map((ClassEntity c) {
                             return DropdownMenuItem<int>(
                               value: c.id,
-                              child: Text('Lớp ${c.tenLop}'),
+                              child: Text(
+                                'Lớp ${c.tenLop}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             );
                           }).toList(),
                           onChanged: (val) {
@@ -93,11 +96,8 @@ class _GlobalTuitionPageState extends ConsumerState<GlobalTuitionPage> {
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-              if (_selectedClassId != null)
-                Expanded(child: ClassTuitionTab(classId: _selectedClassId!)),
             ],
           );
         },

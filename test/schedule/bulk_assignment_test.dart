@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -129,6 +130,47 @@ void main() {
   });
 
   group('Bulk Student Shift Assignment Domain Tests', () {
+    test(
+      'Ngày phân ca trước ngày nhập học tự bắt đầu ở ngày nhập học',
+      () async {
+        await db.update(
+          'tham_gia_lop',
+          {'tu_ngay': '2026-09-20'},
+          where: 'id_hoc_sinh = ?',
+          whereArgs: [21],
+        );
+        final candidates = await scheduleService.getBulkAssignmentCandidates(
+          classId: 1,
+          scheduleId: 100,
+          startDate: DateTime(2026, 9, 15),
+        );
+        expect(candidates.any((student) => student.id == 21), isTrue);
+
+        final preview = await scheduleService.previewBulkAssignment(
+          studentIds: [21],
+          classId: 1,
+          scheduleId: 100,
+          startDate: DateTime(2026, 9, 15),
+        );
+        expect(preview.readyStudents.map((student) => student.id), [21]);
+        expect(preview.warnings.single.message, contains('2026-09-20'));
+
+        final result = await scheduleService.assignStudentsBulk(
+          studentIds: [21],
+          classId: 1,
+          scheduleId: 100,
+          startDate: DateTime(2026, 9, 15),
+        );
+        expect(result.successCount, 1);
+        final assignment = await db.query(
+          'phan_ca_hoc_sinh',
+          where: 'id_hoc_sinh = ?',
+          whereArgs: [21],
+        );
+        expect(assignment.single['tu_ngay'], '2026-09-20');
+      },
+    );
+
     test(
       'getBulkAssignmentCandidates excludes already assigned 20 students',
       () async {
