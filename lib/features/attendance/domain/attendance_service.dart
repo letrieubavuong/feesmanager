@@ -316,9 +316,6 @@ class AttendanceService {
     required String reason,
   }) async {
     final trimmedReason = reason.trim();
-    if (trimmedReason.isEmpty) {
-      throw Exception('Vui lòng nhập lý do chỉnh sửa điểm danh.');
-    }
 
     final sheet = await getAttendanceForSession(sessionId);
 
@@ -455,7 +452,9 @@ class AttendanceService {
           idHocSinh: studentId,
           trangThaiCu: oldStatus?.name,
           trangThaiMoi: newStatus.name,
-          lyDo: trimmedReason,
+          lyDo: trimmedReason.isEmpty
+              ? 'Điều chỉnh trạng thái điểm danh'
+              : trimmedReason,
           changedAt: now,
         );
         await txn.insert('diem_danh_chinh_sua', audit.toMap());
