@@ -103,6 +103,8 @@ void main() {
               .any((field) => field.controller?.text == '600000'),
           isTrue,
         );
+        await tester.enterText(find.byType(TextFormField).first, '60000');
+        await tester.pumpAndSettle();
         await tester.ensureVisible(find.byKey(UiKeys.tuitionPolicySave));
         await tester.tap(find.byKey(UiKeys.tuitionPolicySave));
         await tester.pumpAndSettle();
