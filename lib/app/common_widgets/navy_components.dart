@@ -120,7 +120,7 @@ class AppStatusChip extends StatelessWidget {
   }
 }
 
-/// Metric Card for KPI summaries (Phải thu, Đã thu, Còn nợ, etc.)
+/// Metric Card for KPI summaries (Phải thu, Đã thu, Chưa thanh toán, etc.)
 class AppMetricCard extends StatelessWidget {
   final String title;
   final String value;
