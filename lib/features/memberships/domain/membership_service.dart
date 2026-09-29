@@ -123,8 +123,9 @@ class MembershipService {
     required ClassMembership membership,
     required DateTime joinDate,
   }) async {
-    if (membership.id == null)
+    if (membership.id == null) {
       throw Exception('Không tìm thấy lần tham gia lớp');
+    }
     final newDate = DateFormat('yyyy-MM-dd').format(joinDate);
     if (newDate == membership.tuNgay) return;
     if (membership.denNgay != null &&
