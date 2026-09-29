@@ -676,11 +676,12 @@ class StudentDetailPage extends ConsumerWidget {
                               );
                             }
                           } catch (error) {
-                            if (context.mounted)
+                            if (context.mounted) {
                               AppFeedback.showErrorSnackBar(
                                 context,
                                 error.toString().replaceAll('Exception: ', ''),
                               );
+                            }
                           } finally {
                             controller.dispose();
                           }
