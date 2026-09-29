@@ -221,106 +221,112 @@ void main() {
       expect((await invoiceService.getInvoice(1, 1, '2026-09'))!.id, first.id);
     });
 
-    test('Chốt cả lớp theo danh sách sẵn sàng, không kéo học sinh thiếu điểm danh vào', () async {
-      await db.execute('''
+    test(
+      'Chốt cả lớp theo danh sách sẵn sàng, không kéo học sinh thiếu điểm danh vào',
+      () async {
+        await db.execute('''
         INSERT INTO hoc_sinh (id, ho_ten, created_at, updated_at)
         VALUES (2, 'Student 2', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
       ''');
-      await membershipService.enrollStudent(
-        studentId: 2,
-        classId: 1,
-        joinDate: DateTime.parse('2026-01-01'),
-      );
-      await db.insert('buoi_hoc', {
-        'id': 101,
-        'id_lop': 1,
-        'id_lich_hoc': 2,
-        'ngay': '2026-09-01',
-        'gio_bat_dau': '17:30',
-        'gio_ket_thuc': '19:00',
-        'loai': 'CHINH',
-        'trang_thai': 'DA_HOC',
-        'created_at': '2026-01-01T00:00:00.000',
-        'updated_at': '2026-01-01T00:00:00.000',
-      });
-      await db.insert('diem_danh', {
-        'id_buoi_hoc': 101,
-        'id_hoc_sinh': 1,
-        'id_lop_goc': 1,
-        'trang_thai': 'CO_MAT',
-        'created_at': '2026-01-01T00:00:00.000',
-        'updated_at': '2026-01-01T00:00:00.000',
-      });
-      final result = await invoiceService.finalizeClassInvoices(
-        1,
-        '2026-09',
-        studentIdsToFinalize: {1},
-      );
-      expect(result.map((i) => i.idHocSinh), [1]);
-      expect(await invoiceService.getInvoice(2, 1, '2026-09'), isNull);
-    });
+        await membershipService.enrollStudent(
+          studentId: 2,
+          classId: 1,
+          joinDate: DateTime.parse('2026-01-01'),
+        );
+        await db.insert('buoi_hoc', {
+          'id': 101,
+          'id_lop': 1,
+          'id_lich_hoc': 2,
+          'ngay': '2026-09-01',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'DA_HOC',
+          'created_at': '2026-01-01T00:00:00.000',
+          'updated_at': '2026-01-01T00:00:00.000',
+        });
+        await db.insert('diem_danh', {
+          'id_buoi_hoc': 101,
+          'id_hoc_sinh': 1,
+          'id_lop_goc': 1,
+          'trang_thai': 'CO_MAT',
+          'created_at': '2026-01-01T00:00:00.000',
+          'updated_at': '2026-01-01T00:00:00.000',
+        });
+        final result = await invoiceService.finalizeClassInvoices(
+          1,
+          '2026-09',
+          studentIdsToFinalize: {1},
+        );
+        expect(result.map((i) => i.idHocSinh), [1]);
+        expect(await invoiceService.getInvoice(2, 1, '2026-09'), isNull);
+      },
+    );
 
-    test('Finalize student invoice creates snapshot and consumes credit atomically', () async {
-      // Add +1 opening credit
-      await creditRepo.addLedgerEntry(
-        CreditLedgerEntry(
-          idHocSinh: 1,
-          idLop: 1,
-          idBuoiHoc: null,
-          ngayHieuLuc: '2026-08-15',
-          delta: 1,
-          lyDo: CreditLedgerReason.MIGRATION,
-          ghiChu: 'Opening',
-          createdAt: DateTime.now(),
-        ),
-      );
+    test(
+      'Finalize student invoice creates snapshot and consumes credit atomically',
+      () async {
+        // Add +1 opening credit
+        await creditRepo.addLedgerEntry(
+          CreditLedgerEntry(
+            idHocSinh: 1,
+            idLop: 1,
+            idBuoiHoc: null,
+            ngayHieuLuc: '2026-08-15',
+            delta: 1,
+            lyDo: CreditLedgerReason.MIGRATION,
+            ghiChu: 'Opening',
+            createdAt: DateTime.now(),
+          ),
+        );
 
-      // 1 CO_MAT, 1 NGHI_CO_PHEP
-      await db.execute('''
+        // 1 CO_MAT, 1 NGHI_CO_PHEP
+        await db.execute('''
         INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
         VALUES (10, 1, 2, '2026-09-01', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
       ''');
-      await db.execute('''
+        await db.execute('''
         INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
         VALUES (10, 1, 1, 'CO_MAT', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
       ''');
 
-      await db.execute('''
+        await db.execute('''
         INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
         VALUES (11, 1, 3, '2026-09-02', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
       ''');
-      await db.execute('''
+        await db.execute('''
         INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
         VALUES (11, 1, 1, 'NGHI_CO_PHEP', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
       ''');
 
-      final invoice = await invoiceService.finalizeStudentInvoice(
-        1,
-        1,
-        '2026-09',
-      );
+        final invoice = await invoiceService.finalizeStudentInvoice(
+          1,
+          1,
+          '2026-09',
+        );
 
-      expect(invoice.trangThai, TuitionInvoiceStatus.DA_CHOT);
-      expect(invoice.soBuoiEligible, 2);
-      expect(invoice.soBuoiTinhPhi, 2);
-      expect(invoice.creditOpening, 1);
-      expect(invoice.creditUsed, 1);
-      expect(invoice.creditClosing, 0);
-      expect(invoice.soTienPhaiThu, 100000);
+        expect(invoice.trangThai, TuitionInvoiceStatus.DA_CHOT);
+        expect(invoice.soBuoiEligible, 2);
+        expect(invoice.soBuoiTinhPhi, 2);
+        expect(invoice.creditOpening, 1);
+        expect(invoice.creditUsed, 1);
+        expect(invoice.creditClosing, 0);
+        expect(invoice.soTienPhaiThu, 100000);
 
-      // Check credit ledger row created for BU_TRU_NGHI_CO_PHEP
-      final ledger = await creditRepo.getLedgerForStudentAndClass(1, 1);
-      expect(ledger.length, 2);
-      expect(ledger.last.delta, -1);
-      expect(ledger.last.lyDo, CreditLedgerReason.BU_TRU_NGHI_CO_PHEP);
-      expect(ledger.last.idBuoiHoc, 11);
+        // Check credit ledger row created for BU_TRU_NGHI_CO_PHEP
+        final ledger = await creditRepo.getLedgerForStudentAndClass(1, 1);
+        expect(ledger.length, 2);
+        expect(ledger.last.delta, -1);
+        expect(ledger.last.lyDo, CreditLedgerReason.BU_TRU_NGHI_CO_PHEP);
+        expect(ledger.last.idBuoiHoc, 11);
 
-      // Re-finalizing throws exception
-      expect(
-        () => invoiceService.finalizeStudentInvoice(1, 1, '2026-09'),
-        throwsA(isA<Exception>()),
-      );
-    });
+        // Re-finalizing throws exception
+        expect(
+          () => invoiceService.finalizeStudentInvoice(1, 1, '2026-09'),
+          throwsA(isA<Exception>()),
+        );
+      },
+    );
 
     test('Re-finalization of DA_THANH_TOAN invoice is REJECTED', () async {
       await tuitionRepo.insertInvoice(
@@ -380,99 +386,105 @@ void main() {
       );
     });
 
-    test('Double-count credit finalization Case B: Pre-reconciled extra credit does not insert duplicate ledger row', () async {
-      for (int i = 1; i <= 13; i++) {
-        final dayStr = i < 10 ? '0$i' : '$i';
-        final dateStr = '2026-09-$dayStr';
-        final dt = DateTime.parse(dateStr);
-        await db.execute('''
+    test(
+      'Double-count credit finalization Case B: Pre-reconciled extra credit does not insert duplicate ledger row',
+      () async {
+        for (int i = 1; i <= 13; i++) {
+          final dayStr = i < 10 ? '0$i' : '$i';
+          final dateStr = '2026-09-$dayStr';
+          final dt = DateTime.parse(dateStr);
+          await db.execute('''
           INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
           VALUES ($i, 1, ${dt.weekday}, '$dateStr', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
         ''');
-        await db.execute('''
+          await db.execute('''
           INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
           VALUES ($i, 1, 1, 'CO_MAT', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
         ''');
-      }
+        }
 
-      // Pre-reconcile session 13 into buoi_du_ledger
-      await db.execute('''
+        // Pre-reconcile session 13 into buoi_du_ledger
+        await db.execute('''
         INSERT INTO buoi_du_ledger (id_hoc_sinh, id_lop, id_buoi_hoc, ngay_hieu_luc, delta, ly_do, ghi_chu, created_at)
         VALUES (1, 1, 13, '2026-09-13', 1, 'VUOT_SO_BUOI_CHUAN', 'Pre-reconciled credit', '2026-01-01T00:00:00.000')
       ''');
 
-      final invoice = await invoiceService.finalizeStudentInvoice(
-        1,
-        1,
-        '2026-09',
-      );
+        final invoice = await invoiceService.finalizeStudentInvoice(
+          1,
+          1,
+          '2026-09',
+        );
 
-      // Verify invoice snapshot
-      expect(invoice.creditEarned, 1);
-      expect(invoice.creditClosing, 1);
+        // Verify invoice snapshot
+        expect(invoice.creditEarned, 1);
+        expect(invoice.creditClosing, 1);
 
-      // Verify ledger has EXACTLY 1 row for VUOT_SO_BUOI_CHUAN (no duplicate row inserted during finalization)
-      final ledger = await creditRepo.getLedgerForStudentAndClass(1, 1);
-      expect(
-        ledger
-            .where((e) => e.lyDo == CreditLedgerReason.VUOT_SO_BUOI_CHUAN)
-            .length,
-        1,
-      );
-      expect(
-        await creditService.getBalanceAsOf(1, 1, '2026-09-30'),
-        invoice.creditClosing,
-      );
-    });
+        // Verify ledger has EXACTLY 1 row for VUOT_SO_BUOI_CHUAN (no duplicate row inserted during finalization)
+        final ledger = await creditRepo.getLedgerForStudentAndClass(1, 1);
+        expect(
+          ledger
+              .where((e) => e.lyDo == CreditLedgerReason.VUOT_SO_BUOI_CHUAN)
+              .length,
+          1,
+        );
+        expect(
+          await creditService.getBalanceAsOf(1, 1, '2026-09-30'),
+          invoice.creditClosing,
+        );
+      },
+    );
 
-    test('Phase 14B.1 Recalculate 0đ invoice without payments updates snapshot via TuitionService', () async {
-      await db.execute('''
+    test(
+      'Phase 14B.1 Recalculate 0đ invoice without payments updates snapshot via TuitionService',
+      () async {
+        await db.execute('''
         INSERT INTO phan_ca_hoc_sinh (id_hoc_sinh, id_lop, id_lich_hoc, tu_ngay, created_at, updated_at)
         VALUES (1, 1, 1, '2026-01-01', '2026-01-01', '2026-01-01')
       ''');
 
-      // Create zero invoice for Oct 2026
-      await db.execute('''
+        // Create zero invoice for Oct 2026
+        await db.execute('''
         INSERT INTO hoc_phi_thang (id, id_hoc_sinh, id_lop, thang, id_chinh_sach_hoc_phi, so_buoi_eligible, so_buoi_tinh_phi, credit_opening, credit_earned, credit_used, credit_closing, tong_truoc_giam, so_tien_phai_thu, trang_thai, created_at, updated_at)
         VALUES (99, 1, 1, '2026-10', 1, 0, 0, 0, 0, 0, 0, 0, 0, 'DA_CHOT', '2026-10-01', '2026-10-01')
       ''');
 
-      // Add 2 completed Monday sessions (2026-10-05 & 2026-10-12) after invoice was finalized
-      final dates = ['2026-10-05', '2026-10-12'];
-      for (int i = 0; i < dates.length; i++) {
-        final dateStr = dates[i];
-        final sessionId = 101 + i;
-        await db.execute('''
+        // Add 2 completed Monday sessions (2026-10-05 & 2026-10-12) after invoice was finalized
+        final dates = ['2026-10-05', '2026-10-12'];
+        for (int i = 0; i < dates.length; i++) {
+          final dateStr = dates[i];
+          final sessionId = 101 + i;
+          await db.execute('''
           INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
           VALUES ($sessionId, 1, 1, '$dateStr', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-10-01', '2026-10-01')
         ''');
-        await db.execute('''
+          await db.execute('''
           INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
           VALUES ($sessionId, 1, 1, 'CO_MAT', '2026-10-01', '2026-10-01')
         ''');
-      }
+        }
 
-      final recalc = await invoiceService
-          .recalculateFinalizedInvoiceWithoutPayments(
-            studentId: 1,
-            classId: 1,
-            month: '2026-10',
-            reason: 'Điểm danh bổ sung sau chốt',
-          );
+        final recalc = await invoiceService
+            .recalculateFinalizedInvoiceWithoutPayments(
+              studentId: 1,
+              classId: 1,
+              month: '2026-10',
+              reason: 'Điểm danh bổ sung sau chốt',
+            );
 
-      expect(recalc.soBuoiEligible, 2);
-      expect(recalc.soBuoiTinhPhi, 2);
-      expect(recalc.soTienPhaiThu, 100000);
+        expect(recalc.soBuoiEligible, 2);
+        expect(recalc.soBuoiTinhPhi, 2);
+        expect(recalc.soTienPhaiThu, 100000);
 
-      // Verify audit row created
-      final audit = await db.query(
-        'hoc_phi_chinh_sua',
-        where: 'id_hoc_phi_thang = ?',
-        whereArgs: [99],
-      );
-      expect(audit.length, 1);
-      expect(audit.first['reason'], 'Điểm danh bổ sung sau chốt');
-    });
+        // Verify audit row created
+        final audit = await db.query(
+          'hoc_phi_chinh_sua',
+          where: 'id_hoc_phi_thang = ?',
+          whereArgs: [99],
+        );
+        expect(audit.length, 1);
+        expect(audit.first['reason'], 'Điểm danh bổ sung sau chốt');
+      },
+    );
 
     test('Phase 14B.1 Recalculate invoice with payments is REJECTED', () async {
       await db.execute('''
