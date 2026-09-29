@@ -408,6 +408,13 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
 
         // SECTION B: HỌC PHÍ
         AppSectionHeader(title: l10n.reportsSectionFinancial),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: Text(
+            'Học phí và chưa thu theo tháng hóa đơn đã chốt; đã thu theo ngày nhận tiền trong kỳ lọc. Ba số này không dùng để lấy hiệu trực tiếp.',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
+        ),
         AppSectionCard(
           child: Row(
             children: [
@@ -420,14 +427,14 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
               ),
               Expanded(
                 child: _buildSubMetric(
-                  l10n.reportsFinancialPaid,
+                  'Đã thu trong kỳ',
                   currencyFormatter.format(summary.financial.totalPaid),
                   AppColors.success,
                 ),
               ),
               Expanded(
                 child: _buildSubMetric(
-                  l10n.reportsFinancialDebt,
+                  'Chưa thu của hóa đơn',
                   currencyFormatter.format(
                     summary.financial.totalOutstandingDebt,
                   ),
