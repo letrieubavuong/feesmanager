@@ -266,7 +266,8 @@ class _ClassFormBottomSheetState extends ConsumerState<ClassFormBottomSheet> {
       if (mounted) {
         setState(() => _isSaving = false);
         await WidgetsBinding.instance.endOfFrame;
-        if (mounted) Navigator.of(context).pop(isNewClass ? savedClassId : true);
+        if (mounted)
+          Navigator.of(context).pop(isNewClass ? savedClassId : true);
       }
     } catch (e) {
       if (mounted) {
