@@ -20,11 +20,14 @@ import '../../classes/domain/class_service.dart';
 import '../../classes/presentation/class_controller.dart';
 import '../../classes/presentation/class_detail_page.dart';
 import '../../memberships/presentation/enroll_student_bottom_sheet.dart';
+import '../../memberships/presentation/leave_class_bottom_sheet.dart';
+import '../../memberships/domain/membership_service.dart';
 import '../../payments/domain/payment_service.dart';
 import '../../payments/presentation/record_payment_bottom_sheet.dart';
 import '../../schedule_conflicts/domain/schedule_constraint.dart';
 import '../../schedule_conflicts/presentation/schedule_constraint_dialogs.dart';
 import '../../tuition/domain/tuition_service.dart';
+import '../../tuition/presentation/tuition_controller.dart';
 import '../domain/student.dart';
 import '../domain/student_detail_overview.dart';
 import '../domain/student_detail_overview_service.dart';
@@ -140,27 +143,27 @@ class StudentDetailPage extends ConsumerWidget {
                   // 1. STUDENT IDENTITY HEADER
                   _buildHeader(context, overview),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: AppSpacing.sectionGap),
 
                   // 2. 2 KPI CARDS
                   _buildKpiSection(context, l10n, overview),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.sectionGap),
 
                   // 3. 4 BUSINESS ACTIONS
                   _buildBusinessActions(context, ref, l10n, overview),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.sectionGap),
 
                   // 4. LỚP ĐANG THAM GIA
-                  _buildActiveClassesSection(context, l10n, overview),
+                  _buildActiveClassesSection(context, ref, l10n, overview),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.sectionGap),
 
                   // 5. HỌC PHÍ THÁNG
                   _buildTuitionSection(context, ref, l10n, overview),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.sectionGap),
 
                   // 6. ĐIỂM DANH GẦN ĐÂY & GIỜ BẬN
                   _buildAttendanceAndBusyTimesSection(
@@ -277,7 +280,10 @@ class StudentDetailPage extends ConsumerWidget {
                 ),
                 if (s.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
                   const SizedBox(height: 6),
-                  ParentContactActions(phone: s.sdtPhuHuynh),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ParentContactActions(phone: s.sdtPhuHuynh),
+                  ),
                 ],
                 if (overview.firstActiveMembershipDate != null) ...[
                   const SizedBox(height: 4),
@@ -527,6 +533,7 @@ class StudentDetailPage extends ConsumerWidget {
 
   Widget _buildActiveClassesSection(
     BuildContext context,
+    WidgetRef ref,
     AppLocalizations l10n,
     StudentDetailOverview overview,
   ) {
@@ -604,10 +611,95 @@ class StudentDetailPage extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const Icon(
-                      Icons.check_circle,
-                      color: AppColors.success,
-                      size: 18,
+                    PopupMenuButton<String>(
+                      tooltip: 'Tùy chọn tham gia lớp',
+                      onSelected: (action) async {
+                        if (action == 'leave') {
+                          await showModalBottomSheet<void>(
+                            context: context,
+                            isScrollControlled: true,
+                            builder: (_) => LeaveClassBottomSheet(
+                              studentId: overview.student.id!,
+                              classId: item.classEntity.id!,
+                              studentName: overview.student.hoTen,
+                            ),
+                          );
+                        } else if (action == 'discount') {
+                          final controller = TextEditingController(
+                            text: '${item.membership.mienGiamPhanTram}',
+                          );
+                          try {
+                            final percent = await showDialog<int>(
+                              context: context,
+                              builder: (dialogContext) => AlertDialog(
+                                title: Text(
+                                  'Giảm học phí · ${item.classEntity.tenLop}',
+                                ),
+                                content: TextField(
+                                  controller: controller,
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Phần trăm giảm',
+                                    suffixText: '%',
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(dialogContext),
+                                    child: const Text('Hủy'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(
+                                      dialogContext,
+                                      int.tryParse(controller.text),
+                                    ),
+                                    child: const Text('Lưu'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (percent != null) {
+                              final service = await ref.read(
+                                membershipServiceProvider.future,
+                              );
+                              await service.updateDiscount(
+                                item.membership,
+                                percent,
+                              );
+                              ref.invalidate(
+                                classMonthTuitionOverviewProvider((
+                                  item.classEntity.id!,
+                                  DateFormat('yyyy-MM').format(DateTime.now()),
+                                )),
+                              );
+                            }
+                          } catch (error) {
+                            if (context.mounted)
+                              AppFeedback.showErrorSnackBar(
+                                context,
+                                error.toString().replaceAll('Exception: ', ''),
+                              );
+                          } finally {
+                            controller.dispose();
+                          }
+                        }
+                        ref.invalidate(
+                          studentDetailOverviewProvider(overview.student.id!),
+                        );
+                      },
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'discount',
+                          child: Text(
+                            'Giảm học phí: ${item.membership.mienGiamPhanTram}%',
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'leave',
+                          child: Text('Cho nghỉ lớp'),
+                        ),
+                      ],
                     ),
                     const SizedBox(width: 6),
                     const Icon(
