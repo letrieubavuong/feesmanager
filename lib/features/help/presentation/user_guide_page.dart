@@ -309,7 +309,9 @@ const _englishSections = <_GuideSection>[
     Icons.tune_outlined,
     [
       'Open Classes, create a class and check its name and maximum size.',
-      'Open the class → Tuition to set the per-session tuition policy. Check the effective policy before finalizing tuition.',
+      'Open a class → Tuition in the quick actions to set its policy. If a rate exists, the form shows that rate and suggests the following month as the effective date.',
+      'Choose the effective month, enter the new rate, then review old and new rates in the confirmation sheet. Earlier months keep their previous rate.',
+      'A finalized invoice in the affected period or an overlapping policy blocks the change with an explanation on the form. Existing invoices and payments are never silently rewritten.',
       'Open Settings to choose a language and display mode.',
     ],
   ),
