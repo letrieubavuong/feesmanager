@@ -101,10 +101,10 @@ class AppTheme {
         foregroundColor: colorScheme.onSurface,
         iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: AppColors.surface,
-        modalBackgroundColor: AppColors.surface,
-        dragHandleColor: AppColors.textMuted,
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: isDark ? AppColors.surface : colorScheme.surface,
+        modalBackgroundColor: isDark ? AppColors.surface : colorScheme.surface,
+        dragHandleColor: isDark ? AppColors.textMuted : colorScheme.outline,
         surfaceTintColor: Colors.transparent,
       ),
       cardTheme: CardThemeData(
