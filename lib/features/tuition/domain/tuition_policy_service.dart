@@ -110,14 +110,16 @@ class TuitionPolicyService {
     // A historical gap may precede an existing policy. End it before the
     // next policy so later tuition keeps its configured rate.
     final existingPolicies = await _repo.getPoliciesForClass(classId);
-    final laterPolicies = existingPolicies
-        .where((p) => p.hieuLucTu.compareTo(effectiveFrom) > 0)
-        .toList()
-      ..sort((a, b) => a.hieuLucTu.compareTo(b.hieuLucTu));
+    final laterPolicies =
+        existingPolicies
+            .where((p) => p.hieuLucTu.compareTo(effectiveFrom) > 0)
+            .toList()
+          ..sort((a, b) => a.hieuLucTu.compareTo(b.hieuLucTu));
     if (laterPolicies.isNotEmpty) {
       final dayBeforeNext = DateFormat('yyyy-MM-dd').format(
-        DateTime.parse(laterPolicies.first.hieuLucTu)
-            .subtract(const Duration(days: 1)),
+        DateTime.parse(
+          laterPolicies.first.hieuLucTu,
+        ).subtract(const Duration(days: 1)),
       );
       if (effectiveTo == null) {
         effectiveTo = dayBeforeNext;
