@@ -249,7 +249,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
     AsyncValue<int> sizeAsync,
   ) {
     return AppSectionCard(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,7 +335,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
 
   Widget _buildDateSelector(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
       child: Wrap(
         alignment: WrapAlignment.spaceBetween,
         crossAxisAlignment: WrapCrossAlignment.center,
@@ -398,7 +398,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                 );
               }
               return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
                 itemCount: memberships.length,
                 itemBuilder: (context, index) {
                   final m = memberships[index];
@@ -497,7 +497,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
         ),
 
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           child: Row(
             children: [
               const Text(
@@ -929,7 +929,7 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           itemCount: memberships.length,
           itemBuilder: (context, index) {
             final m = memberships[index];
