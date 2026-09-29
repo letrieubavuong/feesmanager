@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/common_widgets/navy_components.dart';
+import '../../../app/common_widgets/parent_contact_actions.dart';
 import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../domain/roster_result.dart';
@@ -179,6 +180,10 @@ class SessionRosterView extends ConsumerWidget {
             Text(member.source == RosterInclusionSource.SINGLE_SHIFT_MEMBERSHIP
                 ? 'Tham gia lớp (1 ca)' : 'Phân ca trực tiếp',
               style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            if (member.student.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
+              const SizedBox(height: 6),
+              ParentContactActions(phone: member.student.sdtPhuHuynh),
+            ],
           ],
         )),
         if (member.student.daLuuTru)
