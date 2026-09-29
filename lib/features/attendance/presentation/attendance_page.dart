@@ -1038,8 +1038,9 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                       onTap: () {
                         ref
                             .read(
-                              attendanceControllerProvider(widget.sessionId)
-                                  .notifier,
+                              attendanceControllerProvider(
+                                widget.sessionId,
+                              ).notifier,
                             )
                             .updateLocalDraft(
                               student.id!,
@@ -1116,8 +1117,9 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                     onPressed: () {
                       ref
                           .read(
-                            attendanceControllerProvider(widget.sessionId)
-                                .notifier,
+                            attendanceControllerProvider(
+                              widget.sessionId,
+                            ).notifier,
                           )
                           .undoChanges();
                       setState(() {
@@ -1389,8 +1391,9 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                                             ),
                                           ),
                                           Text(
-                                            DateFormat('dd/MM/yyyy HH:mm')
-                                                .format(audit.changedAt),
+                                            DateFormat(
+                                              'dd/MM/yyyy HH:mm',
+                                            ).format(audit.changedAt),
                                             style: const TextStyle(
                                               color: AppColors.textMuted,
                                               fontSize: 11,
@@ -1625,7 +1628,8 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
         final confirm = await AppFeedback.showConfirmBottomSheet(
           context,
           title: 'Hoàn tất buổi học',
-          message: 'Sau khi hoàn tất, buổi học sẽ chuyển sang trạng thái ĐÃ HỌC. Hệ thống sẽ tự động cập nhật học phí tạm tính cho lớp.',
+          message:
+              'Sau khi hoàn tất, buổi học sẽ chuyển sang trạng thái ĐÃ HỌC. Hệ thống sẽ tự động cập nhật học phí tạm tính cho lớp.',
           confirmLabel: 'Xác nhận hoàn tất',
           isDestructive: false,
         );
