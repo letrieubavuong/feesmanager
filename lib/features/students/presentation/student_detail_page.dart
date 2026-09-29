@@ -610,8 +610,9 @@ class StudentDetailPage extends ConsumerWidget {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.success
-                                        .withValues(alpha: 0.15),
+                                    color: AppColors.success.withValues(
+                                      alpha: 0.15,
+                                    ),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
@@ -664,7 +665,9 @@ class StudentDetailPage extends ConsumerWidget {
                           );
                           if (success == true) {
                             ref.invalidate(
-                              studentDetailOverviewProvider(overview.student.id!),
+                              studentDetailOverviewProvider(
+                                overview.student.id!,
+                              ),
                             );
                             ref.invalidate(
                               classMonthTuitionOverviewProvider((
@@ -692,7 +695,11 @@ class StudentDetailPage extends ConsumerWidget {
                           value: 'leave',
                           child: Row(
                             children: [
-                              Icon(Icons.logout, size: 18, color: AppColors.error),
+                              Icon(
+                                Icons.logout,
+                                size: 18,
+                                color: AppColors.error,
+                              ),
                               SizedBox(width: 8),
                               Text(
                                 'Cho nghỉ lớp',
