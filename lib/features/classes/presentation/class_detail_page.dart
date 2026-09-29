@@ -1271,7 +1271,7 @@ Future<void> editMembershipJoinDate(
         : DateTime.parse(membership.denNgay!),
     helpText: 'Ngày tham gia lớp',
   );
-  if (selected == null || selected == current) return;
+  if (!context.mounted || selected == null || selected == current) return;
   try {
     final service = await ref.read(membershipServiceProvider.future);
     await service.changeJoinDate(membership: membership, joinDate: selected);
