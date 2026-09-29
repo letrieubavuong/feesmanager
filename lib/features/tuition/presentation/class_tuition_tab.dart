@@ -955,13 +955,6 @@ class _StudentTuitionCard extends ConsumerWidget {
           PopupMenuButton<String>(
             key: Key('tuition_student_menu_${student.id}'),
             tooltip: 'Tùy chọn học phí',
-            child: const SizedBox(
-              width: 48,
-              height: 48,
-              child: Center(
-                child: Icon(Icons.more_vert, color: AppColors.textSecondary),
-              ),
-            ),
             color: AppColors.surfaceHigh,
             onSelected: (value) async {
               if (value == 'finalize') {
@@ -1071,6 +1064,13 @@ class _StudentTuitionCard extends ConsumerWidget {
                   ),
                 ),
             ],
+            child: const SizedBox(
+              width: 48,
+              height: 48,
+              child: Center(
+                child: Icon(Icons.more_vert, color: AppColors.textSecondary),
+              ),
+            ),
           ),
         ],
       ),
