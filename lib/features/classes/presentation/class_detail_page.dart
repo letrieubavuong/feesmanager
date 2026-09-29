@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/navy_components.dart';
 import '../../../app/common_widgets/parent_contact_actions.dart';
@@ -114,88 +115,106 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
               Expanded(
                 child: DefaultTabController(
                   length: 7,
-                  child: Builder(builder: (tabContext) {
-                    final tabs = DefaultTabController.of(tabContext);
-                    return AnimatedBuilder(
-                      animation: tabs,
-                      builder: (context, _) => Stack(children: [
-                        Column(
-                    children: [
-                      Container(
-                        color: AppColors.surface,
-                        child: const TabBar(
-                          isScrollable: true,
-                          indicatorColor: AppColors.cyanAccent,
-                          labelColor: AppColors.cyanAccent,
-                          unselectedLabelColor: AppColors.textSecondary,
-                          labelStyle: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          unselectedLabelStyle: TextStyle(fontSize: 13),
-                          tabs: [
-                            Tab(text: 'Sĩ số'),
-                            Tab(text: 'Lịch học'),
-                            Tab(text: 'Phân ca'),
-                            Tab(text: 'Buổi học'),
-                            Tab(text: 'Điểm danh'),
-                            Tab(text: 'Học phí'),
-                            Tab(text: 'Lịch sử'),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: TabBarView(
+                  child: Builder(
+                    builder: (tabContext) {
+                      final tabs = DefaultTabController.of(tabContext);
+                      return AnimatedBuilder(
+                        animation: tabs,
+                        builder: (context, _) => Stack(
                           children: [
                             Column(
                               children: [
-                                _buildDateSelector(context),
+                                Container(
+                                  color: AppColors.surface,
+                                  child: const TabBar(
+                                    isScrollable: true,
+                                    indicatorColor: AppColors.cyanAccent,
+                                    labelColor: AppColors.cyanAccent,
+                                    unselectedLabelColor:
+                                        AppColors.textSecondary,
+                                    labelStyle: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    unselectedLabelStyle: TextStyle(
+                                      fontSize: 13,
+                                    ),
+                                    tabs: [
+                                      Tab(text: 'Sĩ số'),
+                                      Tab(text: 'Lịch học'),
+                                      Tab(text: 'Phân ca'),
+                                      Tab(text: 'Buổi học'),
+                                      Tab(text: 'Điểm danh'),
+                                      Tab(text: 'Học phí'),
+                                      Tab(text: 'Lịch sử'),
+                                    ],
+                                  ),
+                                ),
                                 Expanded(
-                                  child: _buildRosterTab(
-                                    context,
-                                    rosterAsync,
-                                    isStopped,
+                                  child: TabBarView(
+                                    children: [
+                                      Column(
+                                        children: [
+                                          _buildDateSelector(context),
+                                          Expanded(
+                                            child: _buildRosterTab(
+                                              context,
+                                              rosterAsync,
+                                              isStopped,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      ScheduleTab(
+                                        classId: widget.classId,
+                                        isArchived: isStopped,
+                                      ),
+                                      AssignmentTab(
+                                        classId: widget.classId,
+                                        isArchived: isStopped,
+                                      ),
+                                      SessionTab(
+                                        classId: widget.classId,
+                                        isArchived: isStopped,
+                                      ),
+                                      _buildAttendanceTab(context),
+                                      ClassTuitionTab(classId: widget.classId),
+                                      _buildHistoryTab(context, historyAsync),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                            ScheduleTab(
-                              classId: widget.classId,
-                              isArchived: isStopped,
-                            ),
-                            AssignmentTab(
-                              classId: widget.classId,
-                              isArchived: isStopped,
-                            ),
-                            SessionTab(
-                              classId: widget.classId,
-                              isArchived: isStopped,
-                            ),
-                            _buildAttendanceTab(context),
-                            ClassTuitionTab(classId: widget.classId),
-                            _buildHistoryTab(context, historyAsync),
+                            if (!isStopped &&
+                                (tabs.index == 0 || tabs.index == 1))
+                              Positioned(
+                                right: 20,
+                                bottom: 20,
+                                child: FloatingActionButton(
+                                  heroTag: 'class-detail-add-${widget.classId}',
+                                  tooltip: tabs.index == 0
+                                      ? 'Thêm học sinh'
+                                      : 'Thêm lịch học',
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  onPressed: () => tabs.index == 0
+                                      ? _showAddStudentDialog(context)
+                                      : showScheduleFormBottomSheet(
+                                          context,
+                                          classId: widget.classId,
+                                        ),
+                                  child: Icon(
+                                    tabs.index == 0
+                                        ? Icons.person_add_outlined
+                                        : Icons.event_available_outlined,
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                        if (!isStopped && (tabs.index == 0 || tabs.index == 1))
-                          Positioned(right: 20, bottom: 20,
-                            child: FloatingActionButton(
-                              heroTag: 'class-detail-add-${widget.classId}',
-                              tooltip: tabs.index == 0 ? 'Thêm học sinh' : 'Thêm lịch học',
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              onPressed: () => tabs.index == 0
-                                  ? _showAddStudentDialog(context)
-                                  : showScheduleFormBottomSheet(context, classId: widget.classId),
-                              child: Icon(tabs.index == 0
-                                  ? Icons.person_add_outlined : Icons.event_available_outlined),
-                            ),
-                          ),
-                      ]),
-                    );
-                  }),
                 ),
               ),
             ],
@@ -276,12 +295,21 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
                       data: (size) => Text(
                         'Sĩ số hiện tại: $size / ${cls.siSoToiDa ?? '∞'}',
                         style: const TextStyle(
-                          color: AppColors.textSecondary, fontSize: 13),
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
                       ),
-                      loading: () => const Text('Đang tải sĩ số...',
-                          style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
-                      error: (_, __) => const Text('Chưa tải được sĩ số',
-                          style: TextStyle(color: AppColors.error, fontSize: 13)),
+                      loading: () => const Text(
+                        'Đang tải sĩ số...',
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 13,
+                        ),
+                      ),
+                      error: (_, __) => const Text(
+                        'Chưa tải được sĩ số',
+                        style: TextStyle(color: AppColors.error, fontSize: 13),
+                      ),
                     ),
                   ],
                 ),
@@ -291,44 +319,82 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
           const SizedBox(height: 12),
           const Divider(color: AppColors.border, height: 1),
           const SizedBox(height: 8),
-          Row(children: [
-            _headerAction(Icons.edit_outlined, 'Sửa lớp', () async {
-              await showClassFormBottomSheet(context, cls: cls);
-              ref.invalidate(classDetailProvider(widget.classId));
-              ref.read(classListControllerProvider.notifier).refresh();
-            }),
-            _headerAction(Icons.request_quote_outlined, 'Học phí', () =>
-                showCreateTuitionPolicyBottomSheet(context, classId: widget.classId)),
-            _headerAction(Icons.event_note_outlined, 'Đơn nghỉ', () =>
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => LeaveRequestPage(classId: widget.classId)))),
-            _headerAction(
-              cls.daLuuTru ? Icons.restore_rounded : Icons.folder_off_outlined,
-              cls.daLuuTru ? 'Kích hoạt' : 'Ngừng lớp',
-              () => _handleArchiveToggle(context, cls),
-              key: cls.daLuuTru ? UiKeys.classRestoreAction : UiKeys.classArchiveAction,
-              color: cls.daLuuTru ? AppColors.success : AppColors.error,
-            ),
-          ]),
+          Row(
+            children: [
+              _headerAction(Icons.edit_outlined, 'Sửa lớp', () async {
+                await showClassFormBottomSheet(context, cls: cls);
+                ref.invalidate(classDetailProvider(widget.classId));
+                ref.read(classListControllerProvider.notifier).refresh();
+              }),
+              _headerAction(
+                Icons.request_quote_outlined,
+                'Học phí',
+                () => showCreateTuitionPolicyBottomSheet(
+                  context,
+                  classId: widget.classId,
+                ),
+              ),
+              _headerAction(
+                Icons.event_note_outlined,
+                'Đơn nghỉ',
+                () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => LeaveRequestPage(classId: widget.classId),
+                  ),
+                ),
+              ),
+              _headerAction(
+                cls.daLuuTru
+                    ? Icons.restore_rounded
+                    : Icons.folder_off_outlined,
+                cls.daLuuTru ? 'Kích hoạt' : 'Ngừng lớp',
+                () => _handleArchiveToggle(context, cls),
+                key: cls.daLuuTru
+                    ? UiKeys.classRestoreAction
+                    : UiKeys.classArchiveAction,
+                color: cls.daLuuTru ? AppColors.success : AppColors.error,
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _headerAction(IconData icon, String label, VoidCallback onPressed,
-      {Key? key, Color color = AppColors.cyanAccent}) {
-    return Expanded(child: InkWell(
-      key: key, onTap: onPressed, borderRadius: BorderRadius.circular(10),
-      child: Padding(padding: const EdgeInsets.symmetric(vertical: 5),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 20, color: color),
-          const SizedBox(height: 5),
-          Text(label, textAlign: TextAlign.center, maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-        ]),
+  Widget _headerAction(
+    IconData icon,
+    String label,
+    VoidCallback onPressed, {
+    Key? key,
+    Color color = AppColors.cyanAccent,
+  }) {
+    return Expanded(
+      child: InkWell(
+        key: key,
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 20, color: color),
+              const SizedBox(height: 5),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-    ));
+    );
   }
 
   Widget _buildDateSelector(BuildContext context) {
@@ -441,66 +507,91 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
           child: AppSectionCard(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.chevron_left,
-                  color: AppColors.cyanAccent,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.chevron_left,
+                    color: AppColors.cyanAccent,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _timelineMonth = DateTime(
+                        _timelineMonth.year,
+                        _timelineMonth.month - 1,
+                        1,
+                      );
+                    });
+                  },
                 ),
-                onPressed: () {
-                  setState(() {
-                    _timelineMonth = DateTime(
-                      _timelineMonth.year,
-                      _timelineMonth.month - 1,
-                      1,
-                    );
-                  });
-                },
-              ),
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.calendar_month_outlined,
-                    color: AppColors.cyanAccent, size: 17),
-                const SizedBox(width: 6),
-                Text(monthDisplay,
-                    style: const TextStyle(color: AppColors.textPrimary,
-                        fontSize: 14, fontWeight: FontWeight.bold)),
-              ]),
-              IconButton(
-                icon: const Icon(
-                  Icons.chevron_right,
-                  color: AppColors.cyanAccent,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.calendar_month_outlined,
+                      color: AppColors.cyanAccent,
+                      size: 17,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      monthDisplay,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
-                onPressed: () {
-                  setState(() {
-                    _timelineMonth = DateTime(
-                      _timelineMonth.year,
-                      _timelineMonth.month + 1,
-                      1,
-                    );
-                  });
-                },
-              ),
-            ],
+                IconButton(
+                  icon: const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.cyanAccent,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _timelineMonth = DateTime(
+                        _timelineMonth.year,
+                        _timelineMonth.month + 1,
+                        1,
+                      );
+                    });
+                  },
+                ),
+              ],
             ),
           ),
         ),
 
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(children: [
-            const Text('Trạng thái', style: TextStyle(color: AppColors.textSecondary,
-              fontSize: 12, fontWeight: FontWeight.w600)),
-            const SizedBox(width: 8),
-            const Text('Chưa hoàn tất',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
-            Switch.adaptive(
-              value: _attendanceFilter == 'DA_HOC',
-              onChanged: (done) => setState(() =>
-                  _attendanceFilter = done ? 'DA_HOC' : 'DU_KIEN'),
-            ),
-            const Text('Đã hoàn tất',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
-          ]),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              const Text(
+                'Trạng thái',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Chưa hoàn tất',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+              ),
+              Switch.adaptive(
+                value: _attendanceFilter == 'DA_HOC',
+                onChanged: (done) => setState(
+                  () => _attendanceFilter = done ? 'DA_HOC' : 'DU_KIEN',
+                ),
+              ),
+              const Text(
+                'Đã hoàn tất',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+              ),
+            ],
+          ),
         ),
 
         const Divider(color: AppColors.border, height: 1),
@@ -1066,9 +1157,12 @@ class HistoryItem extends ConsumerWidget {
                     ),
                   ),
                 ],
-                if (studentAsync.valueOrNull?.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
+                if (studentAsync.valueOrNull?.sdtPhuHuynh?.trim().isNotEmpty ==
+                    true) ...[
                   const SizedBox(height: 6),
-                  ParentContactActions(phone: studentAsync.valueOrNull?.sdtPhuHuynh),
+                  ParentContactActions(
+                    phone: studentAsync.valueOrNull?.sdtPhuHuynh,
+                  ),
                 ],
               ],
             ),
@@ -1176,9 +1270,12 @@ class RosterItem extends ConsumerWidget {
                     fontSize: 12,
                   ),
                 ),
-                if (studentAsync.valueOrNull?.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
+                if (studentAsync.valueOrNull?.sdtPhuHuynh?.trim().isNotEmpty ==
+                    true) ...[
                   const SizedBox(height: 6),
-                  ParentContactActions(phone: studentAsync.valueOrNull?.sdtPhuHuynh),
+                  ParentContactActions(
+                    phone: studentAsync.valueOrNull?.sdtPhuHuynh,
+                  ),
                 ],
               ],
             ),
