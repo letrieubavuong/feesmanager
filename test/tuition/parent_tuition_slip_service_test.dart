@@ -234,6 +234,45 @@ void main() {
       await db.close();
     });
 
+    test('Finalized QR uses invoice snapshot after schedule changes', () async {
+      final policies = await db.query('chinh_sach_hoc_phi', limit: 1);
+      final policyId = policies.single['id'] as int;
+      await db.insert('hoc_phi_thang', {
+        'id_hoc_sinh': 1,
+        'id_lop': 1,
+        'thang': '2026-09',
+        'id_chinh_sach_hoc_phi': policyId,
+        'so_buoi_eligible': 12,
+        'so_buoi_tinh_phi': 12,
+        'credit_opening': 0,
+        'credit_earned': 0,
+        'credit_used': 0,
+        'credit_closing': 0,
+        'tong_truoc_giam': 600000,
+        'giam_phan_tram': 0,
+        'giam_so_tien': 0,
+        'so_tien_phai_thu': 600000,
+        'trang_thai': 'DA_CHOT',
+        'chot_luc': '2026-09-30T20:00:00.000',
+        'created_at': '2026-09-30T20:00:00.000',
+        'updated_at': '2026-09-30T20:00:00.000',
+      });
+
+      // A finalized historical invoice must not require current schedules.
+      await db.delete('lich_hoc', where: 'id_lop = ?', whereArgs: [1]);
+      final slip = await slipService.generateSlip(
+        studentId: 1,
+        classId: 1,
+        month: '2026-09',
+        bankSettings: bankSettings,
+      );
+
+      expect(slip.status, ParentTuitionSlipStatus.ready);
+      expect(slip.amountDue, 600000);
+      expect(slip.remainingDebt, 600000);
+      expect(slip.qrPayload, isNotEmpty);
+    });
+
     test(
       'Test 1: Slip returns projectedSessionsNotGenerated when no month sessions generated',
       () async {
