@@ -233,9 +233,9 @@ class _CreateTuitionPolicyBottomSheetState
                           child: Text(
                             _inlineError!,
                             style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onErrorContainer,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onErrorContainer,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
