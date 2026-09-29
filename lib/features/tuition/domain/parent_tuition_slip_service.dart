@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../../attendance/data/attendance_repository.dart';
 import '../../attendance/domain/attendance_record.dart';
 import '../../attendance/domain/attendance_service.dart';
@@ -399,28 +400,28 @@ class ParentTuitionSlipService {
     // No finalized invoice: keep the projection for the in-app explanation,
     // but never issue a payment QR from a provisional amount.
     return ParentTuitionSlip(
-        studentId: studentId,
-        classId: classId,
-        month: month,
-        billingMonth: month,
-        reconciliationMonth: recMonth,
-        studentName: student.hoTen,
-        className: cls.tenLop,
-        status: ParentTuitionSlipStatus.noInvoiceFinalized,
-        errorMessage: 'Chưa chốt học phí tháng $month cho học sinh này',
-        projectedSessionCount: projectedSessionCount,
-        standardSessionLimit: standardSessionLimit,
-        projectedExtraCount: projectedExtraCount,
-        feePerSession: feePerSession,
-        monthlyMaxFee: monthlyMaxFee,
-        openingCreditBalance: openingCreditBalance,
-        presentCount: presentCount,
-        lateCount: lateCount,
-        excusedAbsenceCount: excusedAbsenceCount,
-        unexcusedAbsenceCount: unexcusedAbsenceCount,
-        makeupCompletedCount: makeupCompletedCount,
-        reconciliationAsOfDate: reconciliationAsOfDate,
-        bank: bankSettings,
+      studentId: studentId,
+      classId: classId,
+      month: month,
+      billingMonth: month,
+      reconciliationMonth: recMonth,
+      studentName: student.hoTen,
+      className: cls.tenLop,
+      status: ParentTuitionSlipStatus.noInvoiceFinalized,
+      errorMessage: 'Chưa chốt học phí tháng $month cho học sinh này',
+      projectedSessionCount: projectedSessionCount,
+      standardSessionLimit: standardSessionLimit,
+      projectedExtraCount: projectedExtraCount,
+      feePerSession: feePerSession,
+      monthlyMaxFee: monthlyMaxFee,
+      openingCreditBalance: openingCreditBalance,
+      presentCount: presentCount,
+      lateCount: lateCount,
+      excusedAbsenceCount: excusedAbsenceCount,
+      unexcusedAbsenceCount: unexcusedAbsenceCount,
+      makeupCompletedCount: makeupCompletedCount,
+      reconciliationAsOfDate: reconciliationAsOfDate,
+      bank: bankSettings,
     );
   }
 }
