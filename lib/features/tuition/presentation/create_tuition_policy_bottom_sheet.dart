@@ -606,7 +606,8 @@ class _CreateTuitionPolicyBottomSheetState
         previous.quyTacNghiCoPhep == _excusedRule &&
         (previous.ghiChu ?? '') == _noteController.text.trim()) {
       setState(
-        () => _inlineError = 'Mức học phí và quy tắc vẫn giống chính sách đang áp dụng. Hãy nhập giá trị cần thay đổi.',
+        () => _inlineError =
+            'Mức học phí và quy tắc vẫn giống chính sách đang áp dụng. Hãy nhập giá trị cần thay đổi.',
       );
       return;
     }
