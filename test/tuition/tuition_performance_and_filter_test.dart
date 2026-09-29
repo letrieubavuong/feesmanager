@@ -335,7 +335,7 @@ void main() {
     );
 
     testWidgets(
-      'ClassTuitionTab renders 3 filter segments (Tạm tính, Còn nợ, Đã nộp)',
+      'ClassTuitionTab renders 3 filter segments (Tạm tính, Chưa thanh toán, Đã nộp)',
       (tester) async {
         final nowStr = DateTime.now().toIso8601String();
         final classId = await db.insert('lop', {
@@ -420,7 +420,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.textContaining('Tạm tính'), findsOneWidget);
-        expect(find.textContaining('Còn nợ'), findsOneWidget);
+        expect(find.textContaining('Chưa thanh toán'), findsOneWidget);
         expect(find.textContaining('Đã nộp'), findsOneWidget);
         expect(find.text('Phạm Hoàng Ân'), findsOneWidget);
       },
