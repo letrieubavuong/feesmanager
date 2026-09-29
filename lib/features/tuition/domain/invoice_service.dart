@@ -179,17 +179,19 @@ class InvoiceService {
     await _validateEarlyMonthBillingGap(classId, month);
 
     final existingInvoices = await getInvoicesForClassMonth(classId, month);
-    if (existingInvoices.any((i) => i.trangThai.isFinalizedSnapshot)) {
-      throw Exception(
-        'Đã có học sinh trong lớp được chốt học phí tháng $month. Không thể chốt hàng loạt.',
-      );
-    }
+    final finalizedStudentIds = existingInvoices
+        .where((i) => i.trangThai.isFinalizedSnapshot)
+        .map((i) => i.idHocSinh)
+        .toSet();
 
     // Get active memberships in class for month (including mid-month joins)
     final classMonthMemberships = await _membershipService
         .getMembershipsForClassMonth(classId, month);
 
-    final studentIds = classMonthMemberships.map((m) => m.idHocSinh).toSet();
+    final studentIds = classMonthMemberships
+        .map((m) => m.idHocSinh)
+        .toSet()
+        .difference(finalizedStudentIds);
 
     final studentPlans = <_StudentFinalizationPlan>[];
 
