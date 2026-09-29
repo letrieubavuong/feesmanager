@@ -172,11 +172,10 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     ).format(DateTime.parse('$_selectedMonth-01'));
 
     return SizedBox(
-      width: 134,
+      width: 128,
       child: AppSectionCard(
         padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             IconButton(
               icon: const Icon(
@@ -186,25 +185,20 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
               ),
               onPressed: () => _changeMonth(-1),
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(width: 28, height: 30),
+              constraints: const BoxConstraints.tightFor(width: 24, height: 28),
             ),
-            Row(
-              children: [
-                const Icon(
-                  Icons.calendar_month_outlined,
-                  color: AppColors.cyanAccent,
-                  size: 14,
+            Expanded(
+              child: Text(
+                formattedMonth,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(width: 3),
-                Text(
-                  formattedMonth,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+              ),
             ),
             IconButton(
               icon: const Icon(
@@ -214,7 +208,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
               ),
               onPressed: () => _changeMonth(1),
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints.tightFor(width: 28, height: 30),
+              constraints: const BoxConstraints.tightFor(width: 24, height: 28),
             ),
           ],
         ),
@@ -807,66 +801,74 @@ class _StudentTuitionCard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           StudentAvatar(
             gioiTinh: student.gioiTinh,
             studentName: student.hoTen,
             radius: 20,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  student.hoTen,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        student.hoTen,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      AppFormatter.formatCurrency(
+                        isUnpaid ? remainingDebt : amountPaid,
+                        context: context,
+                      ),
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: isUnpaid ? AppColors.error : AppColors.success,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 3),
-                if (isUnpaid)
-                  Text(
-                    amountPaid > 0
-                        ? 'Đã thu ${AppFormatter.formatCurrency(amountPaid, context: context)} • Chưa thanh toán ${AppFormatter.formatCurrency(remainingDebt, context: context)}'
-                        : row.isFinalized
-                        ? 'Chưa thanh toán ${AppFormatter.formatCurrency(remainingDebt, context: context)}'
-                        : 'Tạm tính ${AppFormatter.formatCurrency(remainingDebt, context: context)}',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: amountPaid > 0
-                          ? AppColors.textSecondary
-                          : AppColors.error,
-                      fontSize: 12,
-                      fontWeight: amountPaid > 0
-                          ? FontWeight.normal
-                          : FontWeight.w600,
-                    ),
-                  )
-                else
-                  Text(
-                    'Đã nộp ${AppFormatter.formatCurrency(row.amountDue, context: context)}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.success,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
                 const SizedBox(height: 4),
-                ParentContactActions(phone: student.sdtPhuHuynh),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        isUnpaid
+                            ? row.isFinalized
+                                  ? 'Chưa thanh toán'
+                                  : 'Tạm tính'
+                            : 'Đã thu',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                    ParentContactActions(phone: student.sdtPhuHuynh),
+                  ],
+                ),
               ],
             ),
           ),
           PopupMenuButton<String>(
             key: Key('tuition_student_menu_${student.id}'),
             tooltip: 'Tùy chọn học phí',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints.tightFor(width: 32, height: 32),
             icon: const Icon(
               Icons.more_vert,
               color: AppColors.textSecondary,
@@ -902,12 +904,15 @@ class _StudentTuitionCard extends ConsumerWidget {
                   ),
                 );
               } else if (value == 'history') {
-                showPaymentHistoryBottomSheet(
+                await showPaymentHistoryBottomSheet(
                   context,
                   studentId: student.id!,
                   classId: classId,
                   month: month,
                   studentName: student.hoTen,
+                );
+                ref.invalidate(
+                  classMonthTuitionOverviewProvider((classId, month)),
                 );
               } else if (value == 'detail') {
                 _showStudentTuitionDetailBottomSheet(context, row);
@@ -942,7 +947,7 @@ class _StudentTuitionCard extends ConsumerWidget {
                   child: ListTile(
                     dense: true,
                     leading: Icon(Icons.history),
-                    title: Text('Lịch sử thu'),
+                    title: Text('Xem / sửa phiếu thu'),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
