@@ -89,73 +89,76 @@ void main() {
       );
     });
 
-    test('Single shift class includes all active students (same weekday only)', () async {
-      await db.insert('lop', {
-        'id': 1,
-        'ten_lop': 'C1',
-        'created_at': now,
-        'updated_at': now,
-      });
+    test(
+      'Single shift class includes all active students (same weekday only)',
+      () async {
+        await db.insert('lop', {
+          'id': 1,
+          'ten_lop': 'C1',
+          'created_at': now,
+          'updated_at': now,
+        });
 
-      // Two schedules but on DIFFERENT weekdays
-      await db.insert('lich_hoc', {
-        'id': 1,
-        'id_lop': 1,
-        'thu_trong_tuan': 1, // Mon
-        'gio_bat_dau': '17:30',
-        'gio_ket_thuc': '19:00',
-        'hieu_luc_tu': '2026-01-01',
-        'created_at': now,
-        'updated_at': now,
-      });
-      await db.insert('lich_hoc', {
-        'id': 2,
-        'id_lop': 1,
-        'thu_trong_tuan': 3, // Wed
-        'gio_bat_dau': '17:30',
-        'gio_ket_thuc': '19:00',
-        'hieu_luc_tu': '2026-01-01',
-        'created_at': now,
-        'updated_at': now,
-      });
+        // Two schedules but on DIFFERENT weekdays
+        await db.insert('lich_hoc', {
+          'id': 1,
+          'id_lop': 1,
+          'thu_trong_tuan': 1, // Mon
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': now,
+          'updated_at': now,
+        });
+        await db.insert('lich_hoc', {
+          'id': 2,
+          'id_lop': 1,
+          'thu_trong_tuan': 3, // Wed
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'hieu_luc_tu': '2026-01-01',
+          'created_at': now,
+          'updated_at': now,
+        });
 
-      await db.insert('hoc_sinh', {
-        'id': 1,
-        'ho_ten': 'An',
-        'created_at': now,
-        'updated_at': now,
-      });
-      await db.insert('tham_gia_lop', {
-        'id': 1,
-        'id_hoc_sinh': 1,
-        'id_lop': 1,
-        'tu_ngay': '2026-01-01',
-        'created_at': now,
-        'updated_at': now,
-      });
+        await db.insert('hoc_sinh', {
+          'id': 1,
+          'ho_ten': 'An',
+          'created_at': now,
+          'updated_at': now,
+        });
+        await db.insert('tham_gia_lop', {
+          'id': 1,
+          'id_hoc_sinh': 1,
+          'id_lop': 1,
+          'tu_ngay': '2026-01-01',
+          'created_at': now,
+          'updated_at': now,
+        });
 
-      // Session on Monday 2026-09-07
-      await db.insert('buoi_hoc', {
-        'id': 10,
-        'id_lop': 1,
-        'id_lich_hoc': 1,
-        'ngay': '2026-09-07',
-        'gio_bat_dau': '17:30',
-        'gio_ket_thuc': '19:00',
-        'loai': 'CHINH',
-        'created_at': now,
-        'updated_at': now,
-      });
+        // Session on Monday 2026-09-07
+        await db.insert('buoi_hoc', {
+          'id': 10,
+          'id_lop': 1,
+          'id_lich_hoc': 1,
+          'ngay': '2026-09-07',
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'created_at': now,
+          'updated_at': now,
+        });
 
-      final result = await rosterService.getRosterForSession(10);
-      // It's considered single-shift for Monday because only 1 schedule on Mon.
-      expect(result.participants.length, 1);
-      expect(result.participants.first.student.hoTen, 'An');
-      expect(
-        result.participants.first.source,
-        RosterInclusionSource.SINGLE_SHIFT_MEMBERSHIP,
-      );
-    });
+        final result = await rosterService.getRosterForSession(10);
+        // It's considered single-shift for Monday because only 1 schedule on Mon.
+        expect(result.participants.length, 1);
+        expect(result.participants.first.student.hoTen, 'An');
+        expect(
+          result.participants.first.source,
+          RosterInclusionSource.SINGLE_SHIFT_MEMBERSHIP,
+        );
+      },
+    );
 
     test('Lọc ca đã phân dù chỉ một lịch trong ngày', () async {
       await db.insert('lop', {
