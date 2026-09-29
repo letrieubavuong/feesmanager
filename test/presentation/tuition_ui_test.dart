@@ -305,7 +305,7 @@ void main() {
 
     // TEST 48: QR Share Card widget contains required payment details
     testWidgets(
-      'Test 48 - PaymentQrShareCard displays complete export information',
+      'Test 48 - PaymentQrShareCard shows parent payment essentials',
       (tester) async {
         const slip = ParentTuitionSlip(
           studentId: 125,
@@ -349,8 +349,8 @@ void main() {
           ),
         );
 
-        expect(find.text('PHIẾU HỌC PHÍ'), findsOneWidget);
-        expect(find.text('NGUYỄN VĂN LY'), findsOneWidget);
+        expect(find.text('HỌC PHÍ'), findsOneWidget);
+        expect(find.text('Nguyễn Văn Ly'), findsOneWidget);
         expect(find.text('VẬT LÍ 10'), findsOneWidget);
         expect(find.text('450.000đ'), findsOneWidget);
         expect(find.text('MBBank'), findsOneWidget);
@@ -358,6 +358,8 @@ void main() {
         expect(find.text('TRAN VAN A'), findsOneWidget);
         expect(find.text('HP 125 VATLI10 092026'), findsOneWidget);
         expect(find.byType(VietQrCodeWidget), findsOneWidget);
+        expect(find.text('Buổi dự kiến'), findsNothing);
+        expect(find.text('Buổi dư chuyển sang'), findsNothing);
       },
     );
   });
