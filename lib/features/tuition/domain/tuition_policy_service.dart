@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqflite/sqflite.dart';
+
 import '../../../core/database/database_provider.dart';
 import '../../classes/domain/class_service.dart';
 import '../../session_credits/data/session_credit_repository.dart';
@@ -62,6 +63,8 @@ class TuitionPolicyService {
         TuitionPolicyDefaults.standardSessionsPerMonth,
     required int feePerSession,
     int? monthlyMaxFee,
+    ExcusedAbsenceFeeRule excusedAbsenceFeeRule =
+        ExcusedAbsenceFeeRule.buTruBuoiDu,
     String? note,
   }) async {
     final cls = await _classService.getClassById(classId);
@@ -205,6 +208,7 @@ class TuitionPolicyService {
       soBuoiChuanThang: standardSessionsPerMonth,
       hocPhiMoiBuoi: feePerSession,
       hocPhiThangToiDa: monthlyMaxFee,
+      quyTacNghiCoPhep: excusedAbsenceFeeRule,
       ghiChu: note?.trim().isEmpty == true ? null : note?.trim(),
       createdAt: now,
       updatedAt: now,
