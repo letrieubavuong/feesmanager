@@ -1,5 +1,3 @@
-import java.util.Base64
-
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -13,7 +11,7 @@ val generateTeacherNotebookIcon = tasks.register("generateTeacherNotebookIcon") 
     inputs.file(iconSource)
     outputs.file(iconOutput)
     doLast {
-        val image = Base64.getMimeDecoder().decode(iconSource.asFile.readText())
+        val image = java.util.Base64.getMimeDecoder().decode(iconSource.asFile.readText())
         iconOutput.asFile.parentFile.mkdirs()
         iconOutput.asFile.writeBytes(image)
     }
@@ -26,6 +24,7 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -48,6 +47,10 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 kotlin {
