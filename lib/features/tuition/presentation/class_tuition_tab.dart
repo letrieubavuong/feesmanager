@@ -227,7 +227,7 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
       final reason = overview.studentRows.isEmpty
           ? 'Không có học sinh tham gia lớp trong tháng $_selectedMonth. Kiểm tra ngày tham gia lớp.'
           : overview.studentRows.first.pendingReason ??
-              'Tháng này chưa đủ dữ liệu để tính học phí.';
+                'Tháng này chưa đủ dữ liệu để tính học phí.';
       return AppSectionCard(
         padding: const EdgeInsets.all(12),
         child: Text(
@@ -304,7 +304,8 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     if (unfinalizedRows.isEmpty) return const SizedBox.shrink();
 
     final missingPolicy = unfinalizedRows.any(
-      (r) => r.state == ClassStudentTuitionState.ERROR &&
+      (r) =>
+          r.state == ClassStudentTuitionState.ERROR &&
           (r.pendingReason?.contains('chính sách học phí') ?? false),
     );
     if (missingPolicy) {
@@ -326,9 +327,12 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                   initialMonth: _selectedMonth,
                 );
                 if (saved == true && mounted) {
-                  ref.invalidate(classMonthTuitionOverviewProvider(
-                    (widget.classId, _selectedMonth),
-                  ));
+                  ref.invalidate(
+                    classMonthTuitionOverviewProvider((
+                      widget.classId,
+                      _selectedMonth,
+                    )),
+                  );
                 }
               },
               icon: const Icon(Icons.edit_calendar_outlined, size: 16),
@@ -369,20 +373,24 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
             ),
           ),
           const SizedBox(width: 8),
-          if (overview.previewStudentCount > 0) ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              minimumSize: const Size(0, 32),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          if (overview.previewStudentCount > 0)
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                minimumSize: const Size(0, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed: () => _handlePreflightAndFinalize(context, overview),
+              child: const Text(
+                'Chốt học phí',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
             ),
-            onPressed: () => _handlePreflightAndFinalize(context, overview),
-            child: const Text(
-              'Chốt học phí',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-            ),
-          ),
         ],
       ),
     );
