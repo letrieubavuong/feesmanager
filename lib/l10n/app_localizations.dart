@@ -503,7 +503,7 @@ abstract class AppLocalizations {
   /// No description provided for @dbVersion.
   ///
   /// In vi, this message translates to:
-  /// **'Cơ sở dữ liệu: v16'**
+  /// **'Cơ sở dữ liệu: v17'**
   String get dbVersion;
 
   /// No description provided for @studentFormTitleAdd.
