@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../../../app/common_widgets/app_error_state.dart';
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
@@ -260,16 +261,18 @@ class StudentDetailPage extends ConsumerWidget {
                         color: AppColors.cyanAccent,
                       ),
                       const SizedBox(width: 4),
-                      Flexible(child: Text(
-                        '${s.sdtPhuHuynh} (PH)',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.cyanAccent,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                      Flexible(
+                        child: Text(
+                          '${s.sdtPhuHuynh} (PH)',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.cyanAccent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      )),
+                      ),
                     ],
                   ],
                 ),
