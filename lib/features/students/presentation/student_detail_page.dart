@@ -7,6 +7,7 @@ import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
 import '../../../app/common_widgets/attendance_status_icon.dart';
 import '../../../app/common_widgets/navy_components.dart';
+import '../../../app/common_widgets/parent_contact_actions.dart';
 import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/app_global_drawer.dart';
@@ -259,17 +260,23 @@ class StudentDetailPage extends ConsumerWidget {
                         color: AppColors.cyanAccent,
                       ),
                       const SizedBox(width: 4),
-                      Text(
+                      Flexible(child: Text(
                         '${s.sdtPhuHuynh} (PH)',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: AppColors.cyanAccent,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
-                      ),
+                      )),
                     ],
                   ],
                 ),
+                if (s.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 6),
+                  ParentContactActions(phone: s.sdtPhuHuynh),
+                ],
                 if (overview.firstActiveMembershipDate != null) ...[
                   const SizedBox(height: 4),
                   Row(
