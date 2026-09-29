@@ -171,7 +171,7 @@ class SessionRosterView extends ConsumerWidget {
 
   Widget _buildMemberTile(BuildContext context, RosterMember member) {
     return AppSectionCard(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      margin: const EdgeInsets.fromLTRB(6, 0, 6, 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
         children: [
