@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../l10n/app_localizations.dart';
 import '../../payments/presentation/widgets/vietqr_code_widget.dart';
 import '../domain/bank_account_settings.dart';
@@ -103,7 +104,7 @@ class _BankAccountSettingsPageState
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsBankAccount)),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
         child: Form(
           key: _formKey,
           child: Column(
@@ -112,7 +113,7 @@ class _BankAccountSettingsPageState
               Card(
                 elevation: 2,
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -254,7 +255,7 @@ class _BankAccountSettingsPageState
               Card(
                 elevation: 2,
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(10),
                   child: currentPreviewSettings.isConfigured
                       ? Column(
                           children: [
