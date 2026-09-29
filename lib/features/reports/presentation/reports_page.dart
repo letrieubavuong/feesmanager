@@ -472,7 +472,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
           ),
         ),
         const SizedBox(height: 16),
-        const AppSectionHeader(title: 'Theo từng lớp'),
+        AppSectionHeader(
+          title: 'Theo từng lớp · ${summary.classSummaries.length}',
+        ),
         ...summary.classSummaries.map(
           (cls) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -494,13 +496,24 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                     style: const TextStyle(color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(5),
+                    child: LinearProgressIndicator(
+                      minHeight: 6,
+                      value: (cls.attendance.attendanceRatePercentage / 100)
+                          .clamp(0.0, 1.0),
+                      backgroundColor: AppColors.surfaceHigh,
+                      color: AppColors.success,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Text(
                     'Có mặt ${cls.attendance.totalPresent}  •  Nghỉ có phép ${cls.attendance.totalExcusedAbsence}  •  Nghỉ không phép ${cls.attendance.totalUnexcusedAbsence}',
                     style: const TextStyle(color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Học phí ${currencyFormatter.format(cls.financial.totalInvoiced)}  •  Đã thu ${currencyFormatter.format(cls.financial.totalPaid)}  •  Chưa thu ${currencyFormatter.format(cls.financial.totalOutstandingDebt)}',
+                    'Hóa đơn ${currencyFormatter.format(cls.financial.totalInvoiced)}  •  Thu trong kỳ ${currencyFormatter.format(cls.financial.totalPaid)}  •  Chưa thu ${currencyFormatter.format(cls.financial.totalOutstandingDebt)}',
                     style: const TextStyle(color: AppColors.cyanAccent),
                   ),
                 ],
@@ -510,7 +523,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
         ),
         if (summary.studentSummaries.isNotEmpty) ...[
           const SizedBox(height: 16),
-          const AppSectionHeader(title: 'Theo từng học sinh'),
+          AppSectionHeader(
+            title: 'Theo từng học sinh · ${summary.studentSummaries.length}',
+          ),
           AppSectionCard(
             child: Column(
               children: summary.studentSummaries
