@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/app_page_scaffold.dart';
 import '../../../app/common_widgets/dirty_form_scope.dart';
+import '../../../app/design_system/app_theme.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../l10n/app_localizations.dart';
@@ -91,7 +92,7 @@ class _CreateTuitionPolicyBottomSheetState
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1E293B),
+              color: AppColors.textPrimary,
             ),
           ),
           if (isRequired)
@@ -100,7 +101,7 @@ class _CreateTuitionPolicyBottomSheetState
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFFDC2626),
+                color: AppColors.error,
               ),
             ),
         ],
@@ -120,9 +121,9 @@ class _CreateTuitionPolicyBottomSheetState
       child: Container(
         height: 48,
         decoration: BoxDecoration(
-          color: const Color(0xFFEFF6FF),
+          color: AppColors.surfaceHigh,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFC7DCFB), width: 1),
+          border: Border.all(color: AppColors.border, width: 1),
         ),
         child: Row(
           children: [
@@ -130,12 +131,12 @@ class _CreateTuitionPolicyBottomSheetState
               width: 44,
               height: 48,
               decoration: const BoxDecoration(
-                color: Color(0xFFE2EDFE),
+                color: AppColors.surfaceSelected,
                 borderRadius: BorderRadius.horizontal(
                   left: Radius.circular(11),
                 ),
               ),
-              child: Icon(icon, color: const Color(0xFF1D61E7), size: 20),
+              child: Icon(icon, color: AppColors.cyanAccent, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(child: child),
@@ -166,7 +167,7 @@ class _CreateTuitionPolicyBottomSheetState
         isDirty: _isDirty,
         child: Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: SafeArea(
@@ -192,13 +193,13 @@ class _CreateTuitionPolicyBottomSheetState
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF0F2038),
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           IconButton(
                             icon: const Icon(
                               Icons.close_rounded,
-                              color: Color(0xFF1E293B),
+                              color: AppColors.textPrimary,
                               size: 22,
                             ),
                             padding: EdgeInsets.zero,
@@ -249,7 +250,7 @@ class _CreateTuitionPolicyBottomSheetState
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF0F172A),
+                            color: AppColors.textPrimary,
                           ),
                           decoration: const InputDecoration(
                             border: InputBorder.none,
@@ -269,7 +270,7 @@ class _CreateTuitionPolicyBottomSheetState
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF64748B),
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ),
@@ -292,7 +293,7 @@ class _CreateTuitionPolicyBottomSheetState
                                     style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w500,
-                                      color: Color(0xFF0F172A),
+                                      color: AppColors.textPrimary,
                                     ),
                                     decoration: const InputDecoration(
                                       border: InputBorder.none,
@@ -327,12 +328,12 @@ class _CreateTuitionPolicyBottomSheetState
                                     style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w500,
-                                      color: Color(0xFF0F172A),
+                                      color: AppColors.textPrimary,
                                     ),
                                     decoration: const InputDecoration(
                                       hintText: 'Tùy chọn',
                                       hintStyle: TextStyle(
-                                        color: Color(0xFF94A3B8),
+                                        color: AppColors.textMuted,
                                         fontSize: 14,
                                       ),
                                       border: InputBorder.none,
@@ -360,14 +361,14 @@ class _CreateTuitionPolicyBottomSheetState
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF0F172A),
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         trailing: IconButton(
                           icon: const Icon(
                             Icons.close_rounded,
                             size: 18,
-                            color: Color(0xFF64748B),
+                            color: AppColors.textSecondary,
                           ),
                           onPressed: () {
                             setState(() => _effectiveFromDate = DateTime.now());
@@ -391,12 +392,9 @@ class _CreateTuitionPolicyBottomSheetState
                       _buildFieldLabel(l10n.studentNotes),
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
+                          color: AppColors.surfaceHigh,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0xFFC7DCFB),
-                            width: 1,
-                          ),
+                          border: Border.all(color: AppColors.border, width: 1),
                         ),
                         child: TextField(
                           controller: _noteController,
@@ -404,12 +402,12 @@ class _CreateTuitionPolicyBottomSheetState
                           minLines: 1,
                           style: const TextStyle(
                             fontSize: 14,
-                            color: Color(0xFF0F172A),
+                            color: AppColors.textPrimary,
                           ),
                           decoration: const InputDecoration(
                             hintText: 'Ghi chú về chính sách học phí...',
                             hintStyle: TextStyle(
-                              color: Color(0xFF94A3B8),
+                              color: AppColors.textMuted,
                               fontSize: 14,
                             ),
                             contentPadding: EdgeInsets.symmetric(
@@ -439,7 +437,7 @@ class _CreateTuitionPolicyBottomSheetState
                                     },
                               style: OutlinedButton.styleFrom(
                                 side: const BorderSide(
-                                  color: Color(0xFF1D61E7),
+                                  color: AppColors.cyanAccent,
                                   width: 1.5,
                                 ),
                                 shape: RoundedRectangleBorder(
@@ -448,14 +446,14 @@ class _CreateTuitionPolicyBottomSheetState
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
                                 ),
-                                backgroundColor: Colors.white,
+                                backgroundColor: AppColors.surface,
                               ),
                               child: Text(
                                 l10n.commonCancel,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0F172A),
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
                             ),
@@ -466,7 +464,7 @@ class _CreateTuitionPolicyBottomSheetState
                               key: UiKeys.tuitionPolicySave,
                               onPressed: _isSaving ? null : _submit,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0066FF),
+                                backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
