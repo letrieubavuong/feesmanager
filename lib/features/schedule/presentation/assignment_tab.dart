@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/navy_components.dart';
 import '../../../app/common_widgets/student_avatar.dart';
@@ -145,53 +146,119 @@ class AssignmentTab extends ConsumerWidget {
                               builder: (sheetContext) => SafeArea(
                                 child: FractionallySizedBox(
                                   heightFactor: 0.7,
-                                  child: Column(children: [
-                                    Padding(padding: const EdgeInsets.all(16),
-                                      child: Row(children: [
-                                        Expanded(child: Text(
-                                          '${_formatWeekday(schedule.thuTrongTuan, l10n)} • ${schedule.gioBatDau} - ${schedule.gioKetThuc}',
-                                          style: const TextStyle(color: AppColors.textPrimary,
-                                            fontSize: 17, fontWeight: FontWeight.bold))),
-                                        IconButton(onPressed: () => Navigator.pop(sheetContext),
-                                          icon: const Icon(Icons.close)),
-                                      ])),
-                                    const Divider(height: 1, color: AppColors.border),
-                                    Expanded(child: activeShiftAssignments.isEmpty
-                                      ? Center(child: Text(l10n.assignmentNoStudentsInShift,
-                                          style: const TextStyle(color: AppColors.textMuted)))
-                                      : ListView.builder(
-                                          padding: const EdgeInsets.all(12),
-                                          itemCount: activeShiftAssignments.length,
-                                          itemBuilder: (context, rowIndex) => _AssignmentRowItem(
-                                            assignment: activeShiftAssignments[rowIndex],
-                                            classId: classId,
-                                            isArchived: isArchived || !isActiveSchedule,
-                                            schedules: schedules,
-                                          ),
-                                        )),
-                                  ]),
+                                  child: Column(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                '${_formatWeekday(schedule.thuTrongTuan, l10n)} • ${schedule.gioBatDau} - ${schedule.gioKetThuc}',
+                                                style: const TextStyle(
+                                                  color: AppColors.textPrimary,
+                                                  fontSize: 17,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                            IconButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(sheetContext),
+                                              icon: const Icon(Icons.close),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const Divider(
+                                        height: 1,
+                                        color: AppColors.border,
+                                      ),
+                                      Expanded(
+                                        child: activeShiftAssignments.isEmpty
+                                            ? Center(
+                                                child: Text(
+                                                  l10n.assignmentNoStudentsInShift,
+                                                  style: const TextStyle(
+                                                    color: AppColors.textMuted,
+                                                  ),
+                                                ),
+                                              )
+                                            : ListView.builder(
+                                                padding: const EdgeInsets.all(
+                                                  12,
+                                                ),
+                                                itemCount:
+                                                    activeShiftAssignments
+                                                        .length,
+                                                itemBuilder:
+                                                    (
+                                                      context,
+                                                      rowIndex,
+                                                    ) => _AssignmentRowItem(
+                                                      assignment:
+                                                          activeShiftAssignments[rowIndex],
+                                                      classId: classId,
+                                                      isArchived:
+                                                          isArchived ||
+                                                          !isActiveSchedule,
+                                                      schedules: schedules,
+                                                    ),
+                                              ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                            child: Padding(padding: const EdgeInsets.all(16),
-                              child: Row(children: [
-                                Text(_formatWeekday(schedule.thuTrongTuan, l10n),
-                                  style: const TextStyle(color: AppColors.cyanAccent,
-                                    fontWeight: FontWeight.bold)),
-                                const SizedBox(width: 12),
-                                Expanded(child: Text('${schedule.gioBatDau} - ${schedule.gioKetThuc}',
-                                  style: const TextStyle(color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.bold))),
-                                Text(l10n.assignmentStudentCount(activeShiftAssignments.length),
-                                  style: const TextStyle(color: AppColors.textSecondary)),
-                                if (!isArchived && isActiveSchedule)
-                                  IconButton(tooltip: l10n.assignmentAddStudent,
-                                    onPressed: () => _showAddAssignmentDialog(context, ref,
-                                      initialScheduleId: schedule.id!),
-                                    icon: const Icon(Icons.person_add_outlined,
-                                      color: AppColors.cyanAccent)),
-                                const Icon(Icons.chevron_right, color: AppColors.textMuted),
-                              ]),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    _formatWeekday(schedule.thuTrongTuan, l10n),
+                                    style: const TextStyle(
+                                      color: AppColors.cyanAccent,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      '${schedule.gioBatDau} - ${schedule.gioKetThuc}',
+                                      style: const TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    l10n.assignmentStudentCount(
+                                      activeShiftAssignments.length,
+                                    ),
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  if (!isArchived && isActiveSchedule)
+                                    IconButton(
+                                      tooltip: l10n.assignmentAddStudent,
+                                      onPressed: () => _showAddAssignmentDialog(
+                                        context,
+                                        ref,
+                                        initialScheduleId: schedule.id!,
+                                      ),
+                                      icon: const Icon(
+                                        Icons.person_add_outlined,
+                                        color: AppColors.cyanAccent,
+                                      ),
+                                    ),
+                                  const Icon(
+                                    Icons.chevron_right,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         );
@@ -322,9 +389,12 @@ class _AssignmentRowItem extends ConsumerWidget {
                     fontSize: 11,
                   ),
                 ),
-                if (studentAsync.valueOrNull?.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
+                if (studentAsync.valueOrNull?.sdtPhuHuynh?.trim().isNotEmpty ==
+                    true) ...[
                   const SizedBox(height: 6),
-                  ParentContactActions(phone: studentAsync.valueOrNull?.sdtPhuHuynh),
+                  ParentContactActions(
+                    phone: studentAsync.valueOrNull?.sdtPhuHuynh,
+                  ),
                 ],
               ],
             ),
@@ -770,7 +840,6 @@ class _AddAssignmentBottomSheetState
                   ],
                 ),
                 const SizedBox(height: 8),
-
                 TextField(
                   enabled: !_isSaving,
                   decoration: InputDecoration(
@@ -782,7 +851,6 @@ class _AddAssignmentBottomSheetState
                   onChanged: (val) => setState(() => _searchQuery = val),
                 ),
                 const SizedBox(height: 8),
-
                 if (_isLoadingCandidates)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
@@ -824,7 +892,6 @@ class _AddAssignmentBottomSheetState
                     onChanged: _isSaving ? null : (_) => _toggleSelectAll(),
                   ),
                   const Divider(color: AppColors.border, height: 1),
-
                   Container(
                     constraints: const BoxConstraints(maxHeight: 220),
                     child: ListView.separated(
@@ -1013,7 +1080,6 @@ class _AddAssignmentBottomSheetState
               ),
               const Divider(color: AppColors.border),
               const SizedBox(height: 8),
-
               Text(
                 l10n.bulkAssignmentPreviewReady(preview.readyStudents.length),
                 style: const TextStyle(
@@ -1021,7 +1087,6 @@ class _AddAssignmentBottomSheetState
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
               if (preview.blocked.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(
@@ -1053,7 +1118,6 @@ class _AddAssignmentBottomSheetState
                   ),
                 ),
               ],
-
               if (preview.warnings.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(
@@ -1085,9 +1149,7 @@ class _AddAssignmentBottomSheetState
                   ),
                 ),
               ],
-
               const SizedBox(height: 20),
-
               Row(
                 children: [
                   Expanded(
