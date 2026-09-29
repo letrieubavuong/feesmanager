@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/attendance_status_icon.dart';
 import '../../../app/common_widgets/navy_components.dart';
+import '../../../app/common_widgets/parent_contact_actions.dart';
 import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../app/localization/app_formatter.dart';
@@ -987,6 +988,11 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                 ),
             ],
           ),
+
+          if (student.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
+            const SizedBox(height: 6),
+            ParentContactActions(phone: student.sdtPhuHuynh),
+          ],
 
           if (isEditable) ...[
             const SizedBox(height: 6),
