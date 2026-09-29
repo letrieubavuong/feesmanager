@@ -93,9 +93,8 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
   Future<void> _showHistoricalAttendanceSheet() async {
     final month = DateTime(_timelineMonth.year, _timelineMonth.month);
     final start = DateFormat('yyyy-MM-dd').format(month);
-    final end = DateFormat(
-      'yyyy-MM-dd',
-    ).format(DateTime(month.year, month.month + 1, 0));
+    final end = DateFormat('yyyy-MM-dd')
+        .format(DateTime(month.year, month.month + 1, 0));
     final service = await ref.read(attendanceServiceProvider.future);
     if (!mounted) return;
     HistoricalAttendancePreview? preview;
@@ -190,7 +189,10 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
             monthKey,
           );
         } catch (error) {
-          reconciliationError = error.toString().replaceFirst('Exception: ', '');
+          reconciliationError = error.toString().replaceFirst(
+            'Exception: ',
+            '',
+          );
         }
       }
       if (!mounted) return;
@@ -218,9 +220,8 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Không thể điểm danh bù: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Không thể điểm danh bù: $e')));
     }
   }
 
