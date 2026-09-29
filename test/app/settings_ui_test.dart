@@ -1,5 +1,3 @@
-Warning: Package resolution error when reading "analysis_options.yaml" file for "test/app/settings_ui_test.dart":
-Failed to resolve package URI "package:flutter_lints/flutter.yaml" in include at "/workspace/scratch/493f502c6c4f/feesmanager/analysis_options.yaml".
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
