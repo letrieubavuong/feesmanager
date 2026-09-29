@@ -13,6 +13,7 @@ import '../../classes/presentation/class_controller.dart';
 import '../../payments/presentation/payment_history_bottom_sheet.dart';
 import '../../payments/presentation/record_payment_bottom_sheet.dart';
 import '../../payments/presentation/vietqr_payment_page.dart';
+import '../../students/presentation/student_detail_page.dart';
 import '../domain/class_month_tuition_overview.dart';
 import 'tuition_controller.dart';
 
@@ -882,6 +883,11 @@ class _StudentTuitionCard extends ConsumerWidget {
     return AppSectionCard(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => StudentDetailPage(studentId: student.id!),
+        ),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -949,12 +955,12 @@ class _StudentTuitionCard extends ConsumerWidget {
           PopupMenuButton<String>(
             key: Key('tuition_student_menu_${student.id}'),
             tooltip: 'Tùy chọn học phí',
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-            icon: const Icon(
-              Icons.more_vert,
-              color: AppColors.textSecondary,
-              size: 22,
+            child: const SizedBox(
+              width: 48,
+              height: 48,
+              child: Center(
+                child: Icon(Icons.more_vert, color: AppColors.textSecondary),
+              ),
             ),
             color: AppColors.surfaceHigh,
             onSelected: (value) async {
