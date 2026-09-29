@@ -11,6 +11,7 @@ import '../../../app/common_widgets/navy_components.dart';
 import '../../../app/common_widgets/parent_contact_actions.dart';
 import '../../../app/common_widgets/student_avatar.dart';
 import '../../../app/design_system/app_theme.dart';
+import '../../../app/design_system/app_spacing.dart';
 import '../../../app/navigation/app_global_drawer.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../core/utils/date_formatter.dart';
