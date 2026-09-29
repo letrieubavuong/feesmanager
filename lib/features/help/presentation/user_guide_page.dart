@@ -304,19 +304,14 @@ const _vietnameseSections = <_GuideSection>[
 ];
 
 const _englishSections = <_GuideSection>[
-  _GuideSection(
-    'Initial setup',
-    'Classes and tuition policies',
-    Icons.tune_outlined,
-    [
-      'Open Classes, create a class and check its name and maximum size.',
-      'Open a class → Tuition in the quick actions to set its policy. If a rate exists, the form shows that rate and suggests the following month as the effective date.',
-      'Choose the effective month, enter the new rate, then review old and new rates in the confirmation sheet. Earlier months keep their previous rate.',
-      'For 12 standard sessions at 50,000 VND each, 7 chargeable sessions with a 10% discount yield 315,000 VND. The excused absence rule determines which sessions are chargeable.',
-      'A finalized invoice in the affected period or an overlapping policy blocks the change with an explanation on the form. Existing invoices and payments are never silently rewritten.',
-      'Open Settings to choose a language and display mode.',
-    ],
-  ),
+  _GuideSection('Initial setup', 'Classes and tuition policies', Icons.tune_outlined, [
+    'Open Classes, create a class and check its name and maximum size.',
+    'Open a class → Tuition in the quick actions to set its policy. If a rate exists, the form shows that rate and suggests the following month as the effective date.',
+    'Choose the effective month, enter the new rate, then review old and new rates in the confirmation sheet. Earlier months keep their previous rate.',
+    'For 12 standard sessions at 50,000 VND each, 7 chargeable sessions with a 10% discount yield 315,000 VND. The excused absence rule determines which sessions are chargeable.',
+    'A finalized invoice in the affected period or an overlapping policy blocks the change with an explanation on the form. Existing invoices and payments are never silently rewritten.',
+    'Open Settings to choose a language and display mode.',
+  ]),
   _GuideSection(
     'Students and enrollment',
     'Parent contact details and class history',
