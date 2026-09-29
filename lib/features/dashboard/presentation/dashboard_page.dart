@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 import '../../../app/common_widgets/app_error_state.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
 import '../../../app/common_widgets/navy_components.dart';
@@ -20,6 +21,8 @@ import '../../reports/export/report_pdf_exporter.dart';
 import '../../sessions/domain/class_session.dart';
 import '../../sessions/domain/session_generation_service.dart';
 import '../../tuition/domain/invoice_service.dart';
+import '../../tuition/domain/class_month_tuition_overview.dart';
+import '../../tuition/domain/class_month_tuition_overview_service.dart';
 import '../domain/dashboard_overview.dart';
 import 'dashboard_controller.dart';
 
@@ -220,7 +223,8 @@ class DashboardPage extends ConsumerWidget {
         const SizedBox(width: 8),
         Expanded(
           child: _buildKpiTile(
-            title: l10n.dashboardOutstandingDebt,
+            title:
+                'Chưa thu tháng ${DateFormat('MM/yyyy').format(DateTime.now())}',
             value: fmt.format(overview.outstandingDebt),
             icon: Icons.account_balance_wallet_outlined,
             color: overview.outstandingDebt > 0
@@ -1103,10 +1107,35 @@ class DashboardPage extends ConsumerWidget {
                                       final invoiceService = await ref.read(
                                         invoiceServiceProvider.future,
                                       );
+                                      final overviewService = await ref.read(
+                                        classMonthTuitionOverviewServiceProvider
+                                            .future,
+                                      );
+                                      final tuitionOverview =
+                                          await overviewService.getOverview(
+                                            cls.id!,
+                                            monthStr,
+                                          );
+                                      final readyIds = tuitionOverview
+                                          .studentRows
+                                          .where(
+                                            (row) =>
+                                                row.state ==
+                                                ClassStudentTuitionState
+                                                    .PREVIEW_READY,
+                                          )
+                                          .map((row) => row.student.id!)
+                                          .toSet();
+                                      if (readyIds.isEmpty) {
+                                        throw Exception(
+                                          'Chưa có học sinh đủ điều kiện chốt. Hãy hoàn tất điểm danh và kiểm tra học phí trong lớp.',
+                                        );
+                                      }
                                       final invoices = await invoiceService
                                           .finalizeClassInvoices(
                                             cls.id!,
                                             monthStr,
+                                            studentIdsToFinalize: readyIds,
                                           );
 
                                       if (context.mounted) {
@@ -1174,9 +1203,8 @@ class DashboardPage extends ConsumerWidget {
       await pdfExporter.export(summary);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Lỗi xuất PDF: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Lỗi xuất PDF: $e')));
       }
     }
   }
@@ -1362,9 +1390,8 @@ class _DashboardRecentActivitiesExpanderState
       );
     }
 
-    final latestStr = DateFormat(
-      'HH:mm • dd/MM',
-    ).format(activities.first.timestamp);
+    final latestStr = DateFormat('HH:mm • dd/MM')
+        .format(activities.first.timestamp);
     final displayedActivities = activities.take(8).toList();
 
     return AppSectionCard(
