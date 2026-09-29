@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/app_loading_state.dart';
 import '../../../app/common_widgets/navy_components.dart';
@@ -57,17 +58,30 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            const Icon(Icons.account_balance_wallet_outlined,
-                color: AppColors.cyanAccent, size: 17),
-            const SizedBox(width: 6),
-            const Expanded(child: Text('Tổng quan học phí',
-                maxLines: 1, overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: AppColors.textPrimary,
-                    fontSize: 14, fontWeight: FontWeight.bold))),
-            const SizedBox(width: 6),
-            _buildMonthSelector(context),
-          ]),
+          Row(
+            children: [
+              const Icon(
+                Icons.account_balance_wallet_outlined,
+                color: AppColors.cyanAccent,
+                size: 17,
+              ),
+              const SizedBox(width: 6),
+              const Expanded(
+                child: Text(
+                  'Tổng quan học phí',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              _buildMonthSelector(context),
+            ],
+          ),
           const SizedBox(height: 12),
           overviewAsync.when(
             data: (overview) {
@@ -83,7 +97,8 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                 _userFilter = null;
               }
 
-              final effectiveFilter = _userFilter ??
+              final effectiveFilter =
+                  _userFilter ??
                   (outstandingCount > 0
                       ? TuitionPaymentFilter.outstanding
                       : TuitionPaymentFilter.paid);
@@ -102,14 +117,24 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
                   const SizedBox(height: 12),
                   _buildUnfinalizedBanner(context, overview),
                   const SizedBox(height: 12),
-                  const Row(children: [
-                    Icon(Icons.people_outline,
-                        color: AppColors.cyanAccent, size: 18),
-                    SizedBox(width: 8),
-                    Text('Danh sách học sinh', style: TextStyle(
-                        color: AppColors.textPrimary, fontSize: 16,
-                        fontWeight: FontWeight.bold)),
-                  ]),
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.people_outline,
+                        color: AppColors.cyanAccent,
+                        size: 18,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Danh sách học sinh',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 10),
                   _buildStudentTuitionList(context, overview, effectiveFilter),
                 ],
@@ -140,42 +165,50 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     return SizedBox(
       width: 148,
       child: AppSectionCard(
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left, color: AppColors.cyanAccent, size: 20),
-            onPressed: () => _changeMonth(-1),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints.tightFor(width: 28, height: 30),
-          ),
-          Row(
-            children: [
-              const Icon(
-                Icons.calendar_month_outlined,
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: const Icon(
+                Icons.chevron_left,
                 color: AppColors.cyanAccent,
-                size: 14,
+                size: 20,
               ),
-              const SizedBox(width: 3),
-              Text(
-                formattedMonth,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+              onPressed: () => _changeMonth(-1),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 28, height: 30),
+            ),
+            Row(
+              children: [
+                const Icon(
+                  Icons.calendar_month_outlined,
+                  color: AppColors.cyanAccent,
+                  size: 14,
                 ),
+                const SizedBox(width: 3),
+                Text(
+                  formattedMonth,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            IconButton(
+              icon: const Icon(
+                Icons.chevron_right,
+                color: AppColors.cyanAccent,
+                size: 20,
               ),
-            ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right, color: AppColors.cyanAccent, size: 20),
-            onPressed: () => _changeMonth(1),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints.tightFor(width: 28, height: 30),
-          ),
-        ],
-      ),
+              onPressed: () => _changeMonth(1),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 28, height: 30),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -219,23 +252,32 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     int outstandingCount,
     int paidCount,
   ) {
-    return Row(children: [
-      const Expanded(
-        child: Text('Tạm tính / còn thu',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-      ),
-      Text('$outstandingCount',
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-      Switch.adaptive(
-        value: activeFilter == TuitionPaymentFilter.paid,
-        onChanged: (paid) => setState(() =>
-            _userFilter = paid
+    return Row(
+      children: [
+        const Expanded(
+          child: Text(
+            'Tạm tính / còn thu',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
+        ),
+        Text(
+          '$outstandingCount',
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+        ),
+        Switch.adaptive(
+          value: activeFilter == TuitionPaymentFilter.paid,
+          onChanged: (paid) => setState(
+            () => _userFilter = paid
                 ? TuitionPaymentFilter.paid
-                : TuitionPaymentFilter.outstanding),
-      ),
-      Text('Đã thu đủ ($paidCount)',
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-    ]);
+                : TuitionPaymentFilter.outstanding,
+          ),
+        ),
+        Text(
+          'Đã thu đủ ($paidCount)',
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+        ),
+      ],
+    );
   }
 
   Widget _buildUnfinalizedBanner(
@@ -788,8 +830,8 @@ class _StudentTuitionCard extends ConsumerWidget {
                     amountPaid > 0
                         ? 'Đã thu ${AppFormatter.formatCurrency(amountPaid, context: context)} • Còn ${AppFormatter.formatCurrency(remainingDebt, context: context)}'
                         : row.isFinalized
-                            ? 'Còn nợ ${AppFormatter.formatCurrency(remainingDebt, context: context)}'
-                            : 'Tạm tính ${AppFormatter.formatCurrency(remainingDebt, context: context)}',
+                        ? 'Còn nợ ${AppFormatter.formatCurrency(remainingDebt, context: context)}'
+                        : 'Tạm tính ${AppFormatter.formatCurrency(remainingDebt, context: context)}',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
