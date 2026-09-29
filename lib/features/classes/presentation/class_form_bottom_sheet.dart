@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/app_page_scaffold.dart';
 import '../../../app/common_widgets/dirty_form_scope.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../tuition/presentation/create_tuition_policy_bottom_sheet.dart';
 import '../domain/class.dart';
 import 'class_controller.dart';
 
@@ -304,8 +306,18 @@ Future<bool?> _showClassFormAndPolicy(
   if (result is int) {
     AppFeedback.showSuccessSnackBar(
       context,
-      'Tạo lớp học thành công.',
+      'Tạo lớp học thành công. Vui lòng thiết lập học phí lớp.',
     );
+    final policySuccess = await showCreateTuitionPolicyBottomSheet(
+      context,
+      classId: result,
+    );
+    if (policySuccess != true && context.mounted) {
+      AppFeedback.showErrorSnackBar(
+        context,
+        'Lớp đã được tạo nhưng thiết lập học phí chưa hoàn tất.',
+      );
+    }
     return true;
   }
   if (result == true) {
