@@ -42,7 +42,7 @@ class _UserGuidePageState extends State<UserGuidePage> {
         title: Text(AppLocalizations.of(context)!.navGuide),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        padding: const EdgeInsets.fromLTRB(6, 16, 6, 32),
         children: [
           AppSectionCard(
             padding: const EdgeInsets.all(16),
@@ -274,7 +274,7 @@ const _vietnameseSections = <_GuideSection>[
     [
       'Mở chi tiết lớp → Học phí và chọn đúng tháng. Tạm tính là số tiền dự kiến, chưa phải hóa đơn đã chốt.',
       'Kiểm tra điểm danh, chính sách học phí và các học sinh bị chặn vì thiếu dữ liệu trước khi chọn Chốt học phí.',
-      'Dự kiến còn thu gồm tiền tạm tính chưa chốt cộng với tiền còn nợ của hóa đơn đã chốt. Chỉ hóa đơn đã chốt mới là căn cứ thu tiền.',
+      'Dự kiến còn thu gồm tiền tạm tính chưa chốt cộng với tiền chưa thanh toán của hóa đơn đã chốt. Chỉ hóa đơn đã chốt mới là căn cứ thu tiền.',
     ],
   ),
   _GuideSection(
