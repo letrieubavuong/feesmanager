@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../app/common_widgets/navy_components.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../app/design_system/theme_controller.dart';
@@ -9,6 +10,7 @@ import '../../../app/navigation/ui_keys.dart';
 import '../../../l10n/app_localizations.dart';
 import 'bank_account_settings_page.dart';
 import 'school_catalog_provider.dart';
+import 'tuition_policy_settings_page.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -121,6 +123,23 @@ class SettingsPage extends ConsumerWidget {
             ),
           ),
 
+          const SizedBox(height: 16),
+
+          const AppSectionHeader(title: 'CHÍNH SÁCH HỌC PHÍ'),
+          AppSectionCard(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const TuitionPolicySettingsPage(),
+              ),
+            ),
+            child: const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.rule_outlined),
+              title: Text('Quy tắc tính học phí theo lớp'),
+              subtitle: Text('Đơn giá, số buổi chuẩn và mức tối đa'),
+              trailing: Icon(Icons.chevron_right),
+            ),
+          ),
           const SizedBox(height: 16),
 
           // 3. THANH TOÁN & QR
