@@ -64,10 +64,17 @@ class InvoiceService {
         )
         .toList();
 
-    if (plannedChinhSessions.isEmpty ||
-        plannedChinhSessions.any((s) => s.trangThai != SessionStatus.DA_HOC)) {
+    if (plannedChinhSessions.isEmpty) {
       throw Exception(
-        'EARLY_MONTH_BILLING_ENGINE_GAP: Chưa thể chốt học phí tháng $month khi các buổi học chính trong tháng chưa hoàn thành.',
+        'EARLY_MONTH_BILLING_ENGINE_GAP: Tháng $month chưa có buổi học chính để đối soát. Hãy sinh buổi học và hoàn tất điểm danh trước khi chốt.',
+      );
+    }
+    final incomplete = plannedChinhSessions
+        .where((s) => s.trangThai != SessionStatus.DA_HOC)
+        .toList();
+    if (incomplete.isNotEmpty) {
+      throw Exception(
+        'EARLY_MONTH_BILLING_ENGINE_GAP: Còn ${incomplete.length} buổi học chính chưa hoàn tất trong tháng $month (ví dụ ${incomplete.first.ngay}). Hãy hoàn tất điểm danh trước khi chốt.',
       );
     }
   }
