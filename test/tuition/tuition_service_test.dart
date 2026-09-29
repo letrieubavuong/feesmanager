@@ -229,35 +229,38 @@ void main() {
       expect(preview.soTienPhaiThu, 500000);
     });
 
-    test('Double-Count Credit Case B: Pre-reconciled extra credit is NOT double-counted', () async {
-      // 12 standard sessions + 1 extra session (13)
-      for (int i = 1; i <= 13; i++) {
-        final dayStr = i < 10 ? '0$i' : '$i';
-        final dateStr = '2026-09-$dayStr';
-        final dt = DateTime.parse(dateStr);
-        await db.execute('''
+    test(
+      'Double-Count Credit Case B: Pre-reconciled extra credit is NOT double-counted',
+      () async {
+        // 12 standard sessions + 1 extra session (13)
+        for (int i = 1; i <= 13; i++) {
+          final dayStr = i < 10 ? '0$i' : '$i';
+          final dateStr = '2026-09-$dayStr';
+          final dt = DateTime.parse(dateStr);
+          await db.execute('''
           INSERT INTO buoi_hoc (id, id_lop, id_lich_hoc, ngay, gio_bat_dau, gio_ket_thuc, loai, trang_thai, created_at, updated_at)
           VALUES ($i, 1, ${dt.weekday}, '$dateStr', '17:30', '19:00', 'CHINH', 'DA_HOC', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
         ''');
-        await db.execute('''
+          await db.execute('''
           INSERT INTO diem_danh (id_buoi_hoc, id_hoc_sinh, id_lop_goc, trang_thai, created_at, updated_at)
           VALUES ($i, 1, 1, 'CO_MAT', '2026-01-01T00:00:00.000', '2026-01-01T00:00:00.000')
         ''');
-      }
+        }
 
-      // Pre-reconcile session 13 into buoi_du_ledger
-      await db.execute('''
+        // Pre-reconcile session 13 into buoi_du_ledger
+        await db.execute('''
         INSERT INTO buoi_du_ledger (id_hoc_sinh, id_lop, id_buoi_hoc, ngay_hieu_luc, delta, ly_do, ghi_chu, created_at)
         VALUES (1, 1, 13, '2026-09-13', 1, 'VUOT_SO_BUOI_CHUAN', 'Pre-reconciled credit', '2026-01-01T00:00:00.000')
       ''');
 
-      final preview = await service.previewTuition(1, 1, '2026-09');
+        final preview = await service.previewTuition(1, 1, '2026-09');
 
-      // Crucial assertion: Preview closing MUST be 1, NOT 2!
-      expect(preview.creditOpening, 0);
-      expect(preview.creditEarned, 1);
-      expect(preview.creditClosing, 1);
-    });
+        // Crucial assertion: Preview closing MUST be 1, NOT 2!
+        expect(preview.creditOpening, 0);
+        expect(preview.creditEarned, 1);
+        expect(preview.creditClosing, 1);
+      },
+    );
 
     test('Monthly Cap Boundary Tests: below, equal, above, null cap', () async {
       // 1. Below cap: 2 sessions * 50,000 = 100,000, 10% discount => 90,000
