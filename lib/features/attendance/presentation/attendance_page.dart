@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/attendance_status_icon.dart';
 import '../../../app/common_widgets/navy_components.dart';
@@ -186,9 +187,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
     return Column(
       children: [
         _buildCompactHeaderAndSummary(sheet, summary),
-
         if (isEditable) _buildActionToolbar(sheet),
-
         if (_isCorrectionMode)
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -222,7 +221,6 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
               ],
             ),
           ),
-
         if (sheet.session.loai == SessionType.PHAT_SINH &&
             _canEditRosterStructure(sheet))
           Container(
@@ -281,7 +279,6 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
               ],
             ),
           ),
-
         if (sheet.session.loai == SessionType.HOC_BU &&
             sheet.requiresOneOffAdjustments)
           Container(
@@ -310,11 +307,8 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
               ],
             ),
           ),
-
         if (!sheet.isRosterValid) _buildRosterIssuesWidget(sheet),
-
         _buildSectionHeader(summary.total),
-
         Expanded(
           child: sheet.members.isEmpty
               ? Center(
@@ -988,12 +982,10 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
                 ),
             ],
           ),
-
           if (student.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
             const SizedBox(height: 6),
             ParentContactActions(phone: student.sdtPhuHuynh),
           ],
-
           if (isEditable) ...[
             const SizedBox(height: 6),
             AttendanceStateSelector(
@@ -1009,7 +1001,6 @@ class _AttendancePageState extends ConsumerState<AttendancePage> {
               },
             ),
           ],
-
           if (member.suggestedState != null &&
               effectiveState == AttendanceState.CHUA_DIEM_DANH)
             Container(
