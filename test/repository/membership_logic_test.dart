@@ -93,6 +93,49 @@ void main() {
   });
 
   group('Membership Logic', () {
+    test(
+      'bulk enrollment is atomic when one student already overlaps',
+      () async {
+        final now = DateTime.now();
+        final first = await studentRepo.create(
+          Student(hoTen: 'An', createdAt: now, updatedAt: now),
+        );
+        final second = await studentRepo.create(
+          Student(hoTen: 'Bình', createdAt: now, updatedAt: now),
+        );
+        final classId = await classRepo.create(
+          ClassEntity(
+            tenLop: 'Lớp A',
+            siSoToiDa: 2,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+        await service.enrollStudent(
+          studentId: second,
+          classId: classId,
+          joinDate: now,
+        );
+
+        await expectLater(
+          service.enrollStudents(
+            studentIds: [first, second],
+            classId: classId,
+            joinDate: now,
+          ),
+          throwsException,
+        );
+        expect(await service.getClassSize(classId, date: now), 1);
+
+        await service.enrollStudents(
+          studentIds: [first],
+          classId: classId,
+          joinDate: now,
+        );
+        expect(await service.getClassSize(classId, date: now), 2);
+      },
+    );
+
     test('enroll and class size', () async {
       final sId = await studentRepo.create(
         Student(
