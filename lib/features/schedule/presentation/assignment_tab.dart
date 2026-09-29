@@ -94,7 +94,7 @@ class AssignmentTab extends ConsumerWidget {
                       });
                     return ListView.builder(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
+                        horizontal: 6,
                         vertical: 8,
                       ),
                       itemCount: ordered.length,
