@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/common_widgets/app_feedback.dart';
 import '../../../app/common_widgets/navy_components.dart';
 import '../../../app/common_widgets/student_avatar.dart';
+import '../../../app/common_widgets/parent_contact_actions.dart';
 import '../../../app/design_system/app_theme.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../l10n/app_localizations.dart';
@@ -321,6 +322,10 @@ class _AssignmentRowItem extends ConsumerWidget {
                     fontSize: 11,
                   ),
                 ),
+                if (studentAsync.valueOrNull?.sdtPhuHuynh?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 6),
+                  ParentContactActions(phone: studentAsync.valueOrNull?.sdtPhuHuynh),
+                ],
               ],
             ),
           ),
