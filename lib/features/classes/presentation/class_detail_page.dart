@@ -1030,6 +1030,11 @@ class HistoryItem extends ConsumerWidget {
     return AppSectionCard(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => StudentDetailPage(studentId: membership.idHocSinh),
+        ),
+      ),
       child: Row(
         children: [
           studentAsync.when(
@@ -1159,6 +1164,11 @@ class RosterItem extends ConsumerWidget {
     return AppSectionCard(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => StudentDetailPage(studentId: membership.idHocSinh),
+        ),
+      ),
       child: Row(
         children: [
           studentAsync.when(
