@@ -455,13 +455,12 @@ class _CreateTuitionPolicyBottomSheetState
                             lastDate: DateTime(2100),
                           );
                           if (picked != null) {
-                            setState(
-                              () => _effectiveFromDate = DateTime(
-                                picked.year,
-                                picked.month,
-                                1,
-                              ),
+                            final normalized = DateTime(
+                              picked.year,
+                              picked.month,
+                              1,
                             );
+                            setState(() => _effectiveFromDate = normalized);
                             _checkDirty();
                           }
                         },

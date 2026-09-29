@@ -1,5 +1,6 @@
 class TuitionPolicyDefaults {
   static const int standardSessionsPerMonth = 12;
+  static const int defaultFeePerSession = 50000;
 }
 
 enum ExcusedAbsenceFeeRule { buTruBuoiDu, tinhPhi, khongTinhPhi }

@@ -41,7 +41,7 @@ class TuitionPolicyService {
 
   Future<TuitionPolicy?> getEffectivePolicy(int classId, DateTime date) {
     final dateStr = DateFormat('yyyy-MM-dd').format(date);
-    return _repo.getEffectivePolicy(classId, dateStr);
+    return getEffectivePolicyForDateStr(classId, dateStr);
   }
 
   Future<TuitionPolicy?> getEffectivePolicyForDateStr(

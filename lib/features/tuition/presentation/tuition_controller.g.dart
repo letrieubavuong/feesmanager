@@ -727,7 +727,7 @@ class _ClassMonthTuitionOverviewProviderElement
 }
 
 String _$tuitionPolicyControllerHash() =>
-    r'3aac76bd61c64bad9b15029a6e799ee8ae731218';
+    r'558472576c855213b6a0d0a601a1f6898c834575';
 
 /// See also [TuitionPolicyController].
 @ProviderFor(TuitionPolicyController)
@@ -934,7 +934,7 @@ class _TuitionPreviewControllerProviderElement
   String get month => (origin as TuitionPreviewControllerProvider).month;
 }
 
-String _$invoiceControllerHash() => r'709fb774093bcbc2e9876f12c0151f5c0dd202b3';
+String _$invoiceControllerHash() => r'8890fca80638df134b0bf37f22ce04fe10f143be';
 
 /// See also [InvoiceController].
 @ProviderFor(InvoiceController)
