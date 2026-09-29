@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../settings/domain/class_reminder_service.dart';
 import '../domain/class_session.dart';
 import '../domain/session_service.dart';
 import '../domain/session_generation_service.dart';
@@ -31,6 +35,7 @@ class ClassSessionController extends _$ClassSessionController {
     );
     ref.invalidateSelf();
     await future;
+    _refreshReminders();
     return result;
   }
 
@@ -40,6 +45,7 @@ class ClassSessionController extends _$ClassSessionController {
     await service.createManualSession(session);
     ref.invalidateSelf();
     await future;
+    _refreshReminders();
   }
 
   Future<void> updateStatus(int sessionId, SessionStatus status) async {
@@ -48,5 +54,15 @@ class ClassSessionController extends _$ClassSessionController {
     await service.updateStatus(sessionId, status);
     ref.invalidateSelf();
     await future;
+    _refreshReminders();
+  }
+
+  void _refreshReminders() {
+    unawaited(
+      ref
+          .read(classReminderServiceProvider)
+          .refresh()
+          .catchError((Object _) {}),
+    );
   }
 }
