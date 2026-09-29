@@ -93,8 +93,9 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
   Future<void> _showHistoricalAttendanceSheet() async {
     final month = DateTime(_timelineMonth.year, _timelineMonth.month);
     final start = DateFormat('yyyy-MM-dd').format(month);
-    final end = DateFormat('yyyy-MM-dd')
-        .format(DateTime(month.year, month.month + 1, 0));
+    final end = DateFormat(
+      'yyyy-MM-dd',
+    ).format(DateTime(month.year, month.month + 1, 0));
     final service = await ref.read(attendanceServiceProvider.future);
     if (!mounted) return;
     HistoricalAttendancePreview? preview;
@@ -169,8 +170,9 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
     if (confirmed != true) return;
     try {
       final monthKey = DateFormat('yyyy-MM').format(month);
-      final invoices = await (await ref.read(invoiceServiceProvider.future))
-          .getInvoicesForClassMonth(widget.classId, monthKey);
+      final invoices = await (await ref.read(
+        invoiceServiceProvider.future,
+      )).getInvoicesForClassMonth(widget.classId, monthKey);
       final hasFinalizedInvoice = invoices.any(
         (invoice) => invoice.trangThai.isFinalizedSnapshot,
       );
@@ -220,8 +222,9 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Không thể điểm danh bù: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Không thể điểm danh bù: $e')));
     }
   }
 
