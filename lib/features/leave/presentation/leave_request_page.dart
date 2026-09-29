@@ -347,11 +347,13 @@ class _LeaveRequestPageState extends ConsumerState<LeaveRequestPage> {
                                         ).notifier,
                                       )
                                       .createLeaveRequest(req);
-                                  if (sheetContext.mounted)
+                                  if (sheetContext.mounted) {
                                     Navigator.pop(sheetContext);
+                                  }
                                 } catch (e) {
-                                  if (sheetContext.mounted)
+                                  if (sheetContext.mounted) {
                                     _showError(e.toString());
+                                  }
                                 }
                               },
                         child: const Text('Tạo đơn'),
