@@ -153,7 +153,7 @@ class ScheduleTab extends ConsumerWidget {
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          'Hiệu lực: ${DateFormatter.formatDisplayDate(s.hieuLucTu)}${s.hieuLucDen != null ? ' đến ${DateFormatter.formatDisplayDate(s.hieuLucDen!)}' : ''}',
+                                          'Hiệu lực: ${DateFormatter.formatDisplayDate(s.hieuLucTu)}${s.hieuLucDen != null ? ' đến ${DateFormatter.formatDisplayDate(s.hieuLucDen!)}' : ' - Chưa xác định'}',
                                           style: const TextStyle(
                                             color: AppColors.textSecondary,
                                             fontSize: 12,
@@ -309,6 +309,8 @@ class _ScheduleFormBottomSheetState
   TimeOfDay _start = const TimeOfDay(hour: 14, minute: 0);
   TimeOfDay _end = const TimeOfDay(hour: 15, minute: 30);
   DateTime _effectiveFrom = DateTime.now();
+  DateTime? _effectiveTo;
+  bool _isOpenEnded = true;
   bool _isDirty = false;
   bool _isSaving = false;
   String? _inlineError;
@@ -331,6 +333,13 @@ class _ScheduleFormBottomSheetState
       );
       _effectiveFrom =
           DateFormat('yyyy-MM-dd').tryParse(s.hieuLucTu) ?? DateTime.now();
+      if (s.hieuLucDen != null) {
+        _effectiveTo = DateFormat('yyyy-MM-dd').tryParse(s.hieuLucDen!);
+        _isOpenEnded = false;
+      } else {
+        _effectiveTo = null;
+        _isOpenEnded = true;
+      }
       _ghiChuController.text = s.ghiChu ?? '';
     }
   }
@@ -684,6 +693,61 @@ class _ScheduleFormBottomSheetState
                         },
                       ),
                       const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _isOpenEnded,
+                            activeColor: AppColors.cyanAccent,
+                            onChanged: (val) {
+                              _onChanged();
+                              setState(() {
+                                _isOpenEnded = val ?? true;
+                                if (_isOpenEnded) _effectiveTo = null;
+                              });
+                            },
+                          ),
+                          const Text(
+                            'Chưa xác định ngày kết thúc',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (!_isOpenEnded) ...[
+                        const SizedBox(height: 8),
+                        _buildFieldLabel('Hiệu lực đến ngày'),
+                        _buildCustomInputContainer(
+                          icon: Icons.calendar_month_rounded,
+                          child: Text(
+                            _effectiveTo != null
+                                ? DateFormatter.formatDisplayDate(_effectiveTo!)
+                                : 'Chọn ngày kết thúc',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: _effectiveTo != null
+                                  ? AppColors.textPrimary
+                                  : AppColors.textMuted,
+                            ),
+                          ),
+                          onTap: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: _effectiveTo ?? _effectiveFrom.add(const Duration(days: 30)),
+                              firstDate: _effectiveFrom,
+                              lastDate: DateTime(2100),
+                            );
+                            if (picked != null) {
+                              _onChanged();
+                              setState(() => _effectiveTo = picked);
+                            }
+                          },
+                        ),
+                      ],
+                      const SizedBox(height: 16),
                       _buildFieldLabel('Ghi chú'),
                       Container(
                         decoration: BoxDecoration(
@@ -807,6 +871,14 @@ class _ScheduleFormBottomSheetState
       _inlineError = null;
     });
 
+    if (!_isOpenEnded && _effectiveTo != null && _effectiveTo!.isBefore(_effectiveFrom)) {
+      setState(() {
+        _isSaving = false;
+        _inlineError = 'Ngày kết thúc hiệu lực không được trước ngày bắt đầu';
+      });
+      return;
+    }
+
     try {
       final startStr =
           '${_start.hour.toString().padLeft(2, '0')}:${_start.minute.toString().padLeft(2, '0')}';
@@ -815,6 +887,11 @@ class _ScheduleFormBottomSheetState
       final ghiChu = _ghiChuController.text.trim().isEmpty
           ? null
           : _ghiChuController.text.trim();
+
+      final effectiveFromStr = DateFormat('yyyy-MM-dd').format(_effectiveFrom);
+      final effectiveToStr = !_isOpenEnded && _effectiveTo != null
+          ? DateFormat('yyyy-MM-dd').format(_effectiveTo!)
+          : null;
 
       if (widget.scheduleToEdit != null) {
         final success = await ref
@@ -825,6 +902,7 @@ class _ScheduleFormBottomSheetState
               gioBatDau: startStr,
               gioKetThuc: endStr,
               effectiveDate: _effectiveFrom,
+              effectiveTo: !_isOpenEnded ? _effectiveTo : null,
               ghiChu: ghiChu,
             );
         if (success) {
@@ -840,13 +918,14 @@ class _ScheduleFormBottomSheetState
           }
         } else {
           if (mounted) {
+            final err = ref
+                .read(classScheduleControllerProvider(widget.classId))
+                .error;
             setState(() {
               _isSaving = false;
-              _inlineError = ref
-                  .read(classScheduleControllerProvider(widget.classId))
-                  .error
-                  .toString()
-                  .replaceFirst('Exception: ', '');
+              _inlineError = err != null
+                  ? err.toString().replaceAll('Exception: ', '')
+                  : 'Có lỗi xảy ra khi lưu lịch học';
             });
           }
         }
@@ -856,7 +935,8 @@ class _ScheduleFormBottomSheetState
           thuTrongTuan: _thu,
           gioBatDau: startStr,
           gioKetThuc: endStr,
-          hieuLucTu: DateFormat('yyyy-MM-dd').format(_effectiveFrom),
+          hieuLucTu: effectiveFromStr,
+          hieuLucDen: effectiveToStr,
           ghiChu: ghiChu,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
@@ -876,13 +956,14 @@ class _ScheduleFormBottomSheetState
           }
         } else {
           if (mounted) {
+            final err = ref
+                .read(classScheduleControllerProvider(widget.classId))
+                .error;
             setState(() {
               _isSaving = false;
-              _inlineError = ref
-                  .read(classScheduleControllerProvider(widget.classId))
-                  .error
-                  .toString()
-                  .replaceFirst('Exception: ', '');
+              _inlineError = err != null
+                  ? err.toString().replaceAll('Exception: ', '')
+                  : 'Có lỗi xảy ra khi tạo lịch học';
             });
           }
         }

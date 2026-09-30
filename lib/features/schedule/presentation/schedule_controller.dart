@@ -48,6 +48,7 @@ class ClassScheduleController extends _$ClassScheduleController {
     required String gioBatDau,
     required String gioKetThuc,
     required DateTime effectiveDate,
+    DateTime? effectiveTo,
     String? ghiChu,
   }) async {
     state = const AsyncValue.loading();
@@ -59,6 +60,7 @@ class ClassScheduleController extends _$ClassScheduleController {
         gioBatDau: gioBatDau,
         gioKetThuc: gioKetThuc,
         effectiveDate: effectiveDate,
+        effectiveTo: effectiveTo,
         ghiChu: ghiChu,
       );
       return service.getSchedulesForClass(classId);

@@ -8,6 +8,7 @@ import '../data/schedule_repository.dart';
 import '../data/assignment_repository.dart';
 import 'bulk_assignment_result.dart';
 import 'class_schedule.dart';
+import 'schedule_change_plan.dart';
 import 'student_shift_assignment.dart';
 import '../../memberships/domain/membership_service.dart';
 import '../../students/domain/student_service.dart';
@@ -62,7 +63,24 @@ class ScheduleDomainService {
     _validateSchedule(schedule);
 
     final id = await _scheduleRepo.create(schedule);
-    return schedule.copyWith(id: id);
+    final created = schedule.copyWith(id: id);
+
+    final db = _scheduleRepo.db;
+    final fromDt = DateTime.parse(schedule.hieuLucTu);
+    final toDt = schedule.hieuLucDen != null
+        ? DateTime.parse(schedule.hieuLucDen!)
+        : DateTime(fromDt.year, fromDt.month + 3, 1);
+
+    await db.transaction((txn) async {
+      await _generateSessionsInTxn(
+        txn,
+        classId: schedule.idLop,
+        fromDate: fromDt,
+        toDate: toDt,
+      );
+    });
+
+    return created;
   }
 
   Future<void> closeSchedule(int scheduleId, DateTime endDate) async {
@@ -94,9 +112,313 @@ class ScheduleDomainService {
       }
     }
 
-    await _scheduleRepo.update(
-      existing.copyWith(hieuLucDen: endStr, updatedAt: DateTime.now()),
+    final db = _scheduleRepo.db;
+    await db.transaction((txn) async {
+      await _scheduleRepo.updateInTxn(
+        txn,
+        existing.copyWith(hieuLucDen: endStr, updatedAt: DateTime.now()),
+      );
+
+      // Clean up future un-attended DU_KIEN sessions past endStr
+      await txn.delete(
+        'buoi_hoc',
+        where: 'id_lich_hoc = ? AND ngay > ? AND trang_thai = ?',
+        whereArgs: [scheduleId, endStr, 'DU_KIEN'],
+      );
+    });
+  }
+
+  Future<ScheduleChangePlan> previewScheduleChange({
+    required int scheduleId,
+    required int newWeekday,
+    required String newStart,
+    required String newEnd,
+    required String newEffectiveFrom,
+    String? newEffectiveTo,
+  }) async {
+    final existing = await _scheduleRepo.getById(scheduleId);
+    if (existing == null) throw Exception('Không tìm thấy lịch học');
+
+    DateAndTimeValidators.validateTimeOrder(
+      newStart,
+      newEnd,
+      'newStart',
+      'newEnd',
     );
+    DateAndTimeValidators.validateDateRange(
+      newEffectiveFrom,
+      newEffectiveTo,
+      'newEffectiveFrom',
+      'newEffectiveTo',
+    );
+    if (newWeekday < 1 || newWeekday > 7) {
+      throw Exception('Thứ trong tuần không hợp lệ (1-7)');
+    }
+
+    final db = _scheduleRepo.db;
+
+    final sessions = await db.query(
+      'buoi_hoc',
+      where: 'id_lich_hoc = ?',
+      whereArgs: [scheduleId],
+    );
+
+    final protectedSessions = <String>[];
+    final conflicts = <String>[];
+    bool hasHistory = false;
+    bool hasHardConflict = false;
+
+    for (final sMap in sessions) {
+      final sessionId = sMap['id'] as int;
+      final sessionDate = sMap['ngay'] as String;
+      final sessionStatus = sMap['trang_thai'] as String;
+
+      final attendanceCount = Sqflite.firstIntValue(
+        await db.rawQuery(
+          'SELECT COUNT(*) FROM diem_danh WHERE id_buoi_hoc = ?',
+          [sessionId],
+        ),
+      ) ?? 0;
+
+      final adjustmentCount = Sqflite.firstIntValue(
+        await db.rawQuery(
+          'SELECT COUNT(*) FROM dieu_chinh_buoi_hoc WHERE id_buoi_hoc_goc = ? OR id_buoi_hoc_tham_gia = ?',
+          [sessionId, sessionId],
+        ),
+      ) ?? 0;
+
+      if (sessionStatus != 'DU_KIEN' || attendanceCount > 0 || adjustmentCount > 0) {
+        hasHistory = true;
+        protectedSessions.add(
+          'Buổi $sessionDate (${sessionStatus == 'DU_KIEN' ? 'Đã ghi nhận dữ liệu điểm danh/đổi ca' : sessionStatus})',
+        );
+        if (sessionDate.compareTo(newEffectiveFrom) >= 0) {
+          hasHardConflict = true;
+          conflicts.add(
+            'Không thể thay đổi lịch học vì có buổi học ngày $sessionDate đã ghi nhận dữ liệu (điểm danh/điều chỉnh).',
+          );
+        }
+      }
+    }
+
+    final isDirectEdit = !hasHistory;
+
+    final assignments = await _assignmentRepo.getBySchedule(scheduleId);
+    if (!hasHardConflict) {
+      for (final a in assignments) {
+        final student = await _studentService.getStudentById(a.idHocSinh);
+        final studentName = student?.hoTen ?? 'Học sinh #${a.idHocSinh}';
+
+        final effectiveAssignStart =
+            newEffectiveFrom.compareTo(a.tuNgay) > 0 ? newEffectiveFrom : a.tuNgay;
+        String? effectiveAssignEnd = a.denNgay;
+        if (newEffectiveTo != null) {
+          if (effectiveAssignEnd == null || effectiveAssignEnd.compareTo(newEffectiveTo) > 0) {
+            effectiveAssignEnd = newEffectiveTo;
+          }
+        }
+
+        if (effectiveAssignEnd != null && effectiveAssignStart.compareTo(effectiveAssignEnd) > 0) {
+          conflicts.add(
+            '$studentName: Phân ca bị mất hiệu lực do khoảng lịch học mới ($newEffectiveFrom - ${newEffectiveTo ?? "không xác định"}) không giao với phân ca cũ (${a.tuNgay} - ${a.denNgay ?? "không xác định"}).',
+          );
+          hasHardConflict = true;
+          continue;
+        }
+
+        final conflictResult = await _conflictService.evaluateCandidateAssignment(
+          studentId: a.idHocSinh,
+          targetScheduleId: scheduleId,
+          startDate: effectiveAssignStart,
+          endDate: effectiveAssignEnd,
+          excludeAssignmentId: a.id,
+          excludeScheduleId: scheduleId,
+          studentName: studentName,
+        );
+
+        if (conflictResult.hardConflicts.isNotEmpty) {
+          hasHardConflict = true;
+          for (final hc in conflictResult.hardConflicts) {
+            conflicts.add(hc.message);
+          }
+        }
+      }
+    }
+
+    final affectedMonths = <String>{};
+    final fromDt = DateTime.parse(newEffectiveFrom);
+    final toDt = newEffectiveTo != null
+        ? DateTime.parse(newEffectiveTo)
+        : DateTime(fromDt.year, fromDt.month + 3, 1);
+    for (
+      var d = fromDt;
+      d.isBefore(toDt.add(const Duration(days: 1)));
+      d = DateTime(d.year, d.month + 1, 1)
+    ) {
+      affectedMonths.add(DateFormat('yyyy-MM').format(d));
+    }
+
+    final revisionToken = DateTime.now().millisecondsSinceEpoch.toString();
+
+    return ScheduleChangePlan(
+      scheduleId: scheduleId,
+      newWeekday: newWeekday,
+      newStart: newStart,
+      newEnd: newEnd,
+      effectiveFrom: newEffectiveFrom,
+      effectiveTo: newEffectiveTo,
+      applyFrom: newEffectiveFrom,
+      isDirectEdit: isDirectEdit,
+      protectedSessions: protectedSessions,
+      conflicts: conflicts,
+      hasHardConflict: hasHardConflict,
+      affectedAssignmentsCount: assignments.length,
+      affectedMonths: affectedMonths.toList(),
+      revisionToken: revisionToken,
+    );
+  }
+
+  Future<void> applyScheduleChange({
+    required ScheduleChangePlan plan,
+    String? ghiChu,
+  }) async {
+    if (plan.hasHardConflict) {
+      throw Exception(
+        'Không thể lưu lịch học do có xung đột cứng:\n${plan.conflicts.join('\n')}',
+      );
+    }
+
+    final existing = await _scheduleRepo.getById(plan.scheduleId);
+    if (existing == null) throw Exception('Không tìm thấy lịch học');
+
+    final assignments = await _assignmentRepo.getBySchedule(plan.scheduleId);
+    final db = _scheduleRepo.db;
+
+    await db.transaction((txn) async {
+      if (plan.isDirectEdit) {
+        final updated = existing.copyWith(
+          thuTrongTuan: plan.newWeekday,
+          gioBatDau: plan.newStart,
+          gioKetThuc: plan.newEnd,
+          hieuLucTu: plan.effectiveFrom,
+          hieuLucDen: plan.effectiveTo,
+          ghiChu: ghiChu ?? existing.ghiChu,
+          updatedAt: DateTime.now(),
+        );
+        _validateSchedule(updated);
+        await _scheduleRepo.updateInTxn(txn, updated);
+
+        await txn.rawDelete('''
+          DELETE FROM buoi_hoc 
+          WHERE id_lich_hoc = ? AND trang_thai = 'DU_KIEN'
+            AND id NOT IN (SELECT id_buoi_hoc FROM diem_danh)
+            AND id NOT IN (SELECT id_buoi_hoc_goc FROM dieu_chinh_buoi_hoc WHERE id_buoi_hoc_goc IS NOT NULL)
+            AND id NOT IN (SELECT id_buoi_hoc_tham_gia FROM dieu_chinh_buoi_hoc)
+        ''', [plan.scheduleId]);
+
+        for (final a in assignments) {
+          String newAssignStart = a.tuNgay;
+          if (newAssignStart.compareTo(plan.effectiveFrom) < 0) {
+            newAssignStart = plan.effectiveFrom;
+          }
+          String? newAssignEnd = a.denNgay;
+          if (plan.effectiveTo != null) {
+            if (newAssignEnd == null || newAssignEnd.compareTo(plan.effectiveTo!) > 0) {
+              newAssignEnd = plan.effectiveTo;
+            }
+          }
+          if (newAssignStart != a.tuNgay || newAssignEnd != a.denNgay) {
+            await _assignmentRepo.updateInTxn(
+              txn,
+              a.copyWith(
+                tuNgay: newAssignStart,
+                denNgay: newAssignEnd,
+                updatedAt: DateTime.now(),
+              ),
+            );
+          }
+        }
+      } else {
+        final dateFormat = DateFormat('yyyy-MM-dd');
+        final dayBeforeStr = dateFormat.format(
+          DateTime.parse(plan.effectiveFrom).subtract(const Duration(days: 1)),
+        );
+
+        if (dayBeforeStr.compareTo(existing.hieuLucTu) < 0) {
+          throw Exception(
+            'Ngày áp dụng lịch mới (${plan.effectiveFrom}) phải sau ngày bắt đầu lịch cũ (${existing.hieuLucTu}).',
+          );
+        }
+
+        final closedOld = existing.copyWith(
+          hieuLucDen: dayBeforeStr,
+          updatedAt: DateTime.now(),
+        );
+        await _scheduleRepo.updateInTxn(txn, closedOld);
+
+        final newSchedule = ClassSchedule(
+          idLop: existing.idLop,
+          thuTrongTuan: plan.newWeekday,
+          gioBatDau: plan.newStart,
+          gioKetThuc: plan.newEnd,
+          hieuLucTu: plan.effectiveFrom,
+          hieuLucDen: plan.effectiveTo,
+          ghiChu: ghiChu ?? existing.ghiChu,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        _validateSchedule(newSchedule);
+        final newScheduleId = await _scheduleRepo.createInTxn(txn, newSchedule);
+
+        for (final a in assignments) {
+          if (a.denNgay == null || a.denNgay!.compareTo(plan.effectiveFrom) >= 0) {
+            if (a.tuNgay.compareTo(dayBeforeStr) <= 0) {
+              await _assignmentRepo.updateInTxn(
+                txn,
+                a.copyWith(denNgay: dayBeforeStr, updatedAt: DateTime.now()),
+              );
+              await _assignmentRepo.createInTxn(
+                txn,
+                StudentShiftAssignment(
+                  idHocSinh: a.idHocSinh,
+                  idLop: a.idLop,
+                  idLichHoc: newScheduleId,
+                  tuNgay: plan.effectiveFrom,
+                  denNgay: a.denNgay,
+                  ghiChu: a.ghiChu,
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                ),
+              );
+            } else {
+              await _assignmentRepo.updateInTxn(
+                txn,
+                a.copyWith(idLichHoc: newScheduleId, updatedAt: DateTime.now()),
+              );
+            }
+          }
+        }
+
+        await txn.rawDelete('''
+          DELETE FROM buoi_hoc 
+          WHERE id_lich_hoc = ? AND ngay >= ? AND trang_thai = 'DU_KIEN'
+            AND id NOT IN (SELECT id_buoi_hoc FROM diem_danh)
+            AND id NOT IN (SELECT id_buoi_hoc_goc FROM dieu_chinh_buoi_hoc WHERE id_buoi_hoc_goc IS NOT NULL)
+            AND id NOT IN (SELECT id_buoi_hoc_tham_gia FROM dieu_chinh_buoi_hoc)
+        ''', [plan.scheduleId, plan.effectiveFrom]);
+      }
+
+      final fromDt = DateTime.parse(plan.effectiveFrom);
+      final toDt = plan.effectiveTo != null
+          ? DateTime.parse(plan.effectiveTo!)
+          : DateTime(fromDt.year, fromDt.month + 3, 1);
+      await _generateSessionsInTxn(
+        txn,
+        classId: existing.idLop,
+        fromDate: fromDt,
+        toDate: toDt,
+      );
+    });
   }
 
   Future<void> reviseSchedule({
@@ -105,141 +427,96 @@ class ScheduleDomainService {
     required String gioBatDau,
     required String gioKetThuc,
     required DateTime effectiveDate,
+    DateTime? effectiveTo,
     String? ghiChu,
   }) async {
-    final existing = await _scheduleRepo.getById(scheduleId);
-    if (existing == null) throw Exception('Không tìm thấy lịch học');
+    final dateFormat = DateFormat('yyyy-MM-dd');
+    final effectiveFromStr = dateFormat.format(effectiveDate);
+    final effectiveToStr =
+        effectiveTo != null ? dateFormat.format(effectiveTo) : null;
+
+    final plan = await previewScheduleChange(
+      scheduleId: scheduleId,
+      newWeekday: thuTrongTuan,
+      newStart: gioBatDau,
+      newEnd: gioKetThuc,
+      newEffectiveFrom: effectiveFromStr,
+      newEffectiveTo: effectiveToStr,
+    );
+
+    await applyScheduleChange(plan: plan, ghiChu: ghiChu);
+  }
+
+  Future<void> _generateSessionsInTxn(
+    DatabaseExecutor txn, {
+    required int classId,
+    required DateTime fromDate,
+    required DateTime toDate,
+  }) async {
+    if (toDate.isBefore(fromDate)) return;
 
     final dateFormat = DateFormat('yyyy-MM-dd');
-    final effectiveStr = dateFormat.format(effectiveDate);
-    final dayBeforeStr = dateFormat.format(
-      effectiveDate.subtract(const Duration(days: 1)),
+    final fromStr = dateFormat.format(fromDate);
+    final toStr = dateFormat.format(toDate);
+
+    final schedulesMapList = await txn.query(
+      'lich_hoc',
+      where: 'id_lop = ?',
+      whereArgs: [classId],
     );
+    final schedules =
+        schedulesMapList.map((m) => ClassSchedule.fromMap(m)).toList();
+    if (schedules.isEmpty) return;
 
-    if (existing.hieuLucDen != null &&
-        effectiveStr.compareTo(existing.hieuLucDen!) > 0) {
-      throw Exception(
-        'Lịch cũ đã kết thúc ngày ${existing.hieuLucDen}. '
-        'Hãy tạo lịch mới áp dụng từ $effectiveStr.',
-      );
-    }
-
-    final assignments = await _assignmentRepo.getBySchedule(scheduleId);
-    if (effectiveStr == existing.hieuLucTu && assignments.isEmpty) {
-      final updated = existing.copyWith(
-        thuTrongTuan: thuTrongTuan,
-        gioBatDau: gioBatDau,
-        gioKetThuc: gioKetThuc,
-        ghiChu: ghiChu,
-        updatedAt: DateTime.now(),
-      );
-      _validateSchedule(updated);
-      await _scheduleRepo.update(updated);
-      return;
-    }
-
-    if (dayBeforeStr.compareTo(existing.hieuLucTu) < 0) {
-      throw Exception(
-        'Ngày áp dụng lịch mới ($effectiveStr) phải sau ngày bắt đầu lịch cũ (${existing.hieuLucTu}). '
-        'Muốn đổi ngày bắt đầu của lịch cũ cần xử lý buổi học và phân ca đã gắn với lịch.',
-      );
-    }
-
-    final closedOld = existing.copyWith(
-      hieuLucDen: dayBeforeStr,
-      updatedAt: DateTime.now(),
-    );
-
-    final newSchedule = ClassSchedule(
-      idLop: existing.idLop,
-      thuTrongTuan: thuTrongTuan,
-      gioBatDau: gioBatDau,
-      gioKetThuc: gioKetThuc,
-      hieuLucTu: effectiveStr,
-      hieuLucDen: existing.hieuLucDen,
-      ghiChu: ghiChu,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-    _validateSchedule(newSchedule);
-
-    final db = _scheduleRepo.db;
-    final futureSessions = await db.query(
+    final existingMapList = await txn.query(
       'buoi_hoc',
-      where: 'id_lich_hoc = ? AND ngay >= ?',
-      whereArgs: [scheduleId, effectiveStr],
+      where: 'id_lop = ? AND ngay >= ? AND ngay <= ?',
+      whereArgs: [classId, fromStr, toStr],
     );
-
-    for (final sMap in futureSessions) {
-      final sessionId = sMap['id'] as int;
-      final sessionStatus = sMap['trang_thai'] as String;
-      final sessionDate = sMap['ngay'] as String;
-
-      final attendanceCount =
-          Sqflite.firstIntValue(
-            await db.rawQuery(
-              'SELECT COUNT(*) FROM diem_danh WHERE id_buoi_hoc = ?',
-              [sessionId],
-            ),
-          ) ??
-          0;
-
-      final adjustmentCount =
-          Sqflite.firstIntValue(
-            await db.rawQuery(
-              'SELECT COUNT(*) FROM dieu_chinh_buoi_hoc WHERE id_buoi_hoc_goc = ? OR id_buoi_hoc_tham_gia = ?',
-              [sessionId, sessionId],
-            ),
-          ) ??
-          0;
-
-      if (sessionStatus != 'DU_KIEN' ||
-          attendanceCount > 0 ||
-          adjustmentCount > 0) {
-        throw Exception(
-          'Không thể thay đổi lịch học vì có buổi học ngày $sessionDate đã ghi nhận dữ liệu (điểm danh/điều chỉnh).',
-        );
-      }
+    final existingKeys = <String>{};
+    for (final e in existingMapList) {
+      existingKeys.add('${e['ngay']}_${e['gio_bat_dau']}');
     }
 
-    await db.transaction((txn) async {
-      await _scheduleRepo.updateInTxn(txn, closedOld);
-      final newScheduleId = await _scheduleRepo.createInTxn(txn, newSchedule);
+    final nowStr = DateTime.now().toIso8601String();
 
-      for (final a in assignments) {
-        if (a.denNgay == null || a.denNgay!.compareTo(effectiveStr) >= 0) {
-          if (a.tuNgay.compareTo(dayBeforeStr) <= 0) {
-            await _assignmentRepo.updateInTxn(
-              txn,
-              a.copyWith(denNgay: dayBeforeStr, updatedAt: DateTime.now()),
-            );
-            await _assignmentRepo.createInTxn(
-              txn,
-              StudentShiftAssignment(
-                idHocSinh: a.idHocSinh,
-                idLop: a.idLop,
-                idLichHoc: newScheduleId,
-                tuNgay: effectiveStr,
-                denNgay: a.denNgay,
-                ghiChu: a.ghiChu,
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now(),
-              ),
-            );
-          } else {
-            await _assignmentRepo.updateInTxn(
-              txn,
-              a.copyWith(idLichHoc: newScheduleId, updatedAt: DateTime.now()),
-            );
-          }
+    for (
+      var day = fromDate;
+      !day.isAfter(toDate);
+      day = DateTime(day.year, day.month, day.day + 1)
+    ) {
+      final dayStr = dateFormat.format(day);
+      final weekday = day.weekday;
+
+      final dailySchedules = schedules.where((s) {
+        if (s.thuTrongTuan != weekday) return false;
+        if (dayStr.compareTo(s.hieuLucTu) < 0) return false;
+        if (s.hieuLucDen != null && dayStr.compareTo(s.hieuLucDen!) > 0) {
+          return false;
         }
-      }
+        return true;
+      }).toList();
 
-      for (final sMap in futureSessions) {
-        final sessionId = sMap['id'] as int;
-        await txn.delete('buoi_hoc', where: 'id = ?', whereArgs: [sessionId]);
+      for (final s in dailySchedules) {
+        final key = '${dayStr}_${s.gioBatDau}';
+        if (existingKeys.contains(key)) {
+          continue;
+        }
+
+        await txn.insert('buoi_hoc', {
+          'id_lop': classId,
+          'id_lich_hoc': s.id,
+          'ngay': dayStr,
+          'gio_bat_dau': s.gioBatDau,
+          'gio_ket_thuc': s.gioKetThuc,
+          'loai': 'CHINH',
+          'trang_thai': 'DU_KIEN',
+          'created_at': nowStr,
+          'updated_at': nowStr,
+        });
+        existingKeys.add(key);
       }
-    });
+    }
   }
 
   Future<List<ClassSchedule>> getSchedulesForClass(int classId) async {
@@ -401,6 +678,7 @@ class ScheduleDomainService {
       targetScheduleId: scheduleId,
       startDate: startStr,
       endDate: endStr,
+      studentName: student.hoTen,
     );
 
     if (!conflictResult.canAssign) {

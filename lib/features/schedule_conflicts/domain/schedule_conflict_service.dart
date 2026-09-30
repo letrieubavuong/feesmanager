@@ -36,6 +36,8 @@ class ScheduleConflictService {
     required String startDate,
     String? endDate,
     int? excludeAssignmentId,
+    int? excludeScheduleId,
+    String? studentName,
   }) async {
     // 0. Strict Fail-Closed Input Validation
     DateAndTimeValidators.validateDateRange(
@@ -65,6 +67,7 @@ class ScheduleConflictService {
     final existingAssignments = await _assignmentRepo.getByStudent(studentId);
     final activeAssignments = existingAssignments
         .where((a) => a.id != excludeAssignmentId)
+        .where((a) => excludeScheduleId == null || a.idLichHoc != excludeScheduleId)
         .where(
           (a) => _isDateRangeOverlap(startDate, endDate, a.tuNgay, a.denNgay),
         )
@@ -118,12 +121,14 @@ class ScheduleConflictService {
             final className =
                 targetClass?.tenLop ?? 'Lớp #${existingSchedule.idLop}';
 
+            final namePrefix = studentName != null ? '$studentName đang học ' : '';
+            final rangeStr = 'trong khoảng ${assignment.tuNgay}${assignment.denNgay != null ? "–${assignment.denNgay}" : ""}';
             hardConflicts.add(
               ScheduleConflict(
                 reasonCode: reason,
                 isHard: true,
                 message:
-                    'Trùng lịch học tại $className (${existingSchedule.gioBatDau}-${existingSchedule.gioKetThuc}, Thứ ${existingSchedule.thuTrongTuan})',
+                    'Trùng lịch học: ${namePrefix}ca $className thứ ${existingSchedule.thuTrongTuan}, ${existingSchedule.gioBatDau}–${existingSchedule.gioKetThuc} $rangeStr, trùng với lịch mới (${targetSchedule.gioBatDau}–${targetSchedule.gioKetThuc}).',
                 existingClassId: existingSchedule.idLop,
                 existingScheduleId: existingSchedule.id,
                 weekday: targetSchedule.thuTrongTuan,
