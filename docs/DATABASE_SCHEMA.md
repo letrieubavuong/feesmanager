@@ -131,9 +131,9 @@ Indexes:
 - `(id_lop, tu_ngay, den_ngay)`
 - `(id_hoc_sinh, tu_ngay, den_ngay)`
 
-## 6. `chinh_sach_hoc_phi`
+## 6. `chinh_sach_hoc_phi` (Legacy)
 
-Purpose: effective-dated class tuition policy.
+Purpose: legacy effective-dated class tuition policy (kept for historical invoice references).
 
 Suggested columns:
 
@@ -156,6 +156,27 @@ Constraints:
 - effective end >= start when present
 
 Avoid overlapping active policies for the same class.
+
+## 6b. `center_tuition_policy` (v19)
+
+Purpose: center-wide effective-dated tuition policy version.
+
+Suggested columns:
+
+- `id INTEGER PRIMARY KEY AUTOINCREMENT`
+- `hieu_luc_tu TEXT NOT NULL` (e.g. `YYYY-MM-01`)
+- `hieu_luc_den TEXT NULL`
+- `so_buoi_chuan_thang INTEGER NOT NULL DEFAULT 12`
+- `hoc_phi_moi_buoi INTEGER NOT NULL DEFAULT 0`
+- `hoc_phi_thang_toi_da INTEGER NULL`
+- `quy_tac_nghi_co_phep TEXT NOT NULL DEFAULT 'buTruBuoiDu'`
+- `ghi_chu TEXT NULL`
+- `created_at TEXT NOT NULL`
+- `updated_at TEXT NOT NULL`
+
+Constraints:
+- UNIQUE(`hieu_luc_tu`)
+- standard sessions > 0, fees >= 0, effective end >= start when present
 
 ## 7. `lich_hoc`
 
@@ -404,7 +425,7 @@ Prevent duplicate automated events with a partial unique index such as:
 
 ## 15. `hoc_phi_thang`
 
-Purpose: monthly tuition invoice/snapshot.
+Purpose: monthly tuition statement / invoice snapshot.
 
 Suggested columns:
 
@@ -412,7 +433,8 @@ Suggested columns:
 - `id_hoc_sinh INTEGER NOT NULL`
 - `id_lop INTEGER NOT NULL`
 - `thang TEXT NOT NULL`
-- `id_chinh_sach_hoc_phi INTEGER NOT NULL`
+- `id_chinh_sach_hoc_phi INTEGER NULL` (legacy policy FK)
+- `id_chinh_sach_trung_tam INTEGER NULL` (v19 center policy FK)
 - `so_buoi_eligible INTEGER NOT NULL`
 - `so_buoi_du_kien INTEGER NOT NULL DEFAULT 0`
 - `so_buoi_tinh_phi INTEGER NOT NULL`
@@ -432,10 +454,12 @@ Suggested columns:
 
 Statuses:
 
-- `NHAP`
-- `DA_CHOT`
-- `DA_THANH_TOAN`
-- `CON_NO`
+- `PROVISIONAL` (Tạm thu đầu tháng)
+- `FINALIZED` (Đối soát cuối tháng / Đã chốt)
+- `NHAP` (Legacy draft)
+- `DA_CHOT` (Legacy finalized)
+- `DA_THANH_TOAN` (Legacy paid)
+- `CON_NO` (Legacy unpaid)
 
 Unique:
 

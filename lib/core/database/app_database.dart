@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int schemaVersion = 18;
+  static const int schemaVersion = 19;
   static const int _dbVersion = schemaVersion;
 
   final String dbName;
@@ -17,7 +17,7 @@ class AppDatabase {
   }
 
   Future<Database> _initDatabase() async {
-    final path = isAbsolute(dbName)
+    final path = (dbName == ':memory:' || isAbsolute(dbName))
         ? dbName
         : join(await getDatabasesPath(), dbName);
 
@@ -91,6 +91,9 @@ class AppDatabase {
     if (version >= 18) {
       await _migrateV17ToV18(db);
     }
+    if (version >= 19) {
+      await _migrateV18ToV19(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -144,6 +147,9 @@ class AppDatabase {
     }
     if (oldVersion < 18) {
       await _migrateV17ToV18(db);
+    }
+    if (oldVersion < 19) {
+      await _migrateV18ToV19(db);
     }
   }
 
@@ -1021,6 +1027,101 @@ class AppDatabase {
       throw StateError(
         'Schema diem_danh_chinh_sua không tương thích. Thiếu cột: ${missing.join(", ")}',
       );
+    }
+  }
+
+  Future<void> _migrateV18ToV19(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS center_tuition_policy (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hieu_luc_tu TEXT NOT NULL,
+        hieu_luc_den TEXT NULL,
+        so_buoi_chuan_thang INTEGER NOT NULL DEFAULT 12,
+        hoc_phi_moi_buoi INTEGER NOT NULL DEFAULT 0,
+        hoc_phi_thang_toi_da INTEGER NULL,
+        quy_tac_nghi_co_phep TEXT NOT NULL DEFAULT 'buTruBuoiDu',
+        ghi_chu TEXT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE (hieu_luc_tu),
+        CHECK (so_buoi_chuan_thang > 0),
+        CHECK (hoc_phi_moi_buoi >= 0),
+        CHECK (hoc_phi_thang_toi_da IS NULL OR hoc_phi_thang_toi_da >= 0),
+        CHECK (hieu_luc_den IS NULL OR hieu_luc_den >= hieu_luc_tu)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_center_policy_unique
+      ON center_tuition_policy(hieu_luc_tu)
+    ''');
+
+    final invoiceColumns = await db.rawQuery('PRAGMA table_info(hoc_phi_thang)');
+    if (!invoiceColumns.any((column) => column['name'] == 'id_chinh_sach_trung_tam')) {
+      await db.execute('PRAGMA foreign_keys = OFF');
+      await db.execute('ALTER TABLE hoc_phi_thang RENAME TO hoc_phi_thang_v18');
+      await db.execute('DROP INDEX IF EXISTS idx_hoc_phi_thang_student_class');
+      await db.execute('DROP INDEX IF EXISTS idx_hoc_phi_thang_class_month');
+      await db.execute('DROP INDEX IF EXISTS idx_hoc_phi_thang_status');
+
+      await db.execute('''
+        CREATE TABLE hoc_phi_thang (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          id_hoc_sinh INTEGER NOT NULL,
+          id_lop INTEGER NOT NULL,
+          thang TEXT NOT NULL,
+          id_chinh_sach_hoc_phi INTEGER NULL,
+          id_chinh_sach_trung_tam INTEGER NULL,
+          so_buoi_eligible INTEGER NOT NULL,
+          so_buoi_du_kien INTEGER NOT NULL DEFAULT 0,
+          so_buoi_tinh_phi INTEGER NOT NULL,
+          credit_opening INTEGER NOT NULL,
+          credit_earned INTEGER NOT NULL,
+          credit_used INTEGER NOT NULL,
+          credit_closing INTEGER NOT NULL,
+          tong_truoc_giam INTEGER NOT NULL,
+          giam_phan_tram INTEGER NOT NULL DEFAULT 0,
+          giam_so_tien INTEGER NOT NULL DEFAULT 0,
+          so_tien_phai_thu INTEGER NOT NULL,
+          trang_thai TEXT NOT NULL,
+          chot_luc TEXT NULL,
+          ghi_chu TEXT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+          FOREIGN KEY (id_lop) REFERENCES lop (id),
+          FOREIGN KEY (id_chinh_sach_hoc_phi) REFERENCES chinh_sach_hoc_phi (id),
+          FOREIGN KEY (id_chinh_sach_trung_tam) REFERENCES center_tuition_policy (id),
+          UNIQUE (id_hoc_sinh, id_lop, thang),
+          CHECK (so_buoi_eligible >= 0),
+          CHECK (so_buoi_tinh_phi >= 0),
+          CHECK (giam_phan_tram BETWEEN 0 AND 100),
+          CHECK (giam_so_tien >= 0),
+          CHECK (so_tien_phai_thu >= 0),
+          CHECK (trang_thai IN ('PROVISIONAL', 'FINALIZED', 'NHAP', 'DA_CHOT', 'DA_THANH_TOAN', 'CON_NO'))
+        )
+      ''');
+
+      await db.execute('''
+        INSERT INTO hoc_phi_thang (
+          id, id_hoc_sinh, id_lop, thang, id_chinh_sach_hoc_phi, id_chinh_sach_trung_tam,
+          so_buoi_eligible, so_buoi_du_kien, so_buoi_tinh_phi, credit_opening, credit_earned,
+          credit_used, credit_closing, tong_truoc_giam, giam_phan_tram, giam_so_tien,
+          so_tien_phai_thu, trang_thai, chot_luc, ghi_chu, created_at, updated_at
+        )
+        SELECT 
+          id, id_hoc_sinh, id_lop, thang, id_chinh_sach_hoc_phi, NULL,
+          so_buoi_eligible, so_buoi_du_kien, so_buoi_tinh_phi, credit_opening, credit_earned,
+          credit_used, credit_closing, tong_truoc_giam, giam_phan_tram, giam_so_tien,
+          so_tien_phai_thu, trang_thai, chot_luc, ghi_chu, created_at, updated_at
+        FROM hoc_phi_thang_v18
+      ''');
+
+      await db.execute('DROP TABLE hoc_phi_thang_v18');
+      await db.execute('CREATE INDEX idx_hoc_phi_thang_student_class ON hoc_phi_thang(id_hoc_sinh, id_lop, thang)');
+      await db.execute('CREATE INDEX idx_hoc_phi_thang_class_month ON hoc_phi_thang(id_lop, thang)');
+      await db.execute('CREATE INDEX idx_hoc_phi_thang_status ON hoc_phi_thang(trang_thai)');
+      await db.execute('PRAGMA foreign_keys = ON');
     }
   }
 }

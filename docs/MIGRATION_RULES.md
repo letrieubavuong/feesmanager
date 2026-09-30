@@ -159,7 +159,7 @@ Preserve class ID and core metadata.
 
 Do not import derived class size as source of truth.
 
-If historical tuition policy cannot be reconstructed, log a warning and require explicit policy bootstrap for future calculations.
+Legacy class-specific policies (`chinh_sach_hoc_phi`) and foreign keys on historical finalized invoices are preserved intact. New billing cycles use the versioned center tuition policy (`center_tuition_policy`). If historical tuition policy cannot be reconstructed for a legacy invoice, log a warning and use explicit policy bootstrap.
 
 ## 10. Membership migration
 

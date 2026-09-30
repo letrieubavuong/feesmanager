@@ -92,13 +92,14 @@ Canonical query:
 
 ### 4.4 Tuition policy
 
-Owns effective-dated pricing:
+Owns effective-dated pricing versioned at the center level (`center_tuition_policy`):
 
-- fee per session
-- standard sessions per month
-- monthly maximum if used
+- fee per session P
+- standard sessions per month N
+- monthly maximum cap C
+- excused absence fee rule `quyTacNghiCoPhep`
 
-Historical months must resolve the policy active at that time.
+Historical months resolve the center policy version active at that time, or the legacy class policy snapshot for pre-v19 finalized invoices.
 
 ### 4.5 Schedules
 

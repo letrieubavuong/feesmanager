@@ -111,15 +111,19 @@ Leaving a class closes the membership; it does not delete the student or history
 
 ## 8. Tuition policy
 
-Tuition policy is effective-dated per class.
+Tuition policy is center-wide and effective-dated by version (`center_tuition_policy`), taking effect from the 1st of the selected month.
 
-It contains at least:
+It applies across all classes and grade levels. Individual classes do not maintain independent policy creation workflows.
 
-- standard sessions per month, default 12
-- fee per session
-- optional monthly maximum
+It contains:
+- standard sessions per month N, default 12
+- fee per session P
+- optional monthly maximum cap C
+- excused absence fee rule `quyTacNghiCoPhep` (`buTruBuoiDu`, `tinhPhi`, `khongTinhPhi`)
 
-Changing price in the future creates a new effective policy instead of rewriting old history.
+Changing pricing creates a new effective center policy version from a future month without rewriting historical invoices.
+
+Historical class-specific policies (`chinh_sach_hoc_phi`) and their invoice links are preserved intact to explain past finalized billing.
 
 ## 9. Recurring schedule
 
