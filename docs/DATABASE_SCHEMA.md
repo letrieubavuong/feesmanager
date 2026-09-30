@@ -414,6 +414,7 @@ Suggested columns:
 - `thang TEXT NOT NULL`
 - `id_chinh_sach_hoc_phi INTEGER NOT NULL`
 - `so_buoi_eligible INTEGER NOT NULL`
+- `so_buoi_du_kien INTEGER NOT NULL DEFAULT 0`
 - `so_buoi_tinh_phi INTEGER NOT NULL`
 - `credit_opening INTEGER NOT NULL`
 - `credit_earned INTEGER NOT NULL`

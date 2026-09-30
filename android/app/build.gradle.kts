@@ -13,7 +13,7 @@ val generateTeacherNotebookIcon = tasks.register("generateTeacherNotebookIcon") 
     inputs.file(iconSource)
     outputs.file(iconOutput)
     doLast {
-        val image = Base64.getMimeDecoder().decode(iconSource.asFile.readText())
+        val image = Base64.getMimeDecoder().decode(iconSource.asFile.readText().trim())
         iconOutput.asFile.parentFile.mkdirs()
         iconOutput.asFile.writeBytes(image)
     }

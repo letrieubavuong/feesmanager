@@ -122,7 +122,9 @@ class InvoiceService {
             idBuoiHoc: c.session.id,
             ngayHieuLuc: c.session.ngay,
             delta: -1,
-            lyDo: CreditLedgerReason.BU_TRU_NGHI_CO_PHEP,
+            lyDo: c.chargeType == TuitionCandidateChargeType.CHARGEABLE_HOLIDAY_WITH_CREDIT
+                ? CreditLedgerReason.BU_TRU_NGHI_LE
+                : CreditLedgerReason.BU_TRU_NGHI_CO_PHEP,
             ghiChu:
                 'Bù trừ credit tự động khi chốt học phí tháng $month cho buổi nghỉ (${c.session.ngay})',
             createdAt: now,
@@ -161,6 +163,7 @@ class InvoiceService {
         thang: month,
         idChinhSachHocPhi: preview.policy.id!,
         soBuoiEligible: preview.soBuoiEligible,
+        soBuoiDuKien: preview.soBuoiDuKien,
         soBuoiTinhPhi: preview.soBuoiTinhPhi,
         creditOpening: preview.creditOpening,
         creditEarned: preview.creditEarned,
@@ -281,7 +284,9 @@ class InvoiceService {
                 idBuoiHoc: c.session.id,
                 ngayHieuLuc: c.session.ngay,
                 delta: -1,
-                lyDo: CreditLedgerReason.BU_TRU_NGHI_CO_PHEP,
+                lyDo: c.chargeType == TuitionCandidateChargeType.CHARGEABLE_HOLIDAY_WITH_CREDIT
+                    ? CreditLedgerReason.BU_TRU_NGHI_LE
+                    : CreditLedgerReason.BU_TRU_NGHI_CO_PHEP,
                 ghiChu:
                     'Bù trừ credit tự động khi chốt học phí tháng $month cho buổi nghỉ (${c.session.ngay})',
                 createdAt: now,
@@ -303,6 +308,7 @@ class InvoiceService {
           thang: month,
           idChinhSachHocPhi: plan.preview.policy.id!,
           soBuoiEligible: plan.preview.soBuoiEligible,
+          soBuoiDuKien: plan.preview.soBuoiDuKien,
           soBuoiTinhPhi: plan.preview.soBuoiTinhPhi,
           creditOpening: plan.preview.creditOpening,
           creditEarned: plan.preview.creditEarned,
@@ -375,6 +381,7 @@ class InvoiceService {
     final updatedInvoice = oldInvoice.copyWith(
       idChinhSachHocPhi: preview.policy.id!,
       soBuoiEligible: preview.soBuoiEligible,
+      soBuoiDuKien: preview.soBuoiDuKien,
       soBuoiTinhPhi: preview.soBuoiTinhPhi,
       creditOpening: preview.creditOpening,
       creditEarned: preview.creditEarned,

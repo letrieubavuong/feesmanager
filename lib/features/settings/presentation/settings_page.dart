@@ -82,8 +82,8 @@ class SettingsPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.settingsLanguage),
-                const SizedBox(height: 6),
+                //Text(l10n.settingsLanguage),
+                //const SizedBox(height: 6),
                 SizedBox(
                   width: double.infinity,
                   child: FittedBox(
@@ -116,7 +116,7 @@ class SettingsPage extends ConsumerWidget {
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
           const AppSectionHeader(title: 'NHẮC GIỜ DẠY'),
           AppSectionCard(

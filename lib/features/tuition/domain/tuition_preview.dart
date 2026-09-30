@@ -12,6 +12,7 @@ enum TuitionCandidateChargeType {
   CHARGEABLE_EXCUSED_BY_POLICY,
   NON_CHARGEABLE_EXCUSED_UNCOMPENSATED, // NGHI_CO_PHEP without makeup or credit
   NON_CHARGEABLE_EXTRA_SESSION, // Extra session beyond N
+  CHARGEABLE_HOLIDAY_WITH_CREDIT,
 }
 
 class TuitionSessionCandidateDetail {
@@ -44,6 +45,7 @@ class TuitionPreview {
   final String month; // YYYY-MM
   final TuitionPolicy policy;
   final int soBuoiEligible;
+  final int soBuoiDuKien;
   final int soBuoiTinhPhi;
   final int creditOpening;
   final int creditEarned;
@@ -61,6 +63,7 @@ class TuitionPreview {
     required this.month,
     required this.policy,
     required this.soBuoiEligible,
+    this.soBuoiDuKien = 0,
     required this.soBuoiTinhPhi,
     required this.creditOpening,
     required this.creditEarned,

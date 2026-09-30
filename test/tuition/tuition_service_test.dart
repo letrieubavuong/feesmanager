@@ -115,6 +115,7 @@ void main() {
         attRepo,
         adjRepo,
         sessionRepo,
+        rosterService,
       );
 
       // Seed Student & Class
@@ -227,6 +228,42 @@ void main() {
       expect(preview.giamPhanTram, 10);
       expect(preview.giamSoTien, 60000); // 10% of 600,000
       expect(preview.soTienPhaiThu, 500000);
+    });
+
+    test('Holiday sessions consume accumulated credit and remain chargeable', () async {
+      await db.insert('buoi_du_ledger', {
+        'id_hoc_sinh': 1,
+        'id_lop': 1,
+        'ngay_hieu_luc': '2026-08-31',
+        'delta': 2,
+        'ly_do': 'DIEU_CHINH_THU_CONG',
+        'ghi_chu': 'Hai buổi dư tích lũy tháng 7 và 8',
+        'created_at': '2026-08-31T00:00:00.000',
+      });
+      for (final entry in [(1, '2026-09-02'), (2, '2026-09-03')]) {
+        final date = DateTime.parse(entry.$2);
+        await db.insert('buoi_hoc', {
+          'id': entry.$1,
+          'id_lop': 1,
+          'id_lich_hoc': date.weekday,
+          'ngay': entry.$2,
+          'gio_bat_dau': '17:30',
+          'gio_ket_thuc': '19:00',
+          'loai': 'CHINH',
+          'trang_thai': 'NGHI_LE',
+          'created_at': '2026-01-01T00:00:00.000',
+          'updated_at': '2026-01-01T00:00:00.000',
+        });
+      }
+
+      final preview = await service.previewTuition(1, 1, '2026-09');
+
+      expect(preview.soBuoiDuKien, 2);
+      expect(preview.soBuoiTinhPhi, 2);
+      expect(preview.creditOpening, 2);
+      expect(preview.creditUsed, 2);
+      expect(preview.creditClosing, 0);
+      expect(preview.tongTruocGiam, 100000);
     });
 
     test(

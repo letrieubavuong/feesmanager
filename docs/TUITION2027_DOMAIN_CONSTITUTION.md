@@ -319,7 +319,11 @@ Using a credit creates a negative ledger entry.
 
 Make-up attendance does not consume credit when it validly compensates the missed session.
 
-Holiday/canceled sessions do not consume credit.
+Holiday sessions that fall on a student's active recurring schedule may consume
+an available credit when tuition is finalized, so an accumulated extra session
+can replace that planned teaching occurrence. The consumption is explicit in
+the student + class ledger and may not exceed the balance available on the
+holiday date. Canceled sessions that are not holidays do not consume credit.
 
 Joining mid-month never consumes credit merely to force the month up to 12 sessions.
 
@@ -395,6 +399,7 @@ When tuition is finalized, create/update a monthly invoice snapshot.
 Invoice captures:
 
 - eligible session count
+- planned session count from the effective recurring schedule
 - charged session count
 - credit opening/earned/used/closing
 - gross amount

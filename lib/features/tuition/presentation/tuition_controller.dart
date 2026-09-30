@@ -127,11 +127,8 @@ class InvoiceController extends _$InvoiceController {
     required int classId,
     required String month,
   }) async {
-    state = const AsyncLoading();
-    late TuitionInvoice result;
-    state = await AsyncValue.guard(() async {
-      final service = await ref.read(invoiceServiceProvider.future);
-      result = await service.finalizeStudentInvoice(studentId, classId, month);
+    final service = await ref.read(invoiceServiceProvider.future);
+    final result = await service.finalizeStudentInvoice(studentId, classId, month);
       ref.invalidate(studentInvoiceProvider(studentId, classId, month));
       ref.invalidate(
         tuitionPreviewControllerProvider(studentId, classId, month),
@@ -147,10 +144,6 @@ class InvoiceController extends _$InvoiceController {
       ref.invalidate(classMonthMembershipsProvider((classId, month)));
       ref.invalidate(classMonthStudentsProvider((classId, month)));
       ref.invalidate(classRosterProvider);
-    });
-    if (state.hasError) {
-      throw state.error!;
-    }
     return result;
   }
 
@@ -159,11 +152,8 @@ class InvoiceController extends _$InvoiceController {
     required String month,
     Set<int>? studentIdsToFinalize,
   }) async {
-    state = const AsyncLoading();
-    late List<TuitionInvoice> result;
-    state = await AsyncValue.guard(() async {
-      final service = await ref.read(invoiceServiceProvider.future);
-      result = await service.finalizeClassInvoices(
+    final service = await ref.read(invoiceServiceProvider.future);
+    final result = await service.finalizeClassInvoices(
         classId,
         month,
         studentIdsToFinalize: studentIdsToFinalize,
@@ -201,10 +191,6 @@ class InvoiceController extends _$InvoiceController {
       ref.invalidate(classMonthMembershipsProvider((classId, month)));
       ref.invalidate(classMonthStudentsProvider((classId, month)));
       ref.invalidate(classRosterProvider);
-    });
-    if (state.hasError) {
-      throw state.error!;
-    }
     return result;
   }
 

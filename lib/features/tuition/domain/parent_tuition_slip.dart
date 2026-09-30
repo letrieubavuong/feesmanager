@@ -33,6 +33,8 @@ class ParentTuitionSlip {
   final int? monthlyMaxFee;
 
   final int openingCreditBalance;
+  final int closingCreditBalance;
+  final int creditUsed;
 
   final int presentCount;
   final int lateCount;
@@ -67,6 +69,8 @@ class ParentTuitionSlip {
     this.feePerSession = 0,
     this.monthlyMaxFee,
     this.openingCreditBalance = 0,
+    this.closingCreditBalance = 0,
+    this.creditUsed = 0,
     this.presentCount = 0,
     this.lateCount = 0,
     this.excusedAbsenceCount = 0,

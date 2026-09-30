@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class AppDatabase {
   static const String _defaultDbName = 'tuition_next.db';
-  static const int schemaVersion = 17;
+  static const int schemaVersion = 18;
   static const int _dbVersion = schemaVersion;
 
   final String dbName;
@@ -88,6 +88,9 @@ class AppDatabase {
     if (version >= 17) {
       await _migrateV16ToV17(db);
     }
+    if (version >= 18) {
+      await _migrateV17ToV18(db);
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -138,6 +141,9 @@ class AppDatabase {
     }
     if (oldVersion < 17) {
       await _migrateV16ToV17(db);
+    }
+    if (oldVersion < 18) {
+      await _migrateV17ToV18(db);
     }
   }
 
@@ -942,6 +948,59 @@ class AppDatabase {
       ALTER TABLE chinh_sach_hoc_phi
       ADD COLUMN quy_tac_nghi_co_phep TEXT NOT NULL DEFAULT 'buTruBuoiDu'
     ''');
+  }
+
+  Future<void> _migrateV17ToV18(Database db) async {
+    final invoiceColumns = await db.rawQuery('PRAGMA table_info(hoc_phi_thang)');
+    if (!invoiceColumns.any((column) => column['name'] == 'so_buoi_du_kien')) {
+      await db.execute(
+        'ALTER TABLE hoc_phi_thang ADD COLUMN so_buoi_du_kien INTEGER NOT NULL DEFAULT 0',
+      );
+    }
+
+    // SQLite cannot extend a CHECK constraint in place. Rebuild the ledger
+    // while preserving every historical row and its primary key.
+    final ledgerSql = await db.rawQuery(
+      "SELECT sql FROM sqlite_master WHERE type='table' AND name='buoi_du_ledger'",
+    );
+    final sql = ledgerSql.isEmpty ? '' : (ledgerSql.first['sql'] as String? ?? '');
+    if (!sql.contains('BU_TRU_NGHI_LE')) {
+      await db.execute('PRAGMA foreign_keys = OFF');
+      await db.execute('ALTER TABLE buoi_du_ledger RENAME TO buoi_du_ledger_v17');
+      await db.execute('DROP INDEX IF EXISTS idx_buoi_du_unique_event');
+      await db.execute('DROP INDEX IF EXISTS idx_buoi_du_student_class_date');
+      await db.execute('DROP INDEX IF EXISTS idx_buoi_du_class_date');
+      await db.execute('DROP INDEX IF EXISTS idx_buoi_du_session');
+      await _createCreditLedgerV18(db);
+      await db.execute('INSERT INTO buoi_du_ledger SELECT * FROM buoi_du_ledger_v17');
+      await db.execute('DROP TABLE buoi_du_ledger_v17');
+      await db.execute('PRAGMA foreign_keys = ON');
+    }
+  }
+
+  Future<void> _createCreditLedgerV18(Database db) async {
+    await db.execute('''
+      CREATE TABLE buoi_du_ledger (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_hoc_sinh INTEGER NOT NULL,
+        id_lop INTEGER NOT NULL,
+        id_buoi_hoc INTEGER NULL,
+        ngay_hieu_luc TEXT NOT NULL,
+        delta INTEGER NOT NULL,
+        ly_do TEXT NOT NULL,
+        ghi_chu TEXT NULL,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id),
+        FOREIGN KEY (id_lop) REFERENCES lop (id),
+        FOREIGN KEY (id_buoi_hoc) REFERENCES buoi_hoc (id),
+        CHECK (delta <> 0),
+        CHECK (ly_do IN ('VUOT_SO_BUOI_CHUAN', 'BU_TRU_NGHI_CO_PHEP', 'BU_TRU_NGHI_LE', 'DIEU_CHINH_THU_CONG', 'MIGRATION'))
+      )
+    ''');
+    await db.execute("CREATE UNIQUE INDEX idx_buoi_du_unique_event ON buoi_du_ledger(id_hoc_sinh, id_lop, id_buoi_hoc, ly_do) WHERE id_buoi_hoc IS NOT NULL AND ly_do IN ('VUOT_SO_BUOI_CHUAN', 'BU_TRU_NGHI_CO_PHEP', 'BU_TRU_NGHI_LE')");
+    await db.execute('CREATE INDEX idx_buoi_du_student_class_date ON buoi_du_ledger(id_hoc_sinh, id_lop, ngay_hieu_luc)');
+    await db.execute('CREATE INDEX idx_buoi_du_class_date ON buoi_du_ledger(id_lop, ngay_hieu_luc)');
+    await db.execute('CREATE INDEX idx_buoi_du_session ON buoi_du_ledger(id_buoi_hoc)');
   }
 
   Future<void> _verifyAttendanceCorrectionAuditSchema(Database db) async {

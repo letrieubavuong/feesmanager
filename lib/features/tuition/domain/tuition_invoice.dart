@@ -16,6 +16,7 @@ class TuitionInvoice {
   final String thang; // YYYY-MM
   final int idChinhSachHocPhi;
   final int soBuoiEligible;
+  final int soBuoiDuKien;
   final int soBuoiTinhPhi;
   final int creditOpening;
   final int creditEarned;
@@ -38,6 +39,7 @@ class TuitionInvoice {
     required this.thang,
     required this.idChinhSachHocPhi,
     required this.soBuoiEligible,
+    this.soBuoiDuKien = 0,
     required this.soBuoiTinhPhi,
     required this.creditOpening,
     required this.creditEarned,
@@ -61,6 +63,7 @@ class TuitionInvoice {
     'thang': thang,
     'id_chinh_sach_hoc_phi': idChinhSachHocPhi,
     'so_buoi_eligible': soBuoiEligible,
+    'so_buoi_du_kien': soBuoiDuKien,
     'so_buoi_tinh_phi': soBuoiTinhPhi,
     'credit_opening': creditOpening,
     'credit_earned': creditEarned,
@@ -84,6 +87,7 @@ class TuitionInvoice {
     thang: map['thang'] as String,
     idChinhSachHocPhi: map['id_chinh_sach_hoc_phi'] as int,
     soBuoiEligible: map['so_buoi_eligible'] as int,
+    soBuoiDuKien: map['so_buoi_du_kien'] as int? ?? 0,
     soBuoiTinhPhi: map['so_buoi_tinh_phi'] as int,
     creditOpening: map['credit_opening'] as int,
     creditEarned: map['credit_earned'] as int,
@@ -109,6 +113,7 @@ class TuitionInvoice {
     String? thang,
     int? idChinhSachHocPhi,
     int? soBuoiEligible,
+    int? soBuoiDuKien,
     int? soBuoiTinhPhi,
     int? creditOpening,
     int? creditEarned,
@@ -131,6 +136,7 @@ class TuitionInvoice {
       thang: thang ?? this.thang,
       idChinhSachHocPhi: idChinhSachHocPhi ?? this.idChinhSachHocPhi,
       soBuoiEligible: soBuoiEligible ?? this.soBuoiEligible,
+      soBuoiDuKien: soBuoiDuKien ?? this.soBuoiDuKien,
       soBuoiTinhPhi: soBuoiTinhPhi ?? this.soBuoiTinhPhi,
       creditOpening: creditOpening ?? this.creditOpening,
       creditEarned: creditEarned ?? this.creditEarned,

@@ -17,6 +17,7 @@ import '../../sessions/domain/class_session.dart';
 import '../../sessions/domain/session_service.dart';
 import '../data/tuition_repository.dart';
 import '../../memberships/domain/membership.dart';
+import '../../roster/domain/roster_service.dart';
 import '../../session_credits/domain/credit_ledger_entry.dart';
 import '../../session_credits/domain/monthly_credit_summary.dart';
 import 'tuition_policy.dart';
@@ -39,6 +40,7 @@ class TuitionService {
   final AttendanceRepository _attendanceRepo;
   final SessionAdjustmentRepository _adjustmentRepo;
   final SessionRepository _sessionRepo;
+  final RosterService? _rosterService;
 
   TuitionRepository get tuitionRepository => _tuitionRepo;
 
@@ -49,8 +51,9 @@ class TuitionService {
     this._membershipService,
     this._attendanceRepo,
     this._adjustmentRepo,
-    this._sessionRepo,
-  );
+    this._sessionRepo, [
+    this._rosterService,
+  ]);
 
   Future<TuitionPreview> previewTuition(
     int studentId,
@@ -109,6 +112,26 @@ class TuitionService {
       classId,
     );
 
+    final holidaySessions = <ClassSession>[];
+    if (_rosterService != null) {
+      final monthSessions = await _sessionRepo.getByClassAndDateRange(
+        classId,
+        monthStartStr,
+        monthEndStr,
+      );
+      for (final session in monthSessions.where(
+        (s) =>
+            s.loai == SessionType.CHINH && s.trangThai == SessionStatus.NGHI_LE,
+      )) {
+        final roster = await _rosterService.getBaseRosterForSession(
+          session.id!,
+        );
+        if (roster.participants.any((p) => p.student.id == studentId)) {
+          holidaySessions.add(session);
+        }
+      }
+    }
+
     return calculatePreviewFromResolvedData(
       studentId: studentId,
       classId: classId,
@@ -118,6 +141,7 @@ class TuitionService {
       activeMembershipsInMonth: activeMembershipsInMonth,
       validMakeupByOriginalSessionId: validMakeupByOriginalSessionId,
       studentLedgerEntries: studentLedgerEntries,
+      holidaySessions: holidaySessions,
     );
   }
 
@@ -130,6 +154,7 @@ class TuitionService {
     required List<ClassMembership> activeMembershipsInMonth,
     required Map<int, bool> validMakeupByOriginalSessionId,
     List<CreditLedgerEntry> studentLedgerEntries = const [],
+    List<ClassSession> holidaySessions = const [],
   }) {
     if (activeMembershipsInMonth.isEmpty) {
       throw Exception(
@@ -260,6 +285,36 @@ class TuitionService {
       }
     }
 
+    holidaySessions.sort((a, b) {
+      final byDate = a.ngay.compareTo(b.ngay);
+      return byDate != 0 ? byDate : a.gioBatDau.compareTo(b.gioBatDau);
+    });
+    for (final session in holidaySessions) {
+      final rawBalanceAsOf = studentLedgerEntries.isEmpty
+          ? creditSummary.openingBalance
+          : studentLedgerEntries
+                .where(
+                  (entry) => entry.ngayHieuLuc.compareTo(session.ngay) <= 0,
+                )
+                .fold<int>(0, (sum, entry) => sum + entry.delta);
+      final usableCreditAtDate = rawBalanceAsOf - proposedCreditUsed;
+      if (usableCreditAtDate <= 0) continue;
+      proposedCreditUsed++;
+      candidateDetails.add(
+        TuitionSessionCandidateDetail(
+          session: session,
+          index: candidateDetails.length + 1,
+          isStandard: true,
+          isExtra: false,
+          attendanceState: AttendanceState.CHUA_DIEM_DANH,
+          chargeType: TuitionCandidateChargeType.CHARGEABLE_HOLIDAY_WITH_CREDIT,
+          isCharged: true,
+          usesCredit: true,
+          fee: policy.hocPhiMoiBuoi,
+        ),
+      );
+    }
+
     final soBuoiEligible = creditSummary.eligibleCount;
     final soBuoiTinhPhi = candidateDetails.where((c) => c.isCharged).length;
     final creditUsed = candidateDetails.where((c) => c.usesCredit).length;
@@ -295,6 +350,7 @@ class TuitionService {
       month: month,
       policy: policy,
       soBuoiEligible: soBuoiEligible,
+      soBuoiDuKien: soBuoiEligible + holidaySessions.length,
       soBuoiTinhPhi: soBuoiTinhPhi,
       creditOpening: creditOpening,
       creditEarned: creditEarned,
@@ -395,6 +451,7 @@ Future<TuitionService> tuitionService(TuitionServiceRef ref) async {
     sessionAdjustmentRepositoryProvider.future,
   );
   final sessionRepo = await ref.watch(sessionRepositoryProvider.future);
+  final rosterService = await ref.watch(rosterServiceProvider.future);
 
   return TuitionService(
     repo,
@@ -404,5 +461,6 @@ Future<TuitionService> tuitionService(TuitionServiceRef ref) async {
     attendanceRepo,
     adjustmentRepo,
     sessionRepo,
+    rosterService,
   );
 }

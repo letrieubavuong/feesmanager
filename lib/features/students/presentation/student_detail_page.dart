@@ -137,7 +137,7 @@ class StudentDetailPage extends ConsumerWidget {
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -177,7 +177,7 @@ class StudentDetailPage extends ConsumerWidget {
                   // 7. GHI CHÚ
                   if (overview.student.ghiChu != null &&
                       overview.student.ghiChu!.trim().isNotEmpty) ...[
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 8),
                     _buildNotesSection(context, l10n, overview.student),
                   ],
 
@@ -206,7 +206,7 @@ class StudentDetailPage extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          StudentAvatar(gioiTinh: s.gioiTinh, studentName: s.hoTen, radius: 30),
+          StudentAvatar(gioiTinh: s.gioiTinh, studentName: s.hoTen, radius: 24),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -255,7 +255,7 @@ class StudentDetailPage extends ConsumerWidget {
                           fontSize: 12,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                     ],
                     if (s.sdtPhuHuynh != null && s.sdtPhuHuynh!.isNotEmpty) ...[
                       const Icon(
@@ -266,7 +266,7 @@ class StudentDetailPage extends ConsumerWidget {
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
-                          '${s.sdtPhuHuynh} (PH)',
+                          '${s.sdtPhuHuynh}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -287,7 +287,7 @@ class StudentDetailPage extends ConsumerWidget {
                   ),
                 ],
                 if (overview.firstActiveMembershipDate != null) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       const Icon(
@@ -295,9 +295,9 @@ class StudentDetailPage extends ConsumerWidget {
                         size: 14,
                         color: AppColors.textMuted,
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 6),
                       Text(
-                        'Tham gia từ: ${DateFormatter.formatDisplayDate(overview.firstActiveMembershipDate!)}',
+                        'Tham gia: ${DateFormatter.formatDisplayDate(overview.firstActiveMembershipDate!)}',
                         style: const TextStyle(
                           color: AppColors.textMuted,
                           fontSize: 11,
@@ -327,7 +327,7 @@ class StudentDetailPage extends ConsumerWidget {
       children: [
         Expanded(
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
@@ -369,10 +369,10 @@ class StudentDetailPage extends ConsumerWidget {
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Expanded(
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
@@ -393,7 +393,7 @@ class StudentDetailPage extends ConsumerWidget {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

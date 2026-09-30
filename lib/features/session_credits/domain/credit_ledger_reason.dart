@@ -3,6 +3,7 @@
 enum CreditLedgerReason {
   VUOT_SO_BUOI_CHUAN,
   BU_TRU_NGHI_CO_PHEP,
+  BU_TRU_NGHI_LE,
   DIEU_CHINH_THU_CONG,
   MIGRATION;
 
@@ -12,6 +13,8 @@ enum CreditLedgerReason {
         return 'Vượt số buổi chuẩn';
       case CreditLedgerReason.BU_TRU_NGHI_CO_PHEP:
         return 'Bù trừ nghỉ có phép';
+      case CreditLedgerReason.BU_TRU_NGHI_LE:
+        return 'Bù trừ nghỉ lễ';
       case CreditLedgerReason.DIEU_CHINH_THU_CONG:
         return 'Điều chỉnh thủ công';
       case CreditLedgerReason.MIGRATION:

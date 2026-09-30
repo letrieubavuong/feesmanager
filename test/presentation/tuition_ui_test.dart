@@ -366,8 +366,10 @@ void main() {
         expect(find.text('TRAN VAN A'), findsOneWidget);
         expect(find.text('HP 125 VATLI10 092026'), findsOneWidget);
         expect(find.byType(VietQrCodeWidget), findsOneWidget);
-        expect(find.text('Buổi dự kiến'), findsNothing);
-        expect(find.text('Buổi dư chuyển sang'), findsNothing);
+        expect(find.text('Số buổi dự kiến'), findsOneWidget);
+        expect(find.text('13 buổi'), findsOneWidget);
+        expect(find.text('Buổi dư tích lũy'), findsOneWidget);
+        expect(find.text('2 buổi'), findsOneWidget);
       },
     );
   });
