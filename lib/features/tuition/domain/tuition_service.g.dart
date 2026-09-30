@@ -21,7 +21,7 @@ final tuitionRepositoryProvider = FutureProvider<TuitionRepository>.internal(
 );
 
 typedef TuitionRepositoryRef = FutureProviderRef<TuitionRepository>;
-String _$tuitionServiceHash() => r'16bb37056e4f1c846c7493e5ccd4304f1d030408';
+String _$tuitionServiceHash() => r'fbc2127806416786bb9d3e1d2f62721498abbf1c';
 
 /// See also [tuitionService].
 @ProviderFor(tuitionService)

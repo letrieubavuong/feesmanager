@@ -1,5 +1,7 @@
 # TUITION2027 - CANONICAL SQLITE SCHEMA
 
+> Business contract revision: 2026-09-30. This document specifies the new target behavior: center-wide pricing, beginning-of-month provisional collection, and end-of-month reconciliation. New APIs/schema below are requirements, not a claim that they are already implemented. Update `TUITION2027_DOMAIN_CONSTITUTION.md` consistently before implementation. Preserve legacy invoice/policy/payment history.
+
 ## 1. Purpose
 
 This document defines the logical canonical SQLite schema for the rebuilt Tuition2027 data core.
@@ -131,52 +133,32 @@ Indexes:
 - `(id_lop, tu_ngay, den_ngay)`
 - `(id_hoc_sinh, tu_ngay, den_ngay)`
 
-## 6. `chinh_sach_hoc_phi` (Legacy)
+## 6. Tuition policy storage
 
-Purpose: legacy effective-dated class tuition policy (kept for historical invoice references).
+### 6.1 Legacy `chinh_sach_hoc_phi` — retain historical references
 
-Suggested columns:
+Existing class-specific policy data and invoice foreign keys must remain readable. Existing columns include id, id_lop, hieu_luc_tu/den, so_buoi_chuan_thang, hoc_phi_moi_buoi, hoc_phi_thang_toi_da, quy_tac_nghi_co_phep, ghi_chu, created_at, updated_at. Existing v17 absence vocabulary is `buTruBuoiDu`, `tinhPhi`, `khongTinhPhi`.
+
+This is no longer the operational policy source for new center-policy periods. Do not drop this table, delete referenced rows, or create per-class policies for newly created classes.
+
+### 6.2 Proposed `center_tuition_policy` — NOT YET IMPLEMENTED
+
+One effective policy applies to all classes/grades. Proposed physical name is an implementation target; verify the actual database before choosing the next migration version.
 
 - `id INTEGER PRIMARY KEY AUTOINCREMENT`
-- `id_lop INTEGER NOT NULL`
-- `hieu_luc_tu TEXT NOT NULL`
-- `hieu_luc_den TEXT NULL`
-- `so_buoi_chuan_thang INTEGER NOT NULL DEFAULT 12`
-- `hoc_phi_moi_buoi INTEGER NOT NULL DEFAULT 0`
-- `hoc_phi_thang_toi_da INTEGER NULL`
-- `quy_tac_nghi_co_phep TEXT NOT NULL DEFAULT 'buTruBuoiDu'` (v17: `buTruBuoiDu`, `tinhPhi`, `khongTinhPhi`; existing policies retain the old default)
-- `ghi_chu TEXT NULL`
+- `effective_from_month TEXT NOT NULL` — YYYY-MM
+- `effective_to_month TEXT NULL` — inclusive, YYYY-MM; null=open-ended
+- `standard_sessions INTEGER NOT NULL`
+- `unit_price INTEGER NOT NULL` — integer VND
+- `monthly_cap INTEGER NULL` — integer VND
+- `excused_absence_rule TEXT NOT NULL`
+- `note TEXT NULL`
 - `created_at TEXT NOT NULL`
 - `updated_at TEXT NOT NULL`
 
-Constraints:
+Constraints: N>0; P>=0; C null or>=0; valid month format; end>=start; recognized absence rule. Unique effective start and at most one open policy; interval overlap prevention must cover finite intervals too. Do not add id_lop or a new-class pricing override.
 
-- standard sessions > 0
-- fees >= 0
-- effective end >= start when present
-
-Avoid overlapping active policies for the same class.
-
-## 6b. `center_tuition_policy` (v19)
-
-Purpose: center-wide effective-dated tuition policy version.
-
-Suggested columns:
-
-- `id INTEGER PRIMARY KEY AUTOINCREMENT`
-- `hieu_luc_tu TEXT NOT NULL` (e.g. `YYYY-MM-01`)
-- `hieu_luc_den TEXT NULL`
-- `so_buoi_chuan_thang INTEGER NOT NULL DEFAULT 12`
-- `hoc_phi_moi_buoi INTEGER NOT NULL DEFAULT 0`
-- `hoc_phi_thang_toi_da INTEGER NULL`
-- `quy_tac_nghi_co_phep TEXT NOT NULL DEFAULT 'buTruBuoiDu'`
-- `ghi_chu TEXT NULL`
-- `created_at TEXT NOT NULL`
-- `updated_at TEXT NOT NULL`
-
-Constraints:
-- UNIQUE(`hieu_luc_tu`)
-- standard sessions > 0, fees >= 0, effective end >= start when present
+Policy boundaries are monthly. Store the selected version and pricing snapshot in statements; old snapshots do not resolve today's settings. Different legacy class prices require explicit setup, not automatic choice of the first record.
 
 ## 7. `lich_hoc`
 
@@ -224,7 +206,7 @@ Suggested columns:
 
 The referenced schedule must belong to `id_lop`.
 
-Assignment must not silently outlive membership.
+Assignment must not silently outlive membership or schedule validity. Intervals are inclusive and may start after membership start; exact equality with join date is not required. Schedule revisions preview and atomically trim/split assignments to the intersection of the valid intervals; an empty intersection needs explicit resolution.
 
 Indexes:
 
@@ -356,41 +338,9 @@ Unique:
 
 Missing row is `CHUA_DIEM_DANH` in application state, not a persisted attendance status.
 
-## 13. `lich_can`
+## 13. Superseded logical proposal: `lich_can`
 
-Purpose: recurring or one-off student constraints/preferences.
-
-Suggested columns:
-
-- `id INTEGER PRIMARY KEY AUTOINCREMENT`
-- `id_hoc_sinh INTEGER NOT NULL`
-- `loai TEXT NOT NULL`
-- `muc_do TEXT NOT NULL`
-- `thu_trong_tuan INTEGER NULL`
-- `ngay_cu_the TEXT NULL`
-- `gio_bat_dau TEXT NOT NULL`
-- `gio_ket_thuc TEXT NOT NULL`
-- `hieu_luc_tu TEXT NULL`
-- `hieu_luc_den TEXT NULL`
-- `ghi_chu TEXT NULL`
-- `created_at TEXT NOT NULL`
-- `updated_at TEXT NOT NULL`
-
-Types:
-
-- `HOC_CHINH_KHOA`
-- `HOC_MON_KHAC`
-- `LOP_KHAC_TRUNG_TAM`
-- `BAN_CA_NHAN`
-- `DI_CHUYEN`
-- `NGUYEN_VONG`
-
-Severity:
-
-- `CUNG`
-- `MEM`
-
-Use either weekday-based recurrence or specific date according to the domain rule.
+This older logical proposal is not an instruction to create a second schedule-constraint table. Section18 `rang_buoc_lich_hoc_sinh` describes the implemented v13 constraint vocabulary. Verify the actual repository/schema before migration; if a real legacy lich_can exists, retain/map it explicitly without dropping history. New domain consumers use one canonical constraint repository.
 
 ## 14. `buoi_du_ledger`
 
@@ -423,9 +373,9 @@ Prevent duplicate automated events with a partial unique index such as:
 
 `(id_hoc_sinh, id_lop, id_buoi_hoc, ly_do) WHERE id_buoi_hoc IS NOT NULL`
 
-## 15. `hoc_phi_thang`
+## 15. `hoc_phi_thang` — legacy fields and revised target
 
-Purpose: monthly tuition statement / invoice snapshot.
+Purpose: monthly tuition invoice/snapshot.
 
 Suggested columns:
 
@@ -433,8 +383,7 @@ Suggested columns:
 - `id_hoc_sinh INTEGER NOT NULL`
 - `id_lop INTEGER NOT NULL`
 - `thang TEXT NOT NULL`
-- `id_chinh_sach_hoc_phi INTEGER NULL` (legacy policy FK)
-- `id_chinh_sach_trung_tam INTEGER NULL` (v19 center policy FK)
+- `id_chinh_sach_hoc_phi INTEGER NOT NULL` in legacy schema; revised target nullable for center-policy statements, keeping legacy FK for historical rows
 - `so_buoi_eligible INTEGER NOT NULL`
 - `so_buoi_du_kien INTEGER NOT NULL DEFAULT 0`
 - `so_buoi_tinh_phi INTEGER NOT NULL`
@@ -452,20 +401,31 @@ Suggested columns:
 - `created_at TEXT NOT NULL`
 - `updated_at TEXT NOT NULL`
 
-Statuses:
+Legacy statuses (preserve and migrate explicitly): `NHAP`, `DA_CHOT`, `DA_THANH_TOAN`, `CON_NO`.
 
-- `PROVISIONAL` (Tạm thu đầu tháng)
-- `FINALIZED` (Đối soát cuối tháng / Đã chốt)
-- `NHAP` (Legacy draft)
-- `DA_CHOT` (Legacy finalized)
-- `DA_THANH_TOAN` (Legacy paid)
-- `CON_NO` (Legacy unpaid)
+Proposed additive target fields — NOT YET IMPLEMENTED:
+
+- `id_center_tuition_policy INTEGER NULL` -> center_tuition_policy.id
+- `lifecycle TEXT NOT NULL` -> PROVISIONAL / FINALIZED
+- `settlement_status TEXT NOT NULL` -> UNPAID / PARTIAL / PAID / OVERPAID
+- `revision INTEGER NOT NULL` and `needs_reconciliation INTEGER NOT NULL DEFAULT 0`
+- pricing snapshot: standard_sessions, unit_price, monthly_cap, excused_absence_rule
+- separately identified projected and reconciled amounts/counts; reconciled values may be null until verified
+- `calculated_at`, `reconciled_at` and source revision/fingerprint for stale-plan checks
+
+An active statement references exactly one policy source (legacy or center); historical snapshot pricing must be reconstructable. Rebuild legacy NOT NULL/CHECK constraints via forward migration if necessary, copying all data and checking FK integrity. Never use a fake legacy policy ID for a new center statement.
+
+Map NHAP -> PROVISIONAL; DA_CHOT/DA_THANH_TOAN/CON_NO -> FINALIZED. Derive settlement status from canonical payments. Do not infer finalization from paid status.
+
+Store immutable revisions/snapshots with explicit provenance in a child table such as hoc_phi_thang_revision; unique(statement_id,revision), foreign key ON DELETE RESTRICT. Its exact DDL must be documented alongside the migration. Retain prior finalized amounts and details during correction.
 
 Unique:
 
 `(id_hoc_sinh, id_lop, thang)`
 
-Once finalized, historical amounts do not silently change. Corrections must be explicit adjustments/re-finalization flow.
+Once finalized, historical snapshots do not silently change. Corrections create an explicit auditable revision. One stable monthly statement ID owns payment links; provisional updates and final reconciliation must not delete/reinsert it.
+
+Money formula: gross=min(q,N)*P; cappedBase=min(gross,C) when C exists; discount=floor(cappedBase*d/100); due=cappedBase-discount. Store gross, capped base and discount with consistent meaning. q differs between projected schedule eligibility and actual attendance eligibility; future attendance is never invented.
 
 ## 16. `thanh_toan`
 
@@ -496,7 +456,11 @@ Constraints:
 - amount > 0
 - partial unique `ma_giao_dich` when non-empty
 
-Debt is not stored here.
+A valid provisional statement may have receipts before final reconciliation. Receipt identity, received amount and actual payment date remain stable when fees change. Receipt edits need an audit trail/updated timestamp in the revised schema.
+
+Derived balance is not stored as independent truth here. For valid receipts A and active amount F: remaining=max(F-A,0), overpaid=max(A-F,0). Overpayment after a fee reduction is a legitimate business state, not automatically corruption. Duplicate transaction IDs and relationship mismatches remain errors.
+
+Refunds/carry-forward require separate explicit monetary records linked to their source and destination; do not represent them as negative receipt rows under the existing CHECK(amount>0), or as buoi_du_ledger entries. Their DDL and accounting rules need a dedicated migration before enabling those actions.
 
 ## 17. `thong_bao`
 
@@ -588,7 +552,7 @@ Group payment totals by student + class + month.
 
 ### `v_cong_no_thang`
 
-Invoice due minus payment totals.
+Expose signedBalance=statementAmount-paymentTotal, remainingToCollect=max(signedBalance,0), overpaid=max(-signedBalance,0), and lifecycle/mode. A single positive-debt total must not hide overpayment or mix projected with finalized fees.
 
 Do not update these views as independent sources of truth.
 
@@ -611,3 +575,9 @@ Every schema change requires:
 - updated schema document
 
 Never patch production schema ad hoc from a screen/service.
+
+## 23. Schema documentation and rollout boundary
+
+This file contains legacy implemented fields and explicitly marked proposed changes. It does not certify that a migration has run. Read app_database.dart and existing migrations to determine the actual version; do not reuse v13 as the current version or assume v17 is the latest.
+
+Update the domain constitution before implementation. Record the final implemented DDL, indexes, constraints, migration version and tests after each schema change. Preserve student/class IDs, memberships/discounts, schedule/attendance history, credit ledger and all payment totals. Schedule changes protect historical references and regenerate only safe planned sessions atomically.

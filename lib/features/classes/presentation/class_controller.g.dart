@@ -173,7 +173,7 @@ final classListControllerProvider = AutoDisposeAsyncNotifierProvider<
 
 typedef _$ClassListController = AutoDisposeAsyncNotifier<List<ClassEntity>>;
 String _$classFormControllerHash() =>
-    r'b3b751599e0686127bb1b5c3aeec19b73a6b1053';
+    r'd2485da8e578e477c2e1cb148c3d4d2accd67e22';
 
 /// See also [ClassFormController].
 @ProviderFor(ClassFormController)

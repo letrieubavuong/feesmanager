@@ -1,8 +1,10 @@
 # TUITION2027 - LEGACY DATA MIGRATION RULES
 
+> Business contract revision: 2026-09-30. This document specifies the new target behavior: center-wide pricing, beginning-of-month provisional collection, and end-of-month reconciliation. New APIs/schema below are requirements, not a claim that they are already implemented. Update `TUITION2027_DOMAIN_CONSTITUTION.md` consistently before implementation. Preserve legacy invoice/policy/payment history.
+
 ## 1. Purpose
 
-This document defines how data from the existing Tuition2027 database is migrated into the rebuilt canonical schema without losing history or inventing facts.
+This document defines both legacy import into the canonical schema and forward upgrades of an already operating canonical database, without losing history or inventing facts. These are distinct operations.
 
 The legacy database is source material, not the target architecture.
 
@@ -159,7 +161,7 @@ Preserve class ID and core metadata.
 
 Do not import derived class size as source of truth.
 
-Legacy class-specific policies (`chinh_sach_hoc_phi`) and foreign keys on historical finalized invoices are preserved intact. New billing cycles use the versioned center tuition policy (`center_tuition_policy`). If historical tuition policy cannot be reconstructed for a legacy invoice, log a warning and use explicit policy bootstrap.
+If historical tuition policy cannot be reconstructed, log a warning and require explicit policy bootstrap for future calculations.
 
 ## 10. Membership migration
 
@@ -349,7 +351,58 @@ Otherwise status is NOT_READY.
 Until acceptance:
 
 - legacy database remains available read-only
-- rebuilt database can be deleted/recreated from scratch
+- only a disposable test/import target with no production writes may be deleted/recreated from the read-only source
+- an operational canonical database must never be deleted/recreated to apply an upgrade
 - no production workflow depends exclusively on partially migrated V2 data
 
 Never delete the recovery path during migration development.
+
+## 23. Forward upgrade: class pricing to center pricing
+
+This is an upgrade of operating data, not permission to rerun an importer/reset a live database.
+
+1. Identify actual source schema version from app_database.dart/migrations; back up the populated database with a restorable path.
+2. Add center_tuition_policy with monthly boundaries and overlap protection; keep legacy chinh_sach_hoc_phi and historical FK links.
+3. Preserve all invoice pricing snapshots. Rebuild any legacy NOT NULL policy reference constraint only through a tested forward migration; copy IDs and verify row/FK counts.
+4. If old classes have different prices, log CENTER_POLICY_SETUP_REQUIRED and ask for explicit center setup. Do not choose first/latest arbitrary class or assign today's rate to every historical month.
+5. Existing open or historical unfinalized periods need a documented resolver: legacy-period rules or an explicitly configured retroactive center version. Missing provenance is an issue, not a zero fee.
+6. Preserve membership-specific discount values and intervals; no relocation of discount data in this migration.
+7. Creating a class after the switch must not create a new class-specific policy.
+
+Center price versions start on the first day of the selected billing month. Changing settings must not silently rewrite prior finalized snapshots or actual receipts.
+
+## 24. Statement lifecycle and provisional receipts
+
+- Preserve hoc_phi_thang IDs, created_at, student/class/month unique identity and all thanh_toan foreign keys.
+- Map legacy NHAP to PROVISIONAL; DA_CHOT/DA_THANH_TOAN/CON_NO to FINALIZED. Settlement is derived separately from payments.
+- Add immutable snapshot/revision provenance and a needs-reconciliation marker. Do not fabricate original historical snapshot dates.
+- A provisional statement may receive partial/full payment without completion of future sessions.
+- Lower reconciled fee with paid>due is OVERPAID; preserve all receipts and show the difference. Do not fail migration solely for that arithmetic relationship. Validate provenance of existing anomalies; unexplained historical data still requires review.
+- Refund/carry-forward requires explicit linked monetary events, never duplicate receipts, credit-ledger entries or silent cross-class money movements.
+- Read models/validators/reports must migrate consistently; simply removing recordPayment's finalized guard while leaving read validators unchanged is invalid.
+
+## 25. Schedule interval upgrades and history protection
+
+Schedules already have effective from/to fields. Improving editing is not grounds to rewrite attended sessions or invent assignment dates.
+
+For a schedule-change command: read dependency batches, preview protected sessions/conflicts and assignment intersections, verify revision, then apply schedule versions, assignment splits and safe regenerated planned sessions in one transaction. Preserve holiday/cancellation rules and references. A failed command rolls back every mutation.
+
+Exact assignment-start equality with membership start is not required; containment of the valid interval is required. Do not fix invalid assignments by inventing historical join dates.
+
+## 26. Required upgrade acceptance tests
+
+Use a real SQLite file with students, different class policies, mid-month memberships/discounts, both shifts, holiday/canceled sessions, attendance, credit entries, finalized/draft statements and partial payments.
+
+Assert after upgrade:
+
+- IDs, FK links, receipt amounts/payment dates and totals unchanged;
+- archived entities and historical snapshots still readable;
+- provisional collection works with planned sessions, without invented attendance;
+- 7 sessions ×50,000 with10% discount ->315,000; paid200,000 ->remaining115,000;
+- actual fee270,000 after receipt315,000 ->overpaid45,000;
+- reconcile/reopen/retry does not duplicate receipts, revisions or credit events;
+- policy ambiguity is reported, not guessed;
+- transaction failure leaves the original data intact;
+- upgrade is not rerun on reopening and backup recovery is verified.
+
+Compare semantics and monetary totals as well as row counts. Mark READY only after tests and Android upgrade acceptance, with commit/version evidence. Keep the source backup/recovery path; do not tell users to uninstall or clear app data as a migration strategy.

@@ -226,8 +226,8 @@ void main() {
       expect(preview.soBuoiTinhPhi, 12);
       expect(preview.tongTruocGiam, 600000); // 12 * 50,000
       expect(preview.giamPhanTram, 10);
-      expect(preview.giamSoTien, 60000); // 10% of 600,000
-      expect(preview.soTienPhaiThu, 500000);
+      expect(preview.giamSoTien, 50000); // 10% of capped base (500,000)
+      expect(preview.soTienPhaiThu, 450000);
     });
 
     test('Holiday sessions consume accumulated credit and remain chargeable', () async {
@@ -317,7 +317,7 @@ void main() {
       final previewBelow = await service.previewTuition(1, 1, '2026-09');
       expect(previewBelow.soTienPhaiThu, 90000);
 
-      // 2. Above cap: 12 sessions * 50,000 = 600,000 - 10% = 540,000 > cap 500,000 => 500,000
+      // 2. Above cap: 12 sessions * 50,000 = 600,000 => capped base = 500,000. Discount 10% on 500,000 = 50,000 => Net = 450,000.
       for (int i = 3; i <= 12; i++) {
         final dayStr = i < 10 ? '0$i' : '$i';
         final dateStr = '2026-09-$dayStr';
@@ -333,7 +333,7 @@ void main() {
       }
 
       final previewAbove = await service.previewTuition(1, 1, '2026-09');
-      expect(previewAbove.soTienPhaiThu, 500000);
+      expect(previewAbove.soTienPhaiThu, 450000);
     });
   });
 }

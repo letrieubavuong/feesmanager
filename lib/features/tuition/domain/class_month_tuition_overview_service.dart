@@ -25,6 +25,7 @@ import '../../students/domain/student_service.dart';
 import '../data/tuition_repository.dart';
 import 'class_month_tuition_overview.dart';
 import 'tuition_invoice.dart';
+import 'tuition_policy.dart';
 import 'tuition_policy_service.dart';
 import 'tuition_service.dart';
 
@@ -81,10 +82,27 @@ class ClassMonthTuitionOverviewService {
     final monthEndDt = DateTime(monthStart.year, monthStart.month + 1, 0);
     final monthEndStr = DateFormat('yyyy-MM-dd').format(monthEndDt);
 
-    final policy = await _policyService.getEffectivePolicyForDateStr(
+    final legacyPolicy = await _policyService.getEffectivePolicyForDateStr(
       classId,
       monthStartStr,
     );
+    final centerPolicy =
+        await _policyService.getEffectiveCenterPolicyForMonth(month);
+    final policy = legacyPolicy ??
+        (centerPolicy != null
+            ? TuitionPolicy(
+                idLop: classId,
+                hieuLucTu: centerPolicy.hieuLucTu,
+                hieuLucDen: centerPolicy.hieuLucDen,
+                soBuoiChuanThang: centerPolicy.soBuoiChuanThang,
+                hocPhiMoiBuoi: centerPolicy.hocPhiMoiBuoi,
+                hocPhiThangToiDa: centerPolicy.hocPhiThangToiDa,
+                quyTacNghiCoPhep: centerPolicy.quyTacNghiCoPhep,
+                ghiChu: centerPolicy.ghiChu,
+                createdAt: centerPolicy.createdAt,
+                updatedAt: centerPolicy.updatedAt,
+              )
+            : null);
 
     // 5. Load class sessions ONCE
     final classSessions = await _sessionService.getSessionsForClassAndRange(

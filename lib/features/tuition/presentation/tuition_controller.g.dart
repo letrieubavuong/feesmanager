@@ -6,8 +6,26 @@ part of 'tuition_controller.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$classTuitionPoliciesHash() =>
-    r'ff46de4cff2baedde5a5b535c5d09dbfecfceac0';
+String _$centerTuitionPoliciesHash() =>
+    r'7af172a5bea00629bff4862dcbf458dc2f587c54';
+
+/// See also [centerTuitionPolicies].
+@ProviderFor(centerTuitionPolicies)
+final centerTuitionPoliciesProvider =
+    AutoDisposeFutureProvider<List<CenterTuitionPolicy>>.internal(
+  centerTuitionPolicies,
+  name: r'centerTuitionPoliciesProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$centerTuitionPoliciesHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef CenterTuitionPoliciesRef
+    = AutoDisposeFutureProviderRef<List<CenterTuitionPolicy>>;
+String _$effectiveCenterTuitionPolicyHash() =>
+    r'34fc8fff405491fc16e7b5bc1f82f6d1feec0187';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -29,6 +47,143 @@ class _SystemHash {
     return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
   }
 }
+
+/// See also [effectiveCenterTuitionPolicy].
+@ProviderFor(effectiveCenterTuitionPolicy)
+const effectiveCenterTuitionPolicyProvider =
+    EffectiveCenterTuitionPolicyFamily();
+
+/// See also [effectiveCenterTuitionPolicy].
+class EffectiveCenterTuitionPolicyFamily
+    extends Family<AsyncValue<CenterTuitionPolicy?>> {
+  /// See also [effectiveCenterTuitionPolicy].
+  const EffectiveCenterTuitionPolicyFamily();
+
+  /// See also [effectiveCenterTuitionPolicy].
+  EffectiveCenterTuitionPolicyProvider call(
+    String month,
+  ) {
+    return EffectiveCenterTuitionPolicyProvider(
+      month,
+    );
+  }
+
+  @override
+  EffectiveCenterTuitionPolicyProvider getProviderOverride(
+    covariant EffectiveCenterTuitionPolicyProvider provider,
+  ) {
+    return call(
+      provider.month,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'effectiveCenterTuitionPolicyProvider';
+}
+
+/// See also [effectiveCenterTuitionPolicy].
+class EffectiveCenterTuitionPolicyProvider
+    extends AutoDisposeFutureProvider<CenterTuitionPolicy?> {
+  /// See also [effectiveCenterTuitionPolicy].
+  EffectiveCenterTuitionPolicyProvider(
+    String month,
+  ) : this._internal(
+          (ref) => effectiveCenterTuitionPolicy(
+            ref as EffectiveCenterTuitionPolicyRef,
+            month,
+          ),
+          from: effectiveCenterTuitionPolicyProvider,
+          name: r'effectiveCenterTuitionPolicyProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$effectiveCenterTuitionPolicyHash,
+          dependencies: EffectiveCenterTuitionPolicyFamily._dependencies,
+          allTransitiveDependencies:
+              EffectiveCenterTuitionPolicyFamily._allTransitiveDependencies,
+          month: month,
+        );
+
+  EffectiveCenterTuitionPolicyProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.month,
+  }) : super.internal();
+
+  final String month;
+
+  @override
+  Override overrideWith(
+    FutureOr<CenterTuitionPolicy?> Function(
+            EffectiveCenterTuitionPolicyRef provider)
+        create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: EffectiveCenterTuitionPolicyProvider._internal(
+        (ref) => create(ref as EffectiveCenterTuitionPolicyRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        month: month,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<CenterTuitionPolicy?> createElement() {
+    return _EffectiveCenterTuitionPolicyProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EffectiveCenterTuitionPolicyProvider &&
+        other.month == month;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, month.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin EffectiveCenterTuitionPolicyRef
+    on AutoDisposeFutureProviderRef<CenterTuitionPolicy?> {
+  /// The parameter `month` of this provider.
+  String get month;
+}
+
+class _EffectiveCenterTuitionPolicyProviderElement
+    extends AutoDisposeFutureProviderElement<CenterTuitionPolicy?>
+    with EffectiveCenterTuitionPolicyRef {
+  _EffectiveCenterTuitionPolicyProviderElement(super.provider);
+
+  @override
+  String get month => (origin as EffectiveCenterTuitionPolicyProvider).month;
+}
+
+String _$classTuitionPoliciesHash() =>
+    r'ff46de4cff2baedde5a5b535c5d09dbfecfceac0';
 
 /// See also [classTuitionPolicies].
 @ProviderFor(classTuitionPolicies)
@@ -726,6 +881,23 @@ class _ClassMonthTuitionOverviewProviderElement
   (int, String) get arg => (origin as ClassMonthTuitionOverviewProvider).arg;
 }
 
+String _$centerTuitionPolicyControllerHash() =>
+    r'b96c7b7c40de5bbd4e4b5712f2a4e297658e5f62';
+
+/// See also [CenterTuitionPolicyController].
+@ProviderFor(CenterTuitionPolicyController)
+final centerTuitionPolicyControllerProvider = AutoDisposeAsyncNotifierProvider<
+    CenterTuitionPolicyController, void>.internal(
+  CenterTuitionPolicyController.new,
+  name: r'centerTuitionPolicyControllerProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$centerTuitionPolicyControllerHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$CenterTuitionPolicyController = AutoDisposeAsyncNotifier<void>;
 String _$tuitionPolicyControllerHash() =>
     r'23346441c93704bd6a0a46740275613023fca467';
 
@@ -934,7 +1106,7 @@ class _TuitionPreviewControllerProviderElement
   String get month => (origin as TuitionPreviewControllerProvider).month;
 }
 
-String _$invoiceControllerHash() => r'8890fca80638df134b0bf37f22ce04fe10f143be';
+String _$invoiceControllerHash() => r'0f925d2c646ca889a059e19dd56ab8dbea4a92b3';
 
 /// See also [InvoiceController].
 @ProviderFor(InvoiceController)

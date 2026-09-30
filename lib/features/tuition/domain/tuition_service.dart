@@ -23,6 +23,7 @@ import '../../session_credits/domain/monthly_credit_summary.dart';
 import 'tuition_policy.dart';
 import 'tuition_policy_service.dart';
 import 'tuition_preview.dart';
+import 'tuition_calculator.dart';
 
 part 'tuition_service.g.dart';
 
@@ -65,14 +66,32 @@ class TuitionService {
     final monthStart = DateTime.parse('$month-01');
     final monthStartStr = DateFormat('yyyy-MM-dd').format(monthStart);
 
-    final policy = await _policyService.getEffectivePolicyForDateStr(
+    final legacyPolicy = await _policyService.getEffectivePolicyForDateStr(
       classId,
       monthStartStr,
     );
+    final centerPolicy =
+        await _policyService.getEffectiveCenterPolicyForMonth(month);
+
+    final policy = legacyPolicy ??
+        (centerPolicy != null
+            ? TuitionPolicy(
+                idLop: classId,
+                hieuLucTu: centerPolicy.hieuLucTu,
+                hieuLucDen: centerPolicy.hieuLucDen,
+                soBuoiChuanThang: centerPolicy.soBuoiChuanThang,
+                hocPhiMoiBuoi: centerPolicy.hocPhiMoiBuoi,
+                hocPhiThangToiDa: centerPolicy.hocPhiThangToiDa,
+                quyTacNghiCoPhep: centerPolicy.quyTacNghiCoPhep,
+                ghiChu: centerPolicy.ghiChu,
+                createdAt: centerPolicy.createdAt,
+                updatedAt: centerPolicy.updatedAt,
+              )
+            : null);
 
     if (policy == null) {
       throw Exception(
-        'Lớp chưa có chính sách học phí có hiệu lực tại tháng $month',
+        'Trung tâm hoặc lớp chưa có chính sách học phí có hiệu lực tại tháng $month',
       );
     }
 
@@ -333,16 +352,18 @@ class TuitionService {
     final creditClosing =
         creditSummary.closingBalance + missingEarned - creditUsed;
 
-    final tongTruocGiam = soBuoiTinhPhi * policy.hocPhiMoiBuoi;
-    final giamPhanTram = discountPercent;
-    final giamSoTien = (tongTruocGiam * giamPhanTram) ~/ 100;
-    final amountAfterDiscount = tongTruocGiam - giamSoTien;
+    final feeResult = calculateTuitionFee(
+      sessions: soBuoiTinhPhi,
+      standardLimit: policy.soBuoiChuanThang,
+      unitPrice: policy.hocPhiMoiBuoi,
+      discountPercent: discountPercent,
+      monthlyCap: policy.hocPhiThangToiDa,
+    );
 
-    final soTienPhaiThu =
-        (policy.hocPhiThangToiDa != null &&
-            amountAfterDiscount > policy.hocPhiThangToiDa!)
-        ? policy.hocPhiThangToiDa!
-        : amountAfterDiscount;
+    final tongTruocGiam = feeResult.grossAmount;
+    final giamPhanTram = discountPercent;
+    final giamSoTien = feeResult.discountAmount;
+    final soTienPhaiThu = feeResult.netAmount;
 
     return TuitionPreview(
       studentId: studentId,

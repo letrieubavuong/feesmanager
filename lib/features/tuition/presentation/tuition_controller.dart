@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../memberships/presentation/membership_providers.dart';
 import '../../payments/presentation/payment_controller.dart';
+import '../domain/center_tuition_policy.dart';
 import '../domain/class_month_tuition_overview.dart';
 import '../domain/class_month_tuition_overview_service.dart';
 import '../domain/invoice_service.dart';
@@ -12,6 +13,65 @@ import '../domain/tuition_preview.dart';
 import '../domain/tuition_service.dart';
 
 part 'tuition_controller.g.dart';
+
+@riverpod
+Future<List<CenterTuitionPolicy>> centerTuitionPolicies(
+  CenterTuitionPoliciesRef ref,
+) async {
+  final service = await ref.watch(tuitionPolicyServiceProvider.future);
+  return service.getAllCenterPolicies();
+}
+
+@riverpod
+Future<CenterTuitionPolicy?> effectiveCenterTuitionPolicy(
+  EffectiveCenterTuitionPolicyRef ref,
+  String month,
+) async {
+  final service = await ref.watch(tuitionPolicyServiceProvider.future);
+  return service.getEffectiveCenterPolicyForMonth(month);
+}
+
+@riverpod
+class CenterTuitionPolicyController extends _$CenterTuitionPolicyController {
+  @override
+  FutureOr<void> build() {}
+
+  Future<CenterTuitionPolicy> createPolicy({
+    required String effectiveFrom,
+    String? effectiveTo,
+    int standardSessionsPerMonth =
+        TuitionPolicyDefaults.standardSessionsPerMonth,
+    required int feePerSession,
+    int? monthlyMaxFee,
+    ExcusedAbsenceFeeRule excusedAbsenceFeeRule =
+        ExcusedAbsenceFeeRule.buTruBuoiDu,
+    String? note,
+  }) async {
+    state = const AsyncLoading();
+    late CenterTuitionPolicy result;
+    state = await AsyncValue.guard(() async {
+      final service = await ref.read(tuitionPolicyServiceProvider.future);
+      result = await service.createCenterPolicy(
+        effectiveFrom: effectiveFrom,
+        effectiveTo: effectiveTo,
+        standardSessionsPerMonth: standardSessionsPerMonth,
+        feePerSession: feePerSession,
+        monthlyMaxFee: monthlyMaxFee,
+        excusedAbsenceFeeRule: excusedAbsenceFeeRule,
+        note: note,
+      );
+
+      ref.invalidate(centerTuitionPoliciesProvider);
+      ref.invalidate(effectiveCenterTuitionPolicyProvider);
+      ref.invalidate(tuitionPreviewControllerProvider);
+      ref.invalidate(classMonthTuitionOverviewProvider);
+    });
+    if (state.hasError) {
+      throw state.error!;
+    }
+    return result;
+  }
+}
 
 @riverpod
 Future<List<TuitionPolicy>> classTuitionPolicies(

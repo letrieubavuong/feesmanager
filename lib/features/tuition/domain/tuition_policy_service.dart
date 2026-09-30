@@ -10,6 +10,7 @@ import '../../session_credits/domain/session_credit_service.dart';
 import '../data/tuition_policy_repository.dart';
 import '../data/tuition_repository.dart';
 import 'tuition_policy.dart';
+import 'center_tuition_policy.dart';
 import 'tuition_service.dart';
 
 part 'tuition_policy_service.g.dart';
@@ -38,6 +39,122 @@ class TuitionPolicyService {
     this._creditRepo,
     this._db,
   );
+
+  Future<CenterTuitionPolicy?> getEffectiveCenterPolicyForMonth(String month) {
+    _validateIsoDate('$month-01');
+    return _repo.getEffectiveCenterPolicyForMonth(month);
+  }
+
+  Future<CenterTuitionPolicy?> getEffectiveCenterPolicyForDate(String dateStr) {
+    _validateIsoDate(dateStr);
+    return _repo.getEffectiveCenterPolicyForDate(dateStr);
+  }
+
+  Future<List<CenterTuitionPolicy>> getAllCenterPolicies() {
+    return _repo.getAllCenterPolicies();
+  }
+
+  Future<CenterTuitionPolicy> createCenterPolicy({
+    required String effectiveFrom,
+    String? effectiveTo,
+    int standardSessionsPerMonth =
+        TuitionPolicyDefaults.standardSessionsPerMonth,
+    required int feePerSession,
+    int? monthlyMaxFee,
+    ExcusedAbsenceFeeRule excusedAbsenceFeeRule =
+        ExcusedAbsenceFeeRule.buTruBuoiDu,
+    String? note,
+  }) async {
+    _validateIsoDate(effectiveFrom);
+    if (!effectiveFrom.endsWith('-01')) {
+      throw Exception(
+        'Ngày bắt đầu hiệu lực của chính sách trung tâm phải là ngày đầu tháng (YYYY-MM-01)',
+      );
+    }
+
+    if (effectiveTo != null && effectiveTo.isNotEmpty) {
+      _validateIsoDate(effectiveTo);
+      if (effectiveTo.compareTo(effectiveFrom) < 0) {
+        throw Exception('Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu');
+      }
+
+      final parsedTo = DateTime.parse(effectiveTo);
+      final lastDayDt = DateTime(parsedTo.year, parsedTo.month + 1, 0);
+      final lastDayStr = DateFormat('yyyy-MM-dd').format(lastDayDt);
+      if (effectiveTo != lastDayStr) {
+        throw Exception(
+          'Ngày kết thúc hiệu lực phải là ngày cuối tháng ($lastDayStr)',
+        );
+      }
+    } else {
+      effectiveTo = null;
+    }
+
+    if (standardSessionsPerMonth <= 0) {
+      throw Exception('Số buổi chuẩn trong tháng phải lớn hơn 0');
+    }
+
+    if (feePerSession < 0) {
+      throw Exception('Học phí mỗi buổi phải lớn hơn hoặc bằng 0');
+    }
+
+    if (monthlyMaxFee != null && monthlyMaxFee < 0) {
+      throw Exception('Mức học phí tối đa tháng phải lớn hơn hoặc bằng 0');
+    }
+
+    final existingPolicies = await _repo.getAllCenterPolicies();
+    String? closeDateStr;
+
+    for (final p in existingPolicies) {
+      final pTo = p.hieuLucDen ?? '9999-12-31';
+      final newTo = effectiveTo ?? '9999-12-31';
+
+      final overlap =
+          effectiveFrom.compareTo(pTo) <= 0 &&
+          newTo.compareTo(p.hieuLucTu) >= 0;
+
+      if (overlap) {
+        if (p.hieuLucDen == null && p.hieuLucTu.compareTo(effectiveFrom) < 0) {
+          if (effectiveTo != null) {
+            throw Exception(
+              'Không thể chèn chính sách có ngày kết thúc vào giữa một chính sách đang mở.',
+            );
+          }
+
+          final fromDt = DateTime.parse(effectiveFrom);
+          final dayBefore = fromDt.subtract(const Duration(days: 1));
+          closeDateStr = DateFormat('yyyy-MM-dd').format(dayBefore);
+        } else {
+          throw Exception(
+            'Khoảng thời gian hiệu lực trùng lặp với chính sách trung tâm đã có (${p.hieuLucTu} - ${p.hieuLucDen ?? "hiện tại"})',
+          );
+        }
+      }
+    }
+
+    final now = DateTime.now();
+    final policy = CenterTuitionPolicy(
+      hieuLucTu: effectiveFrom,
+      hieuLucDen: effectiveTo,
+      soBuoiChuanThang: standardSessionsPerMonth,
+      hocPhiMoiBuoi: feePerSession,
+      hocPhiThangToiDa: monthlyMaxFee,
+      quyTacNghiCoPhep: excusedAbsenceFeeRule,
+      ghiChu: note?.trim().isEmpty == true ? null : note?.trim(),
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    int? createdId;
+    await _db.transaction((txn) async {
+      if (closeDateStr != null) {
+        await _repo.closeOpenCenterPolicy(closeDateStr);
+      }
+      createdId = await _repo.insertCenterPolicy(policy);
+    });
+
+    return (await _repo.getCenterPolicyById(createdId!))!;
+  }
 
   Future<TuitionPolicy?> getEffectivePolicy(int classId, DateTime date) {
     final dateStr = DateFormat('yyyy-MM-dd').format(date);

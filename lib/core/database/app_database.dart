@@ -1059,6 +1059,7 @@ class AppDatabase {
     final invoiceColumns = await db.rawQuery('PRAGMA table_info(hoc_phi_thang)');
     if (!invoiceColumns.any((column) => column['name'] == 'id_chinh_sach_trung_tam')) {
       await db.execute('PRAGMA foreign_keys = OFF');
+      await db.execute('PRAGMA legacy_alter_table = ON');
       await db.execute('ALTER TABLE hoc_phi_thang RENAME TO hoc_phi_thang_v18');
       await db.execute('DROP INDEX IF EXISTS idx_hoc_phi_thang_student_class');
       await db.execute('DROP INDEX IF EXISTS idx_hoc_phi_thang_class_month');
@@ -1118,6 +1119,63 @@ class AppDatabase {
       ''');
 
       await db.execute('DROP TABLE hoc_phi_thang_v18');
+
+      // Rebuild thanh_toan if present to ensure FK points to hoc_phi_thang(id)
+      final hasThanhToan = (await db.rawQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='thanh_toan'")).isNotEmpty;
+      if (hasThanhToan) {
+        await db.execute('ALTER TABLE thanh_toan RENAME TO thanh_toan_v18');
+        await db.execute('''
+          CREATE TABLE thanh_toan (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_hoc_sinh INTEGER NOT NULL,
+            id_lop INTEGER NOT NULL,
+            id_hoc_phi_thang INTEGER NULL,
+            thang TEXT NOT NULL,
+            so_tien INTEGER NOT NULL,
+            ngay_thanh_toan TEXT NOT NULL,
+            phuong_thuc TEXT NOT NULL,
+            ma_giao_dich TEXT NULL,
+            ghi_chu TEXT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (id_hoc_sinh) REFERENCES hoc_sinh (id) ON DELETE RESTRICT,
+            FOREIGN KEY (id_lop) REFERENCES lop (id) ON DELETE RESTRICT,
+            FOREIGN KEY (id_hoc_phi_thang) REFERENCES hoc_phi_thang (id) ON DELETE RESTRICT,
+            CHECK (so_tien > 0),
+            CHECK (phuong_thuc IN ('TIEN_MAT', 'CHUYEN_KHOAN', 'KHAC'))
+          )
+        ''');
+        await db.execute('INSERT INTO thanh_toan SELECT * FROM thanh_toan_v18');
+        await db.execute('DROP TABLE thanh_toan_v18');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_thanh_toan_invoice ON thanh_toan(id_hoc_phi_thang)');
+        await db.execute('CREATE INDEX IF NOT EXISTS idx_thanh_toan_student_class ON thanh_toan(id_hoc_sinh, id_lop)');
+      }
+
+      // Rebuild hoc_phi_chinh_sua if present to ensure FK points to hoc_phi_thang(id)
+      final hasChinhSua = (await db.rawQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='hoc_phi_chinh_sua'")).isNotEmpty;
+      if (hasChinhSua) {
+        await db.execute('ALTER TABLE hoc_phi_chinh_sua RENAME TO hoc_phi_chinh_sua_v18');
+        await db.execute('''
+          CREATE TABLE hoc_phi_chinh_sua (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_hoc_phi_thang INTEGER NOT NULL,
+            old_so_buoi_eligible INTEGER NOT NULL,
+            new_so_buoi_eligible INTEGER NOT NULL,
+            old_so_buoi_tinh_phi INTEGER NOT NULL,
+            new_so_buoi_tinh_phi INTEGER NOT NULL,
+            old_so_tien_phai_thu INTEGER NOT NULL,
+            new_so_tien_phai_thu INTEGER NOT NULL,
+            old_policy_id INTEGER NULL,
+            new_policy_id INTEGER NULL,
+            reason TEXT NOT NULL,
+            changed_at TEXT NOT NULL,
+            FOREIGN KEY (id_hoc_phi_thang) REFERENCES hoc_phi_thang (id)
+          )
+        ''');
+        await db.execute('INSERT INTO hoc_phi_chinh_sua SELECT * FROM hoc_phi_chinh_sua_v18');
+        await db.execute('DROP TABLE hoc_phi_chinh_sua_v18');
+      }
+
+      await db.execute('PRAGMA legacy_alter_table = OFF');
       await db.execute('CREATE INDEX idx_hoc_phi_thang_student_class ON hoc_phi_thang(id_hoc_sinh, id_lop, thang)');
       await db.execute('CREATE INDEX idx_hoc_phi_thang_class_month ON hoc_phi_thang(id_lop, thang)');
       await db.execute('CREATE INDEX idx_hoc_phi_thang_status ON hoc_phi_thang(trang_thai)');

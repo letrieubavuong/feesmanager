@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+import '../domain/center_tuition_policy.dart';
 import '../domain/tuition_policy.dart';
 
 class TuitionPolicyRepository {
@@ -111,5 +112,57 @@ class TuitionPolicyRepository {
       [...classIds, date, date],
     );
     return maps.map((m) => m['id_lop'] as int).toSet();
+  }
+
+  // --- Center Tuition Policy Operations ---
+
+  Future<int> insertCenterPolicy(CenterTuitionPolicy policy) async {
+    return await _db.insert('center_tuition_policy', policy.toMap());
+  }
+
+  Future<CenterTuitionPolicy?> getCenterPolicyById(int id) async {
+    final maps = await _db.query(
+      'center_tuition_policy',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (maps.isEmpty) return null;
+    return CenterTuitionPolicy.fromMap(maps.first);
+  }
+
+  Future<List<CenterTuitionPolicy>> getAllCenterPolicies() async {
+    final maps = await _db.query(
+      'center_tuition_policy',
+      orderBy: 'hieu_luc_tu DESC',
+    );
+    return maps.map((m) => CenterTuitionPolicy.fromMap(m)).toList();
+  }
+
+  Future<CenterTuitionPolicy?> getEffectiveCenterPolicyForDate(String date) async {
+    final maps = await _db.query(
+      'center_tuition_policy',
+      where: 'hieu_luc_tu <= ? AND (hieu_luc_den IS NULL OR hieu_luc_den >= ?)',
+      whereArgs: [date, date],
+      orderBy: 'hieu_luc_tu DESC',
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return CenterTuitionPolicy.fromMap(maps.first);
+  }
+
+  Future<CenterTuitionPolicy?> getEffectiveCenterPolicyForMonth(String month) async {
+    final date = '$month-01';
+    return getEffectiveCenterPolicyForDate(date);
+  }
+
+  Future<void> closeOpenCenterPolicy(String closeDate) async {
+    await _db.update(
+      'center_tuition_policy',
+      {
+        'hieu_luc_den': closeDate,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'hieu_luc_den IS NULL',
+    );
   }
 }
