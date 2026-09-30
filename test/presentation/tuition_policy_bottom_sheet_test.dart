@@ -136,7 +136,7 @@ void main() {
       expect(find.byType(CreateTuitionPolicyBottomSheet), findsOneWidget);
 
       // Tap X on clean sheet
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(find.byIcon(Icons.close_rounded).first);
       await tester.pumpAndSettle();
 
       // Must close immediately without confirmation dialog
@@ -169,7 +169,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap X
-        await tester.tap(find.byIcon(Icons.close));
+        await tester.tap(find.byIcon(Icons.close_rounded).first);
         await tester.pumpAndSettle();
 
         // Prompt appears
@@ -235,6 +235,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Submit form
+      await tester.ensureVisible(find.byKey(UiKeys.tuitionPolicySave));
       await tester.tap(find.byKey(UiKeys.tuitionPolicySave));
       await tester.pumpAndSettle();
 
@@ -286,6 +287,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Submit
+        await tester.ensureVisible(find.byKey(UiKeys.tuitionPolicySave));
         await tester.tap(find.byKey(UiKeys.tuitionPolicySave));
         await tester.pumpAndSettle();
 

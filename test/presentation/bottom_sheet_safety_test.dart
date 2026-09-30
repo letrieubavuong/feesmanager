@@ -49,7 +49,7 @@ Widget buildTestApp(Widget child) {
 void main() {
   group('Editable Bottom Sheets Safety & Dirty Form Tests', () {
     testWidgets(
-      'Creating a class opens tuition policy after class sheet closes',
+      'Creating a class closes class sheet without opening tuition policy bottom sheet',
       (tester) async {
         await tester.pumpWidget(
           ProviderScope(
@@ -87,7 +87,7 @@ void main() {
         await tester.tap(find.byKey(UiKeys.classFormSave));
         await tester.pumpAndSettle();
         expect(find.byType(ClassFormBottomSheet), findsNothing);
-        expect(find.byType(CreateTuitionPolicyBottomSheet), findsOneWidget);
+        expect(find.byType(CreateTuitionPolicyBottomSheet), findsNothing);
         expect(tester.takeException(), isNull);
       },
     );
@@ -187,6 +187,9 @@ void main() {
     testWidgets('CreateTuitionPolicyBottomSheet dirty state protection', (
       tester,
     ) async {
+      tester.view.physicalSize = const Size(1080, 1920);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
       await tester.pumpWidget(
         buildTestApp(
           Builder(

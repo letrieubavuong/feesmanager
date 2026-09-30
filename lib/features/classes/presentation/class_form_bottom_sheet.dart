@@ -6,7 +6,6 @@ import '../../../app/common_widgets/app_page_scaffold.dart';
 import '../../../app/common_widgets/dirty_form_scope.dart';
 import '../../../app/navigation/ui_keys.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../tuition/presentation/create_tuition_policy_bottom_sheet.dart';
 import '../domain/class.dart';
 import 'class_controller.dart';
 
@@ -286,14 +285,7 @@ class _ClassFormBottomSheetState extends ConsumerState<ClassFormBottomSheet> {
 Future<bool?> showClassFormBottomSheet(
   BuildContext context, {
   ClassEntity? cls,
-}) {
-  return _showClassFormAndPolicy(context, cls);
-}
-
-Future<bool?> _showClassFormAndPolicy(
-  BuildContext context,
-  ClassEntity? cls,
-) async {
+}) async {
   final result = await showModalBottomSheet<Object>(
     context: context,
     isScrollControlled: true,
@@ -306,18 +298,8 @@ Future<bool?> _showClassFormAndPolicy(
   if (result is int) {
     AppFeedback.showSuccessSnackBar(
       context,
-      'Tạo lớp học thành công. Vui lòng thiết lập học phí lớp.',
+      'Tạo lớp học thành công.',
     );
-    final policySuccess = await showCreateTuitionPolicyBottomSheet(
-      context,
-      classId: result,
-    );
-    if (policySuccess != true && context.mounted) {
-      AppFeedback.showErrorSnackBar(
-        context,
-        'Lớp đã được tạo nhưng thiết lập học phí chưa hoàn tất.',
-      );
-    }
     return true;
   }
   if (result == true) {

@@ -102,27 +102,26 @@ class _CreateTuitionPolicyBottomSheetState
   Widget _buildFieldLabel(String label, {bool isRequired = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+      child: Text.rich(
+        TextSpan(
+          text: label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
           ),
-          if (isRequired)
-            const Text(
-              ' *',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.error,
+          children: [
+            if (isRequired)
+              const TextSpan(
+                text: ' *',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.error,
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
