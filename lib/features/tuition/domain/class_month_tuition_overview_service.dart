@@ -86,9 +86,11 @@ class ClassMonthTuitionOverviewService {
       classId,
       monthStartStr,
     );
-    final centerPolicy =
-        await _policyService.getEffectiveCenterPolicyForMonth(month);
-    final policy = legacyPolicy ??
+    final centerPolicy = await _policyService.getEffectiveCenterPolicyForMonth(
+      month,
+    );
+    final policy =
+        legacyPolicy ??
         (centerPolicy != null
             ? TuitionPolicy(
                 idLop: classId,
@@ -117,6 +119,16 @@ class ClassMonthTuitionOverviewService {
           studentIdsSet,
           classId,
           month,
+        );
+
+    // Readiness uses the same canonical roster, including planned sessions.
+    // Never interpret an empty completed-session list as a settled zero fee.
+    final eligibleIncludingPlanned = await _creditService
+        .getEligibleSessionsForStudentsClassMonth(
+          studentIdsSet,
+          classId,
+          month,
+          includePlanned: true,
         );
 
     // 7. Collect relevant session IDs
@@ -261,6 +273,16 @@ class ClassMonthTuitionOverviewService {
             );
           }
 
+          final unfinished = (eligibleIncludingPlanned[sid] ?? [])
+              .where((s) => s.trangThai == SessionStatus.DU_KIEN)
+              .toList();
+          if (unfinished.isNotEmpty) {
+            throw Exception(
+              'Chưa đối soát: còn ${unfinished.length} buổi dự kiến '
+              'thuộc ca học của học sinh trong tháng $month. '
+              'Không thể coi học phí chưa xác định là 0đ hoặc đã thu.',
+            );
+          }
           final eligibleSessions = eligibleSessionsByStudent[sid] ?? [];
           if (eligibleSessions.isEmpty &&
               classSessions.any(

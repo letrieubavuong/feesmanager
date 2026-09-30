@@ -1,6 +1,7 @@
 // ignore_for_file: constant_identifier_names
 
 import 'package:flutter/material.dart';
+
 import '../../../app/design_system/app_theme.dart';
 import '../../payments/domain/invoice_payment_summary.dart';
 import '../../students/domain/student.dart';
@@ -76,6 +77,27 @@ class ClassMonthTuitionStudentRow {
       case ClassStudentTuitionState.ERROR:
         return AppColors.error;
     }
+  }
+
+  bool get hasKnownAmount => isFinalized || preview != null;
+
+  // A failed calculation is unknown, never evidence of payment.
+  bool get isFullyPaid =>
+      isFinalized &&
+      hasKnownAmount &&
+      amountDue > 0 &&
+      amountPaid >= amountDue &&
+      !isBlocked;
+
+  bool get needsCollectionOrResolution => !isFullyPaid;
+
+  String get collectionLabel {
+    if (isBlocked) return 'Chưa đủ dữ liệu';
+    if (!hasKnownAmount) return 'Chưa tính được';
+    if (amountDue == 0) return 'Không phát sinh học phí';
+    if (isFullyPaid) return 'Đã thu';
+    if (!isFinalized) return 'Tạm tính';
+    return amountPaid > 0 ? 'Đã thu một phần' : 'Chưa thanh toán';
   }
 
   int get amountDue {

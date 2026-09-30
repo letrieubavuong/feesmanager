@@ -70,10 +70,12 @@ class TuitionService {
       classId,
       monthStartStr,
     );
-    final centerPolicy =
-        await _policyService.getEffectiveCenterPolicyForMonth(month);
+    final centerPolicy = await _policyService.getEffectiveCenterPolicyForMonth(
+      month,
+    );
 
-    final policy = legacyPolicy ??
+    final policy =
+        legacyPolicy ??
         (centerPolicy != null
             ? TuitionPolicy(
                 idLop: classId,
@@ -304,11 +306,13 @@ class TuitionService {
       }
     }
 
-    holidaySessions.sort((a, b) {
+    // Caller-owned inputs may be const/unmodifiable; preview is pure read.
+    final sortedHolidaySessions = List<ClassSession>.of(holidaySessions);
+    sortedHolidaySessions.sort((a, b) {
       final byDate = a.ngay.compareTo(b.ngay);
       return byDate != 0 ? byDate : a.gioBatDau.compareTo(b.gioBatDau);
     });
-    for (final session in holidaySessions) {
+    for (final session in sortedHolidaySessions) {
       final rawBalanceAsOf = studentLedgerEntries.isEmpty
           ? creditSummary.openingBalance
           : studentLedgerEntries

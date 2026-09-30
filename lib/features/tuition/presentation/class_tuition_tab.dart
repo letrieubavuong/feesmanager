@@ -89,10 +89,10 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
           overviewAsync.when(
             data: (overview) {
               final outstandingCount = overview.studentRows
-                  .where((r) => !r.isFinalized || r.remainingDebt > 0)
+                  .where((r) => r.needsCollectionOrResolution)
                   .length;
               final paidCount = overview.studentRows
-                  .where((r) => r.isFinalized && r.remainingDebt <= 0)
+                  .where((r) => r.isFullyPaid)
                   .length;
 
               if (_lastMonth != _selectedMonth) {
@@ -404,12 +404,10 @@ class _ClassTuitionTabState extends ConsumerState<ClassTuitionTab> {
     List<ClassMonthTuitionStudentRow> targetRows;
     if (activeFilter == TuitionPaymentFilter.outstanding) {
       targetRows = overview.studentRows
-          .where((r) => !r.isFinalized || r.remainingDebt > 0)
+          .where((r) => r.needsCollectionOrResolution)
           .toList();
     } else {
-      targetRows = overview.studentRows
-          .where((r) => r.isFinalized && r.remainingDebt <= 0)
-          .toList();
+      targetRows = overview.studentRows.where((r) => r.isFullyPaid).toList();
     }
 
     targetRows.sort(
@@ -766,6 +764,34 @@ class _StudentTuitionCard extends ConsumerWidget {
     BuildContext context,
     ClassMonthTuitionStudentRow row,
   ) {
+    if (row.isBlocked || !row.hasKnownAmount) {
+      showModalBottomSheet<void>(
+        context: context,
+        useSafeArea: true,
+        backgroundColor: AppColors.surface,
+        builder: (_) => Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                row.student.hoTen,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Text(row.pendingReason ?? 'Chưa đủ dữ liệu để tính học phí.'),
+              const SizedBox(height: 12),
+              const Text(
+                'Kiểm tra chính sách, ngày tham gia, phân ca và điểm danh. '
+                'Trạng thái này không có nghĩa là học sinh đã thanh toán.',
+              ),
+            ],
+          ),
+        ),
+      );
+      return;
+    }
     int eligible = 0;
     int charged = 0;
     int feePerSession = 0;
@@ -943,7 +969,7 @@ class _StudentTuitionCard extends ConsumerWidget {
     final student = row.student;
     final remainingDebt = row.remainingDebt;
     final amountPaid = row.amountPaid;
-    final isUnpaid = remainingDebt > 0;
+    final isUnpaid = row.hasKnownAmount && !row.isBlocked && remainingDebt > 0;
 
     return AppSectionCard(
       margin: const EdgeInsets.only(bottom: 8),
@@ -982,13 +1008,19 @@ class _StudentTuitionCard extends ConsumerWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      AppFormatter.formatCurrency(
-                        isUnpaid ? remainingDebt : amountPaid,
-                        context: context,
-                      ),
+                      row.isBlocked || !row.hasKnownAmount
+                          ? '—'
+                          : AppFormatter.formatCurrency(
+                              isUnpaid ? remainingDebt : amountPaid,
+                              context: context,
+                            ),
                       maxLines: 1,
                       style: TextStyle(
-                        color: isUnpaid ? AppColors.error : AppColors.success,
+                        color: row.isFullyPaid
+                            ? AppColors.success
+                            : row.isBlocked
+                            ? AppColors.warning
+                            : AppColors.error,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1000,11 +1032,7 @@ class _StudentTuitionCard extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        isUnpaid
-                            ? row.isFinalized
-                                  ? 'Chưa thanh toán'
-                                  : 'Tạm tính'
-                            : 'Đã thu',
+                        row.collectionLabel,
                         style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 11,
@@ -1079,7 +1107,7 @@ class _StudentTuitionCard extends ConsumerWidget {
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
-              if (isUnpaid) ...[
+              if (isUnpaid && row.isFinalized) ...[
                 const PopupMenuItem(
                   value: 'payment',
                   child: ListTile(

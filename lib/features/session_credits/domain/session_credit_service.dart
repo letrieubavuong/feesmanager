@@ -115,8 +115,9 @@ class SessionCreditService {
   Future<Map<int, List<ClassSession>>> getEligibleSessionsForStudentsClassMonth(
     Set<int> studentIds,
     int classId,
-    String month,
-  ) async {
+    String month, {
+    bool includePlanned = false,
+  }) async {
     _validateIsoMonth(month);
 
     final fromDate = DateTime.parse('$month-01');
@@ -132,7 +133,8 @@ class SessionCreditService {
         .where(
           (s) =>
               s.loai == SessionType.CHINH &&
-              s.trangThai == SessionStatus.DA_HOC,
+              (s.trangThai == SessionStatus.DA_HOC ||
+                  (includePlanned && s.trangThai == SessionStatus.DU_KIEN)),
         )
         .toList();
 

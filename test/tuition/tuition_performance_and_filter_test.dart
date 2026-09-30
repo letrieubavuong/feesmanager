@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart';
@@ -31,6 +32,13 @@ import 'package:tuition2027/features/tuition/domain/tuition_policy_service.dart'
 import 'package:tuition2027/features/tuition/domain/tuition_service.dart';
 import 'package:tuition2027/features/tuition/presentation/class_tuition_tab.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:tuition2027/features/memberships/domain/membership.dart';
+import 'package:tuition2027/features/session_credits/domain/monthly_credit_summary.dart';
+import 'package:tuition2027/features/tuition/domain/tuition_policy.dart';
+import 'package:tuition2027/features/tuition/domain/class_month_tuition_overview.dart';
+import 'package:tuition2027/features/students/domain/student.dart';
+import 'package:tuition2027/features/sessions/domain/class_session.dart';
 
 void main() {
   sqfliteFfiInit();
@@ -155,6 +163,125 @@ void main() {
       if (await tempDir.exists()) {
         await tempDir.delete(recursive: true);
       }
+    });
+
+    test(
+      'empty const holiday input does not mutate or block tuition preview',
+      () {
+        final now = DateTime(2026, 9, 1);
+        final preview = tuitionService.calculatePreviewFromResolvedData(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          policy: TuitionPolicy(
+            id: 1,
+            idLop: 1,
+            hieuLucTu: '2026-09-01',
+            hocPhiMoiBuoi: 50000,
+            createdAt: now,
+            updatedAt: now,
+          ),
+          creditSummary: const MonthlyCreditSummary(
+            studentId: 1,
+            classId: 1,
+            month: '2026-09',
+            standardSessionLimit: 12,
+            eligibleCount: 0,
+            standardCount: 0,
+            extraCount: 0,
+            potentialEarned: 0,
+            recordedEarned: 0,
+            openingBalance: 0,
+            monthDelta: 0,
+            closingBalance: 0,
+            candidates: [],
+          ),
+          activeMembershipsInMonth: [
+            ClassMembership(
+              idHocSinh: 1,
+              idLop: 1,
+              tuNgay: '2026-09-01',
+              createdAt: now,
+              updatedAt: now,
+            ),
+          ],
+          validMakeupByOriginalSessionId: const {},
+          // Omitted argument is const []; sort() previously threw here.
+        );
+        expect(preview.soTienPhaiThu, 0);
+        expect(preview.creditUsed, 0);
+        final holidayInput = List<ClassSession>.unmodifiable([
+          ClassSession(
+            id: 2,
+            idLop: 1,
+            ngay: '2026-09-20',
+            gioBatDau: '08:00',
+            gioKetThuc: '09:00',
+            loai: SessionType.CHINH,
+            trangThai: SessionStatus.NGHI_LE,
+            createdAt: now,
+            updatedAt: now,
+          ),
+          ClassSession(
+            id: 1,
+            idLop: 1,
+            ngay: '2026-09-10',
+            gioBatDau: '08:00',
+            gioKetThuc: '09:00',
+            loai: SessionType.CHINH,
+            trangThai: SessionStatus.NGHI_LE,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ]);
+        final second = tuitionService.calculatePreviewFromResolvedData(
+          studentId: 1,
+          classId: 1,
+          month: '2026-09',
+          policy: preview.policy,
+          creditSummary: const MonthlyCreditSummary(
+            studentId: 1,
+            classId: 1,
+            month: '2026-09',
+            standardSessionLimit: 12,
+            eligibleCount: 0,
+            standardCount: 0,
+            extraCount: 0,
+            potentialEarned: 0,
+            recordedEarned: 0,
+            openingBalance: 0,
+            monthDelta: 0,
+            closingBalance: 0,
+            candidates: [],
+          ),
+          activeMembershipsInMonth: [
+            ClassMembership(
+              idHocSinh: 1,
+              idLop: 1,
+              tuNgay: '2026-09-01',
+              createdAt: now,
+              updatedAt: now,
+            ),
+          ],
+          validMakeupByOriginalSessionId: const {},
+          holidaySessions: holidayInput,
+        );
+        expect(second.creditUsed, 0);
+        expect(holidayInput.map((s) => s.id), [2, 1]);
+      },
+    );
+
+    test('unknown tuition cannot be labeled paid or filtered out', () {
+      final now = DateTime(2026, 9, 1);
+      final row = ClassMonthTuitionStudentRow(
+        student: Student(id: 1, hoTen: 'Test', createdAt: now, updatedAt: now),
+        state: ClassStudentTuitionState.PENDING_ATTENDANCE,
+        pendingReason: 'Chưa tính được',
+      );
+      expect(row.hasKnownAmount, isFalse);
+      expect(row.isFullyPaid, isFalse);
+      expect(row.needsCollectionOrResolution, isTrue);
+      expect(row.collectionLabel, 'Chưa đủ dữ liệu');
     });
 
     test(
@@ -331,6 +458,20 @@ void main() {
 
         final overview = await overviewService.getOverview(classId, '2026-09');
         expect(overview.studentRows.length, 2);
+        await db.update(
+          'buoi_hoc',
+          {'trang_thai': 'DU_KIEN'},
+          where: 'id = ?',
+          whereArgs: [sessId],
+        );
+        final pending = await overviewService.getOverview(classId, '2026-09');
+        expect(pending.pendingStudentCount, 2);
+        expect(pending.studentRows.every((r) => !r.hasKnownAmount), isTrue);
+        expect(pending.studentRows.every((r) => !r.isFullyPaid), isTrue);
+        expect(
+          pending.studentRows.first.pendingReason,
+          contains('buổi dự kiến'),
+        );
       },
     );
 
